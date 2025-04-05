@@ -1,0 +1,13 @@
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
+strict_equality = true
+extra_checks = true
+
+exclude = [
+    ".venv",
+    "setup.py"
+]

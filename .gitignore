@@ -1,7 +1,10 @@
 # Build files
 /compile_commands.json
 /build
+__pycache__/
+.mypy_cache/
 
 # Editor files
 .vscode/
 .vs/
+.venv/

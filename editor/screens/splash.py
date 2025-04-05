@@ -7,15 +7,16 @@ from PySide6.QtWidgets import (
 )
 from pathlib import Path
 from typing import Optional
+from screens.editor import EditorWindow
 
 
 class SplashScreen(QWidget):
     def __init__(self) -> None:
         super().__init__()
+        self._editorWindow: Optional[EditorWindow] = None
 
         self.setWindowTitle("FLUIR")
         self.resize(400, 300)
-        self._file: Optional[Path] = None
 
         self._new_file_button = QPushButton("New File")
         self._open_file_button = QPushButton("Open File")
@@ -27,6 +28,18 @@ class SplashScreen(QWidget):
         self._new_file_button.clicked.connect(self._new_file)
         self._open_file_button.clicked.connect(self._open_file)
 
+    def _open_editor(self, file: Path) -> None:
+        if file.exists():
+            self.hide()
+            self._editorWindow = EditorWindow(file)
+            self._editorWindow.show()
+        else:
+            QMessageBox.warning(
+                self,
+                "Open file failed",
+                f"The file {file} does not exist.",
+            )
+
     def _new_file(self) -> None:
         filename, _ = QFileDialog.getSaveFileName(
             self, caption="Create a new Fluir file", filter="Fluir (*.fluir)"
@@ -36,8 +49,7 @@ class SplashScreen(QWidget):
             try:
                 with open(filepath, "w") as file:
                     file.write("")
-                self._file = filepath
-                # TODO open the editor
+                self._open_editor(filepath)
             except Exception as e:
                 QMessageBox.warning(
                     self,
@@ -56,15 +68,7 @@ class SplashScreen(QWidget):
             self, caption="Create a new Fluir file", filter="Fluir (*.fluir)"
         )
         filepath = Path(filename)
-        if filepath.exists():
-            self._file = filepath
-            # TODO: open the editor
-        else:
-            QMessageBox.warning(
-                self,
-                "Open file failed",
-                f"File {filename} does not exist. Use 'New' button instead to create a file.",
-            )
+        self._open_editor(filepath)
 
     def _add_extension(self, filepath: Path) -> Path:
         if not filepath.suffix:

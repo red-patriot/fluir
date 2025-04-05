@@ -1,6 +1,7 @@
 import sys
-from editor.splash import SplashScreen
 from PySide6.QtWidgets import QApplication
+
+from screens.splash import SplashScreen
 
 
 def main() -> int:

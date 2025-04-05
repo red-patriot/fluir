@@ -3,8 +3,8 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(
-    fluir.compiler
-    DESCRIPTION "The compiler for the Fluir data-flow programming language."
+    fluir
+    DESCRIPTION "The Fluir data-flow programming language."
     LANGUAGES CXX
     VERSION 0.1.0
 )
@@ -28,9 +28,9 @@ option(
 include(CTestUseLaunchers)
 include(FetchContent)
 
-add_subdirectory(src)
-
 if(FLUIR_BUILD_TESTS)
     enable_testing()
-    add_subdirectory(test)
+    include(cmake/get-gtest.cmake)
 endif()
+
+add_subdirectory(compiler)

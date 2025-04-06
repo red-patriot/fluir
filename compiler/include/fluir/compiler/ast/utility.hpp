@@ -8,11 +8,11 @@ namespace fluir {
 
   namespace ast {
     struct LocationInfo {
-      std::ptrdiff_t x;
-      std::ptrdiff_t y;
-      std::ptrdiff_t z;
-      size_t width;
-      size_t height;
+      int x;
+      int y;
+      int z;
+      int width;
+      int height;
 
       friend bool operator==(const LocationInfo&, const LocationInfo&) = default;
       friend bool operator!=(const LocationInfo&, const LocationInfo&) = default;

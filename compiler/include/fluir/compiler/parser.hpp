@@ -24,6 +24,8 @@ namespace fluir::compiler {
     void root();
     void declaration(Element* element);
     void function(Element* element);
+
+    ast::LocationInfo parseLocation(Element* element);
   };
 }  // namespace fluir::compiler
 

@@ -39,12 +39,24 @@ namespace fluir::compiler {
   }
 
   void Parser::function(Element* element) {
+    // TODO: Check for errors
     std::string_view name = element->Attribute("name");
     fluir::id_t id = std::atoll(element->Attribute("id"));
+    auto location = parseLocation(element);
 
-    // TODO: Parse location
     // TODO: Parse body
 
-    ast_.declarations.emplace_back(ast::makeFunctionDecl(name, id));
+    ast_.declarations.emplace_back(ast::makeFunctionDecl(name, id, location));
+  }
+
+  ast::LocationInfo Parser::parseLocation(Element* element) {
+    // TODO: Check for errors
+    return {
+        .x = std::atoi(element->Attribute("x")),
+        .y = std::atoi(element->Attribute("y")),
+        .z = std::atoi(element->Attribute("z")),
+        .width = std::atoi(element->Attribute("h")),
+        .height = std::atoi(element->Attribute("w")),
+    };
   }
 }  // namespace fluir::compiler

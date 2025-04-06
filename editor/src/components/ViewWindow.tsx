@@ -6,19 +6,17 @@ interface ViewWindowProps {
 
 const ViewWindow: React.FC<ViewWindowProps> = ({ data }) => {
   const containerHeight = 500;
-  const constants = Array.isArray(data.fluir["fl:constant"])
-    ? data.fluir["fl:constant"]
-    : [data.fluir["fl:constant"]];
+  const constants = data.fluir["fl:constant"];
+
+  console.log(data);
 
   return (
-    <div
-      className="relative w-[500px] h-[500px] border border-gray-300 bg-stone-700 overflow-hidden"
-    >
+    <div className="relative w-[500px] h-[500px] border border-gray-300 bg-stone-700 overflow-hidden">
       {constants.map((constant, index) => {
-        const x = parseFloat(constant["@_x"]);
-        const y = parseFloat(constant["@_y"]);
-        const w = parseFloat(constant["@_w"]);
-        const h = parseFloat(constant["@_h"]);
+        const x = constant["@_x"];
+        const y = constant["@_y"];
+        const w = constant["@_w"];
+        const h = constant["@_h"];
         const id = constant["@_id"];
 
         return (

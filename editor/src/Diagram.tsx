@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import Fluir from "./models/fluir.d";
+import toProgram from "./functions/toProgram";
 import ViewWindow from "./components/ViewWindow";
 
 interface DiagramProps {
@@ -9,7 +9,7 @@ interface DiagramProps {
 
 const Diagram = ({ contents, name }: DiagramProps) => {
   const parser = new XMLParser({ ignoreAttributes: false });
-  const obj = parser.parse(contents) as Fluir;
+  const obj = toProgram(parser.parse(contents));
 
   return (
     <div className="h-screen">

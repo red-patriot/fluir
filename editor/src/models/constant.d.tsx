@@ -2,12 +2,12 @@ import FLValue from "./value.d";
 
 type FLConstant = {
   "fl:value": FLValue;
-  "@_x": string;
-  "@_y": string;
-  "@_z"?: string;
-  "@_w": string;
-  "@_h": string;
-  "@_id"?: string;
+  "@_x": number;
+  "@_y": number;
+  "@_z"?: number;
+  "@_w": number;
+  "@_h": number;
+  "@_id"?: number;
 };
 
 export default FLConstant;

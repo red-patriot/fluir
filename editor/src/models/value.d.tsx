@@ -1,6 +1,6 @@
 type FLValue = {
-  "#text"?: number | string;
-  "@_type"?: string;
+  "literal": number;
+  "@_type": string;
 };
 
 export default FLValue;

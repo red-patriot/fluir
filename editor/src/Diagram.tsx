@@ -9,12 +9,14 @@ interface DiagramProps {
 
 const Diagram = ({ contents, name }: DiagramProps) => {
   const parser = new XMLParser({ ignoreAttributes: false });
-  const obj = toProgram(parser.parse(contents));
+  const raw = parser.parse(contents);
+  console.log(raw);
+  const program = toProgram(raw);
 
   return (
     <div className="h-screen">
       <h2 className="text-lg font-bold mb-2">{`"${name}" Contents:`}</h2>
-      <ViewWindow data={obj} />
+      <ViewWindow data={program} />
     </div>
   );
 };

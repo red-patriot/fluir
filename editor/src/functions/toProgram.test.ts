@@ -95,4 +95,68 @@ describe("toFluirProgram", () => {
 
     expect(toProgram(data)).toEqual(expected);
   });
+
+  it("can parse multiple constants", () => {
+    const expected: Fluir = {
+      fluir: {
+        "fl:constant": [
+          {
+            "fl:value": { literal: 15, "@_type": "fp-dbl" },
+            "@_id": 1,
+            "@_x": 10,
+            "@_y": 10,
+            "@_z": 0,
+            "@_w": 10,
+            "@_h": 5,
+          },
+          {
+            "fl:value": { literal: -5, "@_type": "fp-dbl" },
+            "@_id": 2,
+            "@_x": 10,
+            "@_y": 25,
+            "@_z": 0,
+            "@_w": 10,
+            "@_h": 5,
+          },
+        ],
+      },
+    };
+    const data: any = {
+      "?xml": {
+        "@_version": "1.0",
+        "@_encoding": "UTF-8",
+      },
+      fluir: {
+        "fl:constant": [
+          {
+            "fl:value": {
+              "#text": 15,
+              "@_type": "fp-dbl",
+            },
+            "@_x": "10",
+            "@_y": "10",
+            "@_z": "0",
+            "@_w": "10",
+            "@_h": "5",
+            "@_id": "1",
+          },
+          {
+            "fl:value": {
+              "#text": -5,
+              "@_type": "fp-dbl",
+            },
+            "@_x": "10",
+            "@_y": "25",
+            "@_z": "0",
+            "@_w": "10",
+            "@_h": "5",
+            "@_id": "2",
+          },
+        ],
+        "@_xmlns:fl": "fluir::source::block",
+      },
+    };
+
+    expect(toProgram(data)).toEqual(expected);
+  });
 });

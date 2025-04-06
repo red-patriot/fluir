@@ -28,7 +28,7 @@ export const toExpression = (data: any): FLExpression => {
 
 const toProgram = (data: any): Fluir => {
   return {
-    fluir: { "fl:constant": [toConstant(data["fluir"]["fl:constant"])] },
+    fluir: { "fl:constant": data["fluir"]["fl:constant"].map(toConstant) },
   };
 };
 

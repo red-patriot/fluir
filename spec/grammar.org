@@ -1,0 +1,52 @@
+* Description
+** Version
+0.0.1
+
+* Grammar
+** Program
+  <?XML>
+  <fluir xmlns:fl>
+    {FunctionDecl}
+  </>
+
+** FunctionDecl
+  <fl:function
+     name=`IDENTIFIER`
+     {id}
+     {PositionProperties}>
+    <body>
+      {Expression}?
+    </>
+  </>
+
+** Expression
+  Constant
+
+** Constant
+  <fl:constant
+     {id}
+     {PositionProperties}>
+    {Value}
+  </>
+
+** PositionProperties
+  x="`number`"
+  y="`number`"
+  z="`number`"
+  w="`number`"
+  h="`number`"
+
+** id
+  id="`number`"
+
+** Value
+  <fl:value
+     type={Type}>
+    {Literal}
+  </>
+
+** Type
+  "fp-dbl"
+
+** Literal
+  `number`

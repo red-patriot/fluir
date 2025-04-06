@@ -1,9 +1,22 @@
+find_package(tinyxml2 REQUIRED)
+find_package(fmt REQUIRED)
+
 add_library(fluir.libcompiler)
 add_library(fluir::compiler ALIAS fluir.libcompiler)
 
-target_sources(fluir.libcompiler PRIVATE dummy.cpp)
+set(AST_SOURCES "ast/function_declaration.cpp")
 
-target_include_directories(fluir.libcompiler PUBLIC ${PROJECT_SOURCE_DIR})
+target_sources(
+    fluir.libcompiler
+    PRIVATE diagnostic.cpp parser.cpp ${AST_SOURCES}
+)
+
+target_include_directories(
+    fluir.libcompiler
+    PUBLIC ${PROJECT_SOURCE_DIR}/include
+)
+
+target_link_libraries(fluir.libcompiler PUBLIC tinyxml2::tinyxml2 fmt::fmt)
 
 add_executable(fluir.compiler)
 target_sources(fluir.compiler PRIVATE main.cpp)

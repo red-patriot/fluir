@@ -2,7 +2,7 @@
 #define FLUIR_COMPILER_AST_DECLARATION_HPP
 
 #include <memory>
-#include <vector>
+#include <unordered_map>
 
 namespace fluir::ast {
   class Declaration {
@@ -15,7 +15,7 @@ namespace fluir::ast {
   };
 
   using UniqueDeclaration = std::unique_ptr<Declaration>;
-  using Declarations = std::vector<UniqueDeclaration>;
+  using Declarations = std::unordered_map<id_t, UniqueDeclaration>;
 
   inline bool operator==(const UniqueDeclaration& lhs, const UniqueDeclaration& rhs) {
     return lhs->equals(*rhs);

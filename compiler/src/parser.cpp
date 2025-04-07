@@ -45,8 +45,8 @@ namespace fluir::compiler {
     auto location = parseLocation(element);
 
     // TODO: Parse body
-
-    ast_.declarations.emplace_back(ast::makeFunctionDecl(name, id, location));
+    // TODO: Check for duplicates
+    ast_.declarations.emplace(id, ast::makeFunctionDecl(name, id, location));
   }
 
   ast::LocationInfo Parser::parseLocation(Element* element) {

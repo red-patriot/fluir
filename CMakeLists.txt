@@ -1,10 +1,7 @@
-# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-
 cmake_minimum_required(VERSION 3.25)
-
 project(
-    fluir
-    DESCRIPTION "The Fluir data-flow programming language."
+    fluir.compiler
+    DESCRIPTION "The compiler for the Fluir data-flow programming language."
     LANGUAGES CXX
     VERSION 0.1.0
 )
@@ -19,18 +16,13 @@ option(
     ${PROJECT_IS_TOP_LEVEL}
 )
 
-option(
-    FLUIR_EXPORT_COMPILE_COMMANDS
-    "Create a compile_commands.json when building. Default: ${PROJECT_IS_TOP_LEVEL}. Values: { ON, OFF }."
-    ${PROJECT_IS_TOP_LEVEL}
-)
-
 include(CTestUseLaunchers)
 include(FetchContent)
+
+add_subdirectory(src)
 
 if(FLUIR_BUILD_TESTS)
     enable_testing()
     include(cmake/get-gtest.cmake)
+    add_subdirectory(test)
 endif()
-
-add_subdirectory(compiler)

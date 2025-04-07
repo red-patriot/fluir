@@ -4,12 +4,7 @@ find_package(fmt REQUIRED)
 add_library(fluir.libcompiler)
 add_library(fluir::compiler ALIAS fluir.libcompiler)
 
-set(AST_SOURCES "ast/function_declaration.cpp")
-
-target_sources(
-    fluir.libcompiler
-    PRIVATE diagnostic.cpp parser.cpp ${AST_SOURCES}
-)
+target_sources(fluir.libcompiler PRIVATE diagnostic.cpp parser.cpp)
 
 target_include_directories(
     fluir.libcompiler

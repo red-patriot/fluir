@@ -46,7 +46,7 @@ namespace fluir::compiler {
 
     // TODO: Parse body
     // TODO: Check for duplicates
-    ast_.declarations.emplace(id, ast::makeFunctionDecl(name, id, location));
+    ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, location});
   }
 
   ast::LocationInfo Parser::parseLocation(Element* element) {

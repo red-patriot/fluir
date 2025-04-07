@@ -21,14 +21,15 @@ TEST(TestParser, CanParseEmptyMainFunction) {
     </fl:function>
 </fluir>)";
 
-  fluir::ast::AST expected{};
-  expected.declarations.emplace(1,
-                                fluir::ast::makeFunctionDecl("main", 1,
-                                                             {.x = 10,
+  fluir::ast::AST expected{
+      .declarations = {{1,
+                        fluir::ast::FunctionDecl{.name = "main",
+                                                 .id = 1,
+                                                 .location = {.x = 10,
                                                               .y = 10,
                                                               .z = 3,
                                                               .width = 100,
-                                                              .height = 100}));
+                                                              .height = 100}}}}};
 
   fluir::compiler::Parser uut;
 

@@ -55,8 +55,35 @@ namespace fluir::compiler {
   }
 
   ast::Block Parser::block([[maybe_unused]] Element* element) {
-    // TODO: Parse a block
-    return ast::EMPTY_BLOCK;
+    auto block = ast::EMPTY_BLOCK;
+    for (; element != nullptr; element = element->NextSiblingElement()) {
+      // TODO: Parse multiple nodes correctly
+      std::string_view name = element->Name();
+      if (name == "fl:constant") {
+        block.node = constant(element);
+      }
+    }
+    return block;
+  }
+
+  ast::Constant Parser::constant(Element* element) {
+    // TODO: Check for errors
+    fluir::id_t id = std::atoll(element->Attribute("id"));
+    auto location = parseLocation(element);
+    auto val = value(element->FirstChildElement());
+
+    return ast::Constant{.value = val, .id = id, .location = location};
+  }
+
+  ast::Value Parser::value(Element* element) {
+    std::string_view name = element->Name();
+    if (name == "fl:double") {
+      double val;
+      auto error = element->QueryDoubleText(&val);
+      // TODO: check error
+      return val;
+    }
+    // TODO: ERROR on unknown
   }
 
   ast::LocationInfo Parser::parseLocation(Element* element) {

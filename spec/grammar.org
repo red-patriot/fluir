@@ -15,12 +15,12 @@
      {id}
      {PositionProperties}>
     <body>
-      {Expression}?
+      {Block}
     </>
   </>
 
-** Expression
-  Constant
+** Block
+  (Constant)*
 
 ** Constant
   <fl:constant
@@ -40,13 +40,10 @@
   id="`number`"
 
 ** Value
-  <fl:value
-     type={Type}>
-    {Literal}
-  </>
+  Double
 
-** Type
-  "fp-dbl"
+** Double
+  <fl:double>`number`</>
 
 ** Literal
   `number`

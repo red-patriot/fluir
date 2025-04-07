@@ -26,6 +26,8 @@ namespace fluir::compiler {
     void function(Element* element);
 
     ast::Block block(Element* element);
+    ast::Constant constant(Element* element);
+    ast::Value value(Element* element);
 
     ast::LocationInfo parseLocation(Element* element);
   };

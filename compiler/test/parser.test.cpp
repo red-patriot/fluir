@@ -25,6 +25,7 @@ TEST(TestParser, CanParseEmptyMainFunction) {
       .declarations = {{1,
                         fluir::ast::FunctionDecl{.name = "main",
                                                  .id = 1,
+                                                 .body = fluir::ast::EMPTY_BLOCK,
                                                  .location = {.x = 10,
                                                               .y = 10,
                                                               .z = 3,

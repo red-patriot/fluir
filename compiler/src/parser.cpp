@@ -45,8 +45,18 @@ namespace fluir::compiler {
     auto location = parseLocation(element);
 
     // TODO: Parse body
+    auto bodyElement = element->FirstChildElement("body");
+    if (!bodyElement) {
+      // TODO: Emit error
+    }
+    auto body = block(bodyElement->FirstChildElement());
     // TODO: Check for duplicates
-    ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, location});
+    ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, body, location});
+  }
+
+  ast::Block Parser::block([[maybe_unused]] Element* element) {
+    // TODO: Parse a block
+    return ast::EMPTY_BLOCK;
   }
 
   ast::LocationInfo Parser::parseLocation(Element* element) {

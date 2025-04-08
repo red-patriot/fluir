@@ -34,7 +34,10 @@ namespace fluir::compiler {
     ast::Constant constant(Element* element);
     ast::Value value(Element* element);
 
-    ast::LocationInfo parseLocation(Element* element);
+    class BadParse { };
+
+    ast::LocationInfo parseLocation(Element* element, std::string_view type);
+    std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
 
     class SourceLocation : public Diagnostic::Where {
      public:

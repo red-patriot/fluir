@@ -40,8 +40,11 @@ namespace fluir::compiler {
     auto root = source_.RootElement();
     if (root->Name() != expectedRoot) {
       emitError(diagnostics_,
-                "Expect root element to be '{}}', found '{}'.",
+                std::make_unique<SourceLocation>(root->GetLineNum(), filename_),
+                "Expected root element to be '{}', found '{}'.",
                 expectedRoot, root->Name());
+      // This document is likely not a fluir source file. So just bail out
+      return;
     }
 
     for (auto child = root->FirstChildElement();
@@ -53,20 +56,25 @@ namespace fluir::compiler {
 
   void Parser::declaration(Element* element) {
     const std::string FUNCTION{"fl:function"};
-    if (element->Name() == FUNCTION) {
-      function(element);
-    } else {
-      emitError(diagnostics_,
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Unexpected element '{}'. Expected declaration.", element->Name());
+    try {
+      if (element->Name() == FUNCTION) {
+        function(element);
+      } else {
+        emitError(diagnostics_,
+                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  "Unexpected element '{}'. Expected declaration.", element->Name());
+      }
+    } catch (const BadParse&) {
+      // Ignore the rest of this element to try to prevent cascading errors
     }
   }
 
   void Parser::function(Element* element) {
     // TODO: Check for errors
-    std::string_view name = element->Attribute("name");
-    fluir::id_t id = std::atoll(element->Attribute("id"));
-    auto location = parseLocation(element);
+    constexpr std::string_view type = "fl:function";
+    std::string_view name = getAttribute(element, type, "name");
+    fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
+    auto location = parseLocation(element, type);
 
     // TODO: Parse body
     auto bodyElement = element->FirstChildElement("body");
@@ -93,7 +101,7 @@ namespace fluir::compiler {
   ast::Constant Parser::constant(Element* element) {
     // TODO: Check for errors
     fluir::id_t id = std::atoll(element->Attribute("id"));
-    auto location = parseLocation(element);
+    auto location = parseLocation(element, "fl:constant");
     auto val = value(element->FirstChildElement());
 
     return ast::Constant{.value = val, .id = id, .location = location};
@@ -110,15 +118,26 @@ namespace fluir::compiler {
     // TODO: ERROR on unknown
   }
 
-  ast::LocationInfo Parser::parseLocation(Element* element) {
-    // TODO: Check for errors
+  ast::LocationInfo Parser::parseLocation(Element* element, std::string_view type) {
     return {
-        .x = std::atoi(element->Attribute("x")),
-        .y = std::atoi(element->Attribute("y")),
-        .z = std::atoi(element->Attribute("z")),
-        .width = std::atoi(element->Attribute("h")),
-        .height = std::atoi(element->Attribute("w")),
+        .x = std::atoi(getAttribute(element, type, "x").data()),
+        .y = std::atoi(getAttribute(element, type, "y").data()),
+        .z = std::atoi(getAttribute(element, type, "z").data()),
+        .width = std::atoi(getAttribute(element, type, "h").data()),
+        .height = std::atoi(getAttribute(element, type, "w").data()),
     };
+  }
+
+  std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
+    auto value = element->Attribute(attribute.data());
+    if (value == nullptr) {
+      emitError(diagnostics_,
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "{} element is missing attribute '{}'.",
+                type, attribute);
+      throw BadParse{};
+    }
+    return value;
   }
 
   std::string Parser::SourceLocation::string() const {

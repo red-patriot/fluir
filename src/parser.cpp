@@ -100,7 +100,7 @@ namespace fluir::compiler {
 
   ast::Constant Parser::constant(Element* element) {
     // TODO: Check for errors
-    fluir::id_t id = std::atoll(element->Attribute("id"));
+    fluir::id_t id = std::atoll(getAttribute(element, "fl:constant", "id").data());
     auto location = parseLocation(element, "fl:constant");
     auto val = value(element->FirstChildElement());
 

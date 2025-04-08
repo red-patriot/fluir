@@ -36,8 +36,12 @@ namespace fluir::compiler {
 
     class BadParse { };
 
+    fluir::id_t parseId(Element* element, std::string_view type);
     ast::LocationInfo parseLocation(Element* element, std::string_view type);
     std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
+
+    template <typename... Args>
+    void panicIf(bool condition, Args&&... errorMessage);
 
     class SourceLocation : public Diagnostic::Where {
      public:

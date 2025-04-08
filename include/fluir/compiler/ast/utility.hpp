@@ -4,7 +4,8 @@
 #include <cstddef>
 
 namespace fluir {
-  using id_t = std::size_t;
+  using id_t = std::uint64_t;
+  constexpr id_t INVALID_ID = 0;
 
   namespace ast {
     struct LocationInfo {

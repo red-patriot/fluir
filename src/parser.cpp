@@ -6,6 +6,15 @@
 #include "fluir/compiler/diagnostic.hpp"
 
 namespace fluir::compiler {
+  template <typename... Args>
+  void Parser::panicIf(bool condition, Args&&... errorMessage) {
+    if (condition) {
+      emitError(diagnostics_,
+                std::forward<Args>(errorMessage)...);
+      throw BadParse{};
+    }
+  }
+
   fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
     reset(program.filename().c_str());
     std::ifstream fin{program};
@@ -99,9 +108,9 @@ namespace fluir::compiler {
   }
 
   ast::Constant Parser::constant(Element* element) {
-    // TODO: Check for errors
-    fluir::id_t id = std::atoll(getAttribute(element, "fl:constant", "id").data());
-    auto location = parseLocation(element, "fl:constant");
+    constexpr std::string_view type = "fl:constant";
+    fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
+    auto location = parseLocation(element, type);
     auto val = value(element->FirstChildElement());
 
     return ast::Constant{.value = val, .id = id, .location = location};
@@ -118,6 +127,15 @@ namespace fluir::compiler {
     // TODO: ERROR on unknown
   }
 
+  fluir::id_t Parser::parseId(Element* element, std::string_view type) {
+    auto id = element->Unsigned64Attribute("id", fluir::INVALID_ID);
+    panicIf(id == INVALID_ID,
+            std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            "{} element is missing attribute 'id'.",
+            type);
+    return id;
+  }
+
   ast::LocationInfo Parser::parseLocation(Element* element, std::string_view type) {
     return {
         .x = std::atoi(getAttribute(element, type, "x").data()),
@@ -130,13 +148,11 @@ namespace fluir::compiler {
 
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
-    if (value == nullptr) {
-      emitError(diagnostics_,
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "{} element is missing attribute '{}'.",
-                type, attribute);
-      throw BadParse{};
-    }
+    panicIf(value == nullptr,
+            std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            "{} element is missing attribute '{}'.",
+            type, attribute);
+
     return value;
   }
 

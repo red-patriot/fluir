@@ -1,15 +1,38 @@
 #include "fluir/compiler/parser.hpp"
 
+#include <fstream>
+#include <sstream>
+
 #include "fluir/compiler/diagnostic.hpp"
 
 namespace fluir::compiler {
+  fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
+    reset(program.filename().c_str());
+    std::ifstream fin{program};
+    std::stringstream ss;
+    ss << fin.rdbuf();
+    std::string source = ss.str();
+
+    source_.Parse(source.c_str());
+    root();
+
+    return std::move(ast_);
+  }
+
   fluir::ast::AST Parser::parse(const std::string_view src) {
-    ast_ = ast::AST{};
+    reset("<UNKNOWN>");
     source_.Parse(src.data());
 
     root();
 
     return std::move(ast_);
+  }
+
+  void Parser::reset(const std::string_view filename) {
+    filename_ = filename;
+    source_.Clear();
+    diagnostics_.clear();
+    ast_ = ast::AST{};
   }
 
   void Parser::root() {
@@ -34,7 +57,8 @@ namespace fluir::compiler {
       function(element);
     } else {
       emitError(diagnostics_,
-                "Unexpected element '{}'. Expect declaration.", element->Name());
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Unexpected element '{}'. Expected declaration.", element->Name());
     }
   }
 
@@ -95,5 +119,9 @@ namespace fluir::compiler {
         .width = std::atoi(element->Attribute("h")),
         .height = std::atoi(element->Attribute("w")),
     };
+  }
+
+  std::string Parser::SourceLocation::string() const {
+    return fmt::format("on line {} of '{}'", lineNo, filename);
   }
 }  // namespace fluir::compiler

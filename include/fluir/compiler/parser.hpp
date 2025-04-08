@@ -1,6 +1,7 @@
 #ifndef FLUIR_COMPILER_PARSER_HPP
 #define FLUIR_COMPILER_PARSER_HPP
 
+#include <filesystem>
 #include <string>
 
 #include <tinyxml2.h>
@@ -11,13 +12,17 @@
 namespace fluir::compiler {
   class Parser {
    public:
+    fluir::ast::AST parseFile(const std::filesystem::path& program);
     fluir::ast::AST parse(const std::string_view src);
     const DiagnosticCollection& diagnostics() const { return diagnostics_; }
 
    private:
+    std::string filename_;
     tinyxml2::XMLDocument source_;
     DiagnosticCollection diagnostics_{};
     fluir::ast::AST ast_{};
+
+    void reset(const std::string_view filename);
 
     using Element = tinyxml2::XMLElement;
 
@@ -30,6 +35,18 @@ namespace fluir::compiler {
     ast::Value value(Element* element);
 
     ast::LocationInfo parseLocation(Element* element);
+
+    class SourceLocation : public Diagnostic::Where {
+     public:
+      SourceLocation(int line, std::string file) :
+          lineNo(line),
+          filename(std::move(file)) { }
+      std::string string() const override;
+
+     private:
+      int lineNo;
+      std::string filename;
+    };
   };
 }  // namespace fluir::compiler
 

@@ -1,5 +1,9 @@
 #include "fluir/compiler/parser.hpp"
 
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -7,6 +11,8 @@
 #include "fluir/compiler/ast.hpp"
 
 namespace fa = fluir::ast;
+
+namespace fs = std::filesystem;
 
 TEST(TestParser, CanParseEmptyMainFunction) {
   std::string src = R"(<?xml version="1.0" encoding="UTF-8"?>
@@ -85,3 +91,49 @@ TEST(TestParser, ParseSingleConstant) {
   EXPECT_TRUE(uut.diagnostics().empty());
   EXPECT_EQ(expected, actual);
 }
+
+class TestParserErrors : public ::testing::TestWithParam<std::filesystem::path> {
+ public:
+  std::string readErrors(const fs::path& file) {
+    std::fstream fin(file);
+    std::stringstream ss;
+    ss << fin.rdbuf();
+    return ss.str();
+  }
+};
+
+TEST_P(TestParserErrors, Test) {
+  const auto program = GetParam() / "program.fl";
+  const auto errors = readErrors(GetParam() / "errors.txt");
+
+  fluir::compiler::Parser uut;
+
+  uut.parseFile(program);
+
+  std::stringstream ss;
+  for (const auto& diagnostic : uut.diagnostics()) {
+    ss << diagnostic << '\n';
+  }
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(errors, actual);
+}
+
+static std::vector<fs::path> getTestPrograms(const fs::path& parent) {
+  std::vector<fs::path> programs;
+
+  for (const auto& entry : fs::directory_iterator(parent)) {
+    if (fs::is_directory(entry)) {
+      programs.emplace_back(entry.path());
+    }
+  }
+
+  return programs;
+}
+
+INSTANTIATE_TEST_SUITE_P(TestParserErrors, TestParserErrors,
+                         ::testing::ValuesIn(getTestPrograms(TEST_FOLDER / "programs" / "parser_error")),
+                         [](const ::testing::TestParamInfo<fs::path>& info) {
+                           return info.param.stem().string();
+                         });

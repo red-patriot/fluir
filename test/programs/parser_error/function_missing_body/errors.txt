@@ -1,0 +1,1 @@
+[ERROR] on line 3 of 'program.fl': Function 'foo' has no body. Expected a '<body>' element.

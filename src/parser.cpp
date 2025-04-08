@@ -79,29 +79,41 @@ namespace fluir::compiler {
   }
 
   void Parser::function(Element* element) {
-    // TODO: Check for errors
     constexpr std::string_view type = "fl:function";
     std::string_view name = getAttribute(element, type, "name");
     fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
     auto location = parseLocation(element, type);
 
-    // TODO: Parse body
     auto bodyElement = element->FirstChildElement("body");
+    ast::Block body;
     if (!bodyElement) {
-      // TODO: Emit error
+      emitError(diagnostics_,
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Function 'foo' has no body. Expected a '<body>' element.", name);
+    } else {
+      body = block(bodyElement->FirstChildElement());
     }
-    auto body = block(bodyElement->FirstChildElement());
-    // TODO: Check for duplicates
+
+    if (ast_.declarations.contains(id)) {
+      emitError(diagnostics_,
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Duplicate declaration IDs. Function '{}' has id {}, but that ID is already in use.",
+                name, id);
+    }
     ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, body, location});
   }
 
-  ast::Block Parser::block([[maybe_unused]] Element* element) {
+  ast::Block Parser::block(Element* element) {
     auto block = ast::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
       // TODO: Parse multiple nodes correctly
       std::string_view name = element->Name();
       if (name == "fl:constant") {
         block.node = constant(element);
+      } else {
+        panicIf(true,
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Unexpected element '{}'. Expected a node.", name);
       }
     }
     return block;
@@ -119,12 +131,21 @@ namespace fluir::compiler {
   ast::Value Parser::value(Element* element) {
     std::string_view name = element->Name();
     if (name == "fl:double") {
-      double val;
+      double val = 0.0;
       auto error = element->QueryDoubleText(&val);
-      // TODO: check error
+      if (error) {
+        emitError(diagnostics_,
+                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  "Expected a numeric value in element '<fl:double>'. '{}' cannot be parsed as a number.",
+                  element->GetText());
+      }
       return val;
     }
-    // TODO: ERROR on unknown
+    // TODO: Handle other types. Should this be an error, or parse as an identifier?
+    panicIf(true, std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            "TODO: Handle this more gracefully. Unknown value type '{}'",
+            name);
+    return {};
   }
 
   fluir::id_t Parser::parseId(Element* element, std::string_view type) {

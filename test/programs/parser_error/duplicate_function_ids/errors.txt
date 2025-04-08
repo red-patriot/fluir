@@ -1,0 +1,1 @@
+[ERROR] on line 14 of 'program.fl': Duplicate declaration IDs. Function 'second' has id 1, but that ID is already in use.

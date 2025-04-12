@@ -113,25 +113,29 @@ namespace fluir::compiler {
   ast::Block Parser::block(Element* element) {
     auto block = ast::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
-      std::string_view name = element->Name();
-      if (name == "fl:constant") {
-        auto node = constant(element);
-        panicIf(block.nodes.contains(node.id),
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
-                name, node.id);
-        block.nodes.emplace(node.id, std::move(node));
-      } else if (name == "fl:binary") {
-        auto node = binary(element);
-        panicIf(block.nodes.contains(node.id),
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
-                name, node.id);
-        block.nodes.emplace(node.id, std::move(node));
-      } else {
-        panicIf(true,
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Unexpected element '{}'. Expected a node.", name);
+      try {
+        std::string_view name = element->Name();
+        if (name == "fl:constant") {
+          auto node = constant(element);
+          panicIf(block.nodes.contains(node.id),
+                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+                  name, node.id);
+          block.nodes.emplace(node.id, std::move(node));
+        } else if (name == "fl:binary") {
+          auto node = binary(element);
+          panicIf(block.nodes.contains(node.id),
+                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+                  name, node.id);
+          block.nodes.emplace(node.id, std::move(node));
+        } else {
+          panicIf(true,
+                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  "Unexpected element '{}'. Expected a node.", name);
+        }
+      } catch (const BadParse&) {
+        // Synchronize after each node
       }
     }
     return block;
@@ -176,17 +180,16 @@ namespace fluir::compiler {
       double val = 0.0;
       auto error = element->QueryDoubleText(&val);
       if (error) {
-        emitError(diagnostics_,
-                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                  "Expected a numeric value in element '<fl:double>'. '{}' cannot be parsed as a number.",
-                  element->GetText());
+        panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+              "Expected a numeric value in element '<fl:double>'. '{}' cannot be parsed as a number.",
+              element->GetText());
       }
       return val;
     }
     // TODO: Handle other types. Should this be an error, or parse as an identifier?
-    panicIf(true, std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-            "TODO: Handle this more gracefully. Unknown value type '{}'",
-            name);
+    panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+          "TODO: Handle this more gracefully. Unknown value type '{}'",
+          name);
     return {};
   }
 

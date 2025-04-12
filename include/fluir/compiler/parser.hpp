@@ -35,16 +35,16 @@ namespace fluir::compiler {
     ast::Constant constant(Element* element);
     ast::Value value(Element* element);
 
-    class BadParse { };
+    class Panic { };
 
     fluir::id_t parseId(Element* element, std::string_view type);
     ast::LocationInfo parseLocation(Element* element, std::string_view type);
     std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
 
     template <typename... Args>
-    void panicIf(bool condition, Args&&... errorMessage);
+    void panicIf(bool condition, Element* element, Args&&... errorMessage);
     template <typename... Args>
-    void panic(Args&&... errorMessage);
+    void panic(Element* element, Args&&... errorMessage);
 
     class SourceLocation : public Diagnostic::Where {
      public:

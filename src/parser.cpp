@@ -7,19 +7,21 @@
 
 namespace fluir::compiler {
   template <typename... Args>
-  void Parser::panicIf(bool condition, Args&&... errorMessage) {
+  void Parser::panicIf(bool condition, Element* element, Args&&... errorMessage) {
     if (condition) {
       emitError(diagnostics_,
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
                 std::forward<Args>(errorMessage)...);
-      throw BadParse{};
+      throw Panic{};
     }
   }
 
   template <typename... Args>
-  void Parser::panic(Args&&... errorMessage) {
+  void Parser::panic(Element* element, Args&&... errorMessage) {
     emitError(diagnostics_,
+              std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
               std::forward<Args>(errorMessage)...);
-    throw BadParse{};
+    throw Panic{};
   }
 
   fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
@@ -76,11 +78,10 @@ namespace fluir::compiler {
       if (element->Name() == FUNCTION) {
         function(element);
       } else {
-        emitError(diagnostics_,
-                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                  "Unexpected element '{}'. Expected declaration.", element->Name());
+        panic(element,
+              "Unexpected element '{}'. Expected declaration.", element->Name());
       }
-    } catch (const BadParse&) {
+    } catch (const Panic&) {
       // Ignore the rest of this element to try to prevent cascading errors
     }
   }
@@ -92,21 +93,15 @@ namespace fluir::compiler {
     auto location = parseLocation(element, type);
 
     auto bodyElement = element->FirstChildElement("body");
-    ast::Block body;
-    if (!bodyElement) {
-      emitError(diagnostics_,
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Function 'foo' has no body. Expected a '<body>' element.", name);
-    } else {
-      body = block(bodyElement->FirstChildElement());
-    }
+    panicIf(!bodyElement, element,
+            "Function 'foo' has no body. Expected a '<body>' element.", name);
 
-    if (ast_.declarations.contains(id)) {
-      emitError(diagnostics_,
-                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
-                "Duplicate declaration IDs. Function '{}' has id {}, but that ID is already in use.",
-                name, id);
-    }
+    ast::Block body = block(bodyElement->FirstChildElement());
+
+    panicIf(ast_.declarations.contains(id),
+            element,
+            "Duplicate declaration IDs. Function '{}' has id {}, but that ID is already in use.",
+            name, id);
     ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, body, location});
   }
 
@@ -118,23 +113,23 @@ namespace fluir::compiler {
         if (name == "fl:constant") {
           auto node = constant(element);
           panicIf(block.nodes.contains(node.id),
-                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  element,
                   "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
                   name, node.id);
           block.nodes.emplace(node.id, std::move(node));
         } else if (name == "fl:binary") {
           auto node = binary(element);
           panicIf(block.nodes.contains(node.id),
-                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  element,
                   "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
                   name, node.id);
           block.nodes.emplace(node.id, std::move(node));
         } else {
           panicIf(true,
-                  std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                  element,
                   "Unexpected element '{}'. Expected a node.", name);
         }
-      } catch (const BadParse&) {
+      } catch (const Panic&) {
         // Synchronize after each node
       }
     }
@@ -158,7 +153,7 @@ namespace fluir::compiler {
     } else if (opStr == "/") {
       op = ast::Operator::SLASH;
     } else {
-      panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+      panic(element,
             "Unrecognized operator '{}' in node <{}>.", opStr, type);
     }
 
@@ -180,14 +175,14 @@ namespace fluir::compiler {
       double val = 0.0;
       auto error = element->QueryDoubleText(&val);
       if (error) {
-        panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+        panic(element,
               "Expected a numeric value in element '<fl:double>'. '{}' cannot be parsed as a number.",
               element->GetText());
       }
       return val;
     }
     // TODO: Handle other types. Should this be an error, or parse as an identifier?
-    panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+    panic(element,
           "TODO: Handle this more gracefully. Unknown value type '{}'",
           name);
     return {};
@@ -196,7 +191,7 @@ namespace fluir::compiler {
   fluir::id_t Parser::parseId(Element* element, std::string_view type) {
     auto id = element->Unsigned64Attribute("id", fluir::INVALID_ID);
     panicIf(id == INVALID_ID,
-            std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            element,
             "{} element is missing attribute 'id'.",
             type);
     return id;
@@ -215,7 +210,7 @@ namespace fluir::compiler {
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
     panicIf(value == nullptr,
-            std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            element,
             "{} element is missing attribute '{}'.",
             type, attribute);
 

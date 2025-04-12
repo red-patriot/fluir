@@ -1,1 +1,0 @@
-[ERROR] on line 3 of 'program.fl': Unexpected element 'fl:bad_func'. Expected declaration.

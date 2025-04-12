@@ -180,12 +180,13 @@ class TestParserErrors : public ::testing::TestWithParam<std::filesystem::path> 
 };
 
 TEST_P(TestParserErrors, Test) {
-  const auto program = GetParam() / "program.fl";
-  const auto errors = readErrors(GetParam() / "errors.txt");
+  const auto programFile = GetParam();
+  const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
+  const auto errors = readErrors(errorsFile);
 
   fluir::compiler::Parser uut;
 
-  uut.parseFile(program);
+  uut.parseFile(programFile);
 
   std::stringstream ss;
   for (const auto& diagnostic : uut.diagnostics()) {
@@ -201,7 +202,7 @@ static std::vector<fs::path> getTestPrograms(const fs::path& parent) {
   std::vector<fs::path> programs;
 
   for (const auto& entry : fs::directory_iterator(parent)) {
-    if (fs::is_directory(entry)) {
+    if (fs::is_regular_file(entry) && fs::path(entry).extension() == ".fl") {
       programs.emplace_back(entry.path());
     }
   }

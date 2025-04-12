@@ -37,8 +37,8 @@ namespace fluir::compiler {
     return std::move(ast_);
   }
 
-  fluir::ast::AST Parser::parse(const std::string_view src) {
-    reset("<UNKNOWN>");
+  fluir::ast::AST Parser::parseString(const std::string_view src) {
+    reset("<FROM STRING>");
     source_.Parse(src.data());
 
     root();
@@ -94,7 +94,7 @@ namespace fluir::compiler {
 
     auto bodyElement = element->FirstChildElement("body");
     panicIf(!bodyElement, element,
-            "Function 'foo' has no body. Expected a '<body>' element.", name);
+            "Function '{}' has no body. Expected a '<body>' element.", name);
 
     ast::Block body = block(bodyElement->FirstChildElement());
 

@@ -42,7 +42,7 @@ TEST(TestParser, CanParseEmptyMainFunction) {
 
   fluir::compiler::Parser uut;
 
-  auto actual = uut.parse(src);
+  auto actual = uut.parseString(src);
 
   EXPECT_TRUE(uut.diagnostics().empty());
   EXPECT_EQ(expected, actual);
@@ -87,7 +87,7 @@ TEST(TestParser, ParseSingleConstant) {
 
   fluir::compiler::Parser uut;
 
-  auto actual = uut.parse(src);
+  auto actual = uut.parseString(src);
 
   EXPECT_TRUE(uut.diagnostics().empty());
   EXPECT_EQ(expected, actual);
@@ -163,7 +163,7 @@ TEST(TestParser, ParseSimpleBinaryExpression) {
 
   fluir::compiler::Parser uut;
 
-  auto actual = uut.parse(src);
+  auto actual = uut.parseString(src);
 
   EXPECT_TRUE(uut.diagnostics().empty());
   EXPECT_EQ(expected, actual);

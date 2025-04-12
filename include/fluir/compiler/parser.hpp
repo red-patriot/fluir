@@ -43,6 +43,8 @@ namespace fluir::compiler {
 
     template <typename... Args>
     void panicIf(bool condition, Args&&... errorMessage);
+    template <typename... Args>
+    void panic(Args&&... errorMessage);
 
     class SourceLocation : public Diagnostic::Where {
      public:

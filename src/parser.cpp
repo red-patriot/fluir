@@ -15,6 +15,13 @@ namespace fluir::compiler {
     }
   }
 
+  template <typename... Args>
+  void Parser::panic(Args&&... errorMessage) {
+    emitError(diagnostics_,
+              std::forward<Args>(errorMessage)...);
+    throw BadParse{};
+  }
+
   fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
     reset(program.filename().c_str());
     std::ifstream fin{program};
@@ -141,7 +148,8 @@ namespace fluir::compiler {
     } else if (opStr == "/") {
       op = ast::Operator::SLASH;
     } else {
-      // TODO: error
+      panic(std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+            "Unrecognized operator '{}' in node <{}>.", opStr, type);
     }
 
     return ast::Binary{.id = id, .lhs = lhsId, .rhs = rhsId, .op = op, .location = location};

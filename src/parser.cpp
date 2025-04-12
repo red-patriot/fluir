@@ -107,9 +107,14 @@ namespace fluir::compiler {
     auto block = ast::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
       // TODO: Parse multiple nodes correctly
+      // TODO: Check for duplicates
       std::string_view name = element->Name();
       if (name == "fl:constant") {
-        block.node = constant(element);
+        auto node = constant(element);
+        block.nodes.emplace(node.id, std::move(node));
+      } else if (name == "fl:binary") {
+        auto node = binary(element);
+        block.nodes.emplace(node.id, std::move(node));
       } else {
         panicIf(true,
                 std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
@@ -117,6 +122,29 @@ namespace fluir::compiler {
       }
     }
     return block;
+  }
+
+  ast::Binary Parser::binary(Element* element) {
+    constexpr std::string_view type = "fl:binary";
+    fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
+    auto location = parseLocation(element, type);
+    fluir::id_t lhsId = std::atoll(getAttribute(element, type, "lhs").data());
+    fluir::id_t rhsId = std::atoll(getAttribute(element, type, "rhs").data());
+    ast::Operator op = ast::Operator::UNKNOWN;
+    if (auto opStr = getAttribute(element, type, "operator");
+        opStr == "+") {
+      op = ast::Operator::PLUS;
+    } else if (opStr == "-") {
+      op = ast::Operator::MINUS;
+    } else if (opStr == "*") {
+      op = ast::Operator::STAR;
+    } else if (opStr == "/") {
+      op = ast::Operator::SLASH;
+    } else {
+      // TODO: error
+    }
+
+    return ast::Binary{.id = id, .lhs = lhsId, .rhs = rhsId, .op = op, .location = location};
   }
 
   ast::Constant Parser::constant(Element* element) {

@@ -78,11 +78,88 @@ TEST(TestParser, ParseSingleConstant) {
                         fa::FunctionDecl{.name = "main",
                                          .id = 1,
                                          .body = fa::Block{
-                                             .node = fa::Constant{
-                                                 .value = fa::FpDouble{6.7},
-                                                 .id = 1,
-                                                 .location = {.x = 0, .y = 10, .z = 3, .width = 5, .height = 5}}},
+                                             .nodes = {{1,
+                                                        fa::Constant{
+                                                            .value = fa::FpDouble{6.7},
+                                                            .id = 1,
+                                                            .location = {.x = 0, .y = 10, .z = 3, .width = 5, .height = 5}}}}},
                                          .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100}}}}};
+
+  fluir::compiler::Parser uut;
+
+  auto actual = uut.parse(src);
+
+  EXPECT_TRUE(uut.diagnostics().empty());
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestParser, ParseSimpleBinaryExpression) {
+  std::string src = R"(<?xml version="1.0" encoding="UTF-8"?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+    <fl:function
+        name="main"
+        id="1"
+        x="15"
+        y="7"
+        z="3"
+        w="100"
+        h="100">
+      <body>
+        <fl:binary
+           id="1"
+           x="0"
+           y="20"
+           z="2"
+           w="7"
+           h="7"
+           lhs="2"
+           rhs="3"
+           operator="-" />
+         <fl:constant
+           id="2"
+           x="0"
+           y="10"
+           z="2"
+           w="5"
+           h="5">
+          <fl:double>1.0</fl:double>
+        </fl:constant>
+        <fl:constant
+           id="3"
+           x="0"
+           y="10"
+           z="3"
+           w="5"
+           h="5">
+          <fl:double>2.0</fl:double>
+        </fl:constant>
+      </body>
+    </fl:function>
+</fluir>)";
+
+  fa::AST expected{
+      .declarations = {{1,
+                        fa::FunctionDecl{.name = "main",
+                                         .id = 1,
+                                         .body = fa::Block{
+                                             .nodes = {{1,
+                                                        fa::Binary{
+                                                            .id = 1,
+                                                            .lhs = 2,
+                                                            .rhs = 3,
+                                                            .op = fa::Operator::MINUS,
+                                                            .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7}}},
+                                                       {2,
+                                                        fa::Constant{
+                                                            .value = fa::FpDouble{1.0},
+                                                            .id = 2,
+                                                            .location = {.x = 0, .y = 10, .z = 2, .width = 5, .height = 5}}},
+                                                       {3,
+                                                        fa::Constant{
+                                                            .value = fa::FpDouble{2.0},
+                                                            .id = 3,
+                                                            .location = {.x = 0, .y = 10, .z = 3, .width = 5, .height = 5}}}}},
+                                         .location = {.x = 15, .y = 7, .z = 3, .width = 100, .height = 100}}}}};
 
   fluir::compiler::Parser uut;
 

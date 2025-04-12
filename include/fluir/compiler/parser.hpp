@@ -31,6 +31,7 @@ namespace fluir::compiler {
     void function(Element* element);
 
     ast::Block block(Element* element);
+    ast::Binary binary(Element* element);
     ast::Constant constant(Element* element);
     ast::Value value(Element* element);
 

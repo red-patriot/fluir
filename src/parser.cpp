@@ -113,14 +113,20 @@ namespace fluir::compiler {
   ast::Block Parser::block(Element* element) {
     auto block = ast::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
-      // TODO: Parse multiple nodes correctly
-      // TODO: Check for duplicates
       std::string_view name = element->Name();
       if (name == "fl:constant") {
         auto node = constant(element);
+        panicIf(block.nodes.contains(node.id),
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+                name, node.id);
         block.nodes.emplace(node.id, std::move(node));
       } else if (name == "fl:binary") {
         auto node = binary(element);
+        panicIf(block.nodes.contains(node.id),
+                std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
+                "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+                name, node.id);
         block.nodes.emplace(node.id, std::move(node));
       } else {
         panicIf(true,

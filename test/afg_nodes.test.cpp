@@ -4,7 +4,7 @@
 
 namespace fafg = fluir::afg;
 
-TEST(TestConstant, MakeFloat) {
+TEST(TestNode, MakeDoubleConstant) {
   auto actual = fafg::makeDoubleConstant(1.0);
 
   EXPECT_EQ(fluir::Type::DOUBLE_FP, actual.type());
@@ -20,4 +20,11 @@ TEST(TestNode, MakeShared) {
   EXPECT_TRUE(actual->as<fafg::Constant>());
   EXPECT_DOUBLE_EQ(expected.as<fluir::Type::DOUBLE_FP>(),
                    actual->as<fafg::Constant>()->as<fluir::Type::DOUBLE_FP>());
+}
+
+TEST(TestNode, CompareSharedNodesDirectlyForEquality) {
+  auto first = fafg::shared(fafg::makeDoubleConstant(3.5));
+  auto second = fafg::shared(fafg::makeDoubleConstant(3.5));
+
+  EXPECT_EQ(*first, *second);
 }

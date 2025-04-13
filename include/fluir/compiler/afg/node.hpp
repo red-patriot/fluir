@@ -3,14 +3,21 @@
 
 #include <concepts>
 #include <memory>
+#include <typeinfo>
 
 #include "fluir/compiler/models/type.hpp"
 
 namespace fluir::afg {
   class Node {
+    friend bool operator==(const Node& lhs, const Node& rhs) {
+      return typeid(lhs) == typeid(rhs) && lhs.equals(rhs);
+    }
+
    public:
     virtual ~Node() = default;
     virtual Type type() const = 0;
+
+    virtual bool equals(const Node& other) const = 0;
 
     template <typename Concrete>
       requires std::derived_from<Concrete, Node>

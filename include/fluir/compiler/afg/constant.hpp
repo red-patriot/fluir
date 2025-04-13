@@ -18,6 +18,8 @@ namespace fluir::afg {
       }
     }
 
+    bool equals(const Node& other) const override;
+
    private:
     Type type_{Type::UNKNOWN};
     Value as_;

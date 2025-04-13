@@ -13,4 +13,10 @@ namespace fluir::afg {
         value};
   }
 
+  bool Constant::equals(const Node& other) const {
+    auto& c = dynamic_cast<const Constant&>(other);
+    return this->type_ == c.type_ &&
+           this->as_ == c.as_;
+  }
+
 }  // namespace fluir::afg

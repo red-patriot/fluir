@@ -29,6 +29,16 @@ TEST(TestNode, CompareSharedNodesDirectlyForEquality) {
   EXPECT_EQ(*first, *second);
 }
 
+TEST(TestNode, CompareSharedNodesDirectlyForEqualityWorksForDifferentTypes) {
+  auto first = fafg::shared(fafg::makeDoubleConstant(3.5));
+  auto second = fafg::shared(fafg::BinaryOp{
+      fluir::Operator::STAR,
+      fafg::shared(fafg::makeDoubleConstant(1.0)),
+      fafg::shared(fafg::makeDoubleConstant(2.0))});
+
+  EXPECT_NE(*first, *second);
+}
+
 TEST(TestNode, ConstructBinaryOperation) {
   auto expected = fafg::BinaryOp{
       fluir::Operator::PLUS,

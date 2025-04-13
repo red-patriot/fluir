@@ -1,16 +1,12 @@
 #ifndef FLUIR_COMPILER_AFG_CONSTANT_HPP
 #define FLUIR_COMPILER_AFG_CONSTANT_HPP
 
-namespace fluir::afg {
-  enum class Type {
-    UNKNOWN,
-    DOUBLE_FP,
-  };
-  class TypeError { };
+#include "fluir/compiler/afg/node.hpp"
 
+namespace fluir::afg {
   using Value = double;  // TODO: Support other types here
 
-  class Constant {
+  class Constant : public Node {
    public:
     Type type() const { return type_; }
     template <Type t>

@@ -4,32 +4,23 @@
 #include "fluir/compiler/afg/node.hpp"
 
 namespace fluir::afg {
-  using Value = double;  // TODO: Support other types here
+  // TODO: Support other types here
 
-  class Constant : public Node {
+  class DoubleConstant : public Node {
    public:
-    Type type() const { return type_; }
-    template <Type t>
-    auto& as() const {
-      if constexpr (t == Type::DOUBLE_FP) {
-        return as_;
-      } else {
-        throw TypeError{};
-      }
+    explicit DoubleConstant(double value_);
+
+    Type type() const { return Type::DOUBLE_FP; }
+    double as() const {
+      return value;
     }
 
     bool equals(const Node& other) const override;
 
-   private:
-    Type type_{Type::UNKNOWN};
-    Value as_;
-
-    Constant(Type, Value);
-
-    friend Constant makeDoubleConstant(double value);
+    double value;
   };
 
-  Constant makeDoubleConstant(double value);
+  DoubleConstant makeDoubleConstant(double value);
 }  // namespace fluir::afg
 
 #endif

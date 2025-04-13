@@ -6,7 +6,11 @@
 namespace fluir::afg {
   /** Represents a (potentially shared) dependency on a Node's output */
   class Dependency {
+    using UnderlyingNode = std::shared_ptr<UniqueNode>;
+
    public:
+    Dependency(UnderlyingNode source) :
+        source_(std::move(source)) { }
     Dependency(const Dependency&) = default;
     Dependency& operator=(const Dependency&) = default;
     // Dependency(Dependency&&); <- SHOULD COPY
@@ -33,23 +37,18 @@ namespace fluir::afg {
     }
 
    private:
-    using UnderlyingNode = std::shared_ptr<UniqueNode>;
-
     UnderlyingNode source_;
-
-    Dependency(UnderlyingNode source) :
-        source_(std::move(source)) { }
 
     template <ConcreteNode NewSource>
     friend Dependency makeDependency(NewSource n);
   };
 
-  template <ConcreteNode Source>
-  inline Dependency makeDependency(Source n) {
+  template <ConcreteNode Source, typename... Args>
+  inline Dependency makeDependency(Args&&... args) {
     return Dependency{
         std::make_shared<UniqueNode>(
             std::make_unique<Source>(
-                std::move(n)))};
+                std::forward<Args>(args)...))};
   }
 
 }  // namespace fluir::afg

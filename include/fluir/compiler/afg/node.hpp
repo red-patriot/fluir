@@ -19,21 +19,18 @@ namespace fluir::afg {
 
     virtual bool equals(const Node& other) const = 0;
 
-    template <typename Concrete>
-      requires std::derived_from<Concrete, Node>
-    Concrete* as() {
-      auto concrete = dynamic_cast<Concrete*>(this);
+    template <typename NewSource>
+      requires std::derived_from<NewSource, Node>
+    NewSource* as() {
+      auto concrete = dynamic_cast<NewSource*>(this);
       return concrete;
     }
   };
 
-  using SharedNode = std::shared_ptr<Node>;
+  template <typename NewSource>
+  concept ConcreteNode = std::derived_from<NewSource, fluir::afg::Node>;
 
-  template <typename Concrete>
-    requires std::derived_from<Concrete, Node>
-  SharedNode shared(Concrete c) {
-    return std::make_shared<Concrete>(std::move(c));
-  }
+  using UniqueNode = std::unique_ptr<Node>;
 };  // namespace fluir::afg
 
 #endif

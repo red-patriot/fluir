@@ -1,7 +1,11 @@
 add_executable(fluir.compiler.test)
 target_sources(
     fluir.compiler.test
-    PRIVATE afg/nodes.test.cpp diagnostics.test.cpp parser.test.cpp
+    PRIVATE
+        afg/dependency.test.cpp
+        afg/nodes.test.cpp
+        diagnostics.test.cpp
+        parser.test.cpp
 )
 
 target_compile_definitions(

@@ -3,6 +3,6 @@
 
 #include "afg/constant.hpp"
 #include "afg/node.hpp"
-#include "afg/operator.hpp"
+#include "afg/operation.hpp"
 
 #endif

@@ -28,3 +28,17 @@ TEST(TestNode, CompareSharedNodesDirectlyForEquality) {
 
   EXPECT_EQ(*first, *second);
 }
+
+TEST(TestNode, ConstructBinaryOperation) {
+  auto expected = fafg::BinaryOp{
+      fluir::Operator::PLUS,
+      fafg::shared(fafg::makeDoubleConstant(1.0)),
+      fafg::shared(fafg::makeDoubleConstant(1.0))};
+
+  auto actual = fafg::shared(fafg::BinaryOp{
+      fluir::Operator::PLUS,
+      fafg::shared(fafg::makeDoubleConstant(1.0)),
+      fafg::shared(fafg::makeDoubleConstant(1.0))});
+
+  EXPECT_EQ(expected, *actual);
+}

@@ -4,9 +4,11 @@ find_package(fmt REQUIRED)
 add_library(fluir.libcompiler)
 add_library(fluir::compiler ALIAS fluir.libcompiler)
 
+set(FLUIR_AFG_SOURCES "afg/constant.cpp" "afg/operation.cpp")
+
 target_sources(
     fluir.libcompiler
-    PRIVATE afg/constant.cpp afg.cpp diagnostic.cpp parser.cpp
+    PRIVATE ${FLUIR_AFG_SOURCES} afg.cpp diagnostic.cpp parser.cpp
 )
 
 target_include_directories(

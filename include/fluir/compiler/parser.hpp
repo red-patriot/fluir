@@ -6,24 +6,24 @@
 
 #include <tinyxml2.h>
 
-#include "fluir/compiler/ast.hpp"
 #include "fluir/compiler/diagnostic.hpp"
+#include "fluir/compiler/parse_tree.hpp"
 
 namespace fluir::compiler {
   class Parser {
    public:
-    /** Parse fluir source from a file into an AST */
-    fluir::ast::AST parseFile(const std::filesystem::path& program);
-    /** Parse fluir source from a string into an AST. */
-    fluir::ast::AST parseString(const std::string_view src);
+    /** Parse fluir source from a file into a ParseTree */
+    fluir::parse_tree::ParseTree parseFile(const std::filesystem::path& program);
+    /** Parse fluir source from a string into an ParseTree */
+    fluir::parse_tree::ParseTree parseString(const std::string_view src);
     /** Get the diagnostics of the last run */
     const DiagnosticCollection& diagnostics() const { return diagnostics_; }
 
    private:
-    std::string filename_;               /**< The current file being parsed */
-    tinyxml2::XMLDocument source_;       /**< Tokenized source code */
-    DiagnosticCollection diagnostics_{}; /**< The diagnostics gathered in the current parse */
-    fluir::ast::AST ast_{};              /**< The AST generated in the current parse */
+    std::string filename_;                /**< The current file being parsed */
+    tinyxml2::XMLDocument source_;        /**< Tokenized source code */
+    DiagnosticCollection diagnostics_{};  /**< The diagnostics gathered in the current parse */
+    fluir::parse_tree::ParseTree tree_{}; /**< The ParseTree generated in the current parse */
 
     /** Resets the internal state to parse a new source */
     void reset(const std::string_view filename);
@@ -32,7 +32,7 @@ namespace fluir::compiler {
 
     /** Parses the root element */
     void root();
-    /** Parses a declaration from the element and adds it to the AST.
+    /** Parses a declaration from the element and adds it to the ParseTree.
      * Synchronizes panics that occur internally.
      */
     void declaration(Element* element);
@@ -42,26 +42,26 @@ namespace fluir::compiler {
     /** Parses a block from the element.
      * Synchronizes panics that occur internally.
      */
-    ast::Block parseBlock(Element* element);
+    parse_tree::Block parseBlock(Element* element);
     /** Parses a unary operation from the element */
-    ast::Unary unary(Element* element);
+    parse_tree::Unary unary(Element* element);
     /** Parses a binary operation from the element */
-    ast::Binary binary(Element* element);
+    parse_tree::Binary binary(Element* element);
     /** Parses a constant node from the element */
-    ast::Constant constant(Element* element);
+    parse_tree::Constant constant(Element* element);
     /** Parses a value from the element */
-    ast::Value value(Element* element);
+    parse_tree::Value value(Element* element);
 
     /** Indicates that the parser is panicking */
     class Panic { };
 
     template <typename Func>
-    void addNode(Func func, Element* element, ast::Block& block, std::string_view name);
+    void addNode(Func func, Element* element, parse_tree::Block& block, std::string_view name);
 
     /** Parses the id of the element. */
     fluir::id_t parseId(Element* element, std::string_view type);
     /** Parses the location on the flow diagram of the element */
-    ast::LocationInfo parseLocation(Element* element, std::string_view type);
+    LocationInfo parseLocation(Element* element, std::string_view type);
     /** Parses the given attribute */
     std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
 

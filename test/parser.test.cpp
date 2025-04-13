@@ -8,9 +8,9 @@
 
 #include <gtest/gtest.h>
 
-#include "fluir/compiler/ast.hpp"
+#include "fluir/compiler/parse_tree.hpp"
 
-namespace fa = fluir::ast;
+namespace pt = fluir::parse_tree;
 
 namespace fs = std::filesystem;
 
@@ -29,11 +29,11 @@ TEST(TestParser, CanParseEmptyMainFunction) {
     </fl:function>
 </fluir>)";
 
-  fa::AST expected{
+  pt::ParseTree expected{
       .declarations = {{1,
-                        fa::FunctionDecl{.name = "main",
+                        pt::FunctionDecl{.name = "main",
                                          .id = 1,
-                                         .body = fa::EMPTY_BLOCK,
+                                         .body = pt::EMPTY_BLOCK,
                                          .location = {.x = 10,
                                                       .y = 10,
                                                       .z = 3,
@@ -73,14 +73,14 @@ TEST(TestParser, ParseSingleConstant) {
     </fl:function>
 </fluir>)";
 
-  fa::AST expected{
+  pt::ParseTree expected{
       .declarations = {{1,
-                        fa::FunctionDecl{.name = "main",
+                        pt::FunctionDecl{.name = "main",
                                          .id = 1,
-                                         .body = fa::Block{
+                                         .body = pt::Block{
                                              .nodes = {{1,
-                                                        fa::Constant{
-                                                            .value = fa::FpDouble{6.7},
+                                                        pt::Constant{
+                                                            .value = pt::FpDouble{6.7},
                                                             .id = 1,
                                                             .location = {.x = 0, .y = 10, .z = 3, .width = 5, .height = 5}}}}},
                                          .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100}}}}};
@@ -137,26 +137,26 @@ TEST(TestParser, ParseSimpleBinaryExpression) {
     </fl:function>
 </fluir>)";
 
-  fa::AST expected{
+  pt::ParseTree expected{
       .declarations = {{1,
-                        fa::FunctionDecl{.name = "main",
+                        pt::FunctionDecl{.name = "main",
                                          .id = 1,
-                                         .body = fa::Block{
+                                         .body = pt::Block{
                                              .nodes = {{1,
-                                                        fa::Binary{
+                                                        pt::Binary{
                                                             .id = 1,
                                                             .lhs = 2,
                                                             .rhs = 3,
-                                                            .op = fa::Operator::MINUS,
+                                                            .op = pt::Operator::MINUS,
                                                             .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7}}},
                                                        {2,
-                                                        fa::Constant{
-                                                            .value = fa::FpDouble{1.0},
+                                                        pt::Constant{
+                                                            .value = pt::FpDouble{1.0},
                                                             .id = 2,
                                                             .location = {.x = 0, .y = 10, .z = 2, .width = 5, .height = 5}}},
                                                        {3,
-                                                        fa::Constant{
-                                                            .value = fa::FpDouble{2.0},
+                                                        pt::Constant{
+                                                            .value = pt::FpDouble{2.0},
                                                             .id = 3,
                                                             .location = {.x = 0, .y = 10, .z = 3, .width = 5, .height = 5}}}}},
                                          .location = {.x = 15, .y = 7, .z = 3, .width = 100, .height = 100}}}}};
@@ -200,46 +200,46 @@ TEST(TestParser, ParseComplexBinaryUnaryExpression) {
     </fl:function>
 </fluir>)";
 
-  fa::AST expected{
+  pt::ParseTree expected{
       .declarations = {{1,
-                        fa::FunctionDecl{.name = "main",
+                        pt::FunctionDecl{.name = "main",
                                          .id = 1,
-                                         .body = fa::Block{
+                                         .body = pt::Block{
                                              .nodes = {
                                                  {1,
-                                                  fa::Constant{
+                                                  pt::Constant{
                                                       .value = 3.0,
                                                       .id = 1,
                                                       .location = {.x = 2, .y = 20, .z = 1, .width = 5, .height = 5}}},
                                                  {4,
-                                                  fa::Constant{
+                                                  pt::Constant{
                                                       .value = 2.0,
                                                       .id = 4,
                                                       .location = {.x = 2, .y = 12, .z = 1, .width = 5, .height = 5}}},
                                                  {6,
-                                                  fa::Constant{
+                                                  pt::Constant{
                                                       .value = 7.5,
                                                       .id = 6,
                                                       .location = {.x = 14, .y = 2, .z = 1, .width = 7, .height = 5}}},
                                                  {2,
-                                                  fa::Binary{
+                                                  pt::Binary{
                                                       .id = 2,
                                                       .lhs = 1,
                                                       .rhs = 4,
-                                                      .op = fa::Operator::STAR,
+                                                      .op = pt::Operator::STAR,
                                                       .location = {.x = 16, .y = 18, .z = 1, .width = 4, .height = 4}}},
                                                  {5,
-                                                  fa::Binary{
+                                                  pt::Binary{
                                                       .id = 5,
                                                       .lhs = 2,
                                                       .rhs = 6,
-                                                      .op = fa::Operator::SLASH,
+                                                      .op = pt::Operator::SLASH,
                                                       .location = {.x = 22, .y = 10, .z = 1, .width = 4, .height = 4}}},
                                                  {3,
-                                                  fa::Unary{
+                                                  pt::Unary{
                                                       .id = 3,
                                                       .lhs = 5,
-                                                      .op = fa::Operator::MINUS,
+                                                      .op = pt::Operator::MINUS,
                                                       .location = {.x = 33, .y = 16, .z = 1, .width = 4, .height = 4}}}}},
                                          .location = {.x = 15, .y = 7, .z = 3, .width = 100, .height = 100}}}}};
 

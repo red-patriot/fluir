@@ -1,9 +1,9 @@
-#ifndef FLUIR_COMPILER_AST_BLOCK_HPP
-#define FLUIR_COMPILER_AST_BLOCK_HPP
+#ifndef FLUIR_COMPILER_PARSE_TREE_BLOCK_HPP
+#define FLUIR_COMPILER_PARSE_TREE_BLOCK_HPP
 
-#include "fluir/compiler/ast/node.hpp"
+#include "fluir/compiler/parse_tree/node.hpp"
 
-namespace fluir::ast {
+namespace fluir::parse_tree {
   struct Block {
     // TODO: Support multiple nodes
     Nodes nodes;
@@ -13,6 +13,6 @@ namespace fluir::ast {
   };
 
   inline const Block EMPTY_BLOCK{.nodes = {}};
-}  // namespace fluir::ast
+}  // namespace fluir::parse_tree
 
 #endif

@@ -1,11 +1,11 @@
-#ifndef FLUIR_COMPILER_AST_CONSTANT_HPP
-#define FLUIR_COMPILER_AST_CONSTANT_HPP
+#ifndef FLUIR_COMPILER_PARSE_TREE_CONSTANT_HPP
+#define FLUIR_COMPILER_PARSE_TREE_CONSTANT_HPP
 
 #include <variant>
 
-#include "fluir/compiler/ast/utility.hpp"
+#include "fluir/compiler/parse_tree/utility.hpp"
 
-namespace fluir::ast {
+namespace fluir::parse_tree {
   using FpDouble = double;
 
   using Value = std::variant<FpDouble>;
@@ -18,6 +18,6 @@ namespace fluir::ast {
    private:
     friend bool operator==(const Constant&, const Constant&) = default;
   };
-}  // namespace fluir::ast
+}  // namespace fluir::parse_tree
 
 #endif

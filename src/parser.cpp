@@ -26,7 +26,7 @@ namespace fluir::compiler {
   }
 
   template <typename Func>
-  void Parser::addNode(Func func, Element* element, ast::Block& block, std::string_view name) {
+  void Parser::addNode(Func func, Element* element, parse_tree::Block& block, std::string_view name) {
     auto node = std::invoke(func, this, element);
     panicIf(block.nodes.contains(node.id),
             element,
@@ -35,7 +35,7 @@ namespace fluir::compiler {
     block.nodes.emplace(node.id, std::move(node));
   }
 
-  fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
+  fluir::parse_tree::ParseTree Parser::parseFile(const std::filesystem::path& program) {
     reset(program.filename().c_str());
     std::ifstream fin{program};
     std::stringstream ss;
@@ -45,23 +45,23 @@ namespace fluir::compiler {
     source_.Parse(source.c_str());
     root();
 
-    return std::move(ast_);
+    return std::move(tree_);
   }
 
-  fluir::ast::AST Parser::parseString(const std::string_view src) {
+  fluir::parse_tree::ParseTree Parser::parseString(const std::string_view src) {
     reset("<FROM STRING>");
     source_.Parse(src.data());
 
     root();
 
-    return std::move(ast_);
+    return std::move(tree_);
   }
 
   void Parser::reset(const std::string_view filename) {
     filename_ = filename;
     source_.Clear();
     diagnostics_.clear();
-    ast_ = ast::AST{};
+    tree_ = parse_tree::ParseTree{};
   }
 
   void Parser::root() {
@@ -107,17 +107,17 @@ namespace fluir::compiler {
     panicIf(!bodyElement, element,
             "Function '{}' has no body. Expected a '<body>' element.", name);
 
-    ast::Block body = parseBlock(bodyElement->FirstChildElement());
+    parse_tree::Block body = parseBlock(bodyElement->FirstChildElement());
 
-    panicIf(ast_.declarations.contains(id),
+    panicIf(tree_.declarations.contains(id),
             element,
             "Duplicate declaration IDs. Function '{}' has id {}, but that ID is already in use.",
             name, id);
-    ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, body, location});
+    tree_.declarations.emplace(id, parse_tree::FunctionDecl{std::string(name), id, body, location});
   }
 
-  ast::Block Parser::parseBlock(Element* element) {
-    auto block = ast::EMPTY_BLOCK;
+  parse_tree::Block Parser::parseBlock(Element* element) {
+    auto block = parse_tree::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
       try {
         std::string_view name = element->Name();
@@ -139,63 +139,63 @@ namespace fluir::compiler {
     return block;
   }
 
-  ast::Unary Parser::unary(Element* element) {
+  parse_tree::Unary Parser::unary(Element* element) {
     constexpr std::string_view type = "fl:unary";
     fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
     auto location = parseLocation(element, type);
     fluir::id_t lhsId = std::atoll(getAttribute(element, type, "lhs").data());
-    ast::Operator op = ast::Operator::UNKNOWN;
+    parse_tree::Operator op = parse_tree::Operator::UNKNOWN;
     if (auto opStr = getAttribute(element, type, "operator");
         opStr == "+") {
-      op = ast::Operator::PLUS;
+      op = parse_tree::Operator::PLUS;
     } else if (opStr == "-") {
-      op = ast::Operator::MINUS;
+      op = parse_tree::Operator::MINUS;
     } else if (opStr == "*") {
-      op = ast::Operator::STAR;
+      op = parse_tree::Operator::STAR;
     } else if (opStr == "/") {
-      op = ast::Operator::SLASH;
+      op = parse_tree::Operator::SLASH;
     } else {
       panic(element,
             "Unrecognized operator '{}' in node <{}>.", opStr, type);
     }
 
-    return ast::Unary{.id = id, .lhs = lhsId, .op = op, .location = location};
+    return parse_tree::Unary{.id = id, .lhs = lhsId, .op = op, .location = location};
   }
 
-  ast::Binary Parser::binary(Element* element) {
+  parse_tree::Binary Parser::binary(Element* element) {
     constexpr std::string_view type = "fl:binary";
     fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
     auto location = parseLocation(element, type);
     fluir::id_t lhsId = std::atoll(getAttribute(element, type, "lhs").data());
     fluir::id_t rhsId = std::atoll(getAttribute(element, type, "rhs").data());
-    ast::Operator op = ast::Operator::UNKNOWN;
+    parse_tree::Operator op = parse_tree::Operator::UNKNOWN;
     if (auto opStr = getAttribute(element, type, "operator");
         opStr == "+") {
-      op = ast::Operator::PLUS;
+      op = parse_tree::Operator::PLUS;
     } else if (opStr == "-") {
-      op = ast::Operator::MINUS;
+      op = parse_tree::Operator::MINUS;
     } else if (opStr == "*") {
-      op = ast::Operator::STAR;
+      op = parse_tree::Operator::STAR;
     } else if (opStr == "/") {
-      op = ast::Operator::SLASH;
+      op = parse_tree::Operator::SLASH;
     } else {
       panic(element,
             "Unrecognized operator '{}' in node <{}>.", opStr, type);
     }
 
-    return ast::Binary{.id = id, .lhs = lhsId, .rhs = rhsId, .op = op, .location = location};
+    return parse_tree::Binary{.id = id, .lhs = lhsId, .rhs = rhsId, .op = op, .location = location};
   }
 
-  ast::Constant Parser::constant(Element* element) {
+  parse_tree::Constant Parser::constant(Element* element) {
     constexpr std::string_view type = "fl:constant";
     fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
     auto location = parseLocation(element, type);
     auto val = value(element->FirstChildElement());
 
-    return ast::Constant{.value = val, .id = id, .location = location};
+    return parse_tree::Constant{.value = val, .id = id, .location = location};
   }
 
-  ast::Value Parser::value(Element* element) {
+  parse_tree::Value Parser::value(Element* element) {
     std::string_view name = element->Name();
     if (name == "fl:double") {
       double val = 0.0;
@@ -223,7 +223,7 @@ namespace fluir::compiler {
     return id;
   }
 
-  ast::LocationInfo Parser::parseLocation(Element* element, std::string_view type) {
+  LocationInfo Parser::parseLocation(Element* element, std::string_view type) {
     return {
         .x = std::atoi(getAttribute(element, type, "x").data()),
         .y = std::atoi(getAttribute(element, type, "y").data()),

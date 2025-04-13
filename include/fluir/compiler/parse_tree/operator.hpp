@@ -1,9 +1,9 @@
-#ifndef FLUIR_COMPILER_AST_OPERATOR_HPP
-#define FLUIR_COMPILER_AST_OPERATOR_HPP
+#ifndef FLUIR_COMPILER_PARSE_TREE_OPERATOR_HPP
+#define FLUIR_COMPILER_PARSE_TREE_OPERATOR_HPP
 
-#include "fluir/compiler/ast/utility.hpp"
+#include "fluir/compiler/parse_tree/utility.hpp"
 
-namespace fluir::ast {
+namespace fluir::parse_tree {
   enum class Operator {
     UNKNOWN,  //
     PLUS,     // +
@@ -34,6 +34,6 @@ namespace fluir::ast {
    private:
     friend bool operator==(const Binary&, const Binary&) = default;
   };
-}  // namespace fluir::ast
+}  // namespace fluir::parse_tree
 
 #endif

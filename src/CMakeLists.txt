@@ -4,7 +4,10 @@ find_package(fmt REQUIRED)
 add_library(fluir.libcompiler)
 add_library(fluir::compiler ALIAS fluir.libcompiler)
 
-target_sources(fluir.libcompiler PRIVATE afg.cpp diagnostic.cpp parser.cpp)
+target_sources(
+    fluir.libcompiler
+    PRIVATE afg/constant.cpp afg.cpp diagnostic.cpp parser.cpp
+)
 
 target_include_directories(
     fluir.libcompiler

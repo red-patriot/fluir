@@ -1,0 +1,37 @@
+#ifndef FLUIR_COMPILER_AFG_CONSTANT_HPP
+#define FLUIR_COMPILER_AFG_CONSTANT_HPP
+
+namespace fluir::afg {
+  enum class Type {
+    UNKNOWN,
+    DOUBLE_FP,
+  };
+  class TypeError { };
+
+  using Value = double;  // TODO: Support other types here
+
+  class Constant {
+   public:
+    Type type() const { return type_; }
+    template <Type t>
+    auto& as() const {
+      if constexpr (t == Type::DOUBLE_FP) {
+        return as_;
+      } else {
+        throw TypeError{};
+      }
+    }
+
+   private:
+    Type type_{Type::UNKNOWN};
+    Value as_;
+
+    Constant(Type, Value);
+
+    friend Constant makeDoubleConstant(double value);
+  };
+
+  Constant makeDoubleConstant(double value);
+}  // namespace fluir::afg
+
+#endif

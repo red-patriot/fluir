@@ -169,6 +169,88 @@ TEST(TestParser, ParseSimpleBinaryExpression) {
   EXPECT_EQ(expected, actual);
 }
 
+TEST(TestParser, ParseComplexBinaryUnaryExpression) {
+  std::string src = R"(<?xml version="1.0" encoding="UTF-8"?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+    <fl:function name="main" id="1"
+        x="15" y="7" z="3" w="100" h="100">
+        <body>
+            <fl:constant id="1"
+                x="2" y="20" z="1" w="5" h="5">
+                <fl:double>3.0</fl:double>
+            </fl:constant>
+            <fl:constant id="4"
+                x="2" y="12" z="1" w="5" h="5">
+                <fl:double>2.0</fl:double>
+            </fl:constant>
+            <fl:constant id="6"
+                x="14" y="2" z="1" w="7" h="5">
+                <fl:double>7.5</fl:double>
+            </fl:constant>
+            <fl:binary id="2"
+                x="16" y="18" z="1" w="4" h="4"
+                lhs="1" rhs="4" operator="*" />
+            <fl:binary id="5"
+                x="22" y="10" z="1" w="4" h="4"
+                lhs="2" rhs="6" operator="/" />
+            <fl:unary id="3"
+                x="33" y="16" z="1" w="4" h="4"
+                lhs="5" operator="-" />
+        </body>
+    </fl:function>
+</fluir>)";
+
+  fa::AST expected{
+      .declarations = {{1,
+                        fa::FunctionDecl{.name = "main",
+                                         .id = 1,
+                                         .body = fa::Block{
+                                             .nodes = {
+                                                 {1,
+                                                  fa::Constant{
+                                                      .value = 3.0,
+                                                      .id = 1,
+                                                      .location = {.x = 2, .y = 20, .z = 1, .width = 5, .height = 5}}},
+                                                 {4,
+                                                  fa::Constant{
+                                                      .value = 2.0,
+                                                      .id = 4,
+                                                      .location = {.x = 2, .y = 12, .z = 1, .width = 5, .height = 5}}},
+                                                 {6,
+                                                  fa::Constant{
+                                                      .value = 7.5,
+                                                      .id = 6,
+                                                      .location = {.x = 14, .y = 2, .z = 1, .width = 7, .height = 5}}},
+                                                 {2,
+                                                  fa::Binary{
+                                                      .id = 2,
+                                                      .lhs = 1,
+                                                      .rhs = 4,
+                                                      .op = fa::Operator::STAR,
+                                                      .location = {.x = 16, .y = 18, .z = 1, .width = 4, .height = 4}}},
+                                                 {5,
+                                                  fa::Binary{
+                                                      .id = 5,
+                                                      .lhs = 2,
+                                                      .rhs = 6,
+                                                      .op = fa::Operator::SLASH,
+                                                      .location = {.x = 22, .y = 10, .z = 1, .width = 4, .height = 4}}},
+                                                 {3,
+                                                  fa::Unary{
+                                                      .id = 3,
+                                                      .lhs = 5,
+                                                      .op = fa::Operator::MINUS,
+                                                      .location = {.x = 33, .y = 16, .z = 1, .width = 4, .height = 4}}}}},
+                                         .location = {.x = 15, .y = 7, .z = 3, .width = 100, .height = 100}}}}};
+
+  fluir::compiler::Parser uut;
+
+  auto actual = uut.parseString(src);
+
+  EXPECT_TRUE(uut.diagnostics().empty());
+  EXPECT_EQ(expected, actual);
+}
+
 class TestParserErrors : public ::testing::TestWithParam<std::filesystem::path> {
  public:
   std::string readErrors(const fs::path& file) {

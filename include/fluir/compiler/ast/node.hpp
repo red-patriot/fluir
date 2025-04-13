@@ -9,7 +9,8 @@
 
 namespace fluir::ast {
   using Node = std::variant<Constant,
-                            Binary>;
+                            Binary,
+                            Unary>;
 
   using Nodes = std::unordered_map<fluir::id_t, Node>;
 }  // namespace fluir::ast

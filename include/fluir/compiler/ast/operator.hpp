@@ -12,6 +12,17 @@ namespace fluir::ast {
     SLASH     // /
   };
 
+  struct Unary {
+    fluir::id_t id;
+    fluir::id_t lhs;
+    Operator op;
+
+    LocationInfo location;
+
+   private:
+    friend bool operator==(const Unary&, const Unary&) = default;
+  };
+
   struct Binary {
     fluir::id_t id;
     fluir::id_t lhs;

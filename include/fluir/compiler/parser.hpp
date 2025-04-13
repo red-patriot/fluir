@@ -43,7 +43,9 @@ namespace fluir::compiler {
      * Synchronizes panics that occur internally.
      */
     ast::Block block(Element* element);
-    /** Parses a binary node from the element */
+    /** Parses a unary operation from the element */
+    ast::Unary unary(Element* element);
+    /** Parses a binary operation from the element */
     ast::Binary binary(Element* element);
     /** Parses a constant node from the element */
     ast::Constant constant(Element* element);

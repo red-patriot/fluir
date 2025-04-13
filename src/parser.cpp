@@ -117,6 +117,13 @@ namespace fluir::compiler {
                   "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
                   name, node.id);
           block.nodes.emplace(node.id, std::move(node));
+        } else if (name == "fl:unary") {
+          auto node = unary(element);
+          panicIf(block.nodes.contains(node.id),
+                  element,
+                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+                  name, node.id);
+          block.nodes.emplace(node.id, std::move(node));
         } else if (name == "fl:binary") {
           auto node = binary(element);
           panicIf(block.nodes.contains(node.id),
@@ -134,6 +141,29 @@ namespace fluir::compiler {
       }
     }
     return block;
+  }
+
+  ast::Unary Parser::unary(Element* element) {
+    constexpr std::string_view type = "fl:unary";
+    fluir::id_t id = std::atoll(getAttribute(element, type, "id").data());
+    auto location = parseLocation(element, type);
+    fluir::id_t lhsId = std::atoll(getAttribute(element, type, "lhs").data());
+    ast::Operator op = ast::Operator::UNKNOWN;
+    if (auto opStr = getAttribute(element, type, "operator");
+        opStr == "+") {
+      op = ast::Operator::PLUS;
+    } else if (opStr == "-") {
+      op = ast::Operator::MINUS;
+    } else if (opStr == "*") {
+      op = ast::Operator::STAR;
+    } else if (opStr == "/") {
+      op = ast::Operator::SLASH;
+    } else {
+      panic(element,
+            "Unrecognized operator '{}' in node <{}>.", opStr, type);
+    }
+
+    return ast::Unary{.id = id, .lhs = lhsId, .op = op, .location = location};
   }
 
   ast::Binary Parser::binary(Element* element) {
@@ -202,8 +232,8 @@ namespace fluir::compiler {
         .x = std::atoi(getAttribute(element, type, "x").data()),
         .y = std::atoi(getAttribute(element, type, "y").data()),
         .z = std::atoi(getAttribute(element, type, "z").data()),
-        .width = std::atoi(getAttribute(element, type, "h").data()),
-        .height = std::atoi(getAttribute(element, type, "w").data()),
+        .width = std::atoi(getAttribute(element, type, "w").data()),
+        .height = std::atoi(getAttribute(element, type, "h").data()),
     };
   }
 

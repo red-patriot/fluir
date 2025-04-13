@@ -1,6 +1,7 @@
 #include "fluir/compiler/parser.hpp"
 
 #include <fstream>
+#include <functional>
 #include <sstream>
 
 #include "fluir/compiler/diagnostic.hpp"
@@ -22,6 +23,16 @@ namespace fluir::compiler {
               std::make_unique<SourceLocation>(element->GetLineNum(), filename_),
               std::forward<Args>(errorMessage)...);
     throw Panic{};
+  }
+
+  template <typename Func>
+  void Parser::addNode(Func func, Element* element, ast::Block& block, std::string_view name) {
+    auto node = std::invoke(func, this, element);
+    panicIf(block.nodes.contains(node.id),
+            element,
+            "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
+            name, node.id);
+    block.nodes.emplace(node.id, std::move(node));
   }
 
   fluir::ast::AST Parser::parseFile(const std::filesystem::path& program) {
@@ -96,7 +107,7 @@ namespace fluir::compiler {
     panicIf(!bodyElement, element,
             "Function '{}' has no body. Expected a '<body>' element.", name);
 
-    ast::Block body = block(bodyElement->FirstChildElement());
+    ast::Block body = parseBlock(bodyElement->FirstChildElement());
 
     panicIf(ast_.declarations.contains(id),
             element,
@@ -105,32 +116,17 @@ namespace fluir::compiler {
     ast_.declarations.emplace(id, ast::FunctionDecl{std::string(name), id, body, location});
   }
 
-  ast::Block Parser::block(Element* element) {
+  ast::Block Parser::parseBlock(Element* element) {
     auto block = ast::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
       try {
         std::string_view name = element->Name();
         if (name == "fl:constant") {
-          auto node = constant(element);
-          panicIf(block.nodes.contains(node.id),
-                  element,
-                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
-                  name, node.id);
-          block.nodes.emplace(node.id, std::move(node));
+          addNode(&Parser::constant, element, block, name);
         } else if (name == "fl:unary") {
-          auto node = unary(element);
-          panicIf(block.nodes.contains(node.id),
-                  element,
-                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
-                  name, node.id);
-          block.nodes.emplace(node.id, std::move(node));
+          addNode(&Parser::unary, element, block, name);
         } else if (name == "fl:binary") {
-          auto node = binary(element);
-          panicIf(block.nodes.contains(node.id),
-                  element,
-                  "Duplicate node ids. Node <{}> has id {}, but that ID is already in use.",
-                  name, node.id);
-          block.nodes.emplace(node.id, std::move(node));
+          addNode(&Parser::binary, element, block, name);
         } else {
           panicIf(true,
                   element,

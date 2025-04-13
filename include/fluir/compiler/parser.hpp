@@ -42,7 +42,7 @@ namespace fluir::compiler {
     /** Parses a block from the element.
      * Synchronizes panics that occur internally.
      */
-    ast::Block block(Element* element);
+    ast::Block parseBlock(Element* element);
     /** Parses a unary operation from the element */
     ast::Unary unary(Element* element);
     /** Parses a binary operation from the element */
@@ -54,6 +54,9 @@ namespace fluir::compiler {
 
     /** Indicates that the parser is panicking */
     class Panic { };
+
+    template <typename Func>
+    void addNode(Func func, Element* element, ast::Block& block, std::string_view name);
 
     /** Parses the id of the element. */
     fluir::id_t parseId(Element* element, std::string_view type);

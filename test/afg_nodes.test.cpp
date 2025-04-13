@@ -33,12 +33,24 @@ TEST(TestNode, ConstructBinaryOperation) {
   auto expected = fafg::BinaryOp{
       fluir::Operator::PLUS,
       fafg::shared(fafg::makeDoubleConstant(1.0)),
-      fafg::shared(fafg::makeDoubleConstant(1.0))};
+      fafg::shared(fafg::makeDoubleConstant(2.0))};
 
   auto actual = fafg::shared(fafg::BinaryOp{
       fluir::Operator::PLUS,
       fafg::shared(fafg::makeDoubleConstant(1.0)),
-      fafg::shared(fafg::makeDoubleConstant(1.0))});
+      fafg::shared(fafg::makeDoubleConstant(2.0))});
+
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST(TestNode, ConstructUnaryOperation) {
+  auto expected = fafg::UnaryOp{
+      fluir::Operator::MINUS,
+      fafg::shared(fafg::makeDoubleConstant(7.5))};
+
+  auto actual = fafg::shared(fafg::UnaryOp{
+      fluir::Operator::MINUS,
+      fafg::shared(fafg::makeDoubleConstant(7.5))});
 
   EXPECT_EQ(expected, *actual);
 }

@@ -3,8 +3,8 @@
 cmake_minimum_required(VERSION 3.25)
 
 project(
-    fluir.compiler
-    DESCRIPTION "The compiler for the Fluir data-flow programming language."
+    fluir
+    DESCRIPTION "The Fluir data-flow programming language."
     LANGUAGES CXX
     VERSION 0.1.0
 )
@@ -12,6 +12,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 option(
     FLUIR_BUILD_TESTS
@@ -25,12 +26,8 @@ option(
     ${PROJECT_IS_TOP_LEVEL}
 )
 
-include(CTestUseLaunchers)
-include(FetchContent)
+add_subdirectory(compiler)
 
-add_subdirectory(src)
-
-if(FLUIR_BUILD_TESTS)
+if (FLUIR_BUILD_TESTS)
     enable_testing()
-    add_subdirectory(test)
-endif()
+endif ()

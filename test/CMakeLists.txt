@@ -1,6 +1,7 @@
 add_executable(fluir.compiler.test)
 
 set(FLUIR_AFG_TEST_SOURCES
+    "afg.test.cpp"
     "afg/dependency.test.cpp"
     "afg/flow_graph.test.cpp"
     "afg/nodes.test.cpp"

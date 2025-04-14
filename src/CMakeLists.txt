@@ -12,7 +12,7 @@ set(FLUIR_AFG_SOURCES
 
 target_sources(
     fluir.libcompiler
-    PRIVATE ${FLUIR_AFG_SOURCES} afg.cpp diagnostic.cpp parser.cpp
+    PRIVATE ${FLUIR_AFG_SOURCES} afg_builder.cpp diagnostic.cpp parser.cpp
 )
 
 target_include_directories(

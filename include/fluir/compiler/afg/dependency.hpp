@@ -9,7 +9,9 @@ namespace fluir::afg {
     using UnderlyingNode = std::shared_ptr<UniqueNode>;
 
    public:
-    Dependency(UnderlyingNode source) :
+    explicit Dependency(Node* rawSource) :
+        source_(std::make_shared<UniqueNode>(std::unique_ptr<Node>(rawSource))) { }
+    explicit Dependency(UnderlyingNode source) :
         source_(std::move(source)) { }
     Dependency(const Dependency&) = default;
     Dependency& operator=(const Dependency&) = default;

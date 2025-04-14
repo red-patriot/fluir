@@ -1,16 +1,11 @@
 #ifndef FLUIR_COMPILER_PARSE_TREE_OPERATOR_HPP
 #define FLUIR_COMPILER_PARSE_TREE_OPERATOR_HPP
 
+#include "fluir/compiler/models/operator.hpp"
 #include "fluir/compiler/parse_tree/utility.hpp"
 
 namespace fluir::parse_tree {
-  enum class Operator {
-    UNKNOWN,  //
-    PLUS,     // +
-    MINUS,    // -
-    STAR,     // *
-    SLASH     // /
-  };
+  using fluir::Operator;
 
   struct Unary {
     fluir::id_t id;

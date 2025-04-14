@@ -8,7 +8,7 @@ namespace fluir::afg {
 
   class DoubleConstant : public Node {
    public:
-    explicit DoubleConstant(double value_);
+    explicit DoubleConstant(double value_, LocationInfo location = {});
 
     Type type() const { return Type::DOUBLE_FP; }
     double as() const {
@@ -20,7 +20,7 @@ namespace fluir::afg {
     double value;
   };
 
-  DoubleConstant makeDoubleConstant(double value);
+  DoubleConstant makeDoubleConstant(double value, LocationInfo Location = {});
 }  // namespace fluir::afg
 
 #endif

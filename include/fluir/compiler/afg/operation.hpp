@@ -8,7 +8,7 @@
 namespace fluir::afg {
   class UnaryOp : public Node {
    public:
-    UnaryOp(fluir::Operator op_, const Dependency& operand_);
+    UnaryOp(fluir::Operator op_, const Dependency& operand_, LocationInfo location = {});
 
     Type type() const override;
 
@@ -20,7 +20,10 @@ namespace fluir::afg {
 
   class BinaryOp : public Node {
    public:
-    BinaryOp(fluir::Operator op_, const Dependency& lhs, const Dependency& rhs);
+    BinaryOp(fluir::Operator op_,
+             const Dependency& lhs,
+             const Dependency& rhs,
+             LocationInfo location = {});
 
     Type type() const override;
 

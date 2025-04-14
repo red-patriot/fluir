@@ -3,11 +3,12 @@
 #include <utility>
 
 namespace fluir::afg {
-  DoubleConstant::DoubleConstant(double value_) :
+  DoubleConstant::DoubleConstant(double value_, LocationInfo location) :
+      Node(std::move(location)),
       value(value_) { }
 
-  DoubleConstant makeDoubleConstant(double value) {
-    return DoubleConstant{value};
+  DoubleConstant makeDoubleConstant(double value, LocationInfo location) {
+    return DoubleConstant{value, location};
   }
 
   bool DoubleConstant::equals(const Node& other) const {

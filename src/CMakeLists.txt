@@ -4,7 +4,11 @@ find_package(fmt REQUIRED)
 add_library(fluir.libcompiler)
 add_library(fluir::compiler ALIAS fluir.libcompiler)
 
-set(FLUIR_AFG_SOURCES "afg/constant.cpp" "afg/operation.cpp")
+set(FLUIR_AFG_SOURCES
+    "afg/constant.cpp"
+    "afg/flow_graph.cpp"
+    "afg/operation.cpp"
+)
 
 target_sources(
     fluir.libcompiler

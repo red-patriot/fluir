@@ -1,11 +1,14 @@
 add_executable(fluir.compiler.test)
+
+set(FLUIR_AFG_TEST_SOURCES
+    "afg/dependency.test.cpp"
+    "afg/flow_graph.test.cpp"
+    "afg/nodes.test.cpp"
+)
+
 target_sources(
     fluir.compiler.test
-    PRIVATE
-        afg/dependency.test.cpp
-        afg/nodes.test.cpp
-        diagnostics.test.cpp
-        parser.test.cpp
+    PRIVATE ${FLUIR_AFG_TEST_SOURCES} diagnostics.test.cpp parser.test.cpp
 )
 
 target_compile_definitions(

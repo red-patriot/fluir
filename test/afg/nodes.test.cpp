@@ -11,6 +11,13 @@ TEST(TestNode, MakeDoubleConstant) {
   EXPECT_DOUBLE_EQ(1.0, actual.value);
 }
 
+TEST(TestNode, MakeDoubleConstantWithLocation) {
+  auto actual = fafg::makeDoubleConstant(1.0);
+
+  EXPECT_EQ(fluir::Type::DOUBLE_FP, actual.type());
+  EXPECT_DOUBLE_EQ(1.0, actual.value);
+}
+
 TEST(TestNode, CompareSharedNodesDirectlyForEquality) {
   auto first = fafg::makeDependency<fafg::DoubleConstant>(3.5);
   auto second = fafg::makeDependency<fafg::DoubleConstant>(3.5);

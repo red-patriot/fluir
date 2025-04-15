@@ -25,27 +25,17 @@ namespace fluir {
     std::string message;
     std::unique_ptr<Location> where{nullptr};
 
-    friend bool operator==(const Diagnostic&, const Diagnostic&) = default;
+    friend bool operator==(const Diagnostic& lhs, const Diagnostic& rhs) {
+      return lhs.level == rhs.level && lhs.message == rhs.message;
+    }
   };
 
   class Diagnostics : public std::vector<Diagnostic> {
    public:
-    void emitNote(std::string message) {
-      this->emplace_back(Diagnostic{Diagnostic::NOTE,
-                                    std::move(message)});
-    }
-    void emitWarning(std::string message) {
-      this->emplace_back(Diagnostic{Diagnostic::WARNING,
-                                    std::move(message)});
-    }
-    void emitError(std::string message) {
-      this->emplace_back(Diagnostic{Diagnostic::ERROR,
-                                    std::move(message)});
-    }
-    void emitInternalError(std::string message) {
-      this->emplace_back(Diagnostic{Diagnostic::INTERNAL_ERROR,
-                                    std::move(message)});
-    }
+    void emitNote(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
+    void emitWarning(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
+    void emitError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
+    void emitInternalError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
   };
 }  // namespace fluir
 

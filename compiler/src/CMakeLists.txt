@@ -5,7 +5,7 @@ add_library(
     fluir.libcompiler
 )
 
-target_sources(fluir.libcompiler PRIVATE dummy.cpp)
+target_sources(fluir.libcompiler PRIVATE utility/diagnostics.cpp)
 
 target_include_directories(
     fluir.libcompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include

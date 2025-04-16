@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <fmt/format.h>
+
 namespace fluir {
   struct Diagnostic {
     enum class Level {
@@ -30,6 +32,8 @@ namespace fluir {
     }
   };
 
+  std::string toString(const Diagnostic& diagnostic);
+
   class Diagnostics : public std::vector<Diagnostic> {
    public:
     void emitNote(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
@@ -38,5 +42,13 @@ namespace fluir {
     void emitInternalError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
   };
 }  // namespace fluir
+
+template <>
+struct fmt::formatter<fluir::Diagnostic::Level> : formatter<fmt::string_view> {
+  // parse is inherited from formatter<string_view>.
+
+  auto format(fluir::Diagnostic::Level l, format_context& ctx) const
+      -> fmt::format_context::iterator;
+};
 
 #endif

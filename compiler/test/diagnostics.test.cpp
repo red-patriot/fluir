@@ -9,7 +9,7 @@ namespace {
         line_(line) { }
 
     std::string str() const override {
-      return std::to_string(line_);
+      return "at " + std::to_string(line_);
     }
 
     int line_;
@@ -124,4 +124,96 @@ TEST(TestDiagnostics, EmitInternalErrorWithLocation) {
   auto location = dynamic_cast<TestingLocation*>(actual.back().where.get());
   EXPECT_TRUE(location);
   EXPECT_EQ(-54, location->line_);
+}
+
+TEST(TestDiagnostics, StringifyError) {
+  std::string expected = "[ERROR]: A problem occurred.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::ERROR,
+                               "A problem occurred."};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyErrorWithLocation) {
+  std::string expected = "[ERROR] at 4: A problem occurred.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::ERROR,
+                               "A problem occurred.",
+                               std::make_unique<TestingLocation>(4)};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyWarning) {
+  std::string expected = "[WARNING]: An issue.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::WARNING,
+                               "An issue."};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyWarningWithLocation) {
+  std::string expected = "[WARNING] at -59: An issue.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::WARNING,
+                               "An issue.",
+                               std::make_unique<TestingLocation>(-59)};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyNote) {
+  std::string expected = "[NOTE]: Some important information.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::NOTE,
+                               "Some important information."};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyNoteWithLocation) {
+  std::string expected = "[NOTE] at 112: Some important information.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::NOTE,
+                               "Some important information.",
+                               std::make_unique<TestingLocation>(112)};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyInternalError) {
+  std::string expected = "[INTERNAL ERROR]: If you see this, file a bug.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::INTERNAL_ERROR,
+                               "If you see this, file a bug."};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestDiagnostics, StringifyInternalErrorWithLocation) {
+  std::string expected = "[INTERNAL ERROR] at 9: If you see this, file a bug.";
+
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::INTERNAL_ERROR,
+                               "If you see this, file a bug.",
+                               std::make_unique<TestingLocation>(9)};
+
+  auto actual = fluir::toString(diagnostic);
+
+  EXPECT_EQ(expected, actual);
 }

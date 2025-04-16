@@ -1,3 +1,5 @@
+find_package(fmt REQUIRED)
+
 add_library(fluir.libcompiler)
 add_library(
     fluir::compiler
@@ -10,6 +12,8 @@ target_sources(fluir.libcompiler PRIVATE utility/diagnostics.cpp)
 target_include_directories(
     fluir.libcompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_link_libraries(fluir.libcompiler PUBLIC fmt::fmt)
 
 add_executable(fluir.compiler main.cpp)
 

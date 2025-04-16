@@ -217,3 +217,27 @@ TEST(TestDiagnostics, StringifyInternalErrorWithLocation) {
 
   EXPECT_EQ(expected, actual);
 }
+
+TEST(TestDiagnostics, DetectLevelNote) {
+  fluir::Diagnostic diag{fluir::Diagnostic::NOTE, ""};
+
+  EXPECT_FALSE(fluir::isError(diag));
+}
+
+TEST(TestDiagnostics, DetectLevelNWarning) {
+  fluir::Diagnostic diag{fluir::Diagnostic::WARNING, ""};
+
+  EXPECT_FALSE(fluir::isError(diag));
+}
+
+TEST(TestDiagnostics, DetectLevelError) {
+  fluir::Diagnostic diag{fluir::Diagnostic::ERROR, ""};
+
+  EXPECT_TRUE(fluir::isError(diag));
+}
+
+TEST(TestDiagnostics, DetectLevelInternalError) {
+  fluir::Diagnostic diag{fluir::Diagnostic::INTERNAL_ERROR, ""};
+
+  EXPECT_TRUE(fluir::isError(diag));
+}

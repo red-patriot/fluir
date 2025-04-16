@@ -32,6 +32,8 @@ namespace fluir {
     }
   };
 
+  bool isError(const Diagnostic& diagnostic);
+
   std::string toString(const Diagnostic& diagnostic);
 
   class Diagnostics : public std::vector<Diagnostic> {
@@ -40,6 +42,8 @@ namespace fluir {
     void emitWarning(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
     void emitError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
     void emitInternalError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
+
+    bool containsErrors() const;
   };
 }  // namespace fluir
 

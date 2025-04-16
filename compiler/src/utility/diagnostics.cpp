@@ -1,6 +1,12 @@
 #include "compiler/utility/diagnostics.hpp"
 
+#include <algorithm>
+
 namespace fluir {
+  bool isError(const Diagnostic& diagnostic) {
+    return diagnostic.level >= Diagnostic::Level::ERROR;
+  }
+
   std::string toString(const Diagnostic& diagnostic) {
     auto& [level, message, where] = diagnostic;
 
@@ -30,6 +36,10 @@ namespace fluir {
     this->emplace_back(Diagnostic{Diagnostic::INTERNAL_ERROR,
                                   std::move(message),
                                   std::move(where)});
+  }
+
+  bool Diagnostics::containsErrors() const {
+    return std::ranges::any_of(*this, isError);
   }
 }  // namespace fluir
 

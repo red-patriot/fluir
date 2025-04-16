@@ -8,6 +8,7 @@
 #include <fmt/format.h>
 
 namespace fluir {
+  /** A diagnostic emitted by the compiler */
   struct Diagnostic {
     enum class Level {
       NOTE = 0,
@@ -23,9 +24,9 @@ namespace fluir {
       virtual std::string str() const = 0;
     };
 
-    Level level;
-    std::string message;
-    std::unique_ptr<Location> where{nullptr};
+    Level level;                              /**< The level of diagnostic */
+    std::string message;                      /**< The user-facing message to help fix the issue */
+    std::unique_ptr<Location> where{nullptr}; /**< Where the issue originated from */
 
     friend bool operator==(const Diagnostic& lhs, const Diagnostic& rhs) {
       return lhs.level == rhs.level && lhs.message == rhs.message;

@@ -6,6 +6,11 @@
 #include "diagnostics.hpp"
 
 namespace fluir {
+  /** Contains data and accompanying diagnostics.
+   * The data may or may not exist, depending on what diagnostics are produced
+   * and if the diagnostics represent an error. It is valid to provide both
+   * a value and errors.
+   */
   template <typename T>
   class Results {
    public:
@@ -57,8 +62,8 @@ namespace fluir {
     ValueType* operator->() { return value_.operator->(); }
 
    private:
-    std::optional<ValueType> value_;
-    DiagsType diagnostics_;
+    std::optional<ValueType> value_; /**< The (optional) value produced by an operation */
+    DiagsType diagnostics_;          /**< Diagnostics which accompany the production of value_ */
   };
 };  // namespace fluir
 

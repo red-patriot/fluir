@@ -26,7 +26,7 @@ namespace fluir {
 
     Level level;                              /**< The level of diagnostic */
     std::string message;                      /**< The user-facing message to help fix the issue */
-    std::unique_ptr<Location> where{nullptr}; /**< Where the issue originated from */
+    std::shared_ptr<Location> where{nullptr}; /**< Where the issue originated from */
 
     friend bool operator==(const Diagnostic& lhs, const Diagnostic& rhs) {
       return lhs.level == rhs.level && lhs.message == rhs.message;
@@ -39,10 +39,12 @@ namespace fluir {
 
   class Diagnostics : public std::vector<Diagnostic> {
    public:
-    void emitNote(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
-    void emitWarning(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
-    void emitError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
-    void emitInternalError(std::string message, std::unique_ptr<Diagnostic::Location> where = nullptr);
+    using vector::vector;
+
+    void emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+    void emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+    void emitError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+    void emitInternalError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
 
     bool containsErrors() const;
   };

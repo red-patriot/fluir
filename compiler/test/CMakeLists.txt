@@ -13,7 +13,12 @@ set(gtest_force_shared_crt
 FetchContent_MakeAvailable(googletest)
 
 add_executable(fluir.compiler.test)
-target_sources(fluir.compiler.test PRIVATE diagnostics.test.cpp)
+
+set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
+                               utility/results.test.cpp
+)
+
+target_sources(fluir.compiler.test PRIVATE ${FLUIR_UTILITY_TEST_SOURCES})
 target_link_libraries(
     fluir.compiler.test
     PRIVATE fluir::compiler

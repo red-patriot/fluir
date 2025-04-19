@@ -1,4 +1,5 @@
 find_package(fmt REQUIRED)
+find_package(tinyxml2 REQUIRED)
 
 add_library(fluir.libcompiler)
 add_library(
@@ -7,13 +8,18 @@ add_library(
     fluir.libcompiler
 )
 
-target_sources(fluir.libcompiler PRIVATE utility/diagnostics.cpp)
+set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp")
+
+target_sources(
+    fluir.libcompiler PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
+                              utility/diagnostics.cpp
+)
 
 target_include_directories(
     fluir.libcompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-target_link_libraries(fluir.libcompiler PUBLIC fmt::fmt)
+target_link_libraries(fluir.libcompiler PUBLIC fmt::fmt tinyxml2::tinyxml2)
 
 add_executable(fluir.compiler main.cpp)
 

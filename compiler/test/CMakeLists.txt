@@ -18,7 +18,9 @@ set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
                                utility/results.test.cpp
 )
 
-target_sources(fluir.compiler.test PRIVATE ${FLUIR_UTILITY_TEST_SOURCES})
+target_sources(
+    fluir.compiler.test PRIVATE ${FLUIR_UTILITY_TEST_SOURCES} parser.test.cpp
+)
 target_link_libraries(
     fluir.compiler.test
     PRIVATE fluir::compiler

@@ -17,6 +17,7 @@ namespace fluir {
     using ValueType = T;
     using DiagsType = Diagnostics;
 
+    Results() = default;
     explicit Results(const ValueType& value) :
         value_(value), diagnostics_() { }
     explicit Results(const DiagsType& diagnostics) :

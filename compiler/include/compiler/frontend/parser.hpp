@@ -34,6 +34,7 @@ namespace fluir {
     std::pair<ID, pt::Node> node(Element* element);
     std::pair<ID, pt::Node> constant(Element* element);
     std::pair<ID, pt::Node> binary(Element* element);
+    std::pair<ID, pt::Node> unary(Element* element);
 
     pt::Literal literal(Element* element);
     pt::Float fl_float(Element* element);

@@ -29,7 +29,15 @@ namespace fluir::pt {
     friend bool operator==(const Binary&, const Binary&) = default;
   };
 
-  using Node = std::variant<Binary, Constant>;
+  struct Unary {
+    FlowGraphLocation location;
+    ID lhs;
+    fluir::Operator op;
+
+    friend bool operator==(const Unary&, const Unary&) = default;
+  };
+
+  using Node = std::variant<Binary, Unary, Constant>;
   using Block = std::unordered_map<ID, Node>;
 
   inline const Block EMPTY_BLOCK = {};

@@ -140,6 +140,8 @@ namespace fluir {
       return constant(element);
     } else if (type == "fl:binary") {
       return binary(element);
+    } else if (type == "fl:unary") {
+      return unary(element);
     } else {
       panicAt(element,
               "Unexpected element '{}'. Expected a node.",
@@ -180,6 +182,31 @@ namespace fluir {
     }
 
     return {id, pt::Binary{location, lhs, rhs, op}};
+  }
+
+  std::pair<ID, pt::Node> Parser::unary(Element* element) {
+    std::string_view type = "fl:unary";
+    auto id = parseId(element, type);
+    auto location = parseLocation(element, type);
+    auto lhs = parseIdReference(element, "lhs", type);
+
+    auto op = Operator::UNKNOWN;
+    std::string_view opText = element->Attribute("operator");
+    // TODO: This could be made faster...
+    if (opText == "+") {
+      op = Operator::PLUS;
+    } else if (opText == "-") {
+      op = Operator::MINUS;
+    } else if (opText == "*") {
+      op = Operator::STAR;
+    } else if (opText == "/") {
+      op = Operator::SLASH;
+    } else {
+      panicAt(element,
+              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
+    }
+
+    return {id, pt::Unary{location, lhs, op}};
   }
 
   pt::Literal Parser::literal(Element* element) {

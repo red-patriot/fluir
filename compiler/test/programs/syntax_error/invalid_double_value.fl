@@ -16,7 +16,7 @@
                 z="3"
                 w="5"
                 h="5">
-                <fl:double>I AM A STRING</fl:double>
+                <fl:float>I AM A STRING</fl:float>
             </fl:constant>
         </body>
     </fl:function>

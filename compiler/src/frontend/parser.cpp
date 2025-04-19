@@ -17,9 +17,9 @@ namespace fluir {
     }
   }
   template <typename... FmtArgs>
-  void Parser::panicAt(Element* element,
-                       std::string_view format,
-                       FmtArgs&&... args) {
+  [[noreturn]] void Parser::panicAt(Element* element,
+                                    std::string_view format,
+                                    FmtArgs&&... args) {
     diagnostics_.emitError(
         fmt::vformat(format, fmt::make_format_args(std::forward<FmtArgs>(args)...)),
         std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
@@ -80,6 +80,7 @@ namespace fluir {
   void Parser::declaration(Element* element) {
     std::string_view name = element->Name();
     try {
+      // TODO: This could use a trie
       if (name == "fl:function") {
         functionDecl(element);
       } else {
@@ -111,10 +112,95 @@ namespace fluir {
         pt::FunctionDecl{location, std::string(name), body});
   }
 
-  pt::Block Parser::block(Element*) {
+  pt::Block Parser::block(Element* element) {
     auto block = pt::EMPTY_BLOCK;
-    // TODO: Parse elements here
+    for (; element != nullptr; element = element->NextSiblingElement()) {
+      try {
+        auto resultNode = node(element);
+        // TODO: Check for duplicates
+        if (!block.contains(resultNode.first)) {
+          block.emplace(std::move(resultNode));
+        } else {
+          panicAt(element,
+                  "Duplicate node IDs. Node <{}> has ID {}, but that ID is already in use.",
+                  element->Name(), resultNode.first);
+        }
+      } catch (const PanicMode&) {
+        // Synchronize here
+        continue;
+      }
+    }
     return block;
+  }
+
+  std::pair<ID, pt::Node> Parser::node(Element* element) {
+    // TODO: This could use a trie
+    std::string_view type = element->Name();
+    if (type == "fl:constant") {
+      return constant(element);
+    } else if (type == "fl:binary") {
+      return binary(element);
+    } else {
+      panicAt(element,
+              "Unexpected element '{}'. Expected a node.",
+              type);
+    }
+  }
+
+  std::pair<ID, pt::Node> Parser::constant(Element* element) {
+    std::string_view type = "fl:constant";
+    auto id = parseId(element, type);
+    auto location = parseLocation(element, type);
+    auto value = literal(element->FirstChildElement());
+
+    return {id, pt::Constant{location, value}};
+  }
+
+  std::pair<ID, pt::Node> Parser::binary(Element* element) {
+    std::string_view type = "fl:binary";
+    auto id = parseId(element, type);
+    auto location = parseLocation(element, type);
+    auto lhs = parseIdReference(element, "lhs", type);
+    auto rhs = parseIdReference(element, "rhs", type);
+
+    auto op = Operator::UNKNOWN;
+    std::string_view opText = element->Attribute("operator");
+    // TODO: This could be made faster...
+    if (opText == "+") {
+      op = Operator::PLUS;
+    } else if (opText == "-") {
+      op = Operator::MINUS;
+    } else if (opText == "*") {
+      op = Operator::STAR;
+    } else if (opText == "/") {
+      op = Operator::SLASH;
+    } else {
+      panicAt(element,
+              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
+    }
+
+    return {id, pt::Binary{location, lhs, rhs, op}};
+  }
+
+  pt::Literal Parser::literal(Element* element) {
+    // TODO: This could use a trie to be faster
+    // TODO: Support other literal types
+    std::string_view name = element->Name();
+    if (name == "fl:float") {
+      return fl_float(element);
+    } else {
+      // TODO: Error
+      throw PanicMode{};
+    }
+  }
+  pt::Float Parser::fl_float(Element* element) {
+    double value = 0.0;
+    auto error = element->QueryDoubleText(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "fl:float", element->GetText());
+    return value;
   }
 
   std::string_view Parser::getAttribute(Element* element,
@@ -130,8 +216,19 @@ namespace fluir {
   }
 
   ID Parser::parseId(Element* element, std::string_view type) {
-    auto id = element->Unsigned64Attribute("id", fluir::INVALID_ID);
-    return id;
+    return parseIdReference(element, "id", type);
+  }
+
+  ID Parser::parseIdReference(Element* element,
+                              std::string_view attribute,
+                              std::string_view type) {
+    ID reference = INVALID_ID;
+    auto error = element->QueryUnsigned64Attribute(attribute.data(), &reference);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "{} element is missing attribute '{}'.", type, attribute);
+
+    return reference;
   }
 
   FlowGraphLocation Parser::parseLocation(Element* element, std::string_view type) {

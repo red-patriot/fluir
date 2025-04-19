@@ -27,7 +27,7 @@
                 z="3"
                 w="5"
                 h="5">
-                <fl:double>9.4</fl:double>
+                <fl:float>9.4</fl:float>
             </fl:constant>
         </body>
     </fl:function>

@@ -16,7 +16,7 @@
                 z="2"
                 w="5"
                 h="5">
-                <fl:double>1.0</fl:double>
+                <fl:float>1.0</fl:float>
             </fl:constant>
             <fl:constant
                 id="2"
@@ -25,7 +25,7 @@
                 z="3"
                 w="5"
                 h="5">
-                <fl:double>2.0</fl:double>
+                <fl:float>2.0</fl:float>
             </fl:constant>
         </body>
     </fl:function>
@@ -46,7 +46,7 @@
                 z="2"
                 w="5"
                 h="5">
-                <fl:double>1.0</fl:double>
+                <fl:float>1.0</fl:float>
             </fl:constant>
             <fl:constant
                 id="3"
@@ -55,7 +55,7 @@
                 z="3"
                 w="5"
                 h="5">
-                <fl:double>2.0</fl:double>
+                <fl:float>2.0</fl:float>
             </fl:constant>
             <fl:binary
                 id="1"

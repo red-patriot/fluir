@@ -3,14 +3,34 @@
 
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 
 namespace fluir::pt {
-  struct Block {
-    friend bool operator==(const Block&, const Block&) = default;
+  using Float = double;
+  using Literal = Float;  // TODO: Support other literal types
+
+  struct Constant {
+    FlowGraphLocation location;
+    Literal value;
+
+    friend bool operator==(const Constant&, const Constant&) = default;
   };
+
+  struct Binary {
+    FlowGraphLocation location;
+    ID lhs;
+    ID rhs;
+    fluir::Operator op;
+
+    friend bool operator==(const Binary&, const Binary&) = default;
+  };
+
+  using Node = std::variant<Binary, Constant>;
+  using Block = std::unordered_map<ID, Node>;
 
   inline const Block EMPTY_BLOCK = {};
 

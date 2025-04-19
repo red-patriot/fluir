@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <string>
+#include <utility>
 
 #include <tinyxml2.h>
 
@@ -30,17 +31,24 @@ namespace fluir {
     void functionDecl(Element* element);
 
     pt::Block block(Element* element);
+    std::pair<ID, pt::Node> node(Element* element);
+    std::pair<ID, pt::Node> constant(Element* element);
+    std::pair<ID, pt::Node> binary(Element* element);
+
+    pt::Literal literal(Element* element);
+    pt::Float fl_float(Element* element);
 
     std::string_view getAttribute(Element* element,
                                   std::string_view type,
                                   std::string_view attribute);
     ID parseId(Element* element, std::string_view type);
+    ID parseIdReference(Element* element, std::string_view attribute, std::string_view type);
     FlowGraphLocation parseLocation(Element* element, std::string_view type);
 
     template <typename... FmtArgs>
     void panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args);
     template <typename... FmtArgs>
-    void panicAt(Element* element, std::string_view format, FmtArgs&&... args);
+    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs&&... args);
     /** Indicates the parser is in a panic */
     class PanicMode { };
 

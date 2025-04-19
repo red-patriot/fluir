@@ -26,7 +26,7 @@
                 z="2"
                 w="5"
                 h="5">
-                <fl:double>I AM A STRING</fl:double>
+                <fl:float>I AM A STRING</fl:float>
             </fl:constant>
             <fl:constant
                 id="3"
@@ -34,7 +34,7 @@
                 y="10"
                 z="3"
                 h="5">
-                <fl:double>THIS SHOULDN'T CAUSE AN ERROR</fl:double>
+                <fl:float>THIS SHOULDN'T CAUSE AN ERROR</fl:float>
             </fl:constant>
         </body>
     </fl:function>

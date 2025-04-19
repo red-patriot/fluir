@@ -1,0 +1,2 @@
+[ERROR] on line 21 of 'duplicate_ids_in_block.fl': Duplicate node ids. Node <fl:constant> has id 2, but that ID is already in use.
+[ERROR] on line 60 of 'duplicate_ids_in_block.fl': Duplicate node ids. Node <fl:binary> has id 1, but that ID is already in use.

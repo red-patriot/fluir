@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+    <fl:function
+        name="foo"
+        id="1"
+        x="10"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+            <fl:constant
+                id="1"
+                x="0"
+                y="10"
+                z="3"
+                w="5"
+                h="5">
+                <fl:double>I AM A STRING</fl:double>
+            </fl:constant>
+        </body>
+    </fl:function>
+</fluir>

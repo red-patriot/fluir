@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+    <fl:function
+        name="first"
+        id="1"
+        x="10"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </fl:function>
+    <fl:function
+        name="second"
+        id="1"
+        x="250"
+        y="10"
+        z="3"
+        w="100"
+        h="190">
+        <body>
+            <fl:constant
+                id="1"
+                x="0"
+                y="10"
+                z="3"
+                w="5"
+                h="5">
+                <fl:double>9.4</fl:double>
+            </fl:constant>
+        </body>
+    </fl:function>
+</fluir>

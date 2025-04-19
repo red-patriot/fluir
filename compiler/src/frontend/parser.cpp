@@ -164,22 +164,7 @@ namespace fluir {
     auto location = parseLocation(element, type);
     auto lhs = parseIdReference(element, "lhs", type);
     auto rhs = parseIdReference(element, "rhs", type);
-
-    auto op = Operator::UNKNOWN;
-    std::string_view opText = element->Attribute("operator");
-    // TODO: This could be made faster...
-    if (opText == "+") {
-      op = Operator::PLUS;
-    } else if (opText == "-") {
-      op = Operator::MINUS;
-    } else if (opText == "*") {
-      op = Operator::STAR;
-    } else if (opText == "/") {
-      op = Operator::SLASH;
-    } else {
-      panicAt(element,
-              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
-    }
+    auto op = parseOperator(element, "operator", type);
 
     return {id, pt::Binary{location, lhs, rhs, op}};
   }
@@ -189,22 +174,7 @@ namespace fluir {
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
     auto lhs = parseIdReference(element, "lhs", type);
-
-    auto op = Operator::UNKNOWN;
-    std::string_view opText = element->Attribute("operator");
-    // TODO: This could be made faster...
-    if (opText == "+") {
-      op = Operator::PLUS;
-    } else if (opText == "-") {
-      op = Operator::MINUS;
-    } else if (opText == "*") {
-      op = Operator::STAR;
-    } else if (opText == "/") {
-      op = Operator::SLASH;
-    } else {
-      panicAt(element,
-              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
-    }
+    auto op = parseOperator(element, "operator", type);
 
     return {id, pt::Unary{location, lhs, op}};
   }
@@ -266,6 +236,25 @@ namespace fluir {
         .width = std::atoi(getAttribute(element, type, "w").data()),
         .height = std::atoi(getAttribute(element, type, "h").data()),
     };
+  }
+
+  Operator Parser::parseOperator(Element* element,
+                                 std::string_view attribute,
+                                 std::string_view type) {
+    std::string_view opText = element->Attribute("operator");
+    // TODO: This could be made faster...
+    if (opText == "+") {
+      return Operator::PLUS;
+    } else if (opText == "-") {
+      return Operator::MINUS;
+    } else if (opText == "*") {
+      return Operator::STAR;
+    } else if (opText == "/") {
+      return Operator::SLASH;
+    } else {
+      panicAt(element,
+              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
+    }
   }
 
   std::string Parser::SourceLocation::str() const {

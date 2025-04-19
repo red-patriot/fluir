@@ -45,6 +45,7 @@ namespace fluir {
     ID parseId(Element* element, std::string_view type);
     ID parseIdReference(Element* element, std::string_view attribute, std::string_view type);
     FlowGraphLocation parseLocation(Element* element, std::string_view type);
+    Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
 
     template <typename... FmtArgs>
     void panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args);

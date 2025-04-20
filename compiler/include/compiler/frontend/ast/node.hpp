@@ -30,10 +30,17 @@ namespace fluir::ast {
   };
 
   struct UnaryOp : public NodeBase {
+    Operator op;
+    SharedDependency operand;
   };
 
   struct Node : public std::variant<ConstantFP, BinaryOp, UnaryOp> {
     using variant::variant;
+
+    template <typename Concrete>
+    bool is() const {
+      return std::holds_alternative<Concrete>(*this);
+    }
 
     template <typename Concrete>
     Concrete& as() {

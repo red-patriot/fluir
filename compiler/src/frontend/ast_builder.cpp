@@ -45,28 +45,26 @@ namespace {
           pt.location,
           pt.op,
           nullptr, nullptr};
-      {
-        auto& ptLhs = block_.at(pt.lhs);
-        fluir::ast::SharedDependency lhs = std::make_shared<fluir::ast::Node>(std::visit(*this, ptLhs));
-        alreadyFound_.insert({pt.lhs, lhs});
-      }
-
-      {
-        auto& ptRhs = block_.at(pt.rhs);
-        fluir::ast::SharedDependency rhs = std::make_shared<fluir::ast::Node>(std::visit(*this, ptRhs));
-        alreadyFound_.insert({pt.rhs, rhs});
-      }
 
       block_.erase(pt.id);
 
-      ast.lhs = alreadyFound_.at(pt.lhs);
-      ast.rhs = alreadyFound_.at(pt.rhs);
+      ast.lhs = getDependency(pt.lhs);
+      ast.rhs = getDependency(pt.rhs);
 
       return ast;
     }
+
     fluir::ast::Node operator()(const fluir::pt::Unary& pt) {
-      throw std::exception();
+      fluir::ast::UnaryOp ast{pt.id,
+                              pt.location,
+                              pt.op,
+                              nullptr};
+      ast.operand = getDependency(pt.lhs);
+
+      block_.erase(pt.id);
+      return ast;
     }
+
     fluir::ast::Node operator()(const fluir::pt::Constant& pt) {
       fluir::ast::ConstantFP ast{pt.id, pt.location, pt.value};
       block_.erase(pt.id);
@@ -77,6 +75,16 @@ namespace {
    private:
     fluir::pt::Block& block_;
     std::unordered_map<fluir::ID, fluir::ast::SharedDependency>& alreadyFound_;
+
+    fluir::ast::SharedDependency getDependency(fluir::ID id) {
+      if (alreadyFound_.contains(id)) {
+        return alreadyFound_.at(id);
+      }
+      auto& pt = block_.at(id);
+      auto dependency = std::make_shared<fluir::ast::Node>(std::visit(*this, pt));
+      alreadyFound_.insert({id, dependency});
+      return dependency;
+    }
   };
 }  // namespace
 

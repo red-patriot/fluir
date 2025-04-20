@@ -1,5 +1,9 @@
 #include "compiler/frontend/ast_builder.hpp"
 
+#include <algorithm>
+#include <unordered_set>
+#include <variant>
+
 namespace {
   class GraphBuilder {
    public:
@@ -9,6 +13,70 @@ namespace {
                                       func.name,
                                       {}};  // TODO: Handle body
     }
+  };
+
+  class DependencyWalker {
+   public:
+    std::unordered_set<fluir::ID> idsInTree() const { return std::move(deps_); }
+
+    void operator()(const fluir::pt::Constant& n) { }
+    void operator()(const fluir::pt::Unary& n) {
+      deps_.insert(n.lhs);
+    }
+    void operator()(const fluir::pt::Binary& n) {
+      deps_.insert(n.lhs);
+      deps_.insert(n.rhs);
+    }
+
+   private:
+    std::unordered_set<fluir::ID> deps_;
+  };
+
+  class AFGBuilder {
+   public:
+    AFGBuilder(fluir::pt::Block& block,
+               std::unordered_map<fluir::ID, fluir::ast::SharedDependency>& alreadyFound) :
+        block_(block),
+        alreadyFound_(alreadyFound) { }
+
+    fluir::ast::Node operator()(const fluir::pt::Binary& pt) {
+      fluir::ast::BinaryOp ast{
+          pt.id,
+          pt.location,
+          pt.op,
+          nullptr, nullptr};
+      {
+        auto& ptLhs = block_.at(pt.lhs);
+        fluir::ast::SharedDependency lhs = std::make_shared<fluir::ast::Node>(std::visit(*this, ptLhs));
+        alreadyFound_.insert({pt.lhs, lhs});
+      }
+
+      {
+        auto& ptRhs = block_.at(pt.rhs);
+        fluir::ast::SharedDependency rhs = std::make_shared<fluir::ast::Node>(std::visit(*this, ptRhs));
+        alreadyFound_.insert({pt.rhs, rhs});
+      }
+
+      block_.erase(pt.lhs);
+      block_.erase(pt.rhs);
+      block_.erase(pt.id);
+
+      ast.lhs = alreadyFound_.at(pt.lhs);
+      ast.rhs = alreadyFound_.at(pt.rhs);
+
+      return ast;
+    }
+    fluir::ast::Node operator()(const fluir::pt::Unary& pt) {
+      throw std::exception();
+    }
+    fluir::ast::Node operator()(const fluir::pt::Constant& pt) {
+      // TODO: handle other literal types here
+      return fluir::ast::ConstantFP{pt.id, pt.location, pt.value};
+    }
+
+   private:
+    fluir::pt::Block& block_;
+    std::unordered_map<fluir::ID, fluir::ast::SharedDependency>& alreadyFound_;
   };
 }  // namespace
 
@@ -22,5 +90,41 @@ namespace fluir {
     }
 
     return Results<ast::ASG>{graph, diagnostics};
+  }
+
+  Results<ast::DataFlowGraph> buildDataFlowGraph(pt::Block block) {
+    ast::DataFlowGraph graph;
+    Diagnostics diagnostics;
+
+    // Find a Node without dependents in the graph
+    std::unordered_set<ID> treeDependencies;
+    {
+      DependencyWalker v;
+      for (const auto& node : block) {
+        std::visit(v, node.second);
+      }
+
+      treeDependencies = v.idsInTree();
+    }
+
+    std::unordered_map<ID, ast::SharedDependency> found;  // Dependencies that have been found so far
+    auto topLevelNode = std::ranges::find_if_not(
+        block,
+        [&treeDependencies](const pt::Block::value_type& v) {
+          auto& [key, value] = v;
+          return treeDependencies.contains(key);
+        });
+    if (topLevelNode == block.end()) {
+      // TODO: Handle this
+      return Results<ast::DataFlowGraph>{Diagnostics{{Diagnostic::ERROR, "Unimplemented"}}};
+    }
+    auto ptNode = block.extract(topLevelNode);
+    // Build ASG node from PT node
+    auto asgNode = std::visit(AFGBuilder{block, found}, ptNode.mapped());
+
+    // Output ASG node
+    graph.emplace_back(std::move(asgNode));
+
+    return {std::move(graph), std::move(diagnostics)};
   }
 }  // namespace fluir

@@ -14,7 +14,7 @@ namespace fluir::ast {
     FlowGraphLocation location;
     std::string name;
 
-    std::vector<Node> statements;
+    DataFlowGraph statements;
   };
 
   using Declaration = FunctionDecl;  // TODO: Support other declarations

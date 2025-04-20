@@ -9,6 +9,8 @@ namespace fluir {
   Results<ast::ASG> buildGraph(const pt::ParseTree& tree);
   //   Results<ast::AST> buildTree(const ast::ASG& graph);
 
+  Results<ast::DataFlowGraph> buildDataFlowGraph(pt::Block block);
+
 }  // namespace fluir
 
 #endif

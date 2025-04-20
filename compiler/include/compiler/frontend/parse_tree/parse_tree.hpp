@@ -51,7 +51,7 @@ namespace fluir::pt {
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };
 
-  using Declaration = FunctionDecl;  // TODO: Support other top-level declarations here
+  using Declaration = std::variant<FunctionDecl>;  // TODO: Support other top-level declarations here
 
   struct ParseTree {
     std::unordered_map<ID, Declaration> declarations;

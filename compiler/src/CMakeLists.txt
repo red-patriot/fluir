@@ -8,7 +8,9 @@ add_library(
     fluir.libcompiler
 )
 
-set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp")
+set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
+                                    "frontend/ast_builder.cpp"
+)
 
 target_sources(
     fluir.libcompiler PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}

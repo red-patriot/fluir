@@ -21,6 +21,7 @@ set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
 target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
+            asg.test.cpp
             detect_syntax_errors.test.cpp
             parser.test.cpp
 )

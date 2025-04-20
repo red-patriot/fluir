@@ -5,23 +5,17 @@
 #include <gtest/gtest.h>
 
 #include "compiler/frontend/parser.hpp"
+#include "file_utility.hpp"
 
 namespace fs = std::filesystem;
 
 class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
- public:
-  std::string readErrors(const fs::path& file) {
-    std::fstream fin(file);
-    std::stringstream ss;
-    ss << fin.rdbuf();
-    return ss.str();
-  }
 };
 
 TEST_P(TestDetectSyntaxError, Test) {
   const auto programFile = GetParam();
   const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
-  const auto errors = readErrors(errorsFile);
+  const auto errors = fluir::test::readContents(errorsFile);
 
   fluir::Parser uut;
 
@@ -38,20 +32,7 @@ TEST_P(TestDetectSyntaxError, Test) {
   EXPECT_EQ(errors, actual);
 }
 
-static std::vector<fs::path> getTestPrograms(const fs::path& parent) {
-  std::vector<fs::path> programs;
-
-  for (const auto& entry : fs::directory_iterator(parent)) {
-    if (fs::is_regular_file(entry) && fs::path(entry).extension() == ".fl") {
-      programs.emplace_back(entry.path());
-    }
-  }
-
-  return programs;
-}
-
 INSTANTIATE_TEST_SUITE_P(TestDetectSyntaxError, TestDetectSyntaxError,
-                         ::testing::ValuesIn(getTestPrograms(TEST_FOLDER / "programs" / "syntax_error")),
-                         [](const ::testing::TestParamInfo<fs::path>& info) {
-                           return info.param.stem().string();
-                         });
+                         ::testing::ValuesIn(
+                             fluir::test::getTestPrograms("syntax_error")),
+                         fluir::test::filePathName);

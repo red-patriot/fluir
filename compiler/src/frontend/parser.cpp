@@ -26,6 +26,11 @@ namespace fluir {
     throw PanicMode{};
   }
 
+  Results<pt::ParseTree> parseFile(const std::filesystem::path& source) {
+    Parser parser{};
+    return parser.parseFile(source);
+  }
+
   Results<pt::ParseTree> parseString(const std::string_view source) {
     Parser parser{};
     return parser.parseString(source);

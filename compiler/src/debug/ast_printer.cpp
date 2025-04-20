@@ -29,9 +29,7 @@ namespace fluir::debug {
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << indent() << fmt::format("Function({}): '{}'", func.id, func.name) << '\n';
     indent_ += 2;
-    for (const auto& statement : func.statements) {
-      std::visit(*this, statement);
-    }
+    print(func.statements);
     indent_ -= 2;
   }
 

@@ -5,16 +5,6 @@
 #include <variant>
 
 namespace {
-  class GraphBuilder {
-   public:
-    fluir::ast::Declaration operator()(const fluir::pt::FunctionDecl& func) {
-      return fluir::ast::FunctionDecl{func.id,
-                                      func.location,
-                                      func.name,
-                                      {}};  // TODO: Handle body
-    }
-  };
-
   class DependencyWalker {
    public:
     static std::unordered_set<fluir::ID> getAll(const fluir::pt::Block& block) {
@@ -44,30 +34,47 @@ namespace {
 
 namespace fluir {
   Results<ast::ASG> buildGraph(const pt::ParseTree& tree) {
-    ast::ASG graph;
-    Diagnostics diagnostics;
+    return ASGBuilder::buildFrom(tree);
+  }
+
+  Results<ast::ASG> ASGBuilder::buildFrom(const pt::ParseTree& tree) {
+    ASGBuilder builder{};
 
     for (const auto& [id, declaration] : tree.declarations) {
-      graph.declarations.emplace_back(std::visit(GraphBuilder{}, declaration));
+      builder.graph_.declarations.emplace_back(std::visit(builder, declaration));
     }
 
-    return Results<ast::ASG>{graph, diagnostics};
+    return Results<ast::ASG>{std::move(builder.graph_),
+                             std::move(builder.diagnostics_)};
+  }
+
+  fluir::ast::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
+    fluir::ast::FunctionDecl decl{func.id,
+                                  func.location,
+                                  func.name,
+                                  {}};
+
+    auto bodyResults = buildDataFlowGraph(func.body);
+    // TODO: Handle errors in body
+    decl.statements = std::move(bodyResults.value());
+
+    return decl;
   }
 
   Results<ast::DataFlowGraph> buildDataFlowGraph(pt::Block block) {
-    return AFGBuilder::buildFrom(std::move(block));
+    return FlowGraphBuilder::buildFrom(std::move(block));
   }
 
-  Results<ast::DataFlowGraph> AFGBuilder::buildFrom(pt::Block block) {
-    AFGBuilder builder{std::move(block)};
+  Results<ast::DataFlowGraph> FlowGraphBuilder::buildFrom(pt::Block block) {
+    FlowGraphBuilder builder{std::move(block)};
 
     return builder.run();
   }
 
-  AFGBuilder::AFGBuilder(pt::Block block) :
+  FlowGraphBuilder::FlowGraphBuilder(pt::Block block) :
       block_(std::move(block)) { }
 
-  fluir::ast::Node AFGBuilder::operator()(const pt::Binary& pt) {
+  fluir::ast::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     fluir::ast::BinaryOp ast{
         pt.id,
         pt.location,
@@ -82,7 +89,7 @@ namespace fluir {
     return ast;
   }
 
-  ast::Node AFGBuilder::operator()(const pt::Unary& pt) {
+  ast::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
     ast::UnaryOp ast{pt.id,
                      pt.location,
                      pt.op,
@@ -93,14 +100,14 @@ namespace fluir {
     return ast;
   }
 
-  ast::Node AFGBuilder::operator()(const pt::Constant& pt) {
+  ast::Node FlowGraphBuilder::operator()(const pt::Constant& pt) {
     ast::ConstantFP ast{pt.id, pt.location, pt.value};
     block_.erase(pt.id);
     // TODO: handle other literal types here
     return ast;
   }
 
-  Results<ast::DataFlowGraph> AFGBuilder::run() {
+  Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
     while (!block_.empty() /*  && noTopLevelCycles()? */) {
       auto treeDependencies = DependencyWalker::getAll(block_);
@@ -126,7 +133,7 @@ namespace fluir {
     return {std::move(graph_), std::move(diagnostics_)};
   }
 
-  ast::SharedDependency AFGBuilder::getDependency(ID id) {
+  ast::SharedDependency FlowGraphBuilder::getDependency(ID id) {
     if (alreadyFound_.contains(id)) {
       return alreadyFound_.at(id);
     }

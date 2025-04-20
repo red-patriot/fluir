@@ -12,6 +12,7 @@
 
 namespace fluir {
   Results<pt::ParseTree> parseString(const std::string_view source);
+  Results<pt::ParseTree> parseFile(const std::filesystem::path& source);
 
   class Parser {
    public:

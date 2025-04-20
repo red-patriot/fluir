@@ -11,7 +11,20 @@ namespace fluir {
 
   Results<ast::DataFlowGraph> buildDataFlowGraph(pt::Block block);
 
-  class AFGBuilder {
+  class ASGBuilder {
+   public:
+    static Results<ast::ASG> buildFrom(const pt::ParseTree& tree);
+
+    fluir::ast::Declaration operator()(const fluir::pt::FunctionDecl& func);
+
+   private:
+    ast::ASG graph_;
+    Diagnostics diagnostics_;
+
+    ASGBuilder() = default;
+  };
+
+  class FlowGraphBuilder {
    public:
     static Results<ast::DataFlowGraph> buildFrom(pt::Block block);
 
@@ -25,7 +38,7 @@ namespace fluir {
     Diagnostics diagnostics_;
     std::unordered_map<ID, ast::SharedDependency> alreadyFound_;
 
-    AFGBuilder(pt::Block block);
+    FlowGraphBuilder(pt::Block block);
 
     Results<ast::DataFlowGraph> run();
 

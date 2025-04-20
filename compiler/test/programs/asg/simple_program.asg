@@ -1,0 +1,8 @@
+Function(1): 'foo'
+  BinaryOp(3): /
+    ConstantFP(2): 1.2345
+    ConstantFP(1): 6.7890
+  BinaryOp(5): *
+    ConstantFP(4): 7.6543
+    UnaryOp(6): +
+      ConstantFP(2): 1.2345

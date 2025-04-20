@@ -51,6 +51,10 @@ namespace fluir::ast {
     const Concrete& as() const {
       return std::get<Concrete>(*this);
     }
+
+    ID id() const {
+      return std::visit([](const auto& n) { return n.id; }, *this);
+    }
   };
 
   using DataFlowGraph = std::vector<Node>;

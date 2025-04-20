@@ -18,10 +18,13 @@ namespace fluir {
     fluir::ast::Declaration operator()(const fluir::pt::FunctionDecl& func);
 
    private:
+    const pt::ParseTree& tree_;
     ast::ASG graph_;
     Diagnostics diagnostics_;
 
-    ASGBuilder() = default;
+    Results<ast::ASG> run();
+
+    explicit ASGBuilder(const pt::ParseTree& tree);
   };
 
   class FlowGraphBuilder {
@@ -38,7 +41,7 @@ namespace fluir {
     Diagnostics diagnostics_;
     std::unordered_map<ID, ast::SharedDependency> alreadyFound_;
 
-    FlowGraphBuilder(pt::Block block);
+    explicit FlowGraphBuilder(pt::Block block);
 
     Results<ast::DataFlowGraph> run();
 

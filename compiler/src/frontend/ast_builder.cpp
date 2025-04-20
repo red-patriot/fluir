@@ -38,15 +38,12 @@ namespace fluir {
   }
 
   Results<ast::ASG> ASGBuilder::buildFrom(const pt::ParseTree& tree) {
-    ASGBuilder builder{};
-
-    for (const auto& [id, declaration] : tree.declarations) {
-      builder.graph_.declarations.emplace_back(std::visit(builder, declaration));
-    }
-
-    return Results<ast::ASG>{std::move(builder.graph_),
-                             std::move(builder.diagnostics_)};
+    ASGBuilder builder{tree};
+    return builder.run();
   }
+
+  ASGBuilder::ASGBuilder(const pt::ParseTree& tree) :
+      tree_(tree) { }
 
   fluir::ast::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
     fluir::ast::FunctionDecl decl{func.id,
@@ -59,6 +56,15 @@ namespace fluir {
     decl.statements = std::move(bodyResults.value());
 
     return decl;
+  }
+
+  Results<ast::ASG> ASGBuilder::run() {
+    for (const auto& [id, declaration] : tree_.declarations) {
+      graph_.declarations.emplace_back(std::visit(*this, declaration));
+    }
+
+    return Results<ast::ASG>{std::move(graph_),
+                             std::move(diagnostics_)};
   }
 
   Results<ast::DataFlowGraph> buildDataFlowGraph(pt::Block block) {

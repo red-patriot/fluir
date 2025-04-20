@@ -57,8 +57,6 @@ namespace {
         alreadyFound_.insert({pt.rhs, rhs});
       }
 
-      block_.erase(pt.lhs);
-      block_.erase(pt.rhs);
       block_.erase(pt.id);
 
       ast.lhs = alreadyFound_.at(pt.lhs);
@@ -70,8 +68,10 @@ namespace {
       throw std::exception();
     }
     fluir::ast::Node operator()(const fluir::pt::Constant& pt) {
+      fluir::ast::ConstantFP ast{pt.id, pt.location, pt.value};
+      block_.erase(pt.id);
       // TODO: handle other literal types here
-      return fluir::ast::ConstantFP{pt.id, pt.location, pt.value};
+      return ast;
     }
 
    private:

@@ -109,7 +109,7 @@ namespace fluir {
             name, id);
     tree_.declarations.emplace(
         id,
-        pt::FunctionDecl{location, std::string(name), body});
+        pt::FunctionDecl{id, location, std::string(name), body});
   }
 
   pt::Block Parser::block(Element* element) {
@@ -155,7 +155,7 @@ namespace fluir {
     auto location = parseLocation(element, type);
     auto value = literal(element->FirstChildElement());
 
-    return {id, pt::Constant{location, value}};
+    return {id, pt::Constant{id, location, value}};
   }
 
   std::pair<ID, pt::Node> Parser::binary(Element* element) {
@@ -166,7 +166,7 @@ namespace fluir {
     auto rhs = parseIdReference(element, "rhs", type);
     auto op = parseOperator(element, "operator", type);
 
-    return {id, pt::Binary{location, lhs, rhs, op}};
+    return {id, pt::Binary{id, location, lhs, rhs, op}};
   }
 
   std::pair<ID, pt::Node> Parser::unary(Element* element) {
@@ -176,7 +176,7 @@ namespace fluir {
     auto lhs = parseIdReference(element, "lhs", type);
     auto op = parseOperator(element, "operator", type);
 
-    return {id, pt::Unary{location, lhs, op}};
+    return {id, pt::Unary{id, location, lhs, op}};
   }
 
   pt::Literal Parser::literal(Element* element) {

@@ -6,6 +6,7 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
   fluir::pt::ParseTree pt{
       .declarations = {{1,
                         fluir::pt::FunctionDecl{
+                            .id = 1,
                             .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100},
                             .name = "main",
                             .body = fluir::pt::EMPTY_BLOCK}}}};

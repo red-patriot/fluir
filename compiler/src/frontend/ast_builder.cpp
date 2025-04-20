@@ -4,7 +4,7 @@ namespace {
   class GraphBuilder {
    public:
     fluir::ast::Declaration operator()(const fluir::pt::FunctionDecl& func) {
-      return fluir::ast::FunctionDecl{1,  // TODO: Don't hardcode this
+      return fluir::ast::FunctionDecl{func.id,
                                       func.location,
                                       func.name,
                                       {}};  // TODO: Handle body

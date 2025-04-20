@@ -14,6 +14,7 @@ namespace fluir::pt {
   using Literal = Float;  // TODO: Support other literal types
 
   struct Constant {
+    ID id;
     FlowGraphLocation location;
     Literal value;
 
@@ -21,6 +22,7 @@ namespace fluir::pt {
   };
 
   struct Binary {
+    ID id;
     FlowGraphLocation location;
     ID lhs;
     ID rhs;
@@ -30,6 +32,7 @@ namespace fluir::pt {
   };
 
   struct Unary {
+    ID id;
     FlowGraphLocation location;
     ID lhs;
     fluir::Operator op;
@@ -43,6 +46,7 @@ namespace fluir::pt {
   inline const Block EMPTY_BLOCK = {};
 
   struct FunctionDecl {
+    ID id;
     FlowGraphLocation location;
 
     std::string name;

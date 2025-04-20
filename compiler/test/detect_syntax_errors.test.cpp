@@ -34,6 +34,7 @@ TEST_P(TestDetectSyntaxError, Test) {
 
   auto actual = ss.str();
 
+  EXPECT_FALSE(results.hasValue());
   EXPECT_EQ(errors, actual);
 }
 

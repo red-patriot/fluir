@@ -42,7 +42,12 @@ namespace fluir {
 
     flowGraph();
 
-    return {std::move(tree_), std::move(diagnostics_)};
+    if (diagnostics_.containsErrors()) {
+      return Results<pt::ParseTree>{std::move(diagnostics_)};
+    } else {
+      return {std::move(tree_),
+              std::move(diagnostics_)};
+    }
   }
 
   Results<pt::ParseTree> Parser::parseString(const std::string_view source) {
@@ -52,7 +57,12 @@ namespace fluir {
 
     flowGraph();
 
-    return {std::move(tree_), std::move(diagnostics_)};
+    if (diagnostics_.containsErrors()) {
+      return Results<pt::ParseTree>{std::move(diagnostics_)};
+    } else {
+      return {std::move(tree_),
+              std::move(diagnostics_)};
+    }
   }
 
   void Parser::flowGraph() {

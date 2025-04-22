@@ -52,8 +52,11 @@ namespace fluir {
                                   {}};
 
     auto bodyResults = buildDataFlowGraph(func.body);
-    // TODO: Handle errors in body
-    decl.statements = std::move(bodyResults.value());
+    std::ranges::move(bodyResults.diagnostics(), std::back_inserter(diagnostics_));
+
+    if (!diagnostics_.containsErrors()) {
+      decl.statements = std::move(bodyResults.value());
+    }
 
     return decl;
   }
@@ -61,6 +64,9 @@ namespace fluir {
   Results<ast::ASG> ASGBuilder::run() {
     for (const auto& [id, declaration] : tree_.declarations) {
       graph_.declarations.emplace_back(std::visit(*this, declaration));
+    }
+    if (diagnostics_.containsErrors()) {
+      return Results<ast::ASG>{std::move(diagnostics_)};
     }
 
     return Results<ast::ASG>{std::move(graph_),
@@ -125,14 +131,14 @@ namespace fluir {
             return treeDependencies.contains(key);
           });
       if (topLevelNode == block_.end()) {
-        // TODO: Handle this
-        return Results<ast::DataFlowGraph>{Diagnostics{{Diagnostic::ERROR, "Unimplemented"}}};
+        // There is a circular dependency in the nodes.
+        // TODO: Detect which nodes form the cycle
+        diagnostics_.emitError("Circular dependency detected.");
+        return Results<ast::DataFlowGraph>{std::move(diagnostics_)};
       }
       auto ptNode = block_.extract(topLevelNode);
-      // Build ASG node from PT node
       auto asgNode = std::visit(*this, ptNode.mapped());
 
-      // Output ASG node
       graph_.emplace_back(std::move(asgNode));
     }
 

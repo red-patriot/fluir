@@ -18,15 +18,23 @@ set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
                                utility/results.test.cpp
 )
 
+set(FLUIR_AST_TEST_SOURCES
+    ast/asg_errors.test.cpp
+    ast/asg_parser_integration.test.cpp
+    ast/asg.test.cpp
+)
+
 target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
-            asg.test.cpp
-            asg_errors.test.cpp
-            asg_parser_integration.test.cpp
+            ${FLUIR_AST_TEST_SOURCES}
             detect_syntax_errors.test.cpp
             parser.test.cpp
 )
+target_include_directories(
+    fluir.compiler.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 target_compile_definitions(
     fluir.compiler.test
     PRIVATE "TEST_FOLDER=std::filesystem::path(\"${CMAKE_CURRENT_SOURCE_DIR}\")"

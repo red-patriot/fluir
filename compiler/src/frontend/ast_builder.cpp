@@ -87,21 +87,24 @@ namespace fluir {
       block_(std::move(block)) { }
 
   fluir::ast::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
+    inProgressNodes_.emplace_back(pt.id);
     fluir::ast::BinaryOp ast{
         pt.id,
         pt.location,
         pt.op,
         nullptr, nullptr};
 
-    block_.erase(pt.id);
-
     ast.lhs = getDependency(pt.lhs);
     ast.rhs = getDependency(pt.rhs);
 
+    block_.erase(pt.id);
+    inProgressNodes_.pop_back();
     return ast;
   }
 
   ast::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
+    inProgressNodes_.emplace_back(pt.id);
+
     ast::UnaryOp ast{pt.id,
                      pt.location,
                      pt.op,
@@ -109,13 +112,18 @@ namespace fluir {
     ast.operand = getDependency(pt.lhs);
 
     block_.erase(pt.id);
+    inProgressNodes_.pop_back();
     return ast;
   }
 
   ast::Node FlowGraphBuilder::operator()(const pt::Constant& pt) {
+    inProgressNodes_.emplace_back(pt.id);
+
     ast::ConstantFP ast{pt.id, pt.location, pt.value};
     block_.erase(pt.id);
     // TODO: handle other literal types here
+
+    inProgressNodes_.pop_back();
     return ast;
   }
 
@@ -146,6 +154,13 @@ namespace fluir {
   }
 
   ast::SharedDependency FlowGraphBuilder::getDependency(ID id) {
+    if (std::ranges::find(inProgressNodes_, id) != inProgressNodes_.end()) {
+      // We are trying to place a dependency on an in progress node, so
+      // there is a circular dependency
+      // TODO: Detect which nodes form the cycle
+      diagnostics_.emitError("Circular dependency detected.");
+      return nullptr;
+    }
     if (alreadyFound_.contains(id)) {
       return alreadyFound_.at(id);
     }

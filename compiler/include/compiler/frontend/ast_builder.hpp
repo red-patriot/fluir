@@ -1,6 +1,9 @@
 #ifndef FLUIR_COMPILER_FRONTEND_AST_BUILDER_HPP
 #define FLUIR_COMPILER_FRONTEND_AST_BUILDER_HPP
 
+#include <vector>
+#include <unordered_map>
+
 #include "compiler/frontend/ast/ast.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/results.hpp"
@@ -40,6 +43,7 @@ namespace fluir {
     pt::Block block_;
     Diagnostics diagnostics_;
     std::unordered_map<ID, ast::SharedDependency> alreadyFound_;
+    std::vector<ID> inProgressNodes_;
 
     explicit FlowGraphBuilder(pt::Block block);
 

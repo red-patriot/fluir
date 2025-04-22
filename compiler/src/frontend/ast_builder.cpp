@@ -129,7 +129,7 @@ namespace fluir {
 
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
-    while (!block_.empty() /*  && noTopLevelCycles()? */) {
+    while (!block_.empty()) {
       auto treeDependencies = DependencyWalker::getAll(block_);
 
       auto topLevelNode = std::ranges::find_if_not(

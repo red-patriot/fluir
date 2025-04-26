@@ -18,7 +18,7 @@ namespace {
 
     std::unordered_set<fluir::ID> idsInTree() const { return std::move(deps_); }
 
-    void operator()(const fluir::pt::Constant& n) { }
+    void operator()(const fluir::pt::Constant&) { }
     void operator()(const fluir::pt::Unary& n) {
       deps_.insert(n.lhs);
     }

@@ -256,7 +256,7 @@ namespace fluir {
   Operator Parser::parseOperator(Element* element,
                                  std::string_view attribute,
                                  std::string_view type) {
-    std::string_view opText = element->Attribute("operator");
+    std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
     if (opText == "+") {
       return Operator::PLUS;

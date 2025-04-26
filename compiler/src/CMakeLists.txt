@@ -1,6 +1,8 @@
 find_package(fmt REQUIRED)
 find_package(tinyxml2 REQUIRED)
 
+include(strict-warnings)
+
 add_library(fluir.libcompiler)
 add_library(
     fluir::compiler
@@ -20,6 +22,8 @@ target_sources(
             ${FLUIR_COMPILER_DEBUG_SOURCES}
             utility/diagnostics.cpp
 )
+
+turn_up_warnings_on(fluir.libcompiler)
 
 target_include_directories(
     fluir.libcompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include

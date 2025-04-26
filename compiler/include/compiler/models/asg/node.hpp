@@ -1,5 +1,5 @@
-#ifndef FLUIR_COMPILER_AST_NODE_HPP
-#define FLUIR_COMPILER_AST_NODE_HPP
+#ifndef FLUIR_COMPILER_MODELS_ASG_NODE_HPP
+#define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
 
 #include <memory>
 #include <variant>
@@ -9,7 +9,7 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
-namespace fluir::ast {
+namespace fluir::asg {
   struct NodeBase {
     ID id;
     FlowGraphLocation location;
@@ -59,6 +59,6 @@ namespace fluir::ast {
 
   using DataFlowGraph = std::vector<Node>;
 
-}  // namespace fluir::ast
+}  // namespace fluir::asg
 
 #endif

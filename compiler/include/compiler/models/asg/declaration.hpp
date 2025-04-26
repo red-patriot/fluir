@@ -1,14 +1,14 @@
-#ifndef FLUIR_COMPILER_AST_DECLARATION_HPP
-#define FLUIR_COMPILER_AST_DECLARATION_HPP
+#ifndef FLUIR_COMPILER_MODELS_ASG_DECLARATION_HPP
+#define FLUIR_COMPILER_MODELS_ASG_DECLARATION_HPP
 
 #include <string>
 #include <vector>
 
-#include "compiler/frontend/ast/node.hpp"
+#include "compiler/models/asg/node.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 
-namespace fluir::ast {
+namespace fluir::asg {
   struct FunctionDecl {
     ID id;
     FlowGraphLocation location;
@@ -18,6 +18,6 @@ namespace fluir::ast {
   };
 
   using Declaration = FunctionDecl;  // TODO: Support other declarations
-}  // namespace fluir::ast
+}  // namespace fluir::asg
 
 #endif

@@ -18,16 +18,16 @@ set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
                                utility/results.test.cpp
 )
 
-set(FLUIR_AST_TEST_SOURCES
-    ast/asg_errors.test.cpp
-    ast/asg_parser_integration.test.cpp
-    ast/asg.test.cpp
+set(FLUIR_ASG_TEST_SOURCES
+    asg/asg_errors.test.cpp
+    asg/asg_parser_integration.test.cpp
+    asg/asg.test.cpp
 )
 
 target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
-            ${FLUIR_AST_TEST_SOURCES}
+            ${FLUIR_ASG_TEST_SOURCES}
             detect_syntax_errors.test.cpp
             parser.test.cpp
 )

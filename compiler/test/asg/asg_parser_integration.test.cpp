@@ -3,8 +3,8 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/debug/ast_printer.hpp"
-#include "compiler/frontend/ast_builder.hpp"
+#include "compiler/debug/asg_printer.hpp"
+#include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "file_utility.hpp"
 
@@ -21,7 +21,7 @@ TEST_P(TestAsgParserIntegration, Test) {
   auto results = fluir::buildGraph(parseResults.value());
 
   std::stringstream ss;
-  fluir::debug::AstPrinter printer{ss, true};
+  fluir::debug::AsgPrinter printer{ss, true};
   printer.print(results.value());
 
   auto actual = ss.str();

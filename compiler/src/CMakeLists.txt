@@ -9,10 +9,10 @@ add_library(
 )
 
 set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
-                                    "frontend/ast_builder.cpp"
+                                    "frontend/asg_builder.cpp"
 )
 
-set(FLUIR_COMPILER_DEBUG_SOURCES "debug/ast_printer.cpp")
+set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 
 target_sources(
     fluir.libcompiler

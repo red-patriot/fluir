@@ -1,4 +1,4 @@
-#include "compiler/debug/ast_printer.hpp"
+#include "compiler/debug/asg_printer.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -6,19 +6,19 @@
 #include <fmt/format.h>
 
 namespace fluir::debug {
-  AstPrinter::AstPrinter(std::ostream& out, bool inOrder) :
+  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) :
       out_(out),
       inOrder_(inOrder) {
   }
 
-  void AstPrinter::print(const ast::ASG& asg) {
+  void AsgPrinter::print(const asg::ASG& asg) {
     // TODO: Sort decls if needed
     for (const auto& decl : asg.declarations) {
       (*this)(decl);
     }
   }
 
-  void AstPrinter::print(const ast::DataFlowGraph& graph) {
+  void AsgPrinter::print(const asg::DataFlowGraph& graph) {
     if (inOrder_) {
       doInOrderPrint(graph);
     } else {
@@ -26,14 +26,14 @@ namespace fluir::debug {
     }
   }
 
-  void AstPrinter::operator()(const ast::FunctionDecl& func) {
+  void AsgPrinter::operator()(const asg::FunctionDecl& func) {
     out_ << indent() << fmt::format("Function({}): '{}'", func.id, func.name) << '\n';
     indent_ += 2;
     print(func.statements);
     indent_ -= 2;
   }
 
-  void AstPrinter::operator()(const ast::BinaryOp& binary) {
+  void AsgPrinter::operator()(const asg::BinaryOp& binary) {
     out_ << indent() << fmt::format("BinaryOp({}): {}", binary.id, stringify(binary.op)) << '\n';
 
     indent_ += 2;
@@ -42,7 +42,7 @@ namespace fluir::debug {
     indent_ -= 2;
   }
 
-  void AstPrinter::operator()(const ast::UnaryOp& unary) {
+  void AsgPrinter::operator()(const asg::UnaryOp& unary) {
     out_ << indent() << fmt::format("UnaryOp({}): {}", unary.id, stringify(unary.op)) << '\n';
 
     indent_ += 2;
@@ -50,16 +50,16 @@ namespace fluir::debug {
     indent_ -= 2;
   }
 
-  void AstPrinter::operator()(const ast::ConstantFP& constant) {
+  void AsgPrinter::operator()(const asg::ConstantFP& constant) {
     out_ << indent() << fmt::format("ConstantFP({}): {:.4f}", constant.id, constant.value) << '\n';
   }
 
-  void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
+  void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       std::visit(*this, node);
     }
   }
-  void AstPrinter::doInOrderPrint(const ast::DataFlowGraph& graph) {
+  void AsgPrinter::doInOrderPrint(const asg::DataFlowGraph& graph) {
     // TODO: Sort elements if needed
     std::vector<std::pair<ID, size_t>> idIndices;
     idIndices.reserve(graph.size());
@@ -78,7 +78,7 @@ namespace fluir::debug {
     }
   }
 
-  std::string AstPrinter::indent() {
+  std::string AsgPrinter::indent() {
     return std::string(indent_, ' ');
   }
 }  // namespace fluir::debug

@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/ast_builder.hpp"
+#include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "file_utility.hpp"
 

@@ -28,6 +28,7 @@ option(
     ${PROJECT_IS_TOP_LEVEL}
 )
 
+add_subdirectory(bytecode)
 add_subdirectory(compiler)
 
 if (FLUIR_BUILD_TESTS)

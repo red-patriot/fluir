@@ -5,7 +5,7 @@
 #include <gtest/gtest.h>
 
 namespace fc = fluir::code;
-using enum fluir::code::OpCode;
+using enum fluir::code::Instruction;
 
 TEST(TestVM, ExecEmptyFunction) {
   fluir::code::ByteCode code{.header = {},

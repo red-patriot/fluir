@@ -16,7 +16,7 @@ namespace fluir {
   ExecResult VirtualMachine::run() {
 #define FLUIR_READ_BYTE() *ip_++
 
-    using enum code::OpCode;
+    using enum code::Instruction;
     for (;;) {
       std::uint8_t instruction = EXIT;
       switch (instruction = FLUIR_READ_BYTE()) {

@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "op_code.hpp"
+#include "instruction.hpp"
 
 namespace fluir::code {
   using Value = double;  // TODO: Support other value types

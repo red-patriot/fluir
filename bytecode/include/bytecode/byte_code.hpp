@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "code_chunk.hpp"
-#include "op_code.hpp"
+#include "instruction.hpp"
 
 namespace fluir::code {
   struct Header {

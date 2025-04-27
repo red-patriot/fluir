@@ -1,10 +1,10 @@
-#ifndef FLUIR_BYTECODE_OP_CODE_HPP
-#define FLUIR_BYTECODE_OP_CODE_HPP
+#ifndef FLUIR_BYTECODE_INSTRUCTION_HPP
+#define FLUIR_BYTECODE_INSTRUCTION_HPP
 
 #include <cstdint>
 
 namespace fluir::code {
-  enum OpCode : std::uint8_t {
+  enum Instruction : std::uint8_t {
     EXIT,
     PUSH_FP,
     POP,

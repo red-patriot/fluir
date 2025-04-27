@@ -1,6 +1,8 @@
-#include "vm/decode.hpp"
+#include "vm/decoder/decode.hpp"
 
 #include <gtest/gtest.h>
+
+#include "bytecode_assertions.hpp"
 
 TEST(TestDecodeInspect, DecodesHeaderInformation) {
   fluir::code::Header expected{.filetype = 'I',
@@ -15,9 +17,5 @@ TEST(TestDecodeInspect, DecodesHeaderInformation) {
   auto code = fluir::decodeInspectCode(data);
   auto& actual = code.header;
 
-  EXPECT_EQ(expected.filetype, actual.filetype);
-  EXPECT_EQ(expected.major, actual.major);
-  EXPECT_EQ(expected.minor, actual.minor);
-  EXPECT_EQ(expected.patch, actual.patch);
-  EXPECT_EQ(expected.entryOffset, actual.entryOffset);
+  EXPECT_BC_HEADER_EQ(expected, actual);
 }

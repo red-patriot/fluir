@@ -6,7 +6,8 @@
 #include "bytecode/byte_code.hpp"
 
 namespace fluir {
+  code::Header decodeHeader(std::string_view source);
   code::ByteCode decodeInspectCode(std::string_view source);
-}
+}  // namespace fluir
 
 #endif

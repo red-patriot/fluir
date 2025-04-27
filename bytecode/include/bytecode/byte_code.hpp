@@ -19,8 +19,8 @@ namespace fluir::code {
   };
 
   struct ByteCode {
-    Header header;
-    std::vector<Chunk> chunks;
+    Header header{};
+    std::vector<Chunk> chunks{};
   };
 }  // namespace fluir::code
 

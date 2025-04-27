@@ -9,7 +9,7 @@ TEST(TestDecodeInspect, DecodesHeaderInformation) {
                                .patch = 2,
                                .entryOffset = 12345678};
 
-  std::string data = R"(I01200100200000000000012345678
+  std::string data = R"(I0C01020000000000BC614E
 )";
 
   auto code = fluir::decodeInspectCode(data);

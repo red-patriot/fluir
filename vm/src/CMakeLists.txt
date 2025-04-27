@@ -7,7 +7,7 @@ add_library(
     fluir.libvm
 )
 
-target_sources(fluir.libvm PRIVATE decode.cpp)
+target_sources(fluir.libvm PRIVATE decode.cpp vm.cpp)
 
 turn_up_warnings_on(fluir.libvm)
 

@@ -2,6 +2,7 @@
 #define FLUIR_BYTECODE_BYTE_CODE_HPP
 
 #include <cstdint>
+#include <vector>
 
 #include "code_chunk.hpp"
 #include "op_code.hpp"
@@ -19,6 +20,7 @@ namespace fluir::code {
 
   struct ByteCode {
     Header header;
+    std::vector<Chunk> chunks;
   };
 }  // namespace fluir::code
 

@@ -14,7 +14,7 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(fluir.vm.test)
 
-target_sources(fluir.vm.test PRIVATE decode.test.cpp)
+target_sources(fluir.vm.test PRIVATE decode.test.cpp vm.test.cpp)
 
 target_link_libraries(
     fluir.vm.test

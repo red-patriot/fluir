@@ -5,7 +5,7 @@
 
 namespace fluir::code {
   enum class OpCode : std::uint8_t {
-    NOOP
+    EXIT
   };
 }
 

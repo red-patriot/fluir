@@ -5,10 +5,10 @@
 
 #include "op_code.hpp"
 
-namespace fluir {
-  struct CodeChunk {
+namespace fluir::code {
+  struct Chunk {
     std::vector<OpCode> code;
   };
-}  // namespace fluir
+}  // namespace fluir::code
 
 #endif

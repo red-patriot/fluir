@@ -14,3 +14,5 @@ turn_up_warnings_on(fluir.libvm)
 target_include_directories(
     fluir.libvm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
+
+target_link_libraries(fluir.libvm PUBLIC fluir::code)

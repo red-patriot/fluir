@@ -1,0 +1,12 @@
+#ifndef FLUIR_VM_DECODE_HPP
+#define FLUIR_VM_DECODE_HPP
+
+#include <string>
+
+#include "bytecode/byte_code.hpp"
+
+namespace fluir {
+  code::ByteCode decodeInspectCode(std::string_view source);
+}
+
+#endif

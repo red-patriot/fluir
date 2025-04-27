@@ -6,8 +6,11 @@
 #include "op_code.hpp"
 
 namespace fluir::code {
+  using Value = double;  // TODO: Support other value types
+
   struct Chunk {
-    std::vector<OpCode> code;
+    std::vector<uint8_t> code;
+    std::vector<Value> constants;
   };
 }  // namespace fluir::code
 

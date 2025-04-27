@@ -3,17 +3,72 @@
 namespace fluir {
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
+    stack_.clear();
+    stack_.reserve(256);
+
     code_ = code;
-    ip_ = code_->chunks.at(0).code.data();  // TODO: Be smarter about loading the entry point
+    current_ = &code_->chunks.at(0);
+    ip_ = current_->code.data();  // TODO: Be smarter about loading the entry point
 
     return run();
   }
 
   ExecResult VirtualMachine::run() {
+#define FLUIR_READ_BYTE() *ip_++
+
     using enum code::OpCode;
     for (;;) {
-      code::OpCode instruction = *ip_++;
-      switch (instruction) {
+      std::uint8_t instruction = EXIT;
+      switch (instruction = FLUIR_READ_BYTE()) {
+        case PUSH_FP:
+          {
+            uint8_t index = FLUIR_READ_BYTE();
+            const code::Value& val = current_->constants[index];
+            if (!(stack_.size() < 256)) {
+              return ExecResult::ERROR;
+            }
+            stack_.push_back(val);
+            break;
+          }
+        case FP_ADD:
+          {
+            double rhs = stack_.back();
+            stack_.pop_back();
+            double lhs = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(lhs + rhs);
+            break;
+          }
+        case FP_SUBTRACT:
+          {
+            double rhs = stack_.back();
+            stack_.pop_back();
+            double lhs = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(lhs - rhs);
+            break;
+          }
+        case FP_MULTIPLY:
+          {
+            double rhs = stack_.back();
+            stack_.pop_back();
+            double lhs = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(lhs * rhs);
+            break;
+          }
+        case FP_DIVIDE:
+          {
+            double rhs = stack_.back();
+            stack_.pop_back();
+            double lhs = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(lhs / rhs);
+            break;
+          }
+        case POP:
+          stack_.pop_back();
+          break;
         case EXIT:
           goto afterLoop;
         default:
@@ -22,5 +77,7 @@ namespace fluir {
     }
   afterLoop:
     return ExecResult::SUCCESS;
+
+#undef FLUIR_READ_BYTE
   }
 }  // namespace fluir

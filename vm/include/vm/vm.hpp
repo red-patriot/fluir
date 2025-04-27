@@ -11,6 +11,8 @@ namespace fluir {
 
   class VirtualMachine {
    public:
+    using Stack = std::vector<code::Value>;
+
     VirtualMachine() = default;
     VirtualMachine(const VirtualMachine&) = delete;
     VirtualMachine& operator=(const VirtualMachine&) = delete;
@@ -20,9 +22,13 @@ namespace fluir {
 
     ExecResult execute(code::ByteCode const* code);
 
+    const Stack& viewStack() const { return stack_; }
+
    private:
     code::ByteCode const* code_{nullptr};
-    code::OpCode const* ip_{nullptr};
+    code::Chunk const* current_{nullptr};
+    std::uint8_t const* ip_{nullptr};
+    Stack stack_;
 
     ExecResult run();
   };

@@ -63,11 +63,8 @@ IEXIT
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
-  // TODO: Assertions
   EXPECT_BC_HEADER_EQ(expected.header, actual.header);
-  EXPECT_BC_VALUES_EQ(expected.chunks.at(0).constants, actual.chunks.at(0).constants);
-  EXPECT_EQ(expected.chunks.at(0).name, actual.chunks.at(0).name);
-  EXPECT_CHUNK_CODE_EQ(expected.chunks.at(0), actual.chunks.at(0));
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
 
 TEST(TestInspectDecoder, ParsesMultipleFunctions) {
@@ -127,13 +124,9 @@ IEXIT
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
-  // TODO: Assertions
   EXPECT_BC_HEADER_EQ(expected.header, actual.header);
-  EXPECT_BC_VALUES_EQ(expected.chunks.at(0).constants, actual.chunks.at(0).constants);
-  EXPECT_EQ(expected.chunks.at(0).name, actual.chunks.at(0).name);
-  EXPECT_CHUNK_CODE_EQ(expected.chunks.at(0), actual.chunks.at(0));
-
-  EXPECT_BC_VALUES_EQ(expected.chunks.at(1).constants, actual.chunks.at(1).constants);
-  EXPECT_EQ(expected.chunks.at(1).name, actual.chunks.at(1).name);
-  EXPECT_CHUNK_CODE_EQ(expected.chunks.at(1), actual.chunks.at(1));
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
 }

@@ -30,7 +30,7 @@ namespace fluir {
 
   class InspectDecoder {
    public:
-    code::ByteCode decode(const std::string_view);
+    code::ByteCode decode(const std::string_view source);
 
    private:
     std::string_view source_;

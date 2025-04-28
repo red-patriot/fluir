@@ -9,7 +9,7 @@
 
 using enum fluir::code::Instruction;
 
-TEST(TestInspectDecoder, Scanner) {
+TEST(TestInspectDecoder, ParsesSingleFunction) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
 CONSTANTS x0D
@@ -68,4 +68,72 @@ IEXIT
   EXPECT_BC_VALUES_EQ(expected.chunks.at(0).constants, actual.chunks.at(0).constants);
   EXPECT_EQ(expected.chunks.at(0).name, actual.chunks.at(0).name);
   EXPECT_CHUNK_CODE_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
+TEST(TestInspectDecoder, ParsesMultipleFunctions) {
+  std::string source = R"(I07220A000000000000001A
+CHUNK main
+CONSTANTS x0B
+VFP 0.0 VFP 1.0 VFP 2.0 VFP 3.0
+VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
+VFP 8.0 VFP 9.0 VFP 10.0
+CODE x07
+IPUSH_FP x00
+IPUSH_FP x02
+IFP_ADD
+IPOP
+IEXIT
+CHUNK foo
+CONSTANTS x01 VFP 3.5
+CODE x0A
+IPUSH_FP x00
+IPUSH_FP x00
+IFP_SUBTRACT
+IPUSH_FP x00
+IPOP
+IPOP
+IEXIT
+)";
+  fluir::code::ByteCode expected{
+      .header = {.filetype = 'I',
+                 .major = 7,
+                 .minor = 34,
+                 .patch = 10,
+                 .entryOffset = 26},
+      .chunks = {
+          fluir::code::Chunk{.name = "main", .code = {
+                                                 PUSH_FP,
+                                                 0x00,
+                                                 PUSH_FP,
+                                                 0x02,
+                                                 FP_ADD,
+                                                 POP,
+                                                 EXIT,
+                                             },
+                             .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}},
+          fluir::code::Chunk{.name = "foo", .code = {
+                                                PUSH_FP,
+                                                0x00,
+                                                PUSH_FP,
+                                                0x00,
+                                                FP_SUBTRACT,
+                                                PUSH_FP,
+                                                0x00,
+                                                POP,
+                                                POP,
+                                                EXIT,
+                                            },
+                             .constants = {3.5}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  // TODO: Assertions
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_BC_VALUES_EQ(expected.chunks.at(0).constants, actual.chunks.at(0).constants);
+  EXPECT_EQ(expected.chunks.at(0).name, actual.chunks.at(0).name);
+  EXPECT_CHUNK_CODE_EQ(expected.chunks.at(0), actual.chunks.at(0));
+
+  EXPECT_BC_VALUES_EQ(expected.chunks.at(1).constants, actual.chunks.at(1).constants);
+  EXPECT_EQ(expected.chunks.at(1).name, actual.chunks.at(1).name);
+  EXPECT_CHUNK_CODE_EQ(expected.chunks.at(1), actual.chunks.at(1));
 }

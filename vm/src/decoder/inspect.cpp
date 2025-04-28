@@ -51,7 +51,10 @@ namespace fluir {
       Token nextToken = scanNext();
       switch (nextToken.type) {
         case TokenType::CHUNK:
-          return chunk();
+          chunk();
+          break;
+        case TokenType::END_OF_FILE:
+          break;
         default:
           throw std::runtime_error("Invalid bytecode. Expected token 'CHUNK'.");
       }

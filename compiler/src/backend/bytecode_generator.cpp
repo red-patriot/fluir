@@ -20,7 +20,6 @@ namespace fluir {
     current_ = code::Chunk{};
     current_.name = func.name;
 
-    // TODO: Generate for each statement
     for (const auto& node : func.statements) {
       doTopLevel(node);
     }
@@ -36,10 +35,6 @@ namespace fluir {
 
     // TODO: Handle other types here
     switch (node.op) {
-      case Operator::UNKNOWN:
-        // TODO: Handle this better
-        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -, *, /");
-        break;
       case Operator::PLUS:
         emitByte(Instruction::FP_ADD);
         break;
@@ -52,10 +47,29 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::FP_DIVIDE);
         break;
+      case Operator::UNKNOWN:
+        // TODO: Handle this better
+        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        break;
     }
   }
 
-  void BytecodeGenerator::operator()(const asg::UnaryOp&) { }
+  void BytecodeGenerator::operator()(const asg::UnaryOp& node) {
+    std::visit(*this, *node.operand);
+    // TODO: Handle other types here
+    switch (node.op) {
+      case Operator::PLUS:
+        emitByte(Instruction::FP_AFFIRM);
+        break;
+      case Operator::MINUS:
+        emitByte(Instruction::FP_NEGATE);
+        break;
+      default:
+        // TODO: Handle this better
+        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -");
+        break;
+    }
+  }
 
   void BytecodeGenerator::operator()(const asg::ConstantFP& node) {
     const auto constant = addConstant(node.value);

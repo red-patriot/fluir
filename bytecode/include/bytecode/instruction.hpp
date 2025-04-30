@@ -12,6 +12,8 @@ namespace fluir::code {
     FP_SUBTRACT,
     FP_MULTIPLY,
     FP_DIVIDE,
+    FP_NEGATE,
+    FP_AFFIRM,
   };
 }
 

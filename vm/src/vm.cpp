@@ -68,6 +68,20 @@ namespace fluir {
             stack_.push_back(lhs / rhs);
             break;
           }
+        case FP_AFFIRM:
+          {
+            double operand = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(+operand);
+            break;
+          }
+        case FP_NEGATE:
+          {
+            double operand = stack_.back();
+            stack_.pop_back();
+            stack_.push_back(-operand);
+            break;
+          }
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the

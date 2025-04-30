@@ -21,3 +21,9 @@ target_include_directories(
 )
 
 target_link_libraries(fluir.libvm PUBLIC fluir::code)
+
+add_executable(fluir.vm main.cpp)
+
+turn_up_warnings_on(fluir.vm)
+
+target_link_libraries(fluir.vm PRIVATE fluir::vm)

@@ -28,7 +28,9 @@ option(
     ${PROJECT_IS_TOP_LEVEL}
 )
 
+add_subdirectory(bytecode)
 add_subdirectory(compiler)
+add_subdirectory(vm)
 
 if (FLUIR_BUILD_TESTS)
     enable_testing()

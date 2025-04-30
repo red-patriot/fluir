@@ -29,7 +29,12 @@ target_include_directories(
     fluir.libcompiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-target_link_libraries(fluir.libcompiler PUBLIC fmt::fmt tinyxml2::tinyxml2)
+target_link_libraries(
+    fluir.libcompiler
+    PUBLIC fluir::code
+           fmt::fmt
+           tinyxml2::tinyxml2
+)
 
 add_executable(fluir.compiler main.cpp)
 

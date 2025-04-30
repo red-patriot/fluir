@@ -76,6 +76,7 @@ namespace fluir {
           stack_.pop_back();
           break;
         case EXIT:
+          // TODO: Clean up this testing code later...
           goto afterLoop;
         default:
           return ExecResult::ERROR;

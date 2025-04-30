@@ -1,5 +1,7 @@
 #include "vm/vm.hpp"
 
+#include <iostream>
+
 namespace fluir {
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
@@ -67,6 +69,10 @@ namespace fluir {
             break;
           }
         case POP:
+          // TODO: Remove this later
+          // This code is just for debugging purposes until the rest of the
+          // language is implemented
+          std::cout << stack_.back() << '\n';
           stack_.pop_back();
           break;
         case EXIT:

@@ -22,10 +22,16 @@ namespace fluir {
     const asg::ASG& graph_;
     code::ByteCode code_;
     Diagnostics diagnostics_;
-
-    Results<code::ByteCode> run();
+    code::Chunk current_;
 
     explicit BytecodeGenerator(const asg::ASG& graph);
+
+    void emitByte(std::uint8_t byte);
+    void emitBytes(std::uint8_t byte1, std::uint8_t byte2);
+    size_t addConstant(code::Value value);
+
+    Results<code::ByteCode> run();
+    void doTopLevel(const asg::Node& node);
   };
 }  // namespace fluir
 

@@ -1,6 +1,10 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
-using Inst = fluir::code::Instruction;
+#include <cstdint>
+
+#include <fmt/format.h>
+
+using fluir::code::Instruction;
 
 namespace fluir {
   Results<code::ByteCode> generateCode(const asg::ASG& graph) {
@@ -13,21 +17,71 @@ namespace fluir {
   }
 
   void BytecodeGenerator::operator()(const asg::FunctionDecl& func) {
-    code::Chunk generated;
-    generated.name = func.name;
+    current_ = code::Chunk{};
+    current_.name = func.name;
 
     // TODO: Generate for each statement
+    for (const auto& node : func.statements) {
+      doTopLevel(node);
+    }
 
     // (FOR NOW) end all functions with the EXIT instruction
-    generated.code.push_back(Inst::EXIT);
-    code_.chunks.push_back(std::move(generated));
+    emitByte(Instruction::EXIT);
+    code_.chunks.push_back(std::move(current_));
   }
 
-  void BytecodeGenerator::operator()(const asg::BinaryOp&) { }
+  void BytecodeGenerator::operator()(const asg::BinaryOp& node) {
+    std::visit(*this, *node.lhs);
+    std::visit(*this, *node.rhs);
+
+    // TODO: Handle other types here
+    switch (node.op) {
+      case Operator::UNKNOWN:
+        // TODO: Handle this better
+        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        break;
+      case Operator::PLUS:
+        emitByte(Instruction::FP_ADD);
+        break;
+      case Operator::MINUS:
+        emitByte(Instruction::FP_SUBTRACT);
+        break;
+      case Operator::STAR:
+        emitByte(Instruction::FP_MULTIPLY);
+        break;
+      case Operator::SLASH:
+        emitByte(Instruction::FP_DIVIDE);
+        break;
+    }
+  }
 
   void BytecodeGenerator::operator()(const asg::UnaryOp&) { }
 
-  void BytecodeGenerator::operator()(const asg::ConstantFP&) { }
+  void BytecodeGenerator::operator()(const asg::ConstantFP& node) {
+    const auto constant = addConstant(node.value);
+
+    // TODO: Handle more constants with special instruction
+    emitBytes(Instruction::PUSH_FP, static_cast<std::uint8_t>(constant));
+  }
+
+  BytecodeGenerator::BytecodeGenerator(const asg::ASG& graph) :
+      graph_(graph),
+      code_{} { }
+
+  void BytecodeGenerator::emitByte(std::uint8_t byte) {
+    current_.code.push_back(byte);
+  }
+  void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
+    emitByte(byte1);
+    emitByte(byte2);
+  }
+  size_t BytecodeGenerator::addConstant(code::Value value) {
+    current_.constants.emplace_back(std::move(value));
+    if (current_.constants.size() > UINT8_MAX) {
+      diagnostics_.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
+    }
+    return current_.constants.size() - 1;
+  }
 
   Results<code::ByteCode> BytecodeGenerator::run() {
     for (const auto& declaration : graph_.declarations) {
@@ -40,7 +94,10 @@ namespace fluir {
     return {std::move(code_), std::move(diagnostics_)};
   }
 
-  BytecodeGenerator::BytecodeGenerator(const asg::ASG& graph) :
-      graph_(graph),
-      code_{} { }
+  void BytecodeGenerator::doTopLevel(const asg::Node& node) {
+    std::visit(*this, node);
+
+    // Each top level node will leave a value on the stack, so pop it off
+    emitByte(Instruction::POP);
+  }
 }  // namespace fluir

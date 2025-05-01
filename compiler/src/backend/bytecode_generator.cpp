@@ -90,6 +90,10 @@ namespace fluir {
     emitByte(byte2);
   }
   size_t BytecodeGenerator::addConstant(code::Value value) {
+    if (auto found = std::ranges::find(current_.constants, value);
+        found != current_.constants.end()) {
+      return found - current_.constants.begin();
+    }
     current_.constants.emplace_back(std::move(value));
     if (current_.constants.size() > UINT8_MAX) {
       diagnostics_.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
@@ -103,6 +107,7 @@ namespace fluir {
     }
 
     // For now, zero out header
+    // TODO: Put the language version in the header here
     code_.header = code::Header{};
 
     return {std::move(code_), std::move(diagnostics_)};

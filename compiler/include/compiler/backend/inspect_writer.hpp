@@ -12,6 +12,9 @@ namespace fluir {
     void writeHeader(const code::Header&, std::ostream&) override;
     void writeChunk(const code::Chunk&, std::ostream&) override;
 
+    void writeConstant(const code::Value&, std::ostream&);
+    void writeCode(const code::Bytes&, std::ostream&);
+
     std::string_view indentation();
     void indent();
     void dedent();

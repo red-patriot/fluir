@@ -26,15 +26,38 @@ namespace fluir {
     os << fmt::format("{}CONSTANTS x{:X}\n",
                       indentation(),
                       chunk.constants.size());
-    // TODO: Write constants
+    indent();
+    for (const auto& constant : chunk.constants) {
+      writeConstant(constant, os);
+    }
+    dedent();
+
     os << fmt::format("{}CODE x{:X}\n",
                       indentation(),
                       chunk.code.size());
-    indent();
-    for (const auto& byte : chunk.code) {
-      os << fmt::format("{}{}\n", indentation(), instructionNames[byte]);
-    }
+
+    writeCode(chunk.code, os);
+
     dedent();
+  }
+
+  void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
+    os << fmt::format("{}VFP {:.12f}\n", indentation(), constant);
+  }
+
+  void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {
+    indent();
+    for (auto i = bytes.begin(); i != bytes.end(); ++i) {
+      if (*i == code::PUSH_FP) {
+        os << fmt::format("{}{} x{:X}\n", indentation(),
+                          instructionNames[*i],
+                          *(i + 1));
+        ++i;
+      } else {
+        os << fmt::format("{}{}\n", indentation(),
+                          instructionNames[*i]);
+      }
+    }
     dedent();
   }
 

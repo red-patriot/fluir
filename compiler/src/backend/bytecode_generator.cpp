@@ -11,6 +11,10 @@ namespace fluir {
     return BytecodeGenerator::generate(graph);
   }
 
+  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination) {
+    return writer.write(code, destination);
+  }
+
   Results<code::ByteCode> BytecodeGenerator::generate(const asg::ASG& graph) {
     BytecodeGenerator generator{graph};
     return generator.run();

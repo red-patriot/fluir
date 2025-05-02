@@ -8,6 +8,7 @@
 
 namespace fluir {
   Results<code::ByteCode> generateCode(const asg::ASG& graph);
+  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
 
   class BytecodeGenerator {
    public:

@@ -14,7 +14,11 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
                                     "frontend/asg_builder.cpp"
 )
 
-set(FLUIR_COMPILER_BACKEND_SOURCES "backend/bytecode_generator.cpp")
+set(FLUIR_COMPILER_BACKEND_SOURCES
+    "backend/bytecode_generator.cpp"
+    "backend/code_writer.cpp"
+    "backend/inspect_writer.cpp"
+)
 
 set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 

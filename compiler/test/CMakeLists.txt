@@ -24,7 +24,9 @@ set(FLUIR_ASG_TEST_SOURCES
     asg/asg.test.cpp
 )
 
-set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp)
+set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
+                               backend/inspect_writer.test.cpp
+)
 
 target_sources(
     fluir.compiler.test

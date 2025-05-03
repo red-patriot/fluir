@@ -14,11 +14,6 @@ namespace fluir {
 #undef STRINGIFY
   }  // namespace
 
-  template <typename... Args>
-  std::string InspectWriter::formatIndented(fmt::format_string<Args...> format, Args&&... args) {
-    return fmt::format("{}", indentation()) + fmt::format(format, std::forward<Args>(args)...);
-  }
-
   void InspectWriter::writeHeader(const code::Header& header,
                                   std::ostream& os) {
     os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch,
@@ -27,7 +22,7 @@ namespace fluir {
   void InspectWriter::writeChunk(const code::Chunk& chunk,
                                  std::ostream& os) {
     os << fmt::format("CHUNK {}\n", chunk.name);
-    indent();
+    [[maybe_unused]] auto _ = indent();
     os << formatIndented("CONSTANTS x{:X}\n", chunk.constants.size());
     writeConstants(chunk.constants, os);
 
@@ -35,16 +30,13 @@ namespace fluir {
                          chunk.code.size());
 
     writeCode(chunk.code, os);
-
-    dedent();
   }
 
   void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {
-    indent();
+    [[maybe_unused]] auto _ = indent();
     for (const auto& constant : constants) {
       writeConstant(constant, os);
     }
-    dedent();
   }
 
   void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
@@ -52,7 +44,7 @@ namespace fluir {
   }
 
   void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {
-    indent();
+    [[maybe_unused]] auto _ = indent();
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH_FP:
@@ -66,21 +58,5 @@ namespace fluir {
                                instructionNames[*i]);
       }
     }
-    dedent();
-  }
-
-  std::string_view InspectWriter::indentation() {
-    return std::string_view{indent_.c_str(), level_};
-  }
-
-  void InspectWriter::indent() {
-    level_ += 2;
-    if (indent_.size() < level_) {
-      indent_ = std::string(level_, ' ');
-    }
-  }
-
-  void InspectWriter::dedent() {
-    level_ -= 2;
   }
 }  // namespace fluir

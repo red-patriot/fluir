@@ -27,31 +27,28 @@ namespace fluir::debug {
   }
 
   void AsgPrinter::operator()(const asg::FunctionDecl& func) {
-    out_ << indent() << fmt::format("Function({}): '{}'", func.id, func.name) << '\n';
-    indent_ += 2;
+    out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
+    [[maybe_unused]] auto _ = indent();
     print(func.statements);
-    indent_ -= 2;
   }
 
   void AsgPrinter::operator()(const asg::BinaryOp& binary) {
-    out_ << indent() << fmt::format("BinaryOp({}): {}", binary.id, stringify(binary.op)) << '\n';
+    out_ << formatIndented("BinaryOp({}): {}\n", binary.id, stringify(binary.op));
 
-    indent_ += 2;
+    [[maybe_unused]] auto _ = indent();
     std::visit(*this, *binary.lhs);
     std::visit(*this, *binary.rhs);
-    indent_ -= 2;
   }
 
   void AsgPrinter::operator()(const asg::UnaryOp& unary) {
-    out_ << indent() << fmt::format("UnaryOp({}): {}", unary.id, stringify(unary.op)) << '\n';
+    out_ << formatIndented("UnaryOp({}): {}\n", unary.id, stringify(unary.op));
 
-    indent_ += 2;
+    [[maybe_unused]] auto _ = indent();
     std::visit(*this, *unary.operand);
-    indent_ -= 2;
   }
 
   void AsgPrinter::operator()(const asg::ConstantFP& constant) {
-    out_ << indent() << fmt::format("ConstantFP({}): {:.4f}", constant.id, constant.value) << '\n';
+    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id, constant.value);
   }
 
   void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
@@ -76,9 +73,5 @@ namespace fluir::debug {
       auto& node = graph.at(index);
       std::visit(*this, node);
     }
-  }
-
-  std::string AsgPrinter::indent() {
-    return std::string(indent_, ' ');
   }
 }  // namespace fluir::debug

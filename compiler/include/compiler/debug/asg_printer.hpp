@@ -4,9 +4,10 @@
 #include <ostream>
 
 #include "compiler/models/asg.hpp"
+#include "compiler/utility/indent_formatter.hpp"
 
 namespace fluir::debug {
-  class AsgPrinter {
+  class AsgPrinter : private IndentFormatter<> {
    public:
     explicit AsgPrinter(std::ostream& out, bool inOrder = false);
 
@@ -21,12 +22,9 @@ namespace fluir::debug {
    private:
     std::ostream& out_;
     bool inOrder_;
-    int indent_{0};
 
     void doOutOfOrderPrint(const asg::DataFlowGraph& graph);
     void doInOrderPrint(const asg::DataFlowGraph& graph);
-
-    std::string indent();
   };
 }  // namespace fluir::debug
 

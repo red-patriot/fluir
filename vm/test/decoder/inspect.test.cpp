@@ -130,3 +130,57 @@ IEXIT
     EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
   }
 }
+
+TEST(TestInspectDecoder, DecodesUnaryInstructionsCorrectly) {
+  std::string source = R"(I07220A000000000000001A
+CHUNK foo
+  CONSTANTS x3
+    VFP 7.654300000000
+    VFP 1.234500000000
+    VFP 6.789000000000
+  CODE xF
+    IPUSH_FP x0
+    IPUSH_FP x1
+    IFP_AFFIRM
+    IFP_MULTIPLY
+    IPOP
+    IPUSH_FP x1
+    IPUSH_FP x2
+    IFP_DIVIDE
+    IFP_NEGATE
+    IPOP
+    IEXIT
+)";
+  fluir::code::ByteCode expected{
+      .header = {.filetype = 'I',
+                 .major = 7,
+                 .minor = 34,
+                 .patch = 10,
+                 .entryOffset = 26},
+      .chunks = {
+          fluir::code::Chunk{.name = "foo",
+                             .code = {PUSH_FP, 0x00,
+                                      PUSH_FP, 0x01,
+                                      FP_AFFIRM,
+                                      FP_MULTIPLY,
+                                      POP,
+                                      PUSH_FP, 0x01,
+                                      PUSH_FP, 0x02,
+                                      FP_DIVIDE,
+                                      FP_NEGATE,
+                                      POP,
+                                      EXIT},
+                             .constants = {
+                                 7.654300000000,
+                                 1.234500000000,
+                                 6.789000000000,
+                             }}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}

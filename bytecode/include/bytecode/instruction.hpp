@@ -4,15 +4,25 @@
 #include <cstdint>
 
 namespace fluir::code {
+  // clang-format off
+  #define FLUIR_CODE_INSTRUCTIONS(code)  \
+  code(EXIT)                             \
+  code(PUSH_FP)                          \
+  code(POP)                              \
+  code(FP_ADD)                           \
+  code(FP_SUBTRACT)                      \
+  code(FP_MULTIPLY)                      \
+  code(FP_DIVIDE)                        \
+  code(FP_NEGATE)                        \
+  code(FP_AFFIRM)
+
+  // clang-format on
+
   enum Instruction : std::uint8_t {
-    EXIT,
-    PUSH_FP,
-    POP,
-    FP_ADD,
-    FP_SUBTRACT,
-    FP_MULTIPLY,
-    FP_DIVIDE,
+#define enumerate(inst) inst,
+    FLUIR_CODE_INSTRUCTIONS(enumerate)
+#undef enumerate
   };
-}
+}  // namespace fluir::code
 
 #endif

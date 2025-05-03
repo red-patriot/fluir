@@ -10,10 +10,14 @@
   EXPECT_EQ(expected.patch, actual.patch);       \
   EXPECT_EQ(expected.entryOffset, actual.entryOffset)
 
-#define EXPECT_BC_VALUES_EQ(expectedValues, actualValues)         \
-  EXPECT_EQ(expectedValues.size(), actualValues.size());          \
-  for (size_t i = 0; i != expectedValues.size(); ++i) {           \
-    EXPECT_DOUBLE_EQ(expectedValues[i], actualValues.at(i)) << i; \
+#define EXPECT_BC_VALUES_EQ(expectedValues, actualValues) \
+  EXPECT_EQ(expectedValues.size(), actualValues.size());  \
+  for (size_t bc_values_eq_i = 0;                         \
+       bc_values_eq_i != expectedValues.size();           \
+       ++bc_values_eq_i) {                                \
+    EXPECT_DOUBLE_EQ(expectedValues[bc_values_eq_i],      \
+                     actualValues.at(bc_values_eq_i))     \
+        << bc_values_eq_i;                                \
   }
 
 #define EXPECT_CHUNK_CODE_EQ(expectedChunk, actualChunk) \

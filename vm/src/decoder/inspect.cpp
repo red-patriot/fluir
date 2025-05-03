@@ -241,11 +241,21 @@ namespace fluir {
     if (current.starts_with("IFP_") && current.size() > 4) {
       switch (current[4]) {
         case 'A':
-          return checkKeyword("IFP_ADD", TokenType::INST_FP_ADD);
+          if (current.size() > 5) {
+            switch (current[5]) {
+              case 'D':
+                return checkKeyword("IFP_ADD", TokenType::INST_FP_ADD);
+              case 'F':
+                return checkKeyword("IFP_AFFIRM", TokenType::INST_FP_AFFIRM);
+            }
+          }
+          break;
         case 'D':
           return checkKeyword("IFP_DIVIDE", TokenType::INST_FP_DIVIDE);
         case 'M':
           return checkKeyword("IFP_MULTIPLY", TokenType::INST_FP_MULTIPLY);
+        case 'N':
+          return checkKeyword("IFP_NEGATE", TokenType::INST_FP_NEGATE);
         case 'S':
           return checkKeyword("IFP_SUBTRACT", TokenType::INST_FP_SUBTRACT);
       }
@@ -284,6 +294,10 @@ namespace fluir {
         return code::Instruction::FP_MULTIPLY;
       case TokenType::INST_FP_DIVIDE:
         return code::Instruction::FP_DIVIDE;
+      case TokenType::INST_FP_AFFIRM:
+        return code::Instruction::FP_AFFIRM;
+      case TokenType::INST_FP_NEGATE:
+        return code::Instruction::FP_NEGATE;
       case TokenType::HEX_LITERAL:
         // This is an operand to one of the above instructions
         return toUnsignedInteger(token);

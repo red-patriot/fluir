@@ -31,27 +31,31 @@ class FileManager:
         declarations: dict[IDType, Declaration] = {}
         for element in root.iterchildren():
             id, decl = self._declaration(element)
+            if id == INVALID_ID:
+                continue
             if id in declarations.keys():
                 raise ValueError(f"{id} is repeated in the document")
             declarations[id] = decl
 
         return Program(declarations)
 
-    def _declaration(self, element: Any) -> tuple[IDType, Declaration]:
+    def _declaration(self, element: Any) -> _DeclarationPair:
         body: Nodes = {}
         for child in element.find("body").iterchildren():
             id, node = self._node(child)
+            if id == INVALID_ID:
+                continue
             if id in body.keys():
                 raise ValueError(f"{id} is repeated in his Declaration")
             body[id] = node
-        return int(element.get("id")), Function(
+        return self._id(element), Function(
             name=str(element.get("name")),
-            id=int(element.get("id")),
+            id=self._id(element),
             location=self._location(element),
             body=body,
         )
 
-    def _node(self, element: Any) -> tuple[IDType, Node]:
+    def _node(self, element: Any) -> _NodePair:
         match element.tag:
             case tag if tag.endswith("binary"):
                 return self._binary(element)
@@ -61,26 +65,26 @@ class FileManager:
                 return self._constant(element)
         return (INVALID_ID, Constant())
 
-    def _binary(self, element: Any) -> tuple[IDType, Node]:
-        return int(element.get("id")), BinaryOperator(
-            id=int(element.get("id")),
+    def _binary(self, element: Any) -> _NodePair:
+        return self._id(element), BinaryOperator(
+            id=self._id(element),
             location=self._location(element),
             op=Operator(element.get("operator")),
-            lhs=int(element.get("lhs")),
-            rhs=int(element.get("rhs")),
+            lhs=self._id(element, "lhs"),
+            rhs=self._id(element, "rhs"),
         )
 
-    def _unary(self, element: Any) -> tuple[IDType, Node]:
-        return int(element.get("id")), UnaryOperator(
-            id=int(element.get("id")),
+    def _unary(self, element: Any) -> _NodePair:
+        return self._id(element), UnaryOperator(
+            id=self._id(element),
             location=self._location(element),
             op=Operator(element.get("operator")),
-            lhs=int(element.get("lhs")),
+            lhs=self._id(element, "lhs"),
         )
 
-    def _constant(self, element: Any) -> tuple[IDType, Node]:
-        return int(element.get("id")), Constant(
-            id=int(element.get("id")),
+    def _constant(self, element: Any) -> _NodePair:
+        return self._id(element), Constant(
+            id=self._id(element),
             location=self._location(element),
             value=self._value(next(element.iterchildren(), None)),
         )
@@ -91,6 +95,9 @@ class FileManager:
                 return float(element.text)
 
         return None
+
+    def _id(self, element: Any, attribute: str = "id") -> IDType:
+        return int(element.get(attribute))
 
     def _location(self, element: Any) -> Location:
         return Location(

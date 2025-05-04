@@ -1,0 +1,20 @@
+[project]
+name="fluir.editor"
+version="0.1.0"
+dependencies = [
+    "lxml==5.4.0",
+    "lxml-stubs-0.5.1",
+    "pytest==8.3.5"
+]
+
+[tool.ruff]
+line-length = 80
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+strict = true

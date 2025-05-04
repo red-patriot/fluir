@@ -30,15 +30,16 @@ repos:
     hooks:
       - id: ruff
         types_or: [python, pyi]
-        args: [--fix]
+        args: ["--select", "I", "--fix"]
 
       - id: ruff-format
         types_or: [python, pyi]
 
   # Python "static" typing
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.15.0'
+    rev: "v1.15.0"
     hooks:
       - id: mypy
+        language: system
         types_or: [python, pyi]
-        args: [--strict]
+        args: [--strict, --config-file, editor/server/pyproject.toml]

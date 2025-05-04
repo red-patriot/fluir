@@ -1,8 +1,15 @@
 from dataclasses import dataclass, field
-from typing import Any, Final
+from enum import StrEnum
 
-type IDType = int
-INVALID_ID: Final[IDType] = 0
+from editor.models.id import INVALID_ID, IDType
+
+
+class Operator(StrEnum):
+    UNKNOWN = "<?>"
+    PLUS = "+"
+    MINUS = "-"
+    STAR = "*"
+    SLASH = "/"
 
 
 @dataclass
@@ -15,11 +22,31 @@ class Location:
 
 
 @dataclass
+class Constant:
+    id: IDType = INVALID_ID
+    location: Location = field(default_factory=Location)
+    value: float | None = None
+
+
+@dataclass
+class BinaryOperator:
+    id: IDType = INVALID_ID
+    location: Location = field(default_factory=Location)
+    op: Operator = Operator.UNKNOWN
+    lhs: IDType = INVALID_ID
+    rhs: IDType = INVALID_ID
+
+
+type Node = Constant | BinaryOperator
+type Nodes = dict[IDType, Node]
+
+
+@dataclass
 class Function:
     name: str = ""
-    id: int = INVALID_ID
+    id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
-    body: dict[Any, Any] = field(default_factory=dict)
+    body: dict[IDType, Node] = field(default_factory=dict)
 
 
 type Declaration = Function

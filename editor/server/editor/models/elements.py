@@ -37,7 +37,15 @@ class BinaryOperator:
     rhs: IDType = INVALID_ID
 
 
-type Node = Constant | BinaryOperator
+@dataclass
+class UnaryOperator:
+    id: IDType = INVALID_ID
+    location: Location = field(default_factory=Location)
+    op: Operator = Operator.UNKNOWN
+    lhs: IDType = INVALID_ID
+
+
+type Node = Constant | BinaryOperator | UnaryOperator
 type Nodes = dict[IDType, Node]
 
 

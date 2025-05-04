@@ -12,6 +12,7 @@ from editor.models.elements import (
     Nodes,
     Operator,
     Program,
+    UnaryOperator,
 )
 from editor.models.id import INVALID_ID, IDType
 
@@ -54,6 +55,8 @@ class FileManager:
         match element.tag:
             case tag if tag.endswith("binary"):
                 return self._binary(element)
+            case tag if tag.endswith("unary"):
+                return self._unary(element)
             case tag if tag.endswith("constant"):
                 return self._constant(element)
         return (INVALID_ID, Constant())
@@ -65,6 +68,14 @@ class FileManager:
             op=Operator(element.get("operator")),
             lhs=int(element.get("lhs")),
             rhs=int(element.get("rhs")),
+        )
+
+    def _unary(self, element: Any) -> tuple[IDType, Node]:
+        return int(element.get("id")), UnaryOperator(
+            id=int(element.get("id")),
+            location=self._location(element),
+            op=Operator(element.get("operator")),
+            lhs=int(element.get("lhs")),
         )
 
     def _constant(self, element: Any) -> tuple[IDType, Node]:

@@ -7,6 +7,7 @@ from editor.models.elements import (
     Location,
     Operator,
     Program,
+    UnaryOperator,
 )
 from editor.repository.fluir_file import FileManager
 
@@ -124,6 +125,49 @@ _TEST_DATA = [
     </fluir>
     """,
     ),
+    (
+        Program(
+            {
+                1: Function(
+                    name="main",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    body={
+                        7: UnaryOperator(
+                            id=7,
+                            location=Location(15, 2, 1, 5, 5),
+                            op=Operator.MINUS,
+                            lhs=3,
+                        ),
+                        3: Constant(
+                            id=3, location=Location(2, 2, 1, 5, 5), value=3.5
+                        ),
+                    },
+                )
+            }
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+        <fl:function
+            name="main"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <fl:unary
+                    id="7"
+                    x="15" y="2" z="1" w="5" h="5"
+                    lhs="3"
+                    operator="-" />
+                <fl:constant
+                    id="3"
+                    x="2" y="2" z="1" w="5" h="5">
+                    <fl:float>3.5</fl:float>
+                </fl:constant>
+            </body>
+        </fl:function>
+    </fluir>
+    """,
+    ),
 ]
 
 
@@ -134,6 +178,7 @@ _TEST_DATA = [
         "single_empty_function",
         "multiple_empty_functions",
         "simple_binary_expr",
+        "simple_unary_expr",
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:

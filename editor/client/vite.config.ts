@@ -29,4 +29,9 @@ export default defineConfig({
           : {},
     }),
   ],
+  test: {
+    environment: 'jsdom',
+    testMatch: ['./**/*.test.tsx'],
+    globals: true,
+  },
 });

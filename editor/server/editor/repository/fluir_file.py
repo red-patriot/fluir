@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any
 
 from lxml.objectify import ObjectifiedElement, fromstring
@@ -26,6 +27,11 @@ class FileManager:
     def parseStr(self, source: bytes) -> Program:
         root = fromstring(source)
         return self._program(root)
+
+    def parseFile(self, file: Path) -> Program:
+        with open(file, "rb") as f:
+            source = f.read()
+        return self.parseStr(source)
 
     def _program(self, root: ObjectifiedElement) -> Program:
         declarations: dict[IDType, Declaration] = {}

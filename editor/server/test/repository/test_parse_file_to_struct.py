@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from editor.models.elements import (
@@ -184,5 +186,30 @@ _TEST_DATA = [
 def test_repository_parses_string(expected: Program, data: bytes) -> None:
     uut = FileManager()
     actual = uut.parseStr(data)
+
+    assert expected == actual
+
+
+def test_repository_opens_file(tmp_path: Path) -> None:
+    filename = tmp_path / "test.fl"
+    with open(filename, "w") as file:
+        file.write("""<?xml version="1.0" encoding="UTF-8"?>
+        <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+            <fl:function
+                name="foo"
+                id="1"
+                x="10" y="10" z="3" w="100" h="100">
+                <body>
+                </body>
+            </fl:function>
+        </fluir>
+        """)
+
+    expected = Program(
+        {1: Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)}
+    )
+
+    uut = FileManager()
+    actual = uut.parseFile(filename)
 
     assert expected == actual

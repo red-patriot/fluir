@@ -11,7 +11,7 @@ from editor.models.elements import (
     Program,
     UnaryOperator,
 )
-from editor.repository.fluir_file import FileManager
+from editor.repository.fluir_file import XMLFileManager
 
 _TEST_DATA = [
     (
@@ -184,7 +184,7 @@ _TEST_DATA = [
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:
-    uut = FileManager()
+    uut = XMLFileManager()
     actual = uut.parseStr(data)
 
     assert expected == actual
@@ -209,7 +209,7 @@ def test_repository_opens_file(tmp_path: Path) -> None:
         {1: Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)}
     )
 
-    uut = FileManager()
+    uut = XMLFileManager()
     actual = uut.parseFile(filename)
 
     assert expected == actual

@@ -1,14 +1,15 @@
 from pathlib import Path
 
-from editor.models.elements import Program
-from editor.repository.fluir_file import FileManager
+from editor.models import Program
+from editor.repository.fluir_file import XMLFileManager
+from editor.repository.interface.file_manager import FileManager
 
 
 class ModuleEditor:
     """A Service to edit Fluir modules"""
 
-    def __init__(self) -> None:
-        self._repo = FileManager()
+    def __init__(self, manager: FileManager = XMLFileManager()) -> None:
+        self._repo = manager
         self._module: Program | None = None
         self._path: Path | None = None
 

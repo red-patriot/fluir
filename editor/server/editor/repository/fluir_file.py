@@ -1,13 +1,15 @@
 from pathlib import Path
-from typing import Any
+from typing import Any, override
 
 from lxml.objectify import ObjectifiedElement, fromstring
 
-from editor.models.elements import (
+from editor.models import (
+    INVALID_ID,
     BinaryOperator,
     Constant,
     Declaration,
     Function,
+    IDType,
     Location,
     Node,
     Nodes,
@@ -15,19 +17,21 @@ from editor.models.elements import (
     Program,
     UnaryOperator,
 )
-from editor.models.id import INVALID_ID, IDType
+from editor.repository.interface.file_manager import FileManager
 
 type _NodePair = tuple[IDType, Node]
 type _DeclarationPair = tuple[IDType, Declaration]
 
 
-class FileManager:
-    """Handles access to FLUIR source files"""
+class XMLFileManager(FileManager):
+    """Handles access to XML  Fluir source files"""
 
+    @override
     def parseStr(self, source: bytes) -> Program:
         root = fromstring(source)
         return self._program(root)
 
+    @override
     def parseFile(self, file: Path) -> Program:
         with open(file, "rb") as f:
             source = f.read()

@@ -10,6 +10,8 @@ from editor.services.module_editor import ModuleEditor
 
 
 class ModuleController(Controller):
+    """Controller for all module requests"""
+
     def __init__(self, editor: ModuleEditor) -> None:
         self._editor = editor
 
@@ -18,6 +20,7 @@ class ModuleController(Controller):
         app.post("/api/module/open/", response_model=Program)(self.open)
 
     def open(self, request: OpenRequest) -> Program:
+        """Handles requests to open a module"""
         self._editor.open_file(Path(request.path))
         program = self._editor.get()
         if not program:

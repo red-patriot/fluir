@@ -1,5 +1,7 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from enum import StrEnum
+
+from pydantic.dataclasses import dataclass
 
 from editor.models.id import INVALID_ID, IDType
 

@@ -17,7 +17,8 @@ class ModuleController(Controller):
 
     @override
     def register(self, app: FastAPI) -> None:
-        app.post("/api/module/open/", response_model=Program)(self.open)
+        app.post("/api/module/open/")(self.open)
+        app.post("/api/module/close")(self.close)
 
     def open(self, request: OpenRequest) -> Program:
         """Handles requests to open a module"""
@@ -26,3 +27,7 @@ class ModuleController(Controller):
         if not program:
             raise HTTPException(404, "The requested program does not exist")
         return program
+
+    def close(self) -> None:
+        """Handles requests to close the current"""
+        self._editor.close()

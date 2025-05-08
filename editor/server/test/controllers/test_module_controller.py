@@ -38,3 +38,28 @@ def test_forwards_open_request_on_post() -> None:
     assert response.status_code == 200
     assert expectedData == response.text
     mock_editor.open_file.assert_called_with(Path(expectedPath))
+
+
+def test_forwards_close_request() -> None:
+    mock_editor = create_autospec(ModuleEditor, instance=True)
+
+    uut = ModuleController(mock_editor)
+
+    uut.close()
+
+    mock_editor.close.assert_called()
+
+
+def test_forwards_close_request_on_post() -> None:
+    mock_editor = create_autospec(ModuleEditor, instance=True)
+
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post("/api/module/close/")
+
+    assert response.status_code == 200
+    mock_editor.close.assert_called()

@@ -1,9 +1,11 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
-import uiReducer from './uiSlice';
+import uiReducer, { uiSlice } from './uiSlice';
+import programReducer, { programSlice } from './programSlice';
 import { useDispatch, useSelector } from 'react-redux';
 
 const rootReducer = combineReducers({
   ui: uiReducer,
+  program: programReducer,
 });
 
 export function setupStore(preloadedState?: Partial<AppState>) {
@@ -19,3 +21,5 @@ export type AppDispatch = AppStore['dispatch'];
 
 export const useAppSelector = useSelector.withTypes<AppState>();
 export const useAppDispatch = useDispatch.withTypes<AppDispatch>();
+
+export const actions = {...uiSlice.actions, ...programSlice.actions};

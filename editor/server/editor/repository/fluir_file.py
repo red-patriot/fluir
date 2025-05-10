@@ -38,26 +38,22 @@ class XMLFileManager(FileManager):
         return self.parseStr(source)
 
     def _program(self, root: ObjectifiedElement) -> Program:
-        declarations: dict[IDType, Declaration] = {}
+        declarations: list[Declaration] = []
         for element in root.iterchildren():
             id, decl = self._declaration(element)
             if id == INVALID_ID:
                 continue
-            if id in declarations.keys():
-                raise ValueError(f"{id} is repeated in the document")
-            declarations[id] = decl
+            declarations.append(decl)
 
         return Program(declarations)
 
     def _declaration(self, element: Any) -> _DeclarationPair:
-        body: Nodes = {}
+        body: Nodes = []
         for child in element.find("body").iterchildren():
             id, node = self._node(child)
             if id == INVALID_ID:
                 continue
-            if id in body.keys():
-                raise ValueError(f"{id} is repeated in his Declaration")
-            body[id] = node
+            body.append(node)
         return self._id(element), Function(
             name=str(element.get("name")),
             id=self._id(element),

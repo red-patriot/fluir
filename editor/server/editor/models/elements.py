@@ -48,7 +48,7 @@ class UnaryOperator:
 
 
 type Node = Constant | BinaryOperator | UnaryOperator
-type Nodes = dict[IDType, Node]
+type Nodes = list[Node]
 
 
 @dataclass
@@ -56,13 +56,13 @@ class Function:
     name: str = ""
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
-    body: dict[IDType, Node] = field(default_factory=dict)
+    body: Nodes = field(default_factory=list)
 
 
 type Declaration = Function
-type Declarations = dict[IDType, Declaration]
+type Declarations = list[Declaration]
 
 
 @dataclass
 class Program:
-    declarations: Declarations = field(default_factory=dict)
+    declarations: Declarations = field(default_factory=list)

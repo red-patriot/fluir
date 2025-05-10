@@ -48,13 +48,13 @@ def test_file2(tmp_path: Path) -> Iterator[Path]:
 
 def test_module_editor_can_open_files(test_file1: Path) -> None:
     expected = Program(
-        {
-            174: Function(
+        [
+            Function(
                 name="bar",
                 location=Location(10, 10, 3, 100, 100),
                 id=174,
             )
-        }
+        ]
     )
     expected_name = "test.fl"
 
@@ -86,13 +86,13 @@ def test_module_editor_can_close_automatically_on_open_files(
 ) -> None:
     expected_name = "test2.fl"
     expected = Program(
-        {
-            2: Function(
+        [
+            Function(
                 name="foo",
                 location=Location(10, 10, 3, 12, 100),
                 id=2,
             )
-        }
+        ]
     )
 
     uut = ModuleEditor()

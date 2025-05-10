@@ -16,11 +16,7 @@ from editor.repository.fluir_file import XMLFileManager
 _TEST_DATA = [
     (
         Program(
-            {
-                1: Function(
-                    name="foo", location=Location(10, 10, 3, 100, 100), id=1
-                )
-            }
+            [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)]
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
@@ -36,17 +32,17 @@ _TEST_DATA = [
     ),
     (
         Program(
-            {
-                1: Function(
+            [
+                Function(
                     name="foo", location=Location(10, 10, 3, 100, 100), id=1
                 ),
-                2: Function(
-                    name="bar", location=Location(210, 10, 3, 50, 70), id=2
-                ),
-                7: Function(
+                Function(
                     name="baz", location=Location(330, 10, 3, 100, 100), id=7
                 ),
-            }
+                Function(
+                    name="bar", location=Location(210, 10, 3, 50, 70), id=2
+                ),
+            ]
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
@@ -76,28 +72,28 @@ _TEST_DATA = [
     ),
     (
         Program(
-            {
-                1: Function(
+            [
+                Function(
                     name="foo",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body={
-                        1: BinaryOperator(
+                    body=[
+                        BinaryOperator(
                             id=1,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.PLUS,
                             lhs=2,
                             rhs=3,
                         ),
-                        2: Constant(
+                        Constant(
                             id=2, location=Location(2, 2, 1, 5, 5), value=3.0
                         ),
-                        3: Constant(
+                        Constant(
                             id=3, location=Location(2, 12, 1, 5, 5), value=2.0
                         ),
-                    },
+                    ],
                 )
-            }
+            ]
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
@@ -129,24 +125,24 @@ _TEST_DATA = [
     ),
     (
         Program(
-            {
-                1: Function(
+            [
+                Function(
                     name="main",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body={
-                        7: UnaryOperator(
+                    body=[
+                        UnaryOperator(
                             id=7,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.MINUS,
                             lhs=3,
                         ),
-                        3: Constant(
+                        Constant(
                             id=3, location=Location(2, 2, 1, 5, 5), value=3.5
                         ),
-                    },
+                    ],
                 )
-            }
+            ]
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
@@ -206,7 +202,7 @@ def test_repository_opens_file(tmp_path: Path) -> None:
         """)
 
     expected = Program(
-        {1: Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)}
+        [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)]
     )
 
     uut = XMLFileManager()

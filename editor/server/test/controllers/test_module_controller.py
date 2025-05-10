@@ -25,7 +25,7 @@ def test_forwards_open_request_on_post() -> None:
     mock_editor = create_autospec(ModuleEditor, instance=True)
     mock_editor.get.return_value = Program()
     expectedPath = "/fake/path/to/module.fl"
-    expectedData = '{"declarations":{}}'
+    expectedData = '{"declarations":[]}'
 
     app = FastAPI()
 

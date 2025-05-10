@@ -41,7 +41,7 @@ export type FunctionDecl = {
 export type Declaration = FunctionDecl;
 
 type FluirModule = {
-  declarations: Map<number, Declaration>;
+  declarations: Declaration[];
 };
 
 export default FluirModule;

@@ -18,7 +18,10 @@ export default function ModuleViewWindow() {
   return (
     <div className='relative h-lvh w-lvw border-gray-300'>
       {module.declarations.map((decl) => (
-        <FunctionElement decl={decl} />
+        <FunctionElement
+          key={decl.id}
+          decl={decl}
+        />
       ))}
     </div>
   );

@@ -7,6 +7,7 @@ export type Location = {
 };
 
 export type Constant = {
+  _t: 'constant';
   id: number;
   location: Location;
   value?: number;
@@ -15,6 +16,7 @@ export type Constant = {
 type Operator = ' ' | '+' | '-' | '*' | '/';
 
 export type BinaryOp = {
+  _t: 'binary';
   id: number;
   location: Location;
   op: Operator;
@@ -23,6 +25,7 @@ export type BinaryOp = {
 };
 
 export type UnaryOp = {
+  _t: 'unary';
   id: number;
   location: Location;
   op: Operator;
@@ -32,10 +35,11 @@ export type UnaryOp = {
 export type Node = BinaryOp | UnaryOp | Constant;
 
 export type FunctionDecl = {
+  _t: 'function';
   name: string;
   id: number;
   location: Location;
-  body: Map<number, Node>;
+  body: Node[];
 };
 
 export type Declaration = FunctionDecl;

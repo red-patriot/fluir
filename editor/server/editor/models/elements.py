@@ -1,5 +1,6 @@
 from dataclasses import field
 from enum import StrEnum
+from typing import Literal
 
 from pydantic.dataclasses import dataclass
 
@@ -25,6 +26,7 @@ class Location:
 
 @dataclass
 class Constant:
+    _t: Literal["constant"] = "constant"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     value: float | None = None
@@ -32,6 +34,7 @@ class Constant:
 
 @dataclass
 class BinaryOperator:
+    _t: Literal["binary"] = "binary"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
@@ -41,6 +44,7 @@ class BinaryOperator:
 
 @dataclass
 class UnaryOperator:
+    _t: Literal["unary"] = "unary"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
@@ -53,6 +57,7 @@ type Nodes = list[Node]
 
 @dataclass
 class Function:
+    _t: Literal["function"] = "function"
     name: str = ""
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)

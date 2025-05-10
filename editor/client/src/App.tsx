@@ -1,8 +1,8 @@
-import './App.css';
 import { useAppSelector, useAppDispatch, actions } from './store';
 import Home from './components/pages/Home';
 import { openFileDialog } from './hooks/electronAPI';
 import { useOpenProgram } from './hooks/useOpenProgram';
+import ModulePage from './components/pages/Module';
 
 function App() {
   // global state
@@ -13,7 +13,7 @@ function App() {
   const openProgram = useOpenProgram({
     onOpen: (response) => {
       dispatch(actions.setOpenModule(response.data));
-      dispatch(actions.goToPage('program'));
+      dispatch(actions.goToPage('module'));
     },
     onError: (error) => {
       console.log(error);
@@ -33,7 +33,7 @@ function App() {
   return (
     <>
       {page == 'home' && <Home onOpenFile={onOpenFile} />}
-      {page == 'program' && <p>TODO</p>}
+      {page == 'module' && <ModulePage/>}
     </>
   );
 }

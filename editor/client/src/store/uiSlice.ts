@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface UiState {
-  page: "home" | "program";
+  page: "home" | "module";
 }
 
 const initialState: UiState = {
@@ -12,7 +12,7 @@ export const uiSlice = createSlice({
   name: "ui",
   initialState,
   reducers: {
-    goToPage: (state, action: PayloadAction<"home" | "program">) => {
+    goToPage: (state, action: PayloadAction<"home" | "module">) => {
       state.page = action.payload;
     },
   },

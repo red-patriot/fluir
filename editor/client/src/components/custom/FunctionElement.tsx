@@ -38,6 +38,7 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
 
   return (
     <div
+      aria-label={`func-${decl.name}-${decl.id}`}
       key={decl.id}
       className='absolute border-2 border-gray-200 '
       style={{

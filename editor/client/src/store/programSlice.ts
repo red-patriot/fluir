@@ -5,7 +5,7 @@ export const MAX_ZOOM = 100;
 export const MIN_ZOOM = 1;
 
 export interface ProgramState {
-  module: FluirModule | null;
+  module?: FluirModule | null;
   zoom: number;
 }
 

@@ -41,7 +41,7 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
     <div
       aria-label={`func-${decl.name}-${decl.id}`}
       key={decl.id}
-      className='absolute border-1 rounded-lg border-gray-200 font-(consolas)'
+      className='absolute border-1 rounded-sm border-gray-200 font-mono'
       style={{ ...getSizeStyle() }}
     >
       <p

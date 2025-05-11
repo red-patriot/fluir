@@ -12,7 +12,7 @@ export default function ConstantElement({ constant }: ConstantElementProps) {
     <div
       key={constant.id}
       className='absolute border-2 border-purple-300
-                 rounded-lg
+                 rounded-sm
                  flex justify-center font-(consolas)'
       style={{
         ...getSizeStyle(),

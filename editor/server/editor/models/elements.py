@@ -1,10 +1,14 @@
 from dataclasses import field
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Never, Sequence, cast
 
 from pydantic.dataclasses import dataclass
 
-from editor.models.id import INVALID_ID, IDType
+from editor.models.id import INVALID_ID, IDType, QualifiedID
+
+
+class IdentifierError(Exception):
+    pass
 
 
 class Operator(StrEnum):
@@ -71,3 +75,37 @@ type Declarations = list[Declaration]
 @dataclass
 class Program:
     declarations: Declarations = field(default_factory=list)
+
+
+type Element = Declaration | Node
+
+
+def _find_impl(id: QualifiedID, elements: Sequence[Element]) -> Element | None:
+    first = id[0]
+    for element in elements:
+        if element.id == first:
+            if len(id) == 1:
+                return element
+            match element._t:
+                case "function":
+                    return _find_impl(id[1:], cast(Function, element).body)
+                case "binary":
+                    return None
+                case "unary":
+                    return None
+                case "constant":
+                    return None
+                case _:
+                    return Never
+    return None
+
+
+def find_element(id: QualifiedID, program: Program) -> Element:
+    if len(id) == 0 or INVALID_ID in id:
+        raise IdentifierError("ID is invalid")
+    found = _find_impl(id, program.declarations)
+    if found is not None:
+        return found
+    raise IdentifierError(
+        f"An element with ID {':'.join(map(str, id))} was not found"
+    )

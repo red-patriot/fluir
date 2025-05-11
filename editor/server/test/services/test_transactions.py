@@ -1,0 +1,64 @@
+import copy
+from pathlib import Path
+
+import pytest
+
+from editor.models import Program, elements
+from editor.models.transaction import MoveElement
+from editor.services.module_editor import ModuleEditor
+
+
+@pytest.fixture
+def basic_program() -> Program:
+    return Program(
+        [
+            elements.Function(
+                name="foo",
+                location=elements.Location(10, 10, 3, 100, 100),
+                id=1,
+            ),
+            elements.Function(
+                name="bar",
+                location=elements.Location(210, 10, 2, 150, 70),
+                id=2,
+                body=[
+                    elements.BinaryOperator(
+                        id=1,
+                        location=elements.Location(15, 2, 1, 5, 5),
+                        op=elements.Operator.PLUS,
+                        lhs=2,
+                        rhs=3,
+                    ),
+                    elements.Constant(
+                        id=2,
+                        location=elements.Location(2, 2, 1, 5, 5),
+                        value=3.0,
+                    ),
+                    elements.Constant(
+                        id=3,
+                        location=elements.Location(2, 12, 1, 5, 5),
+                        value=2.0,
+                    ),
+                ],
+            ),
+        ]
+    )
+
+
+@pytest.fixture
+def editor(basic_program: Program) -> ModuleEditor:
+    editor = ModuleEditor()
+    editor.open_module(copy.deepcopy(basic_program))
+    return editor
+
+
+def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].location = elements.Location(12, 47, 3, 100, 100)
+
+    uut = MoveElement(target=[1], x=12, y=47)
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual

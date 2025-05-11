@@ -5,8 +5,8 @@ from unittest.mock import create_autospec
 
 import pytest
 
+from editor.models import EditTransaction
 from editor.models.elements import Function, Location, Program
-from editor.models.transaction import EditTransaction
 from editor.services.module_editor import BadEdit, ModuleEditor
 
 

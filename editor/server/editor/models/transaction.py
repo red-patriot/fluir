@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
+from typing import override
 
-from pydantic.dataclasses import dataclass
+from pydantic import BaseModel
 
-from editor.models import Program
+from editor.models import IDType, Program
 
 
 class EditTransaction(ABC):
@@ -15,3 +16,25 @@ class EditTransaction(ABC):
     @abstractmethod
     def undo(self, original: Program) -> Program:
         """Undoes the operation performed in `do`"""
+
+
+class MoveElement(BaseModel, EditTransaction):
+    target: list[IDType]
+    x: int
+    y: int
+
+    @override
+    def do(self, original: Program) -> Program:
+        element = None
+        for decl in original.declarations:
+            if decl.id == self.target[0]:
+                element = decl
+                break
+        assert element is not None
+        element.location.x = self.x
+        element.location.y = self.y
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original

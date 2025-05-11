@@ -6,13 +6,20 @@ interface ConstantElementProps {
 }
 
 export default function ConstantElement({ constant }: ConstantElementProps) {
-  const getSizeStyle = useSizeStyle(constant.location);
+  const { getSizeStyle, getFontSize } = useSizeStyle(constant.location);
 
   return (
     <div
       key={constant.id}
-      className='absolute border-2 border-purple-300'
-      style={getSizeStyle()}
-    ></div>
+      className='absolute border-2 border-purple-300
+                 rounded-lg
+                 flex justify-center font-(consolas)'
+      style={{
+        ...getSizeStyle(),
+        ...getFontSize(),
+      }}
+    >
+      {constant.value}
+    </div>
   );
 }

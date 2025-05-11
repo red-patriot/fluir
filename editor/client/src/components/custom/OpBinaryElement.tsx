@@ -6,13 +6,17 @@ interface OpBinaryElementProps {
 }
 
 export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
-  const getSizeStyle = useSizeStyle(binary.location);
+  const { getSizeStyle, getFontSize } = useSizeStyle(binary.location);
 
   return (
     <div
       key={binary.id}
-      className='absolute border-2 border-yellow-300'
-      style={getSizeStyle()}
-    ></div>
+      className='absolute border-2 border-yellow-300
+                 rounded-lg
+                 flex justify-center font-(consolas)'
+      style={{ ...getSizeStyle(), ...getFontSize() }}
+    >
+      {binary.op}
+    </div>
   );
 }

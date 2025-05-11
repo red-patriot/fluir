@@ -2,11 +2,10 @@ import { useCallback } from 'react';
 import { Location } from '../models/fluir_module';
 import { useAppSelector } from '../store';
 
-export const ZOOM_SCALAR = 1.5;
+export const ZOOM_SCALAR = 0.3;
 
 export function useSizeStyle(location: Location) {
   const doGetSize = () => {
-
     const zoom = useAppSelector((state) => state.program.zoom) * ZOOM_SCALAR;
     const { x, y, z, width, height } = location;
     return {
@@ -18,7 +17,14 @@ export function useSizeStyle(location: Location) {
     };
   };
 
-  const getSizeStyle = useCallback(doGetSize, []);
+  const doGetFontSize = (unscaledSize: number = location.height * 2) => {
+    const zoom = useAppSelector((state) => state.program.zoom) * ZOOM_SCALAR;
 
-  return getSizeStyle;
+    return { fontSize: unscaledSize * zoom * ZOOM_SCALAR };
+  };
+
+  const getSizeStyle = useCallback(doGetSize, []);
+  const getFontSize = useCallback(doGetFontSize, []);
+
+  return { getSizeStyle, getFontSize };
 }

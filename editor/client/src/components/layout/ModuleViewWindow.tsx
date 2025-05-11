@@ -27,7 +27,7 @@ export default function ModuleViewWindow() {
 
   return (
     <div
-      className='relative h-lvh w-lvw border-gray-300 bg-blue-950'
+      className='relative h-lvh w-lvw border-gray-300'
       onWheel={doZoom}
     >
       {module.declarations.map((decl) => (

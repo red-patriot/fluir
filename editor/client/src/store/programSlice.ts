@@ -11,7 +11,7 @@ export interface ProgramState {
 
 const initialState: ProgramState = {
   module: null,
-  zoom: 1,
+  zoom: 10,
 };
 
 export const programSlice = createSlice({

@@ -35,16 +35,21 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
     }
   };
 
-  const getSizeStyle = useSizeStyle(decl.location);
+  const { getSizeStyle, getFontSize } = useSizeStyle(decl.location);
 
   return (
     <div
       aria-label={`func-${decl.name}-${decl.id}`}
       key={decl.id}
-      className='absolute border-2 border-gray-200 '
-      style={getSizeStyle()}
+      className='absolute border-1 rounded-lg border-gray-200 font-(consolas)'
+      style={{ ...getSizeStyle() }}
     >
-      <p className='w-full border border-gray-200'>{decl.name}</p>
+      <p
+        className='w-full border-b border-gray-200'
+        style={{ ...getFontSize(24) }}
+      >
+        {decl.name}
+      </p>
       <div className='absolute'>{decl.body.map(displayNodes)}</div>
     </div>
   );

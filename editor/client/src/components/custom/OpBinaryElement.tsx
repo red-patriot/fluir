@@ -1,3 +1,4 @@
+import { useSizeStyle } from '../../hooks/useSizeStyle';
 import { BinaryOp } from '../../models/fluir_module';
 
 interface OpBinaryElementProps {
@@ -5,19 +6,13 @@ interface OpBinaryElementProps {
 }
 
 export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
-  const { x, y, z, width, height } = binary.location;
+  const getSizeStyle = useSizeStyle(binary.location);
 
   return (
     <div
       key={binary.id}
       className='absolute border-2 border-yellow-300'
-      style={{
-        left: `${x}px`,
-        top: `${y}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-        zIndex: `${z}`,
-      }}
+      style={getSizeStyle()}
     ></div>
   );
 }

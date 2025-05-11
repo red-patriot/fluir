@@ -38,6 +38,7 @@ describe('ModuleViewElement', () => {
       preloadedState: {
         program: {
           module: program,
+          zoom: 1,
         },
       },
     });

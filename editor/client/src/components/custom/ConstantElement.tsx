@@ -1,3 +1,4 @@
+import { useSizeStyle } from '../../hooks/useSizeStyle';
 import { Constant } from '../../models/fluir_module';
 
 interface ConstantElementProps {
@@ -5,19 +6,13 @@ interface ConstantElementProps {
 }
 
 export default function ConstantElement({ constant }: ConstantElementProps) {
-  const { x, y, z, width, height } = constant.location;
+  const getSizeStyle = useSizeStyle(constant.location);
 
   return (
     <div
       key={constant.id}
       className='absolute border-2 border-purple-300'
-      style={{
-        left: `${x}px`,
-        top: `${y}px`,
-        width: `${width}px`,
-        height: `${height}px`,
-        zIndex: `${z}`,
-      }}
+      style={getSizeStyle()}
     ></div>
   );
 }

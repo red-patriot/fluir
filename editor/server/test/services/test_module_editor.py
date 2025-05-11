@@ -1,11 +1,13 @@
 import os
 from pathlib import Path
 from typing import Iterator
+from unittest.mock import create_autospec
 
 import pytest
 
 from editor.models.elements import Function, Location, Program
-from editor.services.module_editor import ModuleEditor
+from editor.models.transaction import EditTransaction
+from editor.services.module_editor import BadEdit, ModuleEditor
 
 
 @pytest.fixture
@@ -103,3 +105,33 @@ def test_module_editor_can_close_automatically_on_open_files(
     assert test_file2 == uut.get_path()
     assert expected == uut.get()
     assert expected_name == uut.get_name()
+
+
+def test_module_editor_accepts_edit_transactions() -> None:
+    data = Program(
+        [
+            Function(
+                name="function1Here",
+                location=Location(10, 10, 3, 12, 100),
+                id=2,
+            )
+        ]
+    )
+    fake_command = create_autospec(EditTransaction, instance=True)
+    fake_command.do.return_value = data
+
+    uut = ModuleEditor()
+    uut.open_module(data)
+
+    uut.edit(fake_command)
+
+    fake_command.do.assert_called()
+
+
+def test_module_editor_edit_requires_an_open_program() -> None:
+    fake_command = create_autospec(EditTransaction, instance=True)
+
+    uut = ModuleEditor()
+
+    with pytest.raises(BadEdit):
+        uut.edit(fake_command)

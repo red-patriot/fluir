@@ -1,8 +1,12 @@
 from pathlib import Path
 
-from editor.models import Program
+from editor.models import EditTransaction, Program
 from editor.repository.fluir_file import XMLFileManager
 from editor.repository.interface.file_manager import FileManager
+
+
+class BadEdit(Exception):
+    pass
 
 
 class ModuleEditor:
@@ -25,13 +29,27 @@ class ModuleEditor:
         """Accesses the contents of the current module"""
         return self._module
 
-    def open_file(self, path: Path) -> None:
-        """Opens a new file"""
+    def open_module(
+        self, module: Program, path: Path = Path("/fake/path.fl")
+    ) -> None:
+        """Open a"""
         if self._module:
             self.close()
 
-        self._module = self._repo.parseFile(path)
+        self._module = module
         self._path = path
+
+    def open_file(self, path: Path) -> None:
+        """Opens a new file"""
+        return self.open_module(self._repo.parseFile(path), path)
+
+    def edit(self, command: EditTransaction) -> None:
+        """Applies an edit to the open program"""
+        if self._module is None:
+            raise BadEdit("Open a program to make edits")
+
+        # TODO: Save the command for undo/redo
+        self._module = command.do(self._module)
 
     def close(self) -> None:
         """Closes the current module"""

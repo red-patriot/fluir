@@ -10,7 +10,7 @@ from editor.models.elements import (
     Program,
     UnaryOperator,
 )
-from editor.models.id import INVALID_ID, IDType
+from editor.models.id import INVALID_ID, IDType, QualifiedID
 from editor.models.transaction import EditTransaction
 
 __all__ = [
@@ -19,12 +19,13 @@ __all__ = [
     "BinaryOperator",
     "Constant",
     "Declaration",
+    "EditTransaction",
     "Function",
     "Location",
     "Node",
     "Nodes",
     "Operator",
     "Program",
+    "QualifiedID",
     "UnaryOperator",
-    "EditTransaction",
 ]

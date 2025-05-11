@@ -3,7 +3,8 @@ from typing import override
 
 from pydantic import BaseModel
 
-from editor.models import IDType, Program
+from editor.models import Program, QualifiedID
+from editor.models.elements import find_element
 
 
 class EditTransaction(ABC):
@@ -19,18 +20,13 @@ class EditTransaction(ABC):
 
 
 class MoveElement(BaseModel, EditTransaction):
-    target: list[IDType]
+    target: QualifiedID
     x: int
     y: int
 
     @override
     def do(self, original: Program) -> Program:
-        element = None
-        for decl in original.declarations:
-            if decl.id == self.target[0]:
-                element = decl
-                break
-        assert element is not None
+        element = find_element(self.target, original)
         element.location.x = self.x
         element.location.y = self.y
         return original

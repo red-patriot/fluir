@@ -13,7 +13,7 @@ export default function OpUnaryElement({ unary }: OpUnaryElementProps) {
       key={unary.id}
       className='absolute border-2 border-orange-400
                 rounded-sm
-                flex justify-center font-(consolas)'
+                flex justify-center font-code'
       style={{ ...getSizeStyle(), ...getFontSize() }}
     >
       {unary.op}

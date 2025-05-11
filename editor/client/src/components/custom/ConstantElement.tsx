@@ -13,7 +13,7 @@ export default function ConstantElement({ constant }: ConstantElementProps) {
       key={constant.id}
       className='absolute border-2 border-purple-300
                  rounded-sm
-                 flex justify-center font-(consolas)'
+                 flex justify-center font-code'
       style={{
         ...getSizeStyle(),
         ...getFontSize(),

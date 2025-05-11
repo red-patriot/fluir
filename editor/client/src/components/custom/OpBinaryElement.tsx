@@ -13,7 +13,7 @@ export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
       key={binary.id}
       className='absolute border-2 border-yellow-300
                  rounded-sm
-                 flex justify-center font-(consolas)'
+                 flex justify-center font-code'
       style={{ ...getSizeStyle(), ...getFontSize() }}
     >
       {binary.op}

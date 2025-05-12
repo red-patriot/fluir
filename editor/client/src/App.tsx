@@ -2,6 +2,7 @@ import { useAppSelector, useAppDispatch, actions } from './store';
 import Home from './components/pages/Home';
 import { openFileDialog } from './hooks/electronAPI';
 import { useOpenProgram } from './hooks/useOpenProgram';
+import { useEditProgram } from './hooks/useEditProgram';
 import ModulePage from './components/pages/Module';
 
 function App() {
@@ -14,6 +15,16 @@ function App() {
     onOpen: (response) => {
       dispatch(actions.setOpenModule(response.data));
       dispatch(actions.goToPage('module'));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  const editProgram = useEditProgram({
+    onEdit: (response) => {
+      console.log(response);
+      dispatch(actions.setOpenModule(response.data));
     },
     onError: (error) => {
       console.log(error);
@@ -33,7 +44,7 @@ function App() {
   return (
     <>
       {page == 'home' && <Home onOpenFile={onOpenFile} />}
-      {page == 'module' && <ModulePage/>}
+      {page == 'module' && <ModulePage onEdit={editProgram} />}
     </>
   );
 }

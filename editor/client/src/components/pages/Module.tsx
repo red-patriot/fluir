@@ -1,11 +1,14 @@
 import ModuleViewWindow from '../layout/ModuleViewWindow';
+import EditRequest from '../../models/edit_request';
 
-export default function ModulePage() {
+interface ModulePageProps {
+  onEdit: (arg0: EditRequest) => void;
+}
+
+export default function ModulePage({ onEdit }: ModulePageProps) {
   return (
-    <div
-      className='flex flex-col h-full'
-    >
-      <ModuleViewWindow />
+    <div className='flex flex-col h-full'>
+      <ModuleViewWindow onEdit={onEdit} />
     </div>
   );
 }

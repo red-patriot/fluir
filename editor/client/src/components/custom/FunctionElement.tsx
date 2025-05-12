@@ -2,17 +2,21 @@ import { FunctionDecl, Node } from '../../models/fluir_module';
 import ConstantElement from './ConstantElement';
 import OpBinaryElement from './OpBinaryElement';
 import OpUnaryElement from './OpUnaryElement';
-import { useSizeStyle } from '../../hooks/useSizeStyle';
+import { useSizeStyle, ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { useDraggable } from '@dnd-kit/core';
+import { useAppSelector } from '../../store';
 
 interface FunctionElementProps {
   decl: FunctionDecl;
 }
 
 export default function FunctionElement({ decl }: FunctionElementProps) {
+  // GlobalState
+  const zoom = useAppSelector((state) => state.program.zoom) * ZOOM_SCALAR;
+
   // Local state
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: `frunc-${decl.id}`,
+    id: `${decl.id}`,
   });
 
   const transformStyle = transform
@@ -47,7 +51,19 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
     }
   };
 
-  const { getSizeStyle, getFontSize } = useSizeStyle(decl.location);
+  const getSizeStyle = () => {
+    const { x, y, z, width, height } = decl.location;
+    return {
+      left: `${x * zoom}px`,
+      top: `${y * zoom}px`,
+      width: `${width * zoom}px`,
+      height: `${height * zoom}px`,
+      zIndex: `${z}`,
+    };
+  };
+
+  const { getFontSize } = useSizeStyle(decl.location);
+  let sizeStyle = getSizeStyle();
 
   return (
     <div
@@ -58,11 +74,11 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
       key={decl.id}
       className='absolute border-1 rounded-sm border-gray-200
       bg-gray-950 font-code'
-      style={{ ...getSizeStyle(), ...transformStyle }}
+      style={{ ...sizeStyle, ...transformStyle }}
     >
       <p
         className='w-full border-b border-gray-200'
-        style={{ ...getFontSize(24) }}
+        style={{ ...getFontSize(16) }}
       >
         {decl.name}
       </p>

@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import override
+from typing import Literal, override
 
 from pydantic import BaseModel
 
@@ -28,6 +28,7 @@ class _Limits:
 
 
 class MoveElement(BaseModel, EditTransaction):
+    _t: Literal["move"] = "move"
     target: QualifiedID
     x: int
     y: int

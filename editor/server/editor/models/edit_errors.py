@@ -1,0 +1,2 @@
+class BadEdit(Exception):
+    pass

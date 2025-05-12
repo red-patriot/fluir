@@ -1,5 +1,4 @@
 import copy
-from pathlib import Path
 
 import pytest
 
@@ -57,6 +56,20 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
     expected.declarations[0].location = elements.Location(12, 47, 3, 100, 100)
 
     uut = MoveElement(target=[1], x=12, y=47)
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].body[2].location = elements.Location(
+        4, 78, 1, 5, 5
+    )
+
+    uut = MoveElement(target=[2, 3], x=4, y=78)
 
     editor.edit(uut)
     actual = editor.get()

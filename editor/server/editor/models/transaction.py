@@ -4,7 +4,8 @@ from typing import override
 from pydantic import BaseModel
 
 from editor.models import Program, QualifiedID
-from editor.models.elements import find_element
+from editor.models.edit_errors import BadEdit
+from editor.models.elements import Declaration, find_element
 
 
 class EditTransaction(ABC):
@@ -29,6 +30,7 @@ class MoveElement(BaseModel, EditTransaction):
         element = find_element(self.target, original)
         element.location.x = self.x
         element.location.y = self.y
+
         return original
 
     @override

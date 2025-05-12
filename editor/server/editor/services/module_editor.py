@@ -1,12 +1,9 @@
 from pathlib import Path
 
 from editor.models import EditTransaction, Program
+from editor.models.edit_errors import BadEdit
 from editor.repository.fluir_file import XMLFileManager
 from editor.repository.interface.file_manager import FileManager
-
-
-class BadEdit(Exception):
-    pass
 
 
 class ModuleEditor:

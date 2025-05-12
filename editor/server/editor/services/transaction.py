@@ -36,17 +36,19 @@ class MoveElement(BaseModel, EditTransaction):
     @override
     def do(self, original: Program) -> Program:
         element = find_element(self.target, original)
+        new_x = element.location.x + self.x
+        new_y = element.location.y + self.y
         if len(self.target) > 1:
             xlim, ylim = self._get_limits(original)
             if (
-                self.x < xlim.lower
-                or self.y < ylim.lower
-                or (self.x + element.location.width) > xlim.upper
-                or (self.y + element.location.height) > ylim.upper
+                new_x < xlim.lower
+                or new_y < ylim.lower
+                or (new_x + element.location.width) > xlim.upper
+                or (new_y + element.location.height) > ylim.upper
             ):
                 raise BadEdit("Element cannot be moved out of bounds")
-        element.location.x = self.x
-        element.location.y = self.y
+        element.location.x = new_x
+        element.location.y = new_y
 
         return original
 

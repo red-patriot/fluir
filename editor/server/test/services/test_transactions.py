@@ -54,7 +54,7 @@ def editor(basic_program: Program) -> ModuleEditor:
 
 def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
-    expected.declarations[0].location = elements.Location(12, 47, 3, 100, 100)
+    expected.declarations[0].location = elements.Location(22, 57, 3, 100, 100)
 
     uut = MoveElement(target=[1], x=12, y=47)
 
@@ -67,7 +67,7 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
 def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].body[2].location = elements.Location(
-        4, 78, 1, 5, 5
+        6, 90, 1, 5, 5
     )
 
     uut = MoveElement(target=[2, 3], x=4, y=78)
@@ -80,8 +80,10 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
 
 @pytest.mark.parametrize(
     "x, y",
-    [(3, 100), (100, 13), (98, 12), (96, 53), (-3, 48), (0, -12), (-10, -10)],
+    [(3, 88), (98, 13), (94, 12), (53, 84), (-3, 48), (0, -13), (-3, -13)],
 )
+# limit=elements.Location(210, 10, 2, 100, 100)
+# element=elements.Location(2, 12, 1, 5, 5)
 def test_move_node_raises_if_out_of_function(
     basic_program: Program,
     editor: ModuleEditor,

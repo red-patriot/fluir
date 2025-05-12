@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector, actions } from '../../store';
 import FunctionElement from '../custom/FunctionElement';
+import { DndContext } from '@dnd-kit/core';
 
 export default function ModuleViewWindow() {
   const dispatch = useAppDispatch();
@@ -30,12 +31,14 @@ export default function ModuleViewWindow() {
       className='relative h-lvh w-lvw border-gray-300'
       onWheel={doZoom}
     >
-      {module.declarations.map((decl) => (
-        <FunctionElement
-          key={decl.id}
-          decl={decl}
-        />
-      ))}
+      <DndContext>
+        {module.declarations.map((decl) => (
+          <FunctionElement
+            key={decl.id}
+            decl={decl}
+          />
+        ))}
+      </DndContext>
     </div>
   );
 }

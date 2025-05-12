@@ -11,7 +11,6 @@ from editor.models.elements import (
     UnaryOperator,
 )
 from editor.models.id import INVALID_ID, IDType, QualifiedID
-from editor.models.transaction import EditTransaction
 
 __all__ = [
     "INVALID_ID",
@@ -19,7 +18,6 @@ __all__ = [
     "BinaryOperator",
     "Constant",
     "Declaration",
-    "EditTransaction",
     "Function",
     "Location",
     "Node",

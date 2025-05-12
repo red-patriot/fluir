@@ -3,8 +3,8 @@ import copy
 import pytest
 
 from editor.models import Program, elements
-from editor.models.transaction import MoveElement
 from editor.services.module_editor import ModuleEditor
+from editor.services.transaction import MoveElement
 
 
 @pytest.fixture

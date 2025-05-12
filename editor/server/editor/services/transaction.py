@@ -4,8 +4,7 @@ from typing import override
 from pydantic import BaseModel
 
 from editor.models import Program, QualifiedID
-from editor.models.edit_errors import BadEdit
-from editor.models.elements import Declaration, find_element
+from editor.models.elements import find_element
 
 
 class EditTransaction(ABC):

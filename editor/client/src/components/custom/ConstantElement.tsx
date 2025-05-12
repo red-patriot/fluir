@@ -1,4 +1,4 @@
-import { useSizeStyle } from '../../hooks/useSizeStyle';
+import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import { Constant } from '../../models/fluir_module';
 
 interface ConstantElementProps {
@@ -6,8 +6,6 @@ interface ConstantElementProps {
 }
 
 export default function ConstantElement({ constant }: ConstantElementProps) {
-  const { getSizeStyle, getFontSize } = useSizeStyle(constant.location);
-
   return (
     <div
       aria-label={`constant-${constant.id}`}
@@ -16,8 +14,8 @@ export default function ConstantElement({ constant }: ConstantElementProps) {
                  rounded-sm
                  flex justify-center font-code'
       style={{
-        ...getSizeStyle(),
-        ...getFontSize(),
+        ...getSizeStyle(constant.location),
+        ...getFontSize(constant.location),
       }}
     >
       {constant.value}

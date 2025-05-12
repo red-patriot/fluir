@@ -2,18 +2,14 @@ import { FunctionDecl, Node } from '../../models/fluir_module';
 import ConstantElement from './ConstantElement';
 import OpBinaryElement from './OpBinaryElement';
 import OpUnaryElement from './OpUnaryElement';
-import { useSizeStyle, ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import { useDraggable } from '@dnd-kit/core';
-import { useAppSelector } from '../../store';
 
 interface FunctionElementProps {
   decl: FunctionDecl;
 }
 
 export default function FunctionElement({ decl }: FunctionElementProps) {
-  // GlobalState
-  const zoom = useAppSelector((state) => state.program.zoom) * ZOOM_SCALAR;
-
   // Local state
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `${decl.id}`,
@@ -51,19 +47,7 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
     }
   };
 
-  const getSizeStyle = () => {
-    const { x, y, z, width, height } = decl.location;
-    return {
-      left: `${x * zoom}px`,
-      top: `${y * zoom}px`,
-      width: `${width * zoom}px`,
-      height: `${height * zoom}px`,
-      zIndex: `${z}`,
-    };
-  };
-
-  const { getFontSize } = useSizeStyle(decl.location);
-  let sizeStyle = getSizeStyle();
+  let sizeStyle = getSizeStyle(decl.location);
 
   return (
     <div

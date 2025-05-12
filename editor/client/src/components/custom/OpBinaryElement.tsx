@@ -1,4 +1,4 @@
-import { useSizeStyle } from '../../hooks/useSizeStyle';
+import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import { BinaryOp } from '../../models/fluir_module';
 
 interface OpBinaryElementProps {
@@ -6,8 +6,6 @@ interface OpBinaryElementProps {
 }
 
 export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
-  const { getSizeStyle, getFontSize } = useSizeStyle(binary.location);
-
   return (
     <div
       aria-label={`binary-${binary.id}`}
@@ -15,7 +13,10 @@ export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
       className='absolute border-2 border-yellow-300
                  rounded-sm
                  flex justify-center font-code'
-      style={{ ...getSizeStyle(), ...getFontSize() }}
+      style={{
+        ...getSizeStyle(binary.location),
+        ...getFontSize(binary.location),
+      }}
     >
       {binary.op}
     </div>

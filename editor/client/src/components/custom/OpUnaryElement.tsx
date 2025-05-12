@@ -1,4 +1,4 @@
-import { useSizeStyle } from '../../hooks/useSizeStyle';
+import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import { UnaryOp } from '../../models/fluir_module';
 
 interface OpUnaryElementProps {
@@ -6,8 +6,6 @@ interface OpUnaryElementProps {
 }
 
 export default function OpUnaryElement({ unary }: OpUnaryElementProps) {
-  const { getSizeStyle, getFontSize } = useSizeStyle(unary.location);
-
   return (
     <div
       aria-label={`unary-${unary.id}`}
@@ -15,7 +13,10 @@ export default function OpUnaryElement({ unary }: OpUnaryElementProps) {
       className='absolute border-2 border-orange-400
                 rounded-sm
                 flex justify-center font-code'
-      style={{ ...getSizeStyle(), ...getFontSize() }}
+      style={{
+        ...getSizeStyle(unary.location),
+        ...getFontSize(unary.location),
+      }}
     >
       {unary.op}
     </div>

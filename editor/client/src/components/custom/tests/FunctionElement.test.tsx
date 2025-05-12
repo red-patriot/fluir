@@ -37,6 +37,45 @@ describe('FunctionElement', () => {
     expect(y).toStrictEqual(expectedY);
   });
 
+  it('Shows at the correct full ID', async () => {
+    const expected = 'func-testFunc-3:2:7';
+    renderWithStore(
+      <FunctionElement
+        decl={data}
+        parentId={'3:2'}
+      />,
+    );
+
+    expect(await screen.findByLabelText(expected)).toBeVisible();
+  });
+
+  it('Passes its id to its children', async () => {
+    const withChildren: FunctionDecl = {
+      _t: 'function',
+      id: 7,
+      location: { x: 9, y: 18, z: 3, width: 140, height: 500 },
+      name: 'testFunc',
+      body: [
+        {
+          _t: 'constant',
+          id: 2,
+          location: { x: 1, y: 2, z: 0, width: 5, height: 5 },
+          value: 5.67,
+        },
+      ],
+    };
+
+    const expected = 'constant-2:7:2';
+    renderWithStore(
+      <FunctionElement
+        decl={withChildren}
+        parentId={'2'}
+      />,
+    );
+
+    expect(await screen.findByLabelText(expected)).toBeVisible();
+  });
+
   it('Shows the correct size', async () => {
     const expectedW = '420px';
     const expectedH = '1500px';

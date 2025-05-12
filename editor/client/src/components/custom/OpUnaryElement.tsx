@@ -3,13 +3,19 @@ import { UnaryOp } from '../../models/fluir_module';
 
 interface OpUnaryElementProps {
   unary: UnaryOp;
+  parentId?: string;
 }
 
-export default function OpUnaryElement({ unary }: OpUnaryElementProps) {
+export default function OpUnaryElement({
+  unary,
+  parentId,
+}: OpUnaryElementProps) {
+  const fullID = parentId ? `${parentId}:${unary.id}` : `${unary.id}`;
+
   return (
     <div
-      aria-label={`unary-${unary.id}`}
-      key={unary.id}
+      aria-label={`unary-${fullID}`}
+      key={fullID}
       className='absolute border-2 border-orange-400
                 rounded-sm
                 flex justify-center font-code'

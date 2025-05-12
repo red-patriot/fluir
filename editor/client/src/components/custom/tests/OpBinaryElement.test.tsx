@@ -20,6 +20,18 @@ describe('OpBinaryElement', () => {
     expect(await screen.getByText('-')).toBeVisible();
   });
 
+  it('Shows at the correct full ID', async () => {
+    const expected = 'binary-4:2';
+    renderWithStore(
+      <OpBinaryElement
+        binary={data}
+        parentId={'4'}
+      />,
+    );
+
+    expect(await screen.findByLabelText(expected)).toBeVisible();
+  });
+
   it('Shows at the correct location', async () => {
     const expectedX = '27px';
     const expectedY = '54px';

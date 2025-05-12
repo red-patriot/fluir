@@ -7,9 +7,17 @@ import { useDraggable } from '@dnd-kit/core';
 
 interface FunctionElementProps {
   decl: FunctionDecl;
+  parentId?: string;
 }
 
-export default function FunctionElement({ decl }: FunctionElementProps) {
+export default function FunctionElement({
+  decl,
+  parentId,
+}: FunctionElementProps) {
+  // Constants
+  const sizeStyle = getSizeStyle(decl.location);
+  const fullID = parentId ? `${parentId}:${decl.id}` : `${decl.id}`;
+
   // Local state
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `${decl.id}`,
@@ -28,6 +36,7 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
         <ConstantElement
           key={node.id}
           constant={node}
+          parentId={fullID}
         />
       );
     } else if (node._t === 'binary') {
@@ -35,6 +44,7 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
         <OpBinaryElement
           key={node.id}
           binary={node}
+          parentId={fullID}
         />
       );
     } else if (node._t === 'unary') {
@@ -42,19 +52,18 @@ export default function FunctionElement({ decl }: FunctionElementProps) {
         <OpUnaryElement
           key={node.id}
           unary={node}
+          parentId={fullID}
         />
       );
     }
   };
-
-  let sizeStyle = getSizeStyle(decl.location);
 
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      aria-label={`func-${decl.name}-${decl.id}`}
+      aria-label={`func-${decl.name}-${fullID}`}
       key={decl.id}
       className='absolute border-1 rounded-sm border-gray-200
       bg-gray-950 font-code'

@@ -19,6 +19,18 @@ describe('OpUnaryElement', () => {
     expect(await screen.getByText('*')).toBeVisible();
   });
 
+    it('Shows at the correct full ID', async () => {
+      const expected = 'unary-12:5:8:1';
+      renderWithStore(
+        <OpUnaryElement
+          unary={data}
+          parentId={'12:5:8'}
+        />,
+      );
+
+      expect(await screen.findByLabelText(expected)).toBeVisible();
+    });
+
   it('Shows at the correct location', async () => {
     const expectedX = '3px';
     const expectedY = '9px';

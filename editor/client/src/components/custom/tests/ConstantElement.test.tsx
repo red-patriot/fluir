@@ -18,6 +18,18 @@ describe('ConstantElement', () => {
     expect(await screen.getByText('4.3213')).toBeVisible();
   });
 
+  it('Shows at the correct full ID', async () => {
+    const expected = 'constant-4:1';
+    renderWithStore(
+      <ConstantElement
+        constant={data}
+        parentId={'4'}
+      />,
+    );
+
+    expect(await screen.findByLabelText(expected)).toBeVisible();
+  });
+
   it('Shows at the correct location', async () => {
     const expectedX = '9px';
     const expectedY = '18px';

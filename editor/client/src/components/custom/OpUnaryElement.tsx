@@ -10,6 +10,7 @@ export default function OpUnaryElement({ unary }: OpUnaryElementProps) {
 
   return (
     <div
+      aria-label={`unary-${unary.id}`}
       key={unary.id}
       className='absolute border-2 border-orange-400
                 rounded-sm

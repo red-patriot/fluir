@@ -10,6 +10,7 @@ export default function OpBinaryElement({ binary }: OpBinaryElementProps) {
 
   return (
     <div
+      aria-label={`binary-${binary.id}`}
       key={binary.id}
       className='absolute border-2 border-yellow-300
                  rounded-sm

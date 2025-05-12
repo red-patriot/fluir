@@ -10,6 +10,7 @@ export default function ConstantElement({ constant }: ConstantElementProps) {
 
   return (
     <div
+      aria-label={`constant-${constant.id}`}
       key={constant.id}
       className='absolute border-2 border-purple-300
                  rounded-sm

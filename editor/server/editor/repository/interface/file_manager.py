@@ -14,3 +14,7 @@ class FileManager(ABC):
     @abstractmethod
     def parseFile(self, file: Path) -> Program:
         """Opens the given file and parses its contents into a Fluir Program"""
+
+    @abstractmethod
+    def writeFile(self, program: Program, file: Path) -> None:
+        """Writes the contents of the given program to the given filepath"""

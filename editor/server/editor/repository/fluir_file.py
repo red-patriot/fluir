@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import Any, override
+from typing import Any, Final, cast, override
 
+from lxml import etree
 from lxml.objectify import ObjectifiedElement, fromstring
 
 from editor.models import (
@@ -29,7 +30,8 @@ class XMLFileManager(FileManager):
     @override
     def parseStr(self, source: bytes) -> Program:
         root = fromstring(source)
-        return self._program(root)
+        reader = _XMLReader()
+        return reader.program(root)
 
     @override
     def parseFile(self, file: Path) -> Program:
@@ -37,7 +39,18 @@ class XMLFileManager(FileManager):
             source = f.read()
         return self.parseStr(source)
 
-    def _program(self, root: ObjectifiedElement) -> Program:
+    @override
+    def writeFile(self, program: Program, file: Path) -> None:
+        writer = _XMLWriter()
+        contents = writer.write(program)
+        with open(file, "wb") as f:
+            f.write(contents)
+
+
+class _XMLReader:
+    """Reads an XML file into a Program"""
+
+    def program(self, root: ObjectifiedElement) -> Program:
         declarations: list[Declaration] = []
         for element in root.iterchildren():
             id, decl = self._declaration(element)
@@ -113,3 +126,103 @@ class XMLFileManager(FileManager):
             width=int(element.get("w")),
             height=int(element.get("h")),
         )
+
+
+_FL: Final[str] = "FLUIR::LANGUAGE::SOURCE"
+
+
+class _XMLWriter:
+    """Writes a program to XML"""
+
+    def __init__(self) -> None:
+        self.root = etree.Element("fluir", nsmap={"fl": _FL})
+
+    def write(self, program: Program) -> bytes:
+        for decl in program.declarations:
+            self._decl(decl)
+
+        return etree.tostring(
+            self.root,
+            pretty_print=True,
+            xml_declaration=True,
+            encoding="UTF-8",
+        )
+
+    def _decl(self, declaration: Declaration) -> None:
+        decl_element = etree.SubElement(
+            self.root,
+            f"{{{_FL}}}function",
+            attrib={
+                "name": str(declaration.name),
+                "id": str(declaration.id),
+                "x": str(declaration.location.x),
+                "y": str(declaration.location.y),
+                "z": str(declaration.location.z),
+                "w": str(declaration.location.width),
+                "h": str(declaration.location.height),
+            },
+        )
+        body_element = etree.SubElement(decl_element, "body")
+        for node in declaration.body:
+            self._node(node, body_element)
+
+    def _node(self, node: Node, parent: etree._Element) -> None:
+        match node._t:
+            case "binary":
+                self._binary(cast(BinaryOperator, node), parent)
+            case "unary":
+                self._unary(cast(UnaryOperator, node), parent)
+            case "constant":
+                self._constant(cast(Constant, node), parent)
+
+    def _binary(self, node: BinaryOperator, parent: etree._Element) -> None:
+        binary_element = etree.SubElement(
+            parent,
+            f"{{{_FL}}}binary",
+            attrib={
+                "id": str(node.id),
+                "x": str(node.location.x),
+                "y": str(node.location.y),
+                "z": str(node.location.z),
+                "w": str(node.location.width),
+                "h": str(node.location.height),
+                "lhs": str(node.lhs),
+                "rhs": str(node.rhs),
+                "operator": str(node.op),
+            },
+        )
+
+    def _unary(self, node: UnaryOperator, parent: etree._Element) -> None:
+        unary_element = etree.SubElement(
+            parent,
+            f"{{{_FL}}}unary",
+            attrib={
+                "id": str(node.id),
+                "x": str(node.location.x),
+                "y": str(node.location.y),
+                "z": str(node.location.z),
+                "w": str(node.location.width),
+                "h": str(node.location.height),
+                "lhs": str(node.lhs),
+                "operator": str(node.op),
+            },
+        )
+
+    def _constant(self, node: Constant, parent: etree._Element) -> None:
+        constant_element = etree.SubElement(
+            parent,
+            f"{{{_FL}}}constant",
+            attrib={
+                "id": str(node.id),
+                "x": str(node.location.x),
+                "y": str(node.location.y),
+                "z": str(node.location.z),
+                "w": str(node.location.width),
+                "h": str(node.location.height),
+            },
+        )
+        float_element = etree.SubElement(
+            constant_element,
+            f"{{{_FL}}}float",
+        )
+        float_element.text = str(node.value)

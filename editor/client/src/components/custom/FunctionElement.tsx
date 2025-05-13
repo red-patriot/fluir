@@ -3,16 +3,19 @@ import ConstantElement from './ConstantElement';
 import OpBinaryElement from './OpBinaryElement';
 import OpUnaryElement from './OpUnaryElement';
 import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
-import { useDraggable } from '@dnd-kit/core';
+import { useDraggable, DndContext, DragEndEvent } from '@dnd-kit/core';
+import EditRequest from '../../models/edit_request';
 
 interface FunctionElementProps {
   decl: FunctionDecl;
   parentId?: string;
+  onDragEnd?: (arg0: DragEndEvent) => void;
 }
 
 export default function FunctionElement({
   decl,
   parentId,
+  onDragEnd,
 }: FunctionElementProps) {
   // Constants
   const sizeStyle = getSizeStyle(decl.location);
@@ -20,7 +23,7 @@ export default function FunctionElement({
 
   // Local state
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: `${decl.id}`,
+    id: fullID,
   });
 
   const transformStyle = transform
@@ -75,7 +78,11 @@ export default function FunctionElement({
       >
         {decl.name}
       </p>
-      <div className='absolute'>{decl.body.map(displayNodes)}</div>
+      <div className='absolute'>
+        <DndContext onDragEnd={onDragEnd}>
+          {decl.body.map(displayNodes)}
+        </DndContext>
+      </div>
     </div>
   );
 }

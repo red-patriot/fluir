@@ -2,7 +2,6 @@ import { useAppDispatch, useAppSelector, actions } from '../../store';
 import FunctionElement from '../custom/FunctionElement';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import EditRequest, { MoveEditRequest } from '../../models/edit_request';
-import { useEffect } from 'react';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 
 interface ModuleViewWindowProps {
@@ -14,10 +13,6 @@ export default function ModuleViewWindow({ onEdit }: ModuleViewWindowProps) {
   // Global State
   const module = useAppSelector((state) => state.program.module);
   const zoom = useAppSelector((state) => state.program.zoom) * ZOOM_SCALAR;
-
-  useEffect(() => {
-    console.log(module);
-  }, [module]);
 
   // Local functions
   const doZoom = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -32,11 +27,13 @@ export default function ModuleViewWindow({ onEdit }: ModuleViewWindowProps) {
     if (!onEdit) {
       return;
     }
-    console.log(event);
 
     const request: MoveEditRequest = {
       _t: 'move',
-      target: event.active.id.toString().split(':').map(parseInt),
+      target: event.active.id
+        .toString()
+        .split(':')
+        .map((str) => parseInt(str)),
       x: Math.floor(event.delta.x / zoom),
       y: Math.floor(event.delta.y / zoom),
     };
@@ -57,6 +54,7 @@ export default function ModuleViewWindow({ onEdit }: ModuleViewWindowProps) {
           <FunctionElement
             key={decl.id}
             decl={decl}
+            onDragEnd={handleDragDrop}
           />
         ))}
       </DndContext>

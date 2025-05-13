@@ -9,6 +9,7 @@ from editor.models import (
     BinaryOperator,
     Constant,
     Declaration,
+    FlType,
     Function,
     IDType,
     Location,
@@ -105,13 +106,17 @@ class _XMLReader:
         return self._id(element), Constant(
             id=self._id(element),
             location=self._location(element),
+            flType=self._type(next(element.iterchildren(), None)),
             value=self._value(next(element.iterchildren(), None)),
         )
 
-    def _value(self, element: Any) -> float | None:
+    def _value(self, element: Any) -> str:
+        return cast(str, element.text)
+
+    def _type(self, element: Any) -> FlType | None:
         match element.tag:
             case tag if tag.endswith("float"):
-                return float(element.text)
+                return FlType.FLOATING_POINT
 
         return None
 
@@ -225,4 +230,4 @@ class _XMLWriter:
             constant_element,
             f"{{{_FL}}}float",
         )
-        float_element.text = str(node.value)
+        float_element.text = node.value

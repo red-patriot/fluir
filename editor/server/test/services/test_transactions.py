@@ -2,7 +2,7 @@ import copy
 
 import pytest
 
-from editor.models import Program, elements
+from editor.models import FlType, Program, elements
 from editor.models.edit_errors import BadEdit
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import MoveElement
@@ -32,12 +32,14 @@ def basic_program() -> Program:
                     elements.Constant(
                         id=2,
                         location=elements.Location(2, 2, 1, 5, 5),
-                        value=3.0,
+                        value="3.0",
+                        flType=FlType.FLOATING_POINT,
                     ),
                     elements.Constant(
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
-                        value=2.0,
+                        value="2.0",
+                        flType=FlType.FLOATING_POINT,
                     ),
                 ],
             ),

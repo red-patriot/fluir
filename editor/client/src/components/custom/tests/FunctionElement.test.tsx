@@ -60,7 +60,8 @@ describe('FunctionElement', () => {
           _t: 'constant',
           id: 2,
           location: { x: 1, y: 2, z: 0, width: 5, height: 5 },
-          value: 5.67,
+          flType: 'FLOATING_POINT',
+          value: '5.67',
         },
       ],
     };

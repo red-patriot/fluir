@@ -6,11 +6,14 @@ export type Location = {
   height: number;
 };
 
+export type FlType = 'FLOATING_POINT';
+
 export type Constant = {
   _t: 'constant';
   id: number;
   location: Location;
-  value?: number;
+  flType?: FlType;
+  value?: string;
 };
 
 type Operator = ' ' | '+' | '-' | '*' | '/';

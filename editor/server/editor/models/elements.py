@@ -11,6 +11,10 @@ class IdentifierError(Exception):
     pass
 
 
+class FlType(StrEnum):
+    FLOATING_POINT = "FLOATING_POINT"
+
+
 class Operator(StrEnum):
     UNKNOWN = "<?>"
     PLUS = "+"
@@ -33,7 +37,8 @@ class Constant:
     _t: Literal["constant"] = "constant"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
-    value: float | None = None
+    flType: FlType | None = None
+    value: str | None = None
 
 
 @dataclass

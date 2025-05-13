@@ -5,6 +5,7 @@ import pytest
 from editor.models.elements import (
     BinaryOperator,
     Constant,
+    FlType,
     Function,
     Location,
     Operator,
@@ -86,10 +87,16 @@ _TEST_DATA = [
                             rhs=3,
                         ),
                         Constant(
-                            id=2, location=Location(2, 2, 1, 5, 5), value=3.0
+                            id=2,
+                            location=Location(2, 2, 1, 5, 5),
+                            value="3.0",
+                            flType=FlType.FLOATING_POINT,
                         ),
                         Constant(
-                            id=3, location=Location(2, 12, 1, 5, 5), value=2.0
+                            id=3,
+                            location=Location(2, 12, 1, 5, 5),
+                            value="2.0",
+                            flType=FlType.FLOATING_POINT,
                         ),
                     ],
                 )
@@ -138,7 +145,10 @@ _TEST_DATA = [
                             lhs=3,
                         ),
                         Constant(
-                            id=3, location=Location(2, 2, 1, 5, 5), value=3.5
+                            id=3,
+                            location=Location(2, 2, 1, 5, 5),
+                            value="3.5",
+                            flType=FlType.FLOATING_POINT,
                         ),
                     ],
                 )

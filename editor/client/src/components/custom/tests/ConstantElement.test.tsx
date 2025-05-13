@@ -10,7 +10,8 @@ describe('ConstantElement', () => {
     _t: 'constant',
     id: 1,
     location: { x: 3, y: 6, z: 12, width: 14, height: 5 },
-    value: 4.3213,
+    flType: 'FLOATING_POINT',
+    value: '4.3213',
   };
   it('Shows the correct constant value', async () => {
     renderWithStore(<ConstantElement constant={data} />);

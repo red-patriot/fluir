@@ -1,6 +1,5 @@
 from pathlib import Path
-from typing import cast
-from unittest.mock import MagicMock, create_autospec
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI
@@ -85,3 +84,37 @@ def test_forwards_edit_request_on_post(mock_editor: MagicMock) -> None:
 
     assert response.status_code == 200
     mock_editor.edit.assert_called_with(expected)
+
+
+def test_forwards_save_request_on_post(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/save/",
+        json={"path": ""},
+    )
+
+    assert response.status_code == 200
+    mock_editor.save_file.assert_called()
+
+
+def test_forwards_save_request_parameters_on_post(
+    mock_editor: MagicMock,
+) -> None:
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/save/",
+        json={"path": "/path/to/save/module.fl"},
+    )
+
+    assert response.status_code == 200
+    mock_editor.save_file.assert_called_with(Path("/path/to/save/module.fl"))

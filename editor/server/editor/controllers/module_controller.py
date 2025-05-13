@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 
 from editor.controllers.interface.controller import Controller
 from editor.models import Program
-from editor.models.module_requests import OpenRequest
+from editor.models.module_requests import OpenRequest, SaveRequest
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import MoveElement
 
@@ -21,6 +21,7 @@ class ModuleController(Controller):
         app.post("/api/module/open/")(self.open)
         app.post("/api/module/close")(self.close)
         app.post("/api/module/edit")(self.edit)
+        app.post("/api/module/save")(self.save)
 
     def open(self, request: OpenRequest) -> Program:
         """Handles requests to open a module"""
@@ -31,7 +32,7 @@ class ModuleController(Controller):
         return program
 
     def close(self) -> None:
-        """Handles requests to close the current"""
+        """Handles requests to close the current program"""
         self._editor.close()
 
     def edit(self, request: MoveElement) -> Program:
@@ -40,3 +41,10 @@ class ModuleController(Controller):
         if not program:
             raise HTTPException(404, "The requested program does not exist")
         return program
+
+    def save(self, request: SaveRequest) -> None:
+        """Handles requests to save the current program"""
+        if len(request.path) == 0:
+            self._editor.save_file()
+        else:
+            self._editor.save_file(Path(request.path))

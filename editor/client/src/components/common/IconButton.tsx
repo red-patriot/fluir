@@ -7,19 +7,22 @@ interface IconButtonProps {
   onClick?: () => void;
   iconProps?: FontAwesomeIconProps;
   text?: string;
+  label?: string;
 }
 
 export default function IconButton({
   onClick,
   iconProps,
   text,
+  label,
 }: IconButtonProps) {
   return (
     <button
+      aria-label={label}
       onClick={onClick && onClick}
       className='border text-[1em] font-medium bg-[#1a1a1a]
                  cursor-pointer transition-[border-color]
-                 duration-[0.25s] px-[1.2em] py-[0.6em] rounded-lg
+                 duration-[0.25s] px-[0.6em] py-[0.4em] rounded-lg
                  border-solid border-transparent
                  hover:border-[#646cff] m-px'
     >

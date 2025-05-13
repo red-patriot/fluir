@@ -5,7 +5,7 @@ from unittest.mock import create_autospec
 
 import pytest
 
-from editor.models.edit_errors import BadEdit
+from editor.models.edit_errors import BadEdit, EditorError
 from editor.models.elements import Function, Location, Program
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import EditTransaction
@@ -136,3 +136,87 @@ def test_module_editor_edit_requires_an_open_program() -> None:
 
     with pytest.raises(BadEdit):
         uut.edit(fake_command)
+
+
+def test_module_editor_can_save_files(tmp_path: Path) -> None:
+    expected = """<?xml version='1.0' encoding='UTF-8'?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+  <fl:function name="bar" id="174" x="10" y="10" z="3" w="100" h="100">
+    <body/>
+  </fl:function>
+</fluir>
+"""
+    data = Program(
+        [
+            Function(
+                name="bar",
+                location=Location(10, 10, 3, 100, 100),
+                id=174,
+            )
+        ]
+    )
+    expected_path = tmp_path / "module.fl"
+
+    uut = ModuleEditor()
+    uut.open_module(data, expected_path)
+    uut.save_file()
+
+    with open(expected_path, "r") as file:
+        actual = file.read()
+
+    assert expected == actual
+
+
+def test_module_editor_raises_if_no_module() -> None:
+    uut = ModuleEditor()
+
+    with pytest.raises(EditorError):
+        uut.save_file()
+
+
+def test_module_editor_raises_if_no_file_path() -> None:
+    data = Program(
+        [
+            Function(
+                name="main",
+                location=Location(10, 10, 3, 100, 100),
+                id=1,
+            )
+        ]
+    )
+    uut = ModuleEditor()
+    uut.open_module(data, None)
+
+    with pytest.raises(EditorError):
+        uut.save_file()
+
+
+def test_module_editor_accepts_explicit_file_path(tmp_path: Path) -> None:
+    expected = """<?xml version='1.0' encoding='UTF-8'?>
+<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
+  <fl:function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+    <body/>
+  </fl:function>
+</fluir>
+"""
+    data = Program(
+        [
+            Function(
+                name="main",
+                location=Location(10, 10, 3, 100, 100),
+                id=1,
+            )
+        ]
+    )
+    expected_path = tmp_path / "explicitly_specified.fl"
+
+    uut = ModuleEditor()
+    uut.open_module(data, None)
+
+    uut.save_file(expected_path)
+
+    with open(expected_path, "r") as file:
+        actual = file.read()
+
+    assert expected == actual
+    assert expected_path == uut.get_path(), "Should switch to new path"

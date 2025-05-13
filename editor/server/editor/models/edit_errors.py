@@ -1,2 +1,6 @@
-class BadEdit(Exception):
+class EditorError(Exception):
+    pass
+
+
+class BadEdit(EditorError):
     pass

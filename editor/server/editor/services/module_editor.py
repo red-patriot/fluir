@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from editor.models import Program
-from editor.models.edit_errors import BadEdit
+from editor.models.edit_errors import BadEdit, EditorError
 from editor.repository.fluir_file import XMLFileManager
 from editor.repository.interface.file_manager import FileManager
 from editor.services.transaction import EditTransaction
@@ -28,9 +28,9 @@ class ModuleEditor:
         return self._module
 
     def open_module(
-        self, module: Program, path: Path = Path("/fake/path.fl")
+        self, module: Program, path: Path | None = Path("/fake/path.fl")
     ) -> None:
-        """Open a"""
+        """Open a module already parsed"""
         if self._module:
             self.close()
 
@@ -40,6 +40,15 @@ class ModuleEditor:
     def open_file(self, path: Path) -> None:
         """Opens a new file"""
         return self.open_module(self._repo.parseFile(path), path)
+
+    def save_file(self, path: Path | None = None) -> None:
+        """Save the current module to disk"""
+        path = path or self._path
+        if not self._module or not path:
+            raise EditorError("No module or path provided")
+        self._repo.writeFile(self._module, path)
+        # After saving, update the current path
+        self._path = path
 
     def edit(self, command: EditTransaction) -> None:
         """Applies an edit to the open program"""

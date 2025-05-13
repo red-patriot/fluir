@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
   // You can expose other APTs you need here.
   openFileDialog: async () => ipcRenderer.invoke('dialog:openFile'),
+  saveAsDialog: async () => ipcRenderer.invoke('dialog:saveAs'),
 });

@@ -4,7 +4,6 @@ import OpBinaryElement from './OpBinaryElement';
 import OpUnaryElement from './OpUnaryElement';
 import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import { useDraggable, DndContext, DragEndEvent } from '@dnd-kit/core';
-import EditRequest from '../../models/edit_request';
 
 interface FunctionElementProps {
   decl: FunctionDecl;

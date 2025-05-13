@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FILE_FILTER = [
+  { name: 'Fluir Files', extensions: ['fl'] },
+  { name: 'All Files', extensions: ['*'] },
+];
 
 // The built directory structure
 //
@@ -70,10 +74,19 @@ app.whenReady().then(() => {
     const window = win as BrowserWindow;
     const { canceled, filePaths } = await dialog.showOpenDialog(window, {
       properties: ['openFile'],
-      filters: [{ name: 'Fluir Files', extensions: ['fl'] }],
+      filters: FILE_FILTER,
     });
     if (canceled) return null;
     return filePaths[0];
+  });
+
+  ipcMain.handle('dialog:saveAs', async () => {
+    const window = win as BrowserWindow;
+    const { canceled, filePath } = await dialog.showSaveDialog(window, {
+      filters: FILE_FILTER,
+    });
+    if (canceled) return null;
+    return filePath;
   });
 
   createWindow();

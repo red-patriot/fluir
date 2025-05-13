@@ -4,5 +4,6 @@ const BASE_URL =
 
 export const SERVER_API = {
   openProgram: BASE_URL + '/api/module/open/',
-  editProgram: BASE_URL + '/api/module/edit',
+  editProgram: BASE_URL + '/api/module/edit/',
+  saveAs: BASE_URL + '/api/module/save/',
 };

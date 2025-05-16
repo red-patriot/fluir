@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 
 describe('ConstantElement', () => {
   const data: Constant = {
-    _t: 'constant',
+    discriminator: 'constant',
     id: 1,
     location: { x: 3, y: 6, z: 12, width: 14, height: 5 },
     flType: 'FLOATING_POINT',

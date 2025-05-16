@@ -34,7 +34,7 @@ class Location:
 
 @dataclass
 class Constant:
-    _t: Literal["constant"] = "constant"
+    discriminator: Literal["constant"] = "constant"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     flType: FlType | None = None
@@ -43,7 +43,7 @@ class Constant:
 
 @dataclass
 class BinaryOperator:
-    _t: Literal["binary"] = "binary"
+    discriminator: Literal["binary"] = "binary"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
@@ -53,7 +53,7 @@ class BinaryOperator:
 
 @dataclass
 class UnaryOperator:
-    _t: Literal["unary"] = "unary"
+    discriminator: Literal["unary"] = "unary"
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
@@ -66,7 +66,7 @@ type Nodes = list[Node]
 
 @dataclass
 class Function:
-    _t: Literal["function"] = "function"
+    discriminator: Literal["function"] = "function"
     name: str = ""
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
@@ -91,7 +91,7 @@ def _find_impl(id: QualifiedID, elements: Sequence[Element]) -> Element | None:
         if element.id == first:
             if len(id) == 1:
                 return element
-            match element._t:
+            match element.discriminator:
                 case "function":
                     return _find_impl(id[1:], cast(Function, element).body)
                 case "binary":

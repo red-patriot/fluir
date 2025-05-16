@@ -1,13 +1,13 @@
 from pathlib import Path
-from typing import override
+from typing import Annotated, override
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 
 from editor.controllers.interface.controller import Controller
 from editor.models import Program
 from editor.models.module_requests import OpenRequest, SaveRequest
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import MoveElement
+from editor.services.transaction import EditTransaction
 
 
 class ModuleController(Controller):
@@ -35,7 +35,7 @@ class ModuleController(Controller):
         """Handles requests to close the current program"""
         self._editor.close()
 
-    def edit(self, request: MoveElement) -> Program:
+    def edit(self, request: Annotated[EditTransaction, Body()]) -> Program:
         self._editor.edit(request)
         program = self._editor.get()
         if not program:

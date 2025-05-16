@@ -5,7 +5,7 @@ import pytest
 from editor.models import FlType, Program, elements
 from editor.models.edit_errors import BadEdit
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import MoveElement
+from editor.services.transaction import MoveElement, UpdateConstant
 
 
 @pytest.fixture
@@ -92,12 +92,26 @@ def test_move_node_raises_if_out_of_function(
     x: int,
     y: int,
 ) -> None:
-    expected = copy.deepcopy(basic_program)
-    expected.declarations[1].body[2].location = elements.Location(
-        4, 78, 1, 5, 5
-    )
-
     uut = MoveElement(target=[2, 3], x=x, y=y)
 
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    assert isinstance(expected.declarations[1].body[1], elements.Constant)
+    expected.declarations[1].body[1].value = "-5.67"
+
+    uut = UpdateConstant(target=[2, 2], value="-5.67")
+    editor.edit(uut)
+
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
+    uut = UpdateConstant(target=[2, 1], value="-5.67")
     with pytest.raises(BadEdit):
         editor.edit(uut)

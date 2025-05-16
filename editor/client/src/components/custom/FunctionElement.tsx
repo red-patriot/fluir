@@ -33,7 +33,7 @@ export default function FunctionElement({
 
   // Local functions
   const displayNodes = (node: Node) => {
-    if (node._t === 'constant') {
+    if (node.discriminator === 'constant') {
       return (
         <ConstantElement
           key={node.id}
@@ -41,7 +41,7 @@ export default function FunctionElement({
           parentId={fullID}
         />
       );
-    } else if (node._t === 'binary') {
+    } else if (node.discriminator === 'binary') {
       return (
         <OpBinaryElement
           key={node.id}
@@ -49,7 +49,7 @@ export default function FunctionElement({
           parentId={fullID}
         />
       );
-    } else if (node._t === 'unary') {
+    } else if (node.discriminator === 'unary') {
       return (
         <OpUnaryElement
           key={node.id}

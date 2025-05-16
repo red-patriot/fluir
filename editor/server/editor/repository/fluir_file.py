@@ -172,7 +172,7 @@ class _XMLWriter:
             self._node(node, body_element)
 
     def _node(self, node: Node, parent: etree._Element) -> None:
-        match node._t:
+        match node.discriminator:
             case "binary":
                 self._binary(cast(BinaryOperator, node), parent)
             case "unary":

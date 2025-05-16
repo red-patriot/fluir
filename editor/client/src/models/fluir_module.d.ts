@@ -9,7 +9,7 @@ export type Location = {
 export type FlType = 'FLOATING_POINT';
 
 export type Constant = {
-  _t: 'constant';
+  discriminator: 'constant';
   id: number;
   location: Location;
   flType?: FlType;
@@ -19,7 +19,7 @@ export type Constant = {
 type Operator = ' ' | '+' | '-' | '*' | '/';
 
 export type BinaryOp = {
-  _t: 'binary';
+  discriminator: 'binary';
   id: number;
   location: Location;
   op: Operator;
@@ -28,7 +28,7 @@ export type BinaryOp = {
 };
 
 export type UnaryOp = {
-  _t: 'unary';
+  discriminator: 'unary';
   id: number;
   location: Location;
   op: Operator;
@@ -38,7 +38,7 @@ export type UnaryOp = {
 export type Node = BinaryOp | UnaryOp | Constant;
 
 export type FunctionDecl = {
-  _t: 'function';
+  discriminator: 'function';
   name: string;
   id: number;
   location: Location;

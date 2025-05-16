@@ -29,7 +29,7 @@ export default function ModuleViewWindow({ onEdit }: ModuleViewWindowProps) {
     }
 
     const request: MoveEditRequest = {
-      _t: 'move',
+      discriminator: 'move',
       target: event.active.id
         .toString()
         .split(':')

@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 
 describe('OpBinaryElement', () => {
   const data: BinaryOp = {
-    _t: 'binary',
+    discriminator: 'binary',
     id: 2,
     location: { x: 9, y: 18, z: 3, width: 14, height: 5 },
     op: '-',

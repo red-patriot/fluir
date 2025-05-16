@@ -8,7 +8,7 @@ import pytest
 from editor.models.edit_errors import BadEdit, EditorError
 from editor.models.elements import Function, Location, Program
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import EditTransaction
+from editor.services.transaction import EditTransaction, TransactionBase
 
 
 @pytest.fixture
@@ -118,7 +118,7 @@ def test_module_editor_accepts_edit_transactions() -> None:
             )
         ]
     )
-    fake_command = create_autospec(EditTransaction, instance=True)
+    fake_command = create_autospec(TransactionBase, instance=True)
     fake_command.do.return_value = data
 
     uut = ModuleEditor()

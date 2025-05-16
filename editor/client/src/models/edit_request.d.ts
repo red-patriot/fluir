@@ -1,5 +1,5 @@
 export type MoveEditRequest = {
-  _t: 'move';
+  discriminator: 'move';
   target: number[];
   x: number;
   y: number;

@@ -1,4 +1,7 @@
 from pathlib import Path
+from typing import Annotated
+
+from pydantic import Field
 
 from editor.models import Program
 from editor.models.edit_errors import BadEdit, EditorError
@@ -50,7 +53,12 @@ class ModuleEditor:
         # After saving, update the current path
         self._path = path
 
-    def edit(self, command: EditTransaction) -> None:
+    def edit(
+        self,
+        command: Annotated[
+            EditTransaction, Field(discriminator="discriminator")
+        ],
+    ) -> None:
         """Applies an edit to the open program"""
         if self._module is None:
             raise BadEdit("Open a program to make edits")

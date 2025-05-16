@@ -9,7 +9,7 @@ from editor.controllers.module_controller import ModuleController
 from editor.models import Program
 from editor.models.module_requests import OpenRequest
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import MoveElement
+from editor.services.transaction import MoveElement, UpdateConstant
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def test_forwards_close_request_on_post(mock_editor: MagicMock) -> None:
     mock_editor.close.assert_called()
 
 
-def test_forwards_edit_request_on_post(mock_editor: MagicMock) -> None:
+def test_forwards_move_request_on_post(mock_editor: MagicMock) -> None:
     expected = MoveElement(target=[1, 2], x=13, y=19)
 
     app = FastAPI()
@@ -79,7 +79,29 @@ def test_forwards_edit_request_on_post(mock_editor: MagicMock) -> None:
 
     response = testApp.post(
         "/api/module/edit/",
-        json={"_t": "move", "target": [1, 2], "x": 13, "y": 19},
+        json={"discriminator": "move", "target": [1, 2], "x": 13, "y": 19},
+    )
+
+    assert response.status_code == 200
+    mock_editor.edit.assert_called_with(expected)
+
+
+def test_forwards_edit_constant_request_on_post(mock_editor: MagicMock) -> None:
+    expected = UpdateConstant(target=[1, 2, 4], value="-5.432")
+
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/edit/",
+        json={
+            "discriminator": "update_constant",
+            "target": [1, 2, 4],
+            "value": "-5.432",
+        },
     )
 
     assert response.status_code == 200

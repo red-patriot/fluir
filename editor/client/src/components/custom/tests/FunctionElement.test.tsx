@@ -7,7 +7,7 @@ import '@testing-library/jest-dom';
 
 describe('FunctionElement', () => {
   const data: FunctionDecl = {
-    _t: 'function',
+    discriminator: 'function',
     id: 7,
     location: { x: 9, y: 18, z: 3, width: 140, height: 500 },
     name: 'testFunc',
@@ -51,13 +51,13 @@ describe('FunctionElement', () => {
 
   it('Passes its id to its children', async () => {
     const withChildren: FunctionDecl = {
-      _t: 'function',
+      discriminator: 'function',
       id: 7,
       location: { x: 9, y: 18, z: 3, width: 140, height: 500 },
       name: 'testFunc',
       body: [
         {
-          _t: 'constant',
+          discriminator: 'constant',
           id: 2,
           location: { x: 1, y: 2, z: 0, width: 5, height: 5 },
           flType: 'FLOATING_POINT',

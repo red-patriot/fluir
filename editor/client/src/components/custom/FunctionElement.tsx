@@ -68,7 +68,7 @@ export default function FunctionElement({
       aria-label={`func-${decl.name}-${fullID}`}
       key={decl.id}
       className='absolute border-1 rounded-sm border-gray-200
-      bg-gray-950 font-code'
+      bg-black font-code'
       style={{ ...sizeStyle, ...transformStyle }}
     >
       <p

@@ -44,13 +44,14 @@ export default function ModulePage({ onEdit }: ModulePageProps) {
   };
 
   return (
-    <div className='flex flex-col h-full'>
+    <div className='flex flex-col h-lvh border-2'>
       <ModuleHeader
         onSaveAs={onSaveAs}
         onSave={onSave}
         onCloseModule={closeModule}
       />
       <ModuleViewWindow onEdit={onEdit} />
+
     </div>
   );
 }

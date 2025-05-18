@@ -3,6 +3,7 @@ import FunctionElement from '../custom/FunctionElement';
 import { DndContext, DragEndEvent } from '@dnd-kit/core';
 import EditRequest, { MoveEditRequest } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import ViewGrid from '../custom/ViewGrid';
 
 interface ModuleViewWindowProps {
   onEdit?: (arg0: EditRequest) => void;
@@ -46,10 +47,11 @@ export default function ModuleViewWindow({ onEdit }: ModuleViewWindowProps) {
 
   return (
     <div
-      className='relative h-lvh w-lvw border-gray-300'
+      className='grow relative border-grey-300 border-2'
       onWheel={doZoom}
     >
       <DndContext onDragEnd={handleDragDrop}>
+        <ViewGrid />
         {module.declarations.map((decl) => (
           <FunctionElement
             key={decl.id}

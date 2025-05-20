@@ -1,5 +1,10 @@
-import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
+import {
+  getFontSize,
+  getSizeStyle,
+  getLocationStyle,
+} from '../../hooks/useSizeStyle';
 import { UnaryOp } from '../../models/fluir_module';
+import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
 
 interface OpUnaryElementProps {
@@ -15,33 +20,39 @@ export default function OpUnaryElement({
   const fullID = parentId ? `${parentId}:${unary.id}` : `${unary.id}`;
 
   // Local state
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const dragInfo = useDraggable({
     id: fullID,
   });
 
-  const transformStyle = transform
+  const transformStyle = dragInfo.transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        transform: `translate3d(${dragInfo.transform.x}px, ${dragInfo.transform.y}px, 0)`,
       }
     : undefined;
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       aria-label={`unary-${fullID}`}
       key={fullID}
-      className='absolute border-2 border-orange-400
+      className='absolute border-2 border-orange-400 bg-orange-400
                 rounded-sm
                 flex justify-center font-code'
       style={{
-        ...getSizeStyle(unary.location),
+        ...getLocationStyle(unary.location),
         ...getFontSize(unary.location),
         ...transformStyle,
       }}
     >
-      {unary.op}
+      <p
+        className='bg-black flex justify-center items-center rounded-lg'
+        style={{
+          ...getSizeStyle(unary.location),
+        }}
+      >
+        {unary.op}
+      </p>
+      <DraggableElement dragInfo={dragInfo} />
+      <p>#</p>
     </div>
   );
 }

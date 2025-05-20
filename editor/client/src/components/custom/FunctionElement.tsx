@@ -2,8 +2,13 @@ import { FunctionDecl, Node } from '../../models/fluir_module';
 import ConstantElement from './ConstantElement';
 import OpBinaryElement from './OpBinaryElement';
 import OpUnaryElement from './OpUnaryElement';
-import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
+import {
+  getSizeStyle,
+  getFontSize,
+  getLocationStyle,
+} from '../../hooks/useSizeStyle';
 import { useDraggable, DndContext, DragEndEvent } from '@dnd-kit/core';
+import DraggableElement from '../common/DraggableElement';
 
 interface FunctionElementProps {
   decl: FunctionDecl;
@@ -18,16 +23,17 @@ export default function FunctionElement({
 }: FunctionElementProps) {
   // Constants
   const sizeStyle = getSizeStyle(decl.location);
+  const locationStyle = getLocationStyle(decl.location);
   const fullID = parentId ? `${parentId}:${decl.id}` : `${decl.id}`;
 
   // Local state
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const dragInfo = useDraggable({
     id: fullID,
   });
 
-  const transformStyle = transform
+  const transformStyle = dragInfo.transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        transform: `translate3d(${dragInfo.transform.x}px, ${dragInfo.transform.y}px, 0)`,
       }
     : undefined;
 
@@ -62,21 +68,22 @@ export default function FunctionElement({
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       aria-label={`func-${decl.name}-${fullID}`}
       key={decl.id}
       className='absolute border-1 rounded-sm border-gray-200
       bg-black font-code'
-      style={{ ...sizeStyle, ...transformStyle }}
+      style={{ ...sizeStyle, ...locationStyle, ...transformStyle }}
     >
-      <p
-        className='w-full border-b border-gray-200'
-        style={{ ...getFontSize(16) }}
+      <div
+        className='flex flex-row items-center
+                      border-b border-gray-200'
+        style={{
+          ...getFontSize(14),
+        }}
       >
-        {decl.name}
-      </p>
+        <p className='grow'>{decl.name}</p>
+        <DraggableElement dragInfo={dragInfo} />
+      </div>
       <div className='absolute'>
         <DndContext onDragEnd={onDragEnd}>
           {decl.body.map(displayNodes)}

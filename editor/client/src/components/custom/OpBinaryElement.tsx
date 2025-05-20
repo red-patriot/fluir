@@ -1,5 +1,10 @@
-import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
+import {
+  getFontSize,
+  getSizeStyle,
+  getLocationStyle,
+} from '../../hooks/useSizeStyle';
 import { BinaryOp } from '../../models/fluir_module';
+import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
 
 interface OpBinaryElementProps {
@@ -15,33 +20,40 @@ export default function OpBinaryElement({
   const fullID = parentId ? `${parentId}:${binary.id}` : `${binary.id}`;
 
   // Local state
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const dragInfo = useDraggable({
     id: fullID,
   });
 
-  const transformStyle = transform
+  const transformStyle = dragInfo.transform
     ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        transform: `translate3d(${dragInfo.transform.x}px, ${dragInfo.transform.y}px, 0)`,
       }
     : undefined;
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       aria-label={`binary-${fullID}`}
       key={fullID}
-      className='absolute border-2 border-yellow-300
+      className='absolute flex flex-row items-center
+                 border-2 border-yellow-300 bg-yellow-300
                  rounded-sm
-                 flex justify-center font-code'
+                 font-code'
       style={{
-        ...getSizeStyle(binary.location),
+        ...getLocationStyle(binary.location),
         ...getFontSize(binary.location),
         ...transformStyle,
       }}
     >
-      {binary.op}
+      <p
+        className='bg-black flex justify-center items-center rounded-lg'
+        style={{
+          ...getSizeStyle(binary.location),
+        }}
+      >
+        {binary.op}
+      </p>
+      <DraggableElement dragInfo={dragInfo} />
+      <p>#</p>
     </div>
   );
 }

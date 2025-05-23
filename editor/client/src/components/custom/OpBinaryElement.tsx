@@ -36,7 +36,6 @@ export default function OpBinaryElement({
       key={fullID}
       className='absolute flex flex-row items-center
                  border-2 border-yellow-300 bg-yellow-300
-                 rounded-sm
                  font-code'
       style={{
         ...getLocationStyle(binary.location),
@@ -45,7 +44,7 @@ export default function OpBinaryElement({
       }}
     >
       <p
-        className='bg-black flex justify-center items-center rounded-lg'
+        className='bg-black flex justify-center items-center'
         style={{
           ...getSizeStyle(binary.location),
         }}

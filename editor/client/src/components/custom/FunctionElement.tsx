@@ -70,7 +70,7 @@ export default function FunctionElement({
     <div
       aria-label={`func-${decl.name}-${fullID}`}
       key={decl.id}
-      className='absolute border-1 rounded-sm border-gray-200
+      className='absolute border-1 border-gray-200
       bg-black font-code'
       style={{ ...sizeStyle, ...locationStyle, ...transformStyle }}
     >

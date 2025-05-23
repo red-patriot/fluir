@@ -19,7 +19,7 @@ export default function ModuleHeader({
   return (
     <div
       className='flex flex-row justify-start m-2
-                        bg-gray-500 rounded-lg'
+                        bg-gray-500'
     >
       <IconButton
         label='save-button'

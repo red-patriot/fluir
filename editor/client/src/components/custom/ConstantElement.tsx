@@ -78,7 +78,7 @@ export default function ConstantElement({
       }}
       className='absolute flex flex-row items-center
     bg-purple-300 border-2 border-purple-300
-    rounded-sm font-code'
+    font-code'
     >
       {isEditing ? (
         <input

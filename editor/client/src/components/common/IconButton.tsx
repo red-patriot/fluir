@@ -22,7 +22,7 @@ export default function IconButton({
       onClick={onClick && onClick}
       className='border text-[1em] font-medium bg-[#1a1a1a]
                  cursor-pointer transition-[border-color]
-                 duration-[0.25s] px-[0.6em] py-[0.4em] rounded-lg
+                 duration-[0.25s] px-[0.6em] py-[0.4em]
                  border-solid border-transparent
                  hover:border-[#646cff] m-px'
     >

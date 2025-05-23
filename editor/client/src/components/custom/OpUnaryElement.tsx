@@ -35,7 +35,6 @@ export default function OpUnaryElement({
       aria-label={`unary-${fullID}`}
       key={fullID}
       className='absolute border-2 border-orange-400 bg-orange-400
-                rounded-sm
                 flex justify-center font-code'
       style={{
         ...getLocationStyle(unary.location),
@@ -44,7 +43,7 @@ export default function OpUnaryElement({
       }}
     >
       <p
-        className='bg-black flex justify-center items-center rounded-lg'
+        className='bg-black flex justify-center items-center'
         style={{
           ...getSizeStyle(unary.location),
         }}

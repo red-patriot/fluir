@@ -6,6 +6,7 @@ import {
 import { UnaryOp } from '../../models/fluir_module';
 import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
+import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
 
 interface OpUnaryElementProps {
   unary: UnaryOp;
@@ -34,7 +35,7 @@ export default function OpUnaryElement({
     <div
       aria-label={`unary-${fullID}`}
       key={fullID}
-      className='absolute border-2 border-orange-400 bg-orange-400
+      className='absolute border-[1px] space-x-0.5 border-orange-600 bg-orange-600
                 flex justify-center font-code'
       style={{
         ...getLocationStyle(unary.location),
@@ -42,6 +43,7 @@ export default function OpUnaryElement({
         ...transformStyle,
       }}
     >
+      <InputIndicator />
       <p
         className='bg-black flex justify-center items-center'
         style={{
@@ -51,7 +53,7 @@ export default function OpUnaryElement({
         {unary.op}
       </p>
       <DraggableElement dragInfo={dragInfo} />
-      <p>#</p>
+      <OutputIndicator />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
 import { BinaryOp } from '../../models/fluir_module';
 import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
+import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
 
 interface OpBinaryElementProps {
   binary: BinaryOp;
@@ -34,8 +35,8 @@ export default function OpBinaryElement({
     <div
       aria-label={`binary-${fullID}`}
       key={fullID}
-      className='absolute flex flex-row items-center
-                 border-2 border-yellow-300 bg-yellow-300
+      className='absolute flex flex-row items-center space-x-0.5
+                 border-[1px] border-yellow-500 bg-yellow-500
                  font-code'
       style={{
         ...getLocationStyle(binary.location),
@@ -43,6 +44,7 @@ export default function OpBinaryElement({
         ...transformStyle,
       }}
     >
+      <InputIndicator count={2} />
       <p
         className='bg-black flex justify-center items-center'
         style={{
@@ -52,7 +54,7 @@ export default function OpBinaryElement({
         {binary.op}
       </p>
       <DraggableElement dragInfo={dragInfo} />
-      <p>#</p>
+      <OutputIndicator />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import EditRequest, {
   UpdateConstantEditRequest,
 } from '../../models/edit_request';
 import { useProgramActions } from '../common/ProgramActionsContext';
+import { OutputIndicator } from '../common/InOutIndicator';
 
 interface ConstantElementProps {
   constant: Constant;
@@ -76,8 +77,8 @@ export default function ConstantElement({
         ...getFontSize(10),
         ...transformStyle,
       }}
-      className='absolute flex flex-row items-center
-    bg-purple-300 border-2 border-purple-300
+      className='absolute flex flex-row items-center space-x-0.5
+    bg-purple-600 border-[1px] border-purple-600
     font-code'
     >
       {isEditing ? (
@@ -108,7 +109,7 @@ export default function ConstantElement({
             {constant.value}
           </p>
           <DraggableElement dragInfo={dragInfo} />
-          <p>#</p>
+          <OutputIndicator />
         </>
       )}
     </div>

@@ -18,7 +18,7 @@ class ModuleController(Controller):
 
     @override
     def register(self, app: FastAPI) -> None:
-        app.post("/api/module/open/")(self.open)
+        app.post("/api/module/open")(self.open)
         app.post("/api/module/close")(self.close)
         app.post("/api/module/edit")(self.edit)
         app.post("/api/module/save")(self.save)

@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import ConstantElement from '../ConstantElement';
 import { Constant } from '../../../models/fluir_module';
 import { renderWithStore } from '../../../utility/testStore';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 
 describe('ConstantElement', () => {
@@ -47,5 +48,40 @@ describe('ConstantElement', () => {
 
     expect(x).toStrictEqual(expectedX);
     expect(y).toStrictEqual(expectedY);
+  });
+  it('Changes to edit mode', async () => {
+    renderWithStore(<ConstantElement constant={data} />);
+
+    await fireEvent.click(screen.getByLabelText('constant-1-view'));
+
+    expect(screen.getByLabelText('constant-1-edit')).toBeInTheDocument();
+  });
+
+  describe('Edit Operations', () => {
+    beforeEach(async () => {
+      renderWithStore(<ConstantElement constant={data} />);
+
+      await fireEvent.click(screen.getByLabelText('constant-1-view'));
+    });
+
+    it('Can be cancelled', async () => {
+      await userEvent.type(
+        screen.getByLabelText('constant-1-edit'),
+        '1.3453{escape}',
+      );
+
+      expect(screen.getByLabelText('constant-1-view')).toBeInTheDocument();
+    });
+
+    it('Can be committed', async () => {
+      await userEvent.type(
+        screen.getByLabelText('constant-1-edit'),
+        '1.3453{enter}',
+      );
+
+      expect(screen.getByLabelText('constant-1-view')).toBeInTheDocument();
+      // TODO: Test the hook was called
+      expect(screen.getByText('1.3453')).toBeInTheDocument();
+    });
   });
 });

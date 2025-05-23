@@ -5,6 +5,12 @@ export type MoveEditRequest = {
   y: number;
 };
 
-type EditRequest = MoveEditRequest;
+export type UpdateConstantEditRequest = {
+  discriminator: 'update_constant';
+  target: number[];
+  value: string;
+};
+
+type EditRequest = MoveEditRequest | UpdateConstantEditRequest;
 
 export default EditRequest;

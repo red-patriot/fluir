@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import {
   getFontSize,
   getSizeStyle,
@@ -6,10 +7,12 @@ import {
 import { Constant } from '../../models/fluir_module';
 import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
+import EditRequest from '../../models/edit_request';
 
 interface ConstantElementProps {
   constant: Constant;
   parentId?: string;
+  onEdit?: (arg0: EditRequest) => void;
 }
 
 export default function ConstantElement({
@@ -20,6 +23,9 @@ export default function ConstantElement({
   const fullID = parentId ? `${parentId}:${constant.id}` : `${constant.id}`;
 
   // Local state
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempText, setTempText] = useState(constant.value || ' ');
+  const inputRef = useRef<HTMLInputElement>(null);
   const dragInfo = useDraggable({
     id: fullID,
   });
@@ -29,6 +35,24 @@ export default function ConstantElement({
         transform: `translate3d(${dragInfo.transform.x}px, ${dragInfo.transform.y}px, 0)`,
       }
     : undefined;
+
+  // Local functions
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditing(false);
+      // TODO: Send request to update
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
+  // Effects
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   return (
     <div
@@ -42,19 +66,37 @@ export default function ConstantElement({
     bg-purple-300 border-2 border-purple-300
     rounded-sm font-code'
     >
-      <p
-        key={fullID}
-        className='bg-black'
-        style={{
-          ...getSizeStyle(constant.location),
-        }}
-      >
-        {constant.value}
-      </p>
-      <DraggableElement
-        dragInfo={dragInfo}
-      />
-      <p>#</p>
+      {isEditing ? (
+        <input
+          ref={inputRef}
+          type='number'
+          aria-label={`constant-${fullID}-edit`}
+          value={tempText}
+          onChange={(e) => setTempText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => setIsEditing(false)}
+          className='bg-black'
+          style={{
+            ...getSizeStyle(constant.location),
+          }}
+        />
+      ) : (
+        <>
+          <p
+            key={fullID}
+            aria-label={`constant-${fullID}-view`}
+            onClick={() => setIsEditing(true)}
+            className='bg-black cursor-text'
+            style={{
+              ...getSizeStyle(constant.location),
+            }}
+          >
+            {constant.value}
+          </p>
+          <DraggableElement dragInfo={dragInfo} />
+          <p>#</p>
+        </>
+      )}
     </div>
   );
 }

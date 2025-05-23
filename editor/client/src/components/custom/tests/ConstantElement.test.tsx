@@ -1,10 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import ConstantElement from '../ConstantElement';
 import { Constant } from '../../../models/fluir_module';
 import { renderWithStore } from '../../../utility/testStore';
-import { fireEvent, screen } from '@testing-library/react';
+import { cleanup, fireEvent, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { mockActions } from '../../../utility/testProgramActions';
 import '@testing-library/jest-dom';
+import { ProgramActionsContext } from '../../common/ProgramActionsContext';
+import { UpdateConstantEditRequest } from '../../../models/edit_request';
 
 describe('ConstantElement', () => {
   const data: Constant = {
@@ -63,6 +66,7 @@ describe('ConstantElement', () => {
 
       await fireEvent.click(screen.getByLabelText('constant-1-view'));
     });
+    afterEach(cleanup);
 
     it('Can be cancelled', async () => {
       await userEvent.type(
@@ -74,14 +78,19 @@ describe('ConstantElement', () => {
     });
 
     it('Can be committed', async () => {
+      const expected: UpdateConstantEditRequest = {
+        discriminator: 'update_constant',
+        target: [1],
+        value: '4.32133453',
+      };
+
       await userEvent.type(
         screen.getByLabelText('constant-1-edit'),
-        '1.3453{enter}',
+        '3453{enter}',
       );
 
       expect(screen.getByLabelText('constant-1-view')).toBeInTheDocument();
-      // TODO: Test the hook was called
-      expect(screen.getByText('1.3453')).toBeInTheDocument();
+      expect(mockActions.editProgram).toHaveBeenCalledWith(expected);
     });
   });
 });

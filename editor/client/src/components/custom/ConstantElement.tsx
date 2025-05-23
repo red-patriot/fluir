@@ -7,7 +7,10 @@ import {
 import { Constant } from '../../models/fluir_module';
 import DraggableElement from '../common/DraggableElement';
 import { useDraggable } from '@dnd-kit/core';
-import EditRequest from '../../models/edit_request';
+import EditRequest, {
+  UpdateConstantEditRequest,
+} from '../../models/edit_request';
+import { useProgramActions } from '../common/ProgramActionsContext';
 
 interface ConstantElementProps {
   constant: Constant;
@@ -21,6 +24,9 @@ export default function ConstantElement({
 }: ConstantElementProps) {
   // Constants
   const fullID = parentId ? `${parentId}:${constant.id}` : `${constant.id}`;
+
+  // Global State
+  const { editProgram } = useProgramActions();
 
   // Local state
   const [isEditing, setIsEditing] = useState(false);
@@ -39,8 +45,16 @@ export default function ConstantElement({
   // Local functions
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
+      const request: UpdateConstantEditRequest = {
+        discriminator: 'update_constant',
+        target: fullID
+          .toString()
+          .split(':')
+          .map((str) => parseInt(str)),
+        value: tempText,
+      };
+      editProgram(request);
       setIsEditing(false);
-      // TODO: Send request to update
     } else if (e.key === 'Escape') {
       setIsEditing(false);
     }

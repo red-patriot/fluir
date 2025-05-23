@@ -1,9 +1,9 @@
 import ModuleViewWindow from '../layout/ModuleViewWindow';
 import ModuleHeader from '../layout/ModuleHeader';
 import EditRequest from '../../models/edit_request';
-import { useSaveFileAs } from '../../hooks/useSaveProgram';
 import { saveAsDialog } from '../../hooks/electronAPI';
 import { useAppDispatch, actions } from '../../store';
+import { useProgramActions } from '../common/ProgramActionsContext';
 
 interface ModulePageProps {
   onEdit: (arg0: EditRequest) => void;
@@ -11,18 +11,9 @@ interface ModulePageProps {
 
 export default function ModulePage({ onEdit }: ModulePageProps) {
   const dispatch = useAppDispatch();
+  const { saveProgramAs } = useProgramActions();
 
   // Local functions
-  const saveProgramAs = useSaveFileAs({
-    onSave: (response) => {
-      // TODO: Do something better here
-      console.log(response);
-    },
-    onError: (error) => {
-      // TODO: Better handling here
-      console.log(error);
-    },
-  });
 
   const onSaveAs = async () => {
     const filePath = await saveAsDialog();
@@ -51,7 +42,6 @@ export default function ModulePage({ onEdit }: ModulePageProps) {
         onCloseModule={closeModule}
       />
       <ModuleViewWindow onEdit={onEdit} />
-
     </div>
   );
 }

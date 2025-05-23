@@ -4,13 +4,16 @@ import App from './App.tsx';
 import './index.css';
 import { Provider } from 'react-redux';
 import { setupStore } from './store/index.ts';
+import ProgramActionsProvider from './components/common/ProgramActionsProvider.tsx';
 
 const store = setupStore();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
-      <App />
+      <ProgramActionsProvider>
+        <App />
+      </ProgramActionsProvider>
     </Provider>
   </React.StrictMode>,
 );

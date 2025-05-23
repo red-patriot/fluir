@@ -1,0 +1,52 @@
+import { PropsWithChildren } from 'react';
+import { useOpenProgram } from '../../hooks/useOpenProgram';
+import { useEditProgram } from '../../hooks/useEditProgram';
+import { useSaveFileAs } from '../../hooks/useSaveProgram';
+import { ProgramActionsContext } from './ProgramActionsContext';
+import { useAppDispatch, actions } from '../../store';
+
+export default function ProgramActionsProvider({
+  children,
+}: PropsWithChildren) {
+  const dispatch = useAppDispatch();
+
+  // Local functions
+  const openProgram = useOpenProgram({
+    onOpen: (response) => {
+      dispatch(actions.setOpenModule(response.data));
+      dispatch(actions.goToPage('module'));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  const editProgram = useEditProgram({
+    onEdit: (response) => {
+      console.log(response);
+      dispatch(actions.setOpenModule(response.data));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  const saveProgramAs = useSaveFileAs({
+    onSave: (response) => {
+      // TODO: Do something better here
+      console.log(response);
+    },
+    onError: (error) => {
+      // TODO: Better handling here
+      console.log(error);
+    },
+  });
+
+  return (
+    <ProgramActionsContext.Provider
+      value={{ openProgram, editProgram, saveProgramAs }}
+    >
+      {children}
+    </ProgramActionsContext.Provider>
+  );
+}

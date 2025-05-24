@@ -62,12 +62,33 @@ type Nodes = list[Node]
 
 
 @dataclass
+class Conduit:
+    @dataclass
+    class Output:
+        target: IDType = INVALID_ID
+        index: int = 0
+
+    @dataclass
+    class Segment:
+        x: int
+        y: int
+        children: list["Conduit.Segment | Conduit.Output"] = field(
+            default_factory=list
+        )
+
+    id: IDType = INVALID_ID
+    input: IDType = INVALID_ID
+    children: list[Segment | Output] = field(default_factory=list)
+
+
+@dataclass
 class Function:
     discriminator: Literal["function"] = "function"
     name: str = ""
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     nodes: Nodes = field(default_factory=list)
+    conduits: list[Conduit] = field(default_factory=list)
 
 
 type Declaration = Function

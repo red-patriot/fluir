@@ -1,5 +1,6 @@
 from editor.models.elements import (
     BinaryOperator,
+    Conduit,
     Constant,
     Declaration,
     FlType,
@@ -17,6 +18,7 @@ __all__ = [
     "INVALID_ID",
     "IDType",
     "BinaryOperator",
+    "Conduit",
     "Constant",
     "Declaration",
     "FlType",

@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Any, Final, cast, override
+from typing import Any, assert_never, cast, override
 
 from lxml import etree
 from lxml.objectify import ObjectifiedElement, fromstring
@@ -7,6 +7,7 @@ from lxml.objectify import ObjectifiedElement, fromstring
 from editor.models import (
     INVALID_ID,
     BinaryOperator,
+    Conduit,
     Constant,
     Declaration,
     FlType,
@@ -22,6 +23,7 @@ from editor.models import (
 from editor.repository.interface.file_manager import FileManager
 
 type _NodePair = tuple[IDType, Node]
+type _ConduitPair = tuple[IDType, Conduit]
 type _DeclarationPair = tuple[IDType, Declaration]
 
 
@@ -62,17 +64,28 @@ class _XMLReader:
         return Program(declarations)
 
     def _declaration(self, element: Any) -> _DeclarationPair:
-        body: Nodes = []
-        for child in element.find("body").iterchildren():
-            id, node = self._node(child)
+        nodes: Nodes = []
+        conduits: list[Conduit] = []
+
+        def handle_child(
+            id_and_item: tuple[IDType, Any], items: list[Any]
+        ) -> None:
+            id, item = id_and_item
             if id == INVALID_ID:
-                continue
-            body.append(node)
+                return
+            items.append(item)
+
+        for child in element.find("body").iterchildren():
+            if child.tag == "conduit":
+                handle_child(self._conduit(child), conduits)
+            else:
+                handle_child(self._node(child), nodes)
         return self._id(element), Function(
             name=str(element.get("name")),
             id=self._id(element),
             location=self._location(element),
-            nodes=body,
+            nodes=nodes,
+            conduits=conduits,
         )
 
     def _node(self, element: Any) -> _NodePair:
@@ -84,6 +97,46 @@ class _XMLReader:
             case "constant":
                 return self._constant(element)
         return (INVALID_ID, Constant())
+
+    def _conduit(self, element: Any) -> _ConduitPair:
+        id = self._id(element)
+        input = int(element.get("input"))
+        children: list[Conduit.Segment | Conduit.Output] = []
+        for child in element.iterchildren():
+            if child.tag == "segment":
+                children.append(self._conduit_segment(child))
+            elif child.tag == "output":
+                children.append(self._conduit_output(child))
+            else:
+                assert_never(child.tag)
+        return id, Conduit(
+            id=id,
+            input=input,
+            children=children,
+        )
+
+    def _conduit_segment(self, element: Any) -> Conduit.Segment:
+        x = int(element.get("x"))
+        y = int(element.get("y"))
+        children: list[Conduit.Segment | Conduit.Output] = []
+        for child in element.iterchildren():
+            if child.tag == "segment":
+                children.append(self._conduit_segment(child))
+            elif child.tag == "output":
+                children.append(self._conduit_output(child))
+            else:
+                assert_never(child.tag)
+        return Conduit.Segment(x=x, y=y, children=children)
+
+    def _conduit_output(self, element: Any) -> Conduit.Output:
+        raw_target = element.text
+        if raw_target is None:
+            raise ValueError("Conduit output target is None")
+        full_target = raw_target.split(":")
+        return Conduit.Output(
+            target=int(full_target[0]),
+            index=full_target[1] if len(full_target) > 1 else 0,
+        )
 
     def _binary(self, element: Any) -> _NodePair:
         return self._id(element), BinaryOperator(

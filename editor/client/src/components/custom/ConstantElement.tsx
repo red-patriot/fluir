@@ -72,31 +72,33 @@ export default function ConstantElement({
   return (
     <div
       aria-label={`constant-${fullID}`}
+      className='absolute flex flex-row items-center'
       style={{
         ...getLocationStyle(constant.location),
         ...getFontSize(10),
         ...transformStyle,
       }}
-      className='absolute flex flex-row items-center space-x-0.5
-    bg-purple-600 border-[1px] border-purple-600
-    font-code'
     >
-      {isEditing ? (
-        <input
-          ref={inputRef}
-          type='number'
-          aria-label={`constant-${fullID}-edit`}
-          value={tempText}
-          onChange={(e) => setTempText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onBlur={() => setIsEditing(false)}
-          className='bg-black'
-          style={{
-            ...getSizeStyle(constant.location),
-          }}
-        />
-      ) : (
-        <>
+      <div
+        className='flex flex-row items-center space-x-0.5
+      bg-purple-600 border-[1px] border-purple-600
+      font-code'
+      >
+        {isEditing ? (
+          <input
+            ref={inputRef}
+            type='number'
+            aria-label={`constant-${fullID}-edit`}
+            value={tempText}
+            onChange={(e) => setTempText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={() => setIsEditing(false)}
+            className='bg-black'
+            style={{
+              ...getSizeStyle(constant.location),
+            }}
+          />
+        ) : (
           <p
             key={fullID}
             aria-label={`constant-${fullID}-view`}
@@ -108,10 +110,10 @@ export default function ConstantElement({
           >
             {constant.value}
           </p>
-          <DraggableElement dragInfo={dragInfo} />
-          <OutputIndicator />
-        </>
-      )}
+        )}
+        <DraggableElement dragInfo={dragInfo} />
+      </div>
+      <OutputIndicator />
     </div>
   );
 }

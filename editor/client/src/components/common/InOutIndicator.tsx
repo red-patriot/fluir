@@ -1,5 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faChevronRight, faCaretRight } from '@fortawesome/free-solid-svg-icons';
+import { faCaretRight } from '@fortawesome/free-solid-svg-icons';
+import { BiCaretRight } from 'react-icons/bi';
 
 interface InOutIndicatorProps {
   count?: number;

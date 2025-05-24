@@ -34,9 +34,8 @@ export default function OpUnaryElement({
   return (
     <div
       aria-label={`unary-${fullID}`}
+      className='absolute flex flex-row items-center'
       key={fullID}
-      className='absolute border-[1px] space-x-0.5 border-orange-600 bg-orange-600
-                flex justify-center font-code'
       style={{
         ...getLocationStyle(unary.location),
         ...getFontSize(unary.location),
@@ -44,15 +43,20 @@ export default function OpUnaryElement({
       }}
     >
       <InputIndicator />
-      <p
-        className='bg-black flex justify-center items-center'
-        style={{
-          ...getSizeStyle(unary.location),
-        }}
+      <div
+        className='flex flex-row items-center border-[1px]
+       border-orange-600 bg-orange-600 font-code'
       >
-        {unary.op}
-      </p>
-      <DraggableElement dragInfo={dragInfo} />
+        <p
+          className='bg-black flex justify-center items-center'
+          style={{
+            ...getSizeStyle(unary.location),
+          }}
+        >
+          {unary.op}
+        </p>
+        <DraggableElement dragInfo={dragInfo} />
+      </div>
       <OutputIndicator />
     </div>
   );

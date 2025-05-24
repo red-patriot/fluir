@@ -34,10 +34,8 @@ export default function OpBinaryElement({
   return (
     <div
       aria-label={`binary-${fullID}`}
+      className='absolute flex flex-row items-center'
       key={fullID}
-      className='absolute flex flex-row items-center space-x-0.5
-                 border-[1px] border-yellow-500 bg-yellow-500
-                 font-code'
       style={{
         ...getLocationStyle(binary.location),
         ...getFontSize(binary.location),
@@ -45,15 +43,21 @@ export default function OpBinaryElement({
       }}
     >
       <InputIndicator count={2} />
-      <p
-        className='bg-black flex justify-center items-center'
-        style={{
-          ...getSizeStyle(binary.location),
-        }}
+      <div
+        className='flex flex-row items-center
+      border-[1px] border-yellow-500 bg-yellow-500
+      font-code'
       >
-        {binary.op}
-      </p>
-      <DraggableElement dragInfo={dragInfo} />
+        <p
+          className='bg-black flex justify-center items-center'
+          style={{
+            ...getSizeStyle(binary.location),
+          }}
+        >
+          {binary.op}
+        </p>
+        <DraggableElement dragInfo={dragInfo} />
+      </div>
       <OutputIndicator />
     </div>
   );

@@ -99,8 +99,12 @@ _TEST_DATA = [
                         ),
                     ],
                     conduits=[
-                        Conduit(id=4, input=2, children=[Conduit.Output(1)]),
-                        Conduit(id=5, input=3, children=[Conduit.Output(1)]),
+                        Conduit(
+                            id=4, input=2, children=[Conduit.Output(target=1)]
+                        ),
+                        Conduit(
+                            id=5, input=3, children=[Conduit.Output(target=1)]
+                        ),
                     ],
                 )
             ]
@@ -239,7 +243,7 @@ _TEST_DATA = [
                             input=2,
                             children=[
                                 Conduit.Output(target=3, index=0),
-                                Conduit.Output(6),
+                                Conduit.Output(target=6),
                             ],
                         ),
                         Conduit(
@@ -247,8 +251,8 @@ _TEST_DATA = [
                             input=1,
                             children=[
                                 Conduit.Segment(
-                                    84,
-                                    19,
+                                    x=84,
+                                    y=19,
                                     children=[
                                         Conduit.Output(target=3, index=1)
                                     ],

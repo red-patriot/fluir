@@ -4,6 +4,7 @@ import pytest
 
 from editor.models.elements import (
     BinaryOperator,
+    Conduit,
     Constant,
     FlType,
     Function,
@@ -131,6 +132,120 @@ _TEST_DATA = [
       <constant id="3" x="2" y="2" z="1" w="5" h="5">
         <float>3.5</float>
       </constant>
+    </body>
+  </function>
+</fluir>
+""",
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="someFuncName",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    nodes=[
+                        BinaryOperator(
+                            id=3,
+                            location=Location(24, 39, 2, 5, 5),
+                            op=Operator.SLASH,
+                        ),
+                        Constant(
+                            id=2,
+                            location=Location(6, 34, 0, 12, 5),
+                            value="1.2345",
+                            flType=FlType.FLOATING_POINT,
+                        ),
+                        Constant(
+                            id=1,
+                            location=Location(6, 45, 0, 12, 5),
+                            value="6.7890",
+                            flType=FlType.FLOATING_POINT,
+                        ),
+                        BinaryOperator(
+                            id=5,
+                            location=Location(54, 23, 2, 5, 5),
+                            op=Operator.STAR,
+                        ),
+                        Constant(
+                            id=4,
+                            location=Location(29, 18, 0, 12, 5),
+                            value="7.6543",
+                            flType=FlType.FLOATING_POINT,
+                        ),
+                        UnaryOperator(
+                            id=6,
+                            location=Location(35, 28, 0, 5, 5),
+                            op=Operator.PLUS,
+                        ),
+                    ],
+                    conduits=[
+                        Conduit(
+                            id=7,
+                            input=2,
+                            children=[
+                                Conduit.Output(target=3, index=0),
+                                Conduit.Output(target=6),
+                            ],
+                        ),
+                        Conduit(
+                            id=8,
+                            input=1,
+                            children=[
+                                Conduit.Segment(
+                                    x=84,
+                                    y=19,
+                                    children=[
+                                        Conduit.Output(target=3, index=1)
+                                    ],
+                                )
+                            ],
+                        ),
+                        Conduit(
+                            id=9,
+                            input=4,
+                            children=[Conduit.Output(target=5, index=1)],
+                        ),
+                        Conduit(
+                            id=10,
+                            input=6,
+                            children=[Conduit.Output(target=5, index=0)],
+                        ),
+                    ],
+                )
+            ]
+        ),
+        """<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <function name="someFuncName" id="1" x="10" y="10" z="3" w="100" h="100">
+    <body>
+      <binary id="3" x="24" y="39" z="2" w="5" h="5" operator="/"/>
+      <constant id="2" x="6" y="34" z="0" w="12" h="5">
+        <float>1.2345</float>
+      </constant>
+      <constant id="1" x="6" y="45" z="0" w="12" h="5">
+        <float>6.7890</float>
+      </constant>
+      <binary id="5" x="54" y="23" z="2" w="5" h="5" operator="*"/>
+      <constant id="4" x="29" y="18" z="0" w="12" h="5">
+        <float>7.6543</float>
+      </constant>
+      <unary id="6" x="35" y="28" z="0" w="5" h="5" operator="+"/>
+      <conduit id="7" input="2">
+        <output>3:0</output>
+        <output>6:0</output>
+      </conduit>
+      <conduit id="8" input="1">
+        <segment x="84" y="19">
+          <output>3:1</output>
+        </segment>
+      </conduit>
+      <conduit id="9" input="4">
+        <output>5:1</output>
+      </conduit>
+      <conduit id="10" input="6">
+        <output>5:0</output>
+      </conduit>
     </body>
   </function>
 </fluir>

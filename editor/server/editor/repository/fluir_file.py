@@ -217,6 +217,8 @@ class _XMLWriter:
         body_element = etree.SubElement(decl_element, "body")
         for node in declaration.nodes:
             self._node(node, body_element)
+        for conduit in declaration.conduits:
+            self._conduit(conduit, body_element)
 
     def _node(self, node: Node, parent: etree._Element) -> None:
         match node.discriminator:
@@ -275,3 +277,41 @@ class _XMLWriter:
             "float",
         )
         float_element.text = node.value
+
+    def _conduit(self, conduit: Conduit, parent: etree._Element) -> None:
+        conduit_element = etree.SubElement(
+            parent,
+            "conduit",
+            attrib={
+                "id": str(conduit.id),
+                "input": str(conduit.input),
+            },
+        )
+        for child in conduit.children:
+            if isinstance(child, Conduit.Segment):
+                self._conduit_segment(child, conduit_element)
+            elif isinstance(child, Conduit.Output):
+                self._conduit_output(child, conduit_element)
+
+    def _conduit_segment(
+        self, segment: Conduit.Segment, parent: etree._Element
+    ) -> None:
+        segment_element = etree.SubElement(
+            parent,
+            "segment",
+            attrib={
+                "x": str(segment.x),
+                "y": str(segment.y),
+            },
+        )
+        for child in segment.children:
+            if isinstance(child, Conduit.Segment):
+                self._conduit_segment(child, segment_element)
+            elif isinstance(child, Conduit.Output):
+                self._conduit_output(child, segment_element)
+
+    def _conduit_output(
+        self, output: Conduit.Output, parent: etree._Element
+    ) -> None:
+        output_element = etree.SubElement(parent, "output")
+        output_element.text = f"{output.target}:{output.index}"

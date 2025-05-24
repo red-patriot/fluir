@@ -65,13 +65,15 @@ type Nodes = list[Node]
 class Conduit:
     @dataclass
     class Output:
+        discriminator: Literal["conduit_output"] = "conduit_output"
         target: IDType = INVALID_ID
         index: int = 0
 
     @dataclass
     class Segment:
-        x: int
-        y: int
+        discriminator: Literal["conduit_segment"] = "conduit_segment"
+        x: int = 0
+        y: int = 0
         children: list["Conduit.Segment | Conduit.Output"] = field(
             default_factory=list
         )

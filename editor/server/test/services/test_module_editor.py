@@ -16,14 +16,14 @@ def test_file1(tmp_path: Path) -> Iterator[Path]:
     filename = tmp_path / "test.fl"
     with open(filename, "w") as file:
         file.write("""<?xml version="1.0" encoding="UTF-8"?>
-        <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-            <fl:function
+        <fluir>
+            <function
                 name="bar"
                 id="174"
                 x="10" y="10" z="3" w="100" h="100">
                 <body>
                 </body>
-            </fl:function>
+            </function>
         </fluir>
         """)
     yield filename
@@ -35,14 +35,14 @@ def test_file2(tmp_path: Path) -> Iterator[Path]:
     filename = tmp_path / "test2.fl"
     with open(filename, "w") as file:
         file.write("""<?xml version="1.0" encoding="UTF-8"?>
-        <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-            <fl:function
+        <fluir>
+            <function
                 name="foo"
                 id="2"
                 x="10" y="10" z="3" w="12" h="100">
                 <body>
                 </body>
-            </fl:function>
+            </function>
         </fluir>
         """)
     yield filename
@@ -140,10 +140,10 @@ def test_module_editor_edit_requires_an_open_program() -> None:
 
 def test_module_editor_can_save_files(tmp_path: Path) -> None:
     expected = """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="bar" id="174" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="bar" id="174" x="10" y="10" z="3" w="100" h="100">
     <body/>
-  </fl:function>
+  </function>
 </fluir>
 """
     data = Program(
@@ -193,10 +193,10 @@ def test_module_editor_raises_if_no_file_path() -> None:
 
 def test_module_editor_accepts_explicit_file_path(tmp_path: Path) -> None:
     expected = """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
     <body/>
-  </fl:function>
+  </function>
 </fluir>
 """
     data = Program(

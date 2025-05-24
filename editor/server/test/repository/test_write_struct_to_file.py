@@ -20,10 +20,10 @@ _TEST_DATA = [
             [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)]
         ),
         """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
     <body/>
-  </fl:function>
+  </function>
 </fluir>
 """,
     ),
@@ -42,16 +42,16 @@ _TEST_DATA = [
             ]
         ),
         """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
     <body/>
-  </fl:function>
-  <fl:function name="baz" id="7" x="330" y="10" z="3" w="100" h="100">
+  </function>
+  <function name="baz" id="7" x="330" y="10" z="3" w="100" h="100">
     <body/>
-  </fl:function>
-  <fl:function name="bar" id="2" x="210" y="10" z="3" w="50" h="70">
+  </function>
+  <function name="bar" id="2" x="210" y="10" z="3" w="50" h="70">
     <body/>
-  </fl:function>
+  </function>
 </fluir>
 """,
     ),
@@ -87,18 +87,18 @@ _TEST_DATA = [
             ]
         ),
         """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
-      <fl:binary id="1" x="15" y="2" z="1" w="5" h="5" lhs="2" rhs="3" operator="+"/>
-      <fl:constant id="2" x="2" y="2" z="1" w="5" h="5">
-        <fl:float>3.0</fl:float>
-      </fl:constant>
-      <fl:constant id="3" x="2" y="12" z="1" w="5" h="5">
-        <fl:float>2.0</fl:float>
-      </fl:constant>
+      <binary id="1" x="15" y="2" z="1" w="5" h="5" lhs="2" rhs="3" operator="+"/>
+      <constant id="2" x="2" y="2" z="1" w="5" h="5">
+        <float>3.0</float>
+      </constant>
+      <constant id="3" x="2" y="12" z="1" w="5" h="5">
+        <float>2.0</float>
+      </constant>
     </body>
-  </fl:function>
+  </function>
 </fluir>
 """,
     ),
@@ -127,15 +127,15 @@ _TEST_DATA = [
             ]
         ),
         """<?xml version='1.0' encoding='UTF-8'?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-  <fl:function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+<fluir>
+  <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
-      <fl:unary id="7" x="15" y="2" z="1" w="5" h="5" lhs="3" operator="-"/>
-      <fl:constant id="3" x="2" y="2" z="1" w="5" h="5">
-        <fl:float>3.5</fl:float>
-      </fl:constant>
+      <unary id="7" x="15" y="2" z="1" w="5" h="5" lhs="3" operator="-"/>
+      <constant id="3" x="2" y="2" z="1" w="5" h="5">
+        <float>3.5</float>
+      </constant>
     </body>
-  </fl:function>
+  </function>
 </fluir>
 """,
     ),

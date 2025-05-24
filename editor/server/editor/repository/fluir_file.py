@@ -77,11 +77,11 @@ class _XMLReader:
 
     def _node(self, element: Any) -> _NodePair:
         match element.tag:
-            case tag if tag.endswith("binary"):
+            case "binary":
                 return self._binary(element)
-            case tag if tag.endswith("unary"):
+            case "unary":
                 return self._unary(element)
-            case tag if tag.endswith("constant"):
+            case "constant":
                 return self._constant(element)
         return (INVALID_ID, Constant())
 
@@ -115,7 +115,7 @@ class _XMLReader:
 
     def _type(self, element: Any) -> FlType | None:
         match element.tag:
-            case tag if tag.endswith("float"):
+            case "float":
                 return FlType.FLOATING_POINT
 
         return None
@@ -133,14 +133,11 @@ class _XMLReader:
         )
 
 
-_FL: Final[str] = "FLUIR::LANGUAGE::SOURCE"
-
-
 class _XMLWriter:
     """Writes a program to XML"""
 
     def __init__(self) -> None:
-        self.root = etree.Element("fluir", nsmap={"fl": _FL})
+        self.root = etree.Element("fluir")
 
     def write(self, program: Program) -> bytes:
         for decl in program.declarations:
@@ -156,7 +153,7 @@ class _XMLWriter:
     def _decl(self, declaration: Declaration) -> None:
         decl_element = etree.SubElement(
             self.root,
-            f"{{{_FL}}}function",
+            "function",
             attrib={
                 "name": str(declaration.name),
                 "id": str(declaration.id),
@@ -183,7 +180,7 @@ class _XMLWriter:
     def _binary(self, node: BinaryOperator, parent: etree._Element) -> None:
         binary_element = etree.SubElement(
             parent,
-            f"{{{_FL}}}binary",
+            "binary",
             attrib={
                 "id": str(node.id),
                 "x": str(node.location.x),
@@ -200,7 +197,7 @@ class _XMLWriter:
     def _unary(self, node: UnaryOperator, parent: etree._Element) -> None:
         unary_element = etree.SubElement(
             parent,
-            f"{{{_FL}}}unary",
+            "unary",
             attrib={
                 "id": str(node.id),
                 "x": str(node.location.x),
@@ -216,7 +213,7 @@ class _XMLWriter:
     def _constant(self, node: Constant, parent: etree._Element) -> None:
         constant_element = etree.SubElement(
             parent,
-            f"{{{_FL}}}constant",
+            "constant",
             attrib={
                 "id": str(node.id),
                 "x": str(node.location.x),
@@ -228,6 +225,6 @@ class _XMLWriter:
         )
         float_element = etree.SubElement(
             constant_element,
-            f"{{{_FL}}}float",
+            "float",
         )
         float_element.text = node.value

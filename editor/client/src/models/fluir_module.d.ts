@@ -23,8 +23,6 @@ export type BinaryOp = {
   id: number;
   location: Location;
   op: Operator;
-  lhs: number;
-  rhs: number;
 };
 
 export type UnaryOp = {
@@ -32,7 +30,6 @@ export type UnaryOp = {
   id: number;
   location: Location;
   op: Operator;
-  lhs: number;
 };
 
 export type Node = BinaryOp | UnaryOp | Constant;
@@ -42,7 +39,7 @@ export type FunctionDecl = {
   name: string;
   id: number;
   location: Location;
-  body: Node[];
+  nodes: Node[];
 };
 
 export type Declaration = FunctionDecl;

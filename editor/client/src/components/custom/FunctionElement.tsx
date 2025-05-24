@@ -86,7 +86,7 @@ export default function FunctionElement({
       </div>
       <div className='absolute'>
         <DndContext onDragEnd={onDragEnd}>
-          {decl.body.map(displayNodes)}
+          {decl.nodes.map(displayNodes)}
         </DndContext>
       </div>
     </div>

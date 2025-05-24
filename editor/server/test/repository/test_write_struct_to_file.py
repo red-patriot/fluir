@@ -62,13 +62,11 @@ _TEST_DATA = [
                     name="foo",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body=[
+                    nodes=[
                         BinaryOperator(
                             id=1,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.PLUS,
-                            lhs=2,
-                            rhs=3,
                         ),
                         Constant(
                             id=2,
@@ -90,7 +88,7 @@ _TEST_DATA = [
 <fluir>
   <function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
-      <binary id="1" x="15" y="2" z="1" w="5" h="5" lhs="2" rhs="3" operator="+"/>
+      <binary id="1" x="15" y="2" z="1" w="5" h="5" operator="+"/>
       <constant id="2" x="2" y="2" z="1" w="5" h="5">
         <float>3.0</float>
       </constant>
@@ -109,12 +107,11 @@ _TEST_DATA = [
                     name="main",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body=[
+                    nodes=[
                         UnaryOperator(
                             id=7,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.MINUS,
-                            lhs=3,
                         ),
                         Constant(
                             id=3,
@@ -130,7 +127,7 @@ _TEST_DATA = [
 <fluir>
   <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
-      <unary id="7" x="15" y="2" z="1" w="5" h="5" lhs="3" operator="-"/>
+      <unary id="7" x="15" y="2" z="1" w="5" h="5" operator="-"/>
       <constant id="3" x="2" y="2" z="1" w="5" h="5">
         <float>3.5</float>
       </constant>

@@ -72,7 +72,7 @@ class _XMLReader:
             name=str(element.get("name")),
             id=self._id(element),
             location=self._location(element),
-            body=body,
+            nodes=body,
         )
 
     def _node(self, element: Any) -> _NodePair:
@@ -90,8 +90,6 @@ class _XMLReader:
             id=self._id(element),
             location=self._location(element),
             op=Operator(element.get("operator")),
-            lhs=self._id(element, "lhs"),
-            rhs=self._id(element, "rhs"),
         )
 
     def _unary(self, element: Any) -> _NodePair:
@@ -99,7 +97,6 @@ class _XMLReader:
             id=self._id(element),
             location=self._location(element),
             op=Operator(element.get("operator")),
-            lhs=self._id(element, "lhs"),
         )
 
     def _constant(self, element: Any) -> _NodePair:
@@ -165,7 +162,7 @@ class _XMLWriter:
             },
         )
         body_element = etree.SubElement(decl_element, "body")
-        for node in declaration.body:
+        for node in declaration.nodes:
             self._node(node, body_element)
 
     def _node(self, node: Node, parent: etree._Element) -> None:
@@ -188,8 +185,6 @@ class _XMLWriter:
                 "z": str(node.location.z),
                 "w": str(node.location.width),
                 "h": str(node.location.height),
-                "lhs": str(node.lhs),
-                "rhs": str(node.rhs),
                 "operator": str(node.op),
             },
         )
@@ -205,7 +200,6 @@ class _XMLWriter:
                 "z": str(node.location.z),
                 "w": str(node.location.width),
                 "h": str(node.location.height),
-                "lhs": str(node.lhs),
                 "operator": str(node.op),
             },
         )

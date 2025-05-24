@@ -47,8 +47,6 @@ class BinaryOperator:
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
-    lhs: IDType = INVALID_ID
-    rhs: IDType = INVALID_ID
 
 
 @dataclass
@@ -57,7 +55,6 @@ class UnaryOperator:
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
-    lhs: IDType = INVALID_ID
 
 
 type Node = Constant | BinaryOperator | UnaryOperator
@@ -70,7 +67,7 @@ class Function:
     name: str = ""
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
-    body: Nodes = field(default_factory=list)
+    nodes: Nodes = field(default_factory=list)
 
 
 type Declaration = Function
@@ -93,7 +90,7 @@ def _find_impl(id: QualifiedID, elements: Sequence[Element]) -> Element | None:
                 return element
             match element.discriminator:
                 case "function":
-                    return _find_impl(id[1:], cast(Function, element).body)
+                    return _find_impl(id[1:], cast(Function, element).nodes)
                 case "binary":
                     return None
                 case "unary":

@@ -21,13 +21,11 @@ def basic_program() -> Program:
                 name="bar",
                 location=elements.Location(210, 10, 2, 100, 100),
                 id=2,
-                body=[
+                nodes=[
                     elements.BinaryOperator(
                         id=1,
                         location=elements.Location(15, 2, 1, 5, 5),
                         op=elements.Operator.PLUS,
-                        lhs=2,
-                        rhs=3,
                     ),
                     elements.Constant(
                         id=2,
@@ -68,7 +66,7 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
 
 def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
-    expected.declarations[1].body[2].location = elements.Location(
+    expected.declarations[1].nodes[2].location = elements.Location(
         6, 90, 1, 5, 5
     )
 
@@ -100,8 +98,8 @@ def test_move_node_raises_if_out_of_function(
 
 def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
-    assert isinstance(expected.declarations[1].body[1], elements.Constant)
-    expected.declarations[1].body[1].value = "-5.67"
+    assert isinstance(expected.declarations[1].nodes[1], elements.Constant)
+    expected.declarations[1].nodes[1].value = "-5.67"
 
     uut = UpdateConstant(target=[2, 2], value="-5.67")
     editor.edit(uut)

@@ -16,13 +16,11 @@ def basic_program() -> Program:
                 name="bar",
                 location=elements.Location(210, 10, 2, 150, 70),
                 id=2,
-                body=[
+                nodes=[
                     elements.BinaryOperator(
                         id=1,
                         location=elements.Location(15, 2, 1, 5, 5),
                         op=elements.Operator.PLUS,
-                        lhs=2,
-                        rhs=3,
                     ),
                     elements.Constant(
                         id=2,

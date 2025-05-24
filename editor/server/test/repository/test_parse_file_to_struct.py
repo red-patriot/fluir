@@ -79,13 +79,11 @@ _TEST_DATA = [
                     name="foo",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body=[
+                    nodes=[
                         BinaryOperator(
                             id=1,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.PLUS,
-                            lhs=2,
-                            rhs=3,
                         ),
                         Constant(
                             id=2,
@@ -138,12 +136,11 @@ _TEST_DATA = [
                     name="main",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    body=[
+                    nodes=[
                         UnaryOperator(
                             id=7,
                             location=Location(15, 2, 1, 5, 5),
                             op=Operator.MINUS,
-                            lhs=3,
                         ),
                         Constant(
                             id=3,

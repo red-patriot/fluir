@@ -11,7 +11,8 @@ describe('FunctionElement', () => {
     id: 7,
     location: { x: 9, y: 18, z: 3, width: 140, height: 500 },
     name: 'testFunc',
-    body: [],
+    nodes: [],
+    conduits: [],
   };
   it('Shows the correct name value', async () => {
     renderWithStore(<FunctionElement decl={data} />);
@@ -55,7 +56,7 @@ describe('FunctionElement', () => {
       id: 7,
       location: { x: 9, y: 18, z: 3, width: 140, height: 500 },
       name: 'testFunc',
-      body: [
+      nodes: [
         {
           discriminator: 'constant',
           id: 2,
@@ -64,6 +65,7 @@ describe('FunctionElement', () => {
           value: '5.67',
         },
       ],
+      conduits: [],
     };
 
     const expected = 'constant-2:7:2';

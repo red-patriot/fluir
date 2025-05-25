@@ -15,14 +15,16 @@ describe('ModuleViewElement', () => {
         id: 1,
         name: 'main',
         location: { x: 1, y: 2, z: 1, width: 100, height: 100 },
-        body: [],
+        nodes: [],
+        conduits: [],
       },
       {
         discriminator: 'function',
         id: 2,
         name: 'foo',
         location: { x: 1, y: 2, z: 1, width: 100, height: 100 },
-        body: [],
+        nodes: [],
+        conduits: [],
       },
     ],
   };

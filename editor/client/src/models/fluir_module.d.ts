@@ -34,12 +34,35 @@ export type UnaryOp = {
 
 export type Node = BinaryOp | UnaryOp | Constant;
 
+export namespace Conduit {
+  export type Output = {
+    discriminator: 'conduit_output';
+    target: number;
+    index: number;
+  };
+
+  export type Segment = {
+    discriminator: 'conduit_segment';
+    x: number;
+    y: number;
+    children: (Segment | Output)[];
+  };
+}
+
+export type Conduit = {
+  discriminator: 'conduit';
+  id: number;
+  input: number;
+  children: (Conduit.Segment | Conduit.Output)[];
+};
+
 export type FunctionDecl = {
   discriminator: 'function';
   name: string;
   id: number;
   location: Location;
   nodes: Node[];
+  conduits: Conduit[];
 };
 
 export type Declaration = FunctionDecl;

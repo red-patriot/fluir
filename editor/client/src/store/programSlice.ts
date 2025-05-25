@@ -19,7 +19,6 @@ export const programSlice = createSlice({
   initialState,
   reducers: {
     setOpenModule: (state, action: PayloadAction<FluirModule>) => {
-      console.log(action.payload);
       state.module = action.payload;
     },
     closeModule: (state) => {

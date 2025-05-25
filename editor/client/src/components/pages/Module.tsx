@@ -1,47 +1,48 @@
-import ModuleViewWindow from '../layout/ModuleViewWindow';
-import ModuleHeader from '../layout/ModuleHeader';
-import EditRequest from '../../models/edit_request';
-import { saveAsDialog } from '../../hooks/electronAPI';
-import { useAppDispatch, actions } from '../../store';
-import { useProgramActions } from '../common/ProgramActionsContext';
+import { useCallback, useState } from 'react';
+import {
+  ReactFlow,
+  Background,
+  BackgroundVariant,
+  applyNodeChanges, NodeChange
+} from '@xyflow/react';
+import createNodes, { nodeTypes } from '../../hooks/createNodes';
+import { useAppSelector } from '../../store';
 
-interface ModulePageProps {
-  onEdit: (arg0: EditRequest) => void;
-}
+export default function ModulePage() {
+  // Global state
+  const module = useAppSelector((state) => state.program.module);
 
-export default function ModulePage({ onEdit }: ModulePageProps) {
-  const dispatch = useAppDispatch();
-  const { saveProgramAs } = useProgramActions();
+  const [nodes, setNodes] = useState(
+    createNodes(module ? module : { declarations: [] }),
+  );
 
-  // Local functions
+  const onNodesChange = useCallback(
+    (changes: NodeChange<any>[]) =>
+      setNodes((nds) => applyNodeChanges(changes, nds)),
+    [],
+  );
 
-  const onSaveAs = async () => {
-    const filePath = await saveAsDialog();
-    if (filePath) {
-      return saveProgramAs(filePath);
-    } else {
-      // TODO: Handle the error better
-      console.log('File selection was cancelled');
-    }
-  };
-  const closeModule = () => {
-    dispatch(actions.closeModule());
-    dispatch(actions.goToPage('home'));
-  };
-
-  const onSave = async () => {
-    // Empty string saves the file in-place
-    return saveProgramAs('');
-  };
+  if (!module) {
+    return (
+      <div className='h-lvh w-lvw flex items-center justify-center'>
+        No module loaded
+      </div>
+    );
+  }
 
   return (
-    <div className='flex flex-col h-lvh border-2'>
-      <ModuleHeader
-        onSaveAs={onSaveAs}
-        onSave={onSave}
-        onCloseModule={closeModule}
-      />
-      <ModuleViewWindow onEdit={onEdit} />
+    <div className='h-lvh w-lvw'>
+      <ReactFlow
+        nodes={nodes}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        fitView
+        minZoom={0.1}
+        maxZoom={10}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+      >
+        <Background variant={BackgroundVariant.Dots} gap={10} size={0.5}/>
+      </ReactFlow>
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { useProgramActions } from './components/common/ProgramActionsContext';
 
 function App() {
   // global state
-  const { openProgram, editProgram } = useProgramActions();
+  const { openProgram } = useProgramActions();
   const page = useAppSelector((state) => state.ui.page);
 
   const onOpenFile = async () => {
@@ -22,7 +22,7 @@ function App() {
   return (
     <>
       {page == 'home' && <Home onOpenFile={onOpenFile} />}
-      {page == 'module' && <ModulePage onEdit={editProgram} />}
+      {page == 'module' && <ModulePage/>}
     </>
   );
 }

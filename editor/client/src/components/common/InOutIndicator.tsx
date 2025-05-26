@@ -25,7 +25,9 @@ export function InputIndicator({ fullID, count = 1 }: InOutIndicatorProps) {
             <Handle
               type='target'
               position={Position.Left}
-              id={`input-${fullID}-${i}`}
+              // The is "output" because that is what is in the source code
+              // It is an input of the node, but an output to the conduit
+              id={`output-${fullID}-${i}`}
               className='!w-auto !h-auto !bg-transparent !border-none !relative !transform-none'
             >
               <FontAwesomeIcon
@@ -57,7 +59,9 @@ export function OutputIndicator({ fullID, count = 1 }: InOutIndicatorProps) {
             <Handle
               type='source'
               position={Position.Right}
-              id={`output-${fullID}-${i}`}
+              // The is "input" because that is what is in the source code
+              // It is an output of the node, but an input to the conduit
+              id={`input-${fullID}-${i}`}
               className='!w-auto !h-auto !bg-transparent !border-none !relative !transform-none'
             >
               <FontAwesomeIcon

@@ -3,10 +3,13 @@ import { FunctionDecl } from '../../models/fluir_module';
 import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 
-type FunctionDeclNode = Node<{ decl: FunctionDecl }, 'function'>;
+type FunctionDeclNode = Node<
+  { decl: FunctionDecl; fullID: string },
+  'function'
+>;
 
 export default function FunctionDeclNode({
-  data: { decl },
+  data: { decl, fullID },
 }: NodeProps<FunctionDeclNode>) {
   const fontSize = getFontSize(8);
 

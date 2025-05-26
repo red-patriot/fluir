@@ -16,7 +16,7 @@ export type Constant = {
   value?: string;
 };
 
-type Operator = ' ' | '+' | '-' | '*' | '/';
+export type Operator = ' ' | '+' | '-' | '*' | '/';
 
 export type BinaryOp = {
   discriminator: 'binary';

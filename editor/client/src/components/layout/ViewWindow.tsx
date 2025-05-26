@@ -6,18 +6,16 @@ import {
   applyNodeChanges,
   applyEdgeChanges,
   NodeChange,
-  Edge,
   OnEdgesChange,
   DefaultEdgeOptions,
   OnConnect,
+  ConnectionMode,
 } from '@xyflow/react';
-import createNodes, { nodeTypes } from '../../hooks/createNodes';
+import createNodes, { createEdges, nodeTypes } from '../../hooks/createNodes';
 import { useAppSelector } from '../../store';
 import { useProgramActions } from '../common/ProgramActionsContext';
 import { MoveEditRequest } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
-
-const initialEdges: Edge[] = [];
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -30,7 +28,9 @@ export default function ViewWindow() {
   const [nodes, setNodes] = useState(
     createNodes(module ? module : { declarations: [] }),
   );
-  const [edges, setEdges] = useState(initialEdges);
+  const [edges, setEdges] = useState(
+    createEdges(module ? module : { declarations: [] }),
+  );
 
   const onNodesChange = useCallback(
     (changes: NodeChange<any>[]) =>
@@ -65,6 +65,7 @@ export default function ViewWindow() {
 
   useEffect(() => {
     setNodes(createNodes(module ? module : { declarations: [] }));
+    setEdges(createEdges(module ? module : { declarations: [] }));
   }, [module]);
 
   if (!module) {
@@ -84,8 +85,8 @@ export default function ViewWindow() {
         onNodeDragStop={onNodeDragStop}
         edges={edges}
         onEdgesChange={onEdgesChange}
+        connectionMode={ConnectionMode.Strict}
         onConnect={onConnect}
-        connectionMode='strict'
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         minZoom={0.1}

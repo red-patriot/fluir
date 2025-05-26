@@ -11,6 +11,7 @@ import FluirModule, {
   UnaryOp,
 } from '../models/fluir_module';
 import { ZOOM_SCALAR } from './useSizeStyle';
+import { Edge } from '@xyflow/react';
 
 function fullId(parentId: string | undefined, id: number): string {
   return parentId ? `${parentId}:${id}` : `${id}`;
@@ -31,6 +32,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         },
         data: {
           decl: decl,
+          fullID: fullId(parentId, decl.id),
         },
         dragHandle: '.dragHandle__custom',
       });
@@ -98,6 +100,38 @@ export default function createNodes(module: FluirModule) {
     addNodes(nodes, decl);
   });
   return nodes;
+}
+
+export function createEdges(module: FluirModule) {
+  let edges: Edge[] = [];
+  module.declarations.forEach((decl) => {
+    if (decl.discriminator === 'function') {
+      const functionDecl = decl as FunctionDecl;
+      functionDecl.conduits.forEach((conduit) => {
+        conduit.children.forEach((child) => {
+          if (child.discriminator === 'conduit_output') {
+            edges.push({
+              id: fullId(`${functionDecl.id}`, conduit.id),
+              source: `${fullId(`${functionDecl.id}`, conduit.input)}`,
+              target: `${fullId(`${functionDecl.id}`, child.target)}`,
+              sourceHandle: `input-${fullId(
+                `${functionDecl.id}`,
+                conduit.input,
+              )}-0`,
+              targetHandle: `output-${fullId(
+                `${functionDecl.id}`,
+                child.target,
+              )}-${child.index}`,
+              type: 'straight',
+              animated: false,
+              style: { strokeWidth: 2 },
+            });
+          }
+        });
+      });
+    }
+  });
+  return edges;
 }
 
 export const nodeTypes = {

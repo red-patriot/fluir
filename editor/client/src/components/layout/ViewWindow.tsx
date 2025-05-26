@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -36,6 +36,10 @@ export default function ViewWindow() {
     console.log('onNodeDragStop', request);
     editProgram(request);
   }, []);
+
+  useEffect(() => {
+    setNodes(createNodes(module ? module : { declarations: [] }));
+  }, [module]);
 
   if (!module) {
     return (

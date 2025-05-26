@@ -43,6 +43,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         position: { x: item.location.x, y: item.location.y },
         data: {
           constant: item as Constant,
+          fullID: fullId(parentId, item.id),
         },
         dragHandle: '.dragHandle__custom',
       });

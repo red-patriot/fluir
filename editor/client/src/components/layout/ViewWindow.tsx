@@ -1,0 +1,67 @@
+import { useCallback, useState } from 'react';
+import {
+  ReactFlow,
+  Background,
+  BackgroundVariant,
+  applyNodeChanges,
+  NodeChange,
+} from '@xyflow/react';
+import createNodes, { nodeTypes } from '../../hooks/createNodes';
+import { useAppSelector } from '../../store';
+import { useProgramActions } from '../common/ProgramActionsContext';
+import { MoveEditRequest } from '../../models/edit_request';
+
+export default function ViewWindow() {
+  // Global state
+  const module = useAppSelector((state) => state.program.module);
+  const { editProgram } = useProgramActions();
+
+  const [nodes, setNodes] = useState(
+    createNodes(module ? module : { declarations: [] }),
+  );
+
+  const onNodesChange = useCallback(
+    (changes: NodeChange<any>[]) =>
+      setNodes((nds) => applyNodeChanges(changes, nds)),
+    [],
+  );
+  const onNodeDragStop = useCallback((event: React.MouseEvent, node: any) => {
+    const request = {
+      discriminator: 'move',
+      target: (node.id as string).split(':').map((str) => parseInt(str)),
+      x: Math.round(node.position.x),
+      y: Math.round(node.position.y),
+    } as MoveEditRequest;
+    console.log('onNodeDragStop', request);
+    editProgram(request);
+  }, []);
+
+  if (!module) {
+    return (
+      <div className='h-lvh w-lvw flex items-center justify-center'>
+        No module loaded
+      </div>
+    );
+  }
+
+  return (
+    <div className='grow border-red-600 border-2'>
+      <ReactFlow
+        nodes={nodes}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onNodeDragStop={onNodeDragStop}
+        fitView
+        minZoom={0.1}
+        maxZoom={10}
+        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={10}
+          size={0.5}
+        />
+      </ReactFlow>
+    </div>
+  );
+}

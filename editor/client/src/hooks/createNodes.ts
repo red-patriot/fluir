@@ -39,6 +39,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         data: {
           constant: item as Constant,
         },
+        dragHandle: '.dragHandle__custom',
       });
       break;
   }

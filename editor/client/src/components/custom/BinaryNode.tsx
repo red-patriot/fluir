@@ -4,10 +4,10 @@ import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
 
-type BinaryNode = Node<{ binary: BinaryOp }, 'constant'>;
+type BinaryNode = Node<{ binary: BinaryOp; fullID: string }, 'constant'>;
 
 export default function BinaryNode({
-  data: { binary },
+  data: { binary, fullID },
 }: NodeProps<BinaryNode>) {
   return (
     <div
@@ -15,7 +15,10 @@ export default function BinaryNode({
                 flex flex-row items-center'
       style={getFontSize(binary.location)}
     >
-      <InputIndicator count={2} />
+      <InputIndicator
+        count={2}
+        fullID={fullID}
+      />
       <div
         className='leading-none
       flex flex-row border-[1px] rounded-lg
@@ -33,7 +36,7 @@ export default function BinaryNode({
         <span className='w-[1px]' />
         <DraggableElement />
       </div>
-      <OutputIndicator />
+      <OutputIndicator fullID={fullID} />
     </div>
   );
 }

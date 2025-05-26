@@ -67,6 +67,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         },
         data: {
           binary: item as BinaryOp,
+          fullID: fullId(parentId, item.id),
         },
         dragHandle: '.dragHandle__custom',
       });
@@ -83,6 +84,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         },
         data: {
           unary: item as UnaryOp,
+          fullID: fullId(parentId, item.id),
         },
         dragHandle: '.dragHandle__custom',
       });

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Node, NodeProps } from '@xyflow/react';
+import { type Node, type NodeProps, Handle } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
 import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
@@ -59,7 +59,7 @@ export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
           {isEditing ? (
             <input
               ref={inputRef}
-              type='text'
+              type='number'
               value={tempText}
               onChange={(e) => setTempText(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -78,7 +78,7 @@ export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
         <span className='w-[1px]' />
         <DraggableElement />
       </div>
-      <OutputIndicator />
+      <OutputIndicator fullID={fullID} />
     </div>
   );
 }

@@ -4,16 +4,18 @@ import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
 
-type UnaryNode = Node<{ unary: UnaryOp }, 'constant'>;
+type UnaryNode = Node<{ unary: UnaryOp; fullID: string }, 'constant'>;
 
-export default function UnaryNode({ data: { unary } }: NodeProps<UnaryNode>) {
+export default function UnaryNode({
+  data: { unary, fullID },
+}: NodeProps<UnaryNode>) {
   return (
     <div
       className='leading-none
                 flex flex-row'
       style={getFontSize(unary.location)}
     >
-      <InputIndicator />
+      <InputIndicator fullID={fullID} />
       <div
         className='leading-none
       flex flex-row items-center
@@ -31,7 +33,7 @@ export default function UnaryNode({ data: { unary } }: NodeProps<UnaryNode>) {
         <span className='w-[1px]' />
         <DraggableElement />
       </div>
-      <OutputIndicator />
+      <OutputIndicator fullID={fullID} />
     </div>
   );
 }

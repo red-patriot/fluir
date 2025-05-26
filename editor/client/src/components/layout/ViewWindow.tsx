@@ -4,7 +4,12 @@ import {
   Background,
   BackgroundVariant,
   applyNodeChanges,
+  applyEdgeChanges,
   NodeChange,
+  Edge,
+  OnEdgesChange,
+  DefaultEdgeOptions,
+  OnConnect,
 } from '@xyflow/react';
 import createNodes, { nodeTypes } from '../../hooks/createNodes';
 import { useAppSelector } from '../../store';
@@ -12,20 +17,40 @@ import { useProgramActions } from '../common/ProgramActionsContext';
 import { MoveEditRequest } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 
+const initialEdges: Edge[] = [];
+
+const defaultEdgeOptions: DefaultEdgeOptions = {
+  animated: true,
+};
+
 export default function ViewWindow() {
-  // Global state
   const module = useAppSelector((state) => state.program.module);
   const { editProgram } = useProgramActions();
 
   const [nodes, setNodes] = useState(
     createNodes(module ? module : { declarations: [] }),
   );
+  const [edges, setEdges] = useState(initialEdges);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<any>[]) =>
       setNodes((nds) => applyNodeChanges(changes, nds)),
     [],
   );
+  const onEdgesChange: OnEdgesChange = useCallback(
+    (changes) => {
+      console.log('onEdgesChange', changes);
+      setEdges((eds) => applyEdgeChanges(changes, eds));
+    },
+    [setEdges],
+  );
+  const onConnect: OnConnect = useCallback(
+    (connecion) => {
+      console.log('onConnect', connecion);
+    },
+    [setEdges],
+  );
+
   const onNodeDragStop = useCallback((event: React.MouseEvent, node: any) => {
     const request = {
       discriminator: 'move',
@@ -57,6 +82,11 @@ export default function ViewWindow() {
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
+        edges={edges}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        connectionMode='strict'
+        defaultEdgeOptions={defaultEdgeOptions}
         fitView
         minZoom={0.1}
         maxZoom={10}
@@ -67,7 +97,7 @@ export default function ViewWindow() {
         <Background
           variant={BackgroundVariant.Dots}
           gap={10}
-          size={0.5}
+          size={1}
         />
       </ReactFlow>
     </div>

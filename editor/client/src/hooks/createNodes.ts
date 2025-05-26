@@ -10,6 +10,7 @@ import FluirModule, {
   Node,
   UnaryOp,
 } from '../models/fluir_module';
+import { ZOOM_SCALAR } from './useSizeStyle';
 
 function fullId(parentId: string | undefined, id: number): string {
   return parentId ? `${parentId}:${id}` : `${id}`;
@@ -24,7 +25,10 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         id: fullId(parentId, decl.id),
         parentId: parentId,
         extent: 'parent',
-        position: { x: decl.location.x, y: decl.location.y },
+        position: {
+          x: decl.location.x * ZOOM_SCALAR,
+          y: decl.location.y * ZOOM_SCALAR,
+        },
         data: {
           decl: decl,
         },
@@ -40,7 +44,10 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         id: fullId(parentId, item.id),
         parentId: parentId,
         extent: 'parent',
-        position: { x: item.location.x, y: item.location.y },
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
         data: {
           constant: item as Constant,
           fullID: fullId(parentId, item.id),
@@ -54,7 +61,10 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         id: fullId(parentId, item.id),
         parentId: parentId,
         extent: 'parent',
-        position: { x: item.location.x, y: item.location.y },
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
         data: {
           binary: item as BinaryOp,
         },
@@ -67,7 +77,10 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         id: fullId(parentId, item.id),
         parentId: parentId,
         extent: 'parent',
-        position: { x: item.location.x, y: item.location.y },
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
         data: {
           unary: item as UnaryOp,
         },

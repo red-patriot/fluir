@@ -47,11 +47,11 @@ export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
     >
       <div
         className=' flex flex-row items-center
-      rounded-xs
-      border-[1px] border-purple-500 bg-purple-500 space-y-0'
+      rounded-lg
+      border-1 border-purple-500 bg-purple-500 space-y-0'
       >
         <div
-          className='flex justify-center items-center text-white bg-black rounded-xs font-code'
+          className='flex justify-center items-center text-white bg-black rounded-lg font-code'
           style={{
             ...getSizeStyle(constant.location),
           }}

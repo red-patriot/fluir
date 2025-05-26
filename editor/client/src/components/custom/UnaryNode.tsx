@@ -17,11 +17,11 @@ export default function UnaryNode({ data: { unary } }: NodeProps<UnaryNode>) {
       <div
         className='leading-none
       flex flex-row items-center
-      rounded-xs
+      rounded-lg
       border-[1px] border-orange-400 bg-orange-400 space-y-0'
       >
         <div
-          className='flex justify-center items-center rounded-xs text-white bg-black font-code'
+          className='flex justify-center items-center rounded-lg text-white bg-black font-code'
           style={{
             ...getSizeStyle(unary.location),
           }}

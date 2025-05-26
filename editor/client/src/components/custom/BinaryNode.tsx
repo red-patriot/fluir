@@ -18,12 +18,12 @@ export default function BinaryNode({
       <InputIndicator count={2} />
       <div
         className='leading-none
-      flex flex-row border-[1px] rounded-xs
+      flex flex-row border-[1px] rounded-lg
       border-blue-500 bg-blue-500 space-y-0'
       >
         <div
           className='flex flex-col justify-center items-center
-                    rounded-xs text-white bg-black font-code'
+                    rounded-lg text-white bg-black font-code'
           style={{
             ...getSizeStyle(binary.location),
           }}

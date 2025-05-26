@@ -10,6 +10,7 @@ import createNodes, { nodeTypes } from '../../hooks/createNodes';
 import { useAppSelector } from '../../store';
 import { useProgramActions } from '../common/ProgramActionsContext';
 import { MoveEditRequest } from '../../models/edit_request';
+import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 
 export default function ViewWindow() {
   // Global state
@@ -29,8 +30,8 @@ export default function ViewWindow() {
     const request = {
       discriminator: 'move',
       target: (node.id as string).split(':').map((str) => parseInt(str)),
-      x: Math.round(node.position.x),
-      y: Math.round(node.position.y),
+      x: Math.round(node.position.x / ZOOM_SCALAR),
+      y: Math.round(node.position.y / ZOOM_SCALAR),
     } as MoveEditRequest;
     console.log('onNodeDragStop', node);
     console.log('onNodeDragStop', request);
@@ -60,7 +61,7 @@ export default function ViewWindow() {
         minZoom={0.1}
         maxZoom={10}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        snapGrid={[1, 1]}
+        snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
         snapToGrid
       >
         <Background

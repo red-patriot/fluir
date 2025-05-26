@@ -8,14 +8,15 @@ type FunctionDeclNode = Node<{ decl: FunctionDecl }, 'function'>;
 export default function FunctionDeclNode({
   data: { decl },
 }: NodeProps<FunctionDeclNode>) {
-  const fontSize = getFontSize(14);
+  const fontSize = getFontSize(8);
 
   return (
-    <div className='border-1 border-gray-200 space-y-0'>
+    <div className='rounded-b-lg border-2 border-gray-200 space-y-0'>
       <div
         className='leading-none
+        rounded-t-lg
                    flex flex-row absolute
-                   bottom-full left-0 font-code border-t-1 border-l-1 border-r-1 w-full'
+                   bottom-full left-0 font-code border-t-2 border-l-2 border-r-2 w-full'
         style={fontSize}
       >
         <p>{decl.name}</p>

@@ -9,10 +9,9 @@ export function InputIndicator({ count = 1 }: InOutIndicatorProps) {
   return (
     <div className='self-center'>
       <div
-        className='flex flex-col shrink h-full overflow-hidden'
+        className='flex flex-col shrink h-full pr-0.25'
         style={{
-          height: `${100 / count}%`,
-          fontSize: `${150 / count}%`,
+          fontSize: `${150}%`,
         }}
       >
         {Array.from({ length: count }, (_, i) => (
@@ -30,10 +29,9 @@ export function OutputIndicator({ count = 1 }: InOutIndicatorProps) {
   return (
     <div className='self-center'>
       <div
-        className='flex flex-col shrink h-full overflow-hidden'
+        className='flex flex-col shrink h-full'
         style={{
-          height: `${100 / count}%`,
-          fontSize: `${150 / count}%`,
+          fontSize: `${150}%`,
         }}
       >
         {Array.from({ length: count }, (_, i) => (

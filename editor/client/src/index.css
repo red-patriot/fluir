@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -17,4 +17,8 @@
 
 .font-code {
   font-family: 'Courier Prime', monospace;
+}
+
+.debug {
+  border: 1px dashed #ff0000;
 }

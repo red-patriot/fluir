@@ -1,6 +1,7 @@
 import type { Node, NodeProps } from '@xyflow/react';
 import { FunctionDecl } from '../../models/fluir_module';
 import { getSizeStyle, getFontSize } from '../../hooks/useSizeStyle';
+import DraggableElement from '../common/DraggableElement';
 
 type FunctionDeclNode = Node<{ decl: FunctionDecl }, 'function'>;
 
@@ -12,10 +13,14 @@ export default function FunctionDeclNode({
   return (
     <div className='border-1 border-gray-200 space-y-0'>
       <div
-        className='absolute bottom-full left-0 font-code border-t-1 border-l-1 border-r-1 w-full'
+        className='leading-none
+                   flex flex-row absolute
+                   bottom-full left-0 font-code border-t-1 border-l-1 border-r-1 w-full'
         style={fontSize}
       >
-        {decl.name}
+        <p>{decl.name}</p>
+        <span className='grow' />
+        <DraggableElement />
       </div>
       <div
         className='text-gray-600'

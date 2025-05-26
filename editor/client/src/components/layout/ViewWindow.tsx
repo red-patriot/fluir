@@ -32,6 +32,7 @@ export default function ViewWindow() {
       x: Math.round(node.position.x),
       y: Math.round(node.position.y),
     } as MoveEditRequest;
+    console.log('onNodeDragStop', node);
     console.log('onNodeDragStop', request);
     editProgram(request);
   }, []);
@@ -45,7 +46,7 @@ export default function ViewWindow() {
   }
 
   return (
-    <div className='grow border-red-600 border-2'>
+    <div className='grow'>
       <ReactFlow
         nodes={nodes}
         nodeTypes={nodeTypes}
@@ -55,6 +56,8 @@ export default function ViewWindow() {
         minZoom={0.1}
         maxZoom={10}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+        snapGrid={[1, 1]}
+        snapToGrid
       >
         <Background
           variant={BackgroundVariant.Dots}

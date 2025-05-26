@@ -36,8 +36,8 @@ class MoveElement(BaseModel, TransactionBase):
     @override
     def do(self, original: Program) -> Program:
         element = find_element(self.target, original)
-        new_x = element.location.x + self.x
-        new_y = element.location.y + self.y
+        new_x = self.x
+        new_y = self.y
         if len(self.target) > 1:
             xlim, ylim = self._get_limits(original)
             if (

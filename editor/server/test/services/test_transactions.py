@@ -56,7 +56,7 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
     expected.declarations[0].location = elements.Location(22, 57, 3, 100, 100)
 
-    uut = MoveElement(target=[1], x=12, y=47)
+    uut = MoveElement(target=[1], x=22, y=57)
 
     editor.edit(uut)
     actual = editor.get()
@@ -70,7 +70,7 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
         6, 90, 1, 5, 5
     )
 
-    uut = MoveElement(target=[2, 3], x=4, y=78)
+    uut = MoveElement(target=[2, 3], x=6, y=90)
 
     editor.edit(uut)
     actual = editor.get()
@@ -80,7 +80,7 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
 
 @pytest.mark.parametrize(
     "x, y",
-    [(3, 88), (98, 13), (94, 12), (53, 84), (-3, 48), (0, -13), (-3, -13)],
+    [(3, 101), (102, 13), (96, 12), (53, 97), (-3, 48), (0, -13), (-3, -13)],
 )
 # limit=elements.Location(210, 10, 2, 100, 100)
 # element=elements.Location(2, 12, 1, 5, 5)

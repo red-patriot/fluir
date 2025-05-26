@@ -2,6 +2,7 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
 import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
+import { OutputIndicator } from '../common/InOutIndicator';
 
 type ConstantNode = Node<{ constant: Constant }, 'constant'>;
 
@@ -10,18 +11,27 @@ export default function ConstantNode({
 }: NodeProps<ConstantNode>) {
   return (
     <div
-      className='flex flex-row border-[1px] border-purple-500 bg-purple-500 space-y-0'
+      className='leading-none
+                flex flex-row'
       style={getFontSize(constant.location)}
     >
       <div
-        className='self-center text-center text-white bg-black font-code'
-        style={{
-          ...getSizeStyle(constant.location),
-        }}
+        className=' flex flex-row items-center
+      rounded-xs
+      border-[1px] border-purple-500 bg-purple-500 space-y-0'
       >
-        {constant.value ?? 'undefined'}
+        <div
+          className='flex justify-center items-center text-white bg-black rounded-xs font-code'
+          style={{
+            ...getSizeStyle(constant.location),
+          }}
+        >
+          {constant.value ?? 'undefined'}
+        </div>
+        <span className='w-[1px]' />
+        <DraggableElement />
       </div>
-      <DraggableElement />
+      <OutputIndicator />
     </div>
   );
 }

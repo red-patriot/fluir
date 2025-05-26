@@ -1,0 +1,39 @@
+import type { Node, NodeProps } from '@xyflow/react';
+import { BinaryOp } from '../../models/fluir_module';
+import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
+import DraggableElement from '../common/DraggableElement';
+import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
+
+type BinaryNode = Node<{ binary: BinaryOp }, 'constant'>;
+
+export default function BinaryNode({
+  data: { binary },
+}: NodeProps<BinaryNode>) {
+  return (
+    <div
+      className='leading-none
+                flex flex-row items-center'
+      style={getFontSize(binary.location)}
+    >
+      <InputIndicator count={2} />
+      <div
+        className='leading-none
+      flex flex-row border-[1px] rounded-xs
+      border-blue-500 bg-blue-500 space-y-0'
+      >
+        <div
+          className='flex flex-col justify-center items-center
+                    rounded-xs text-white bg-black font-code'
+          style={{
+            ...getSizeStyle(binary.location),
+          }}
+        >
+          {binary.op}
+        </div>
+        <span className='w-[1px]' />
+        <DraggableElement />
+      </div>
+      <OutputIndicator />
+    </div>
+  );
+}

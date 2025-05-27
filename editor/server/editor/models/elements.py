@@ -80,6 +80,7 @@ class Conduit:
 
     id: IDType = INVALID_ID
     input: IDType = INVALID_ID
+    index: int = 0
     children: list[Segment | Output] = field(default_factory=list)
 
 

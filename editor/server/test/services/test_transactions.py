@@ -5,7 +5,7 @@ import pytest
 from editor.models import FlType, Program, elements
 from editor.models.edit_errors import BadEdit
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import MoveElement, UpdateConstant
+from editor.services.transaction import AddConduit, MoveElement, UpdateConstant
 
 
 @pytest.fixture
@@ -113,3 +113,60 @@ def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
     uut = UpdateConstant(target=[2, 1], value="-5.67")
     with pytest.raises(BadEdit):
         editor.edit(uut)
+
+
+def test_add_conduit_no_conflicts(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    new_conduit = elements.Conduit(
+        id=4,
+        input=2,
+        index=0,
+        children=[
+            elements.Conduit.Output(target=1, index=0),
+        ],
+    )
+    expected.declarations[1].conduits.append(new_conduit)
+
+    uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
+    editor.edit(uut)
+
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_add_conduit_removes_duplicate_targets(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    new_conduit = elements.Conduit(
+        id=4,
+        input=2,
+        index=0,
+        children=[
+            elements.Conduit.Output(target=1, index=0),
+        ],
+    )
+    expected.declarations[1].conduits.append(new_conduit)
+    existing_conduit = elements.Conduit(
+        id=4,
+        input=3,
+        index=0,
+        children=[
+            elements.Conduit.Output(target=1, index=0),
+        ],
+    )
+    # This conduit targets the same output as the new conduit,
+    # so it should be overwritten
+    program = editor.get()
+    assert program is not None
+    program.declarations[1].conduits.append(existing_conduit)
+
+    uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
+    editor.edit(uut)
+
+    actual = editor.get()
+
+    assert expected == actual

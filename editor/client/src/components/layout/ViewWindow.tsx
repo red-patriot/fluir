@@ -10,6 +10,9 @@ import {
   DefaultEdgeOptions,
   OnConnect,
   ConnectionMode,
+  useReactFlow,
+  getOutgoers,
+  Node,
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../hooks/createNodes';
 import { useAppSelector } from '../../store';
@@ -27,6 +30,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 export default function ViewWindow() {
   const module = useAppSelector((state) => state.program.module);
   const { editProgram } = useProgramActions();
+  const { getNodes, getEdges } = useReactFlow();
 
   const [nodes, setNodes] = useState(
     createNodes(module ? module : { declarations: [] }),
@@ -47,6 +51,30 @@ export default function ViewWindow() {
     },
     [setEdges],
   );
+
+  const isValidConnection = useCallback(
+    (connection: any) => {
+      // we are using getNodes and getEdges helpers here
+      // to make sure we create isValidConnection function only once
+      const nodes = getNodes();
+      const edges = getEdges();
+      const target = nodes.find((node) => node.id === connection.target);
+      const hasCycle = (node: Node, visited = new Set()) => {
+        if (visited.has(node.id)) return false;
+
+        visited.add(node.id);
+
+        for (const outgoer of getOutgoers(node, nodes, edges)) {
+          if (outgoer.id === connection.source) return true;
+          if (hasCycle(outgoer, visited)) return true;
+        }
+      };
+
+      if (!target || target.id === connection.source) return false;
+      return !hasCycle(target);
+    },
+    [getNodes, getEdges],
+  );
   const onConnect: OnConnect = useCallback(
     (connection) => {
       const request = {
@@ -58,7 +86,7 @@ export default function ViewWindow() {
     [setEdges],
   );
 
-  const onNodeDragStop = useCallback((event: React.MouseEvent, node: any) => {
+  const onNodeDragStop = useCallback((_: React.MouseEvent, node: any) => {
     const request = {
       discriminator: 'move',
       target: (node.id as string).split(':').map((str) => parseInt(str)),
@@ -94,6 +122,7 @@ export default function ViewWindow() {
         onEdgesChange={onEdgesChange}
         connectionMode={ConnectionMode.Strict}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         defaultEdgeOptions={defaultEdgeOptions}
         fitView
         minZoom={0.1}
@@ -101,6 +130,7 @@ export default function ViewWindow() {
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
         snapToGrid
+        panOnDrag={[1]}
       >
         <Background
           variant={BackgroundVariant.Dots}

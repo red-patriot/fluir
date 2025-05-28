@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { type Node, type NodeProps, Handle } from '@xyflow/react';
+import { type Node, type NodeProps } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
 import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';

@@ -1,7 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCaretRight } from '@fortawesome/free-solid-svg-icons';
 import { Handle, Position } from '@xyflow/react';
-import React from 'react';
 
 interface InOutIndicatorProps {
   fullID?: string;

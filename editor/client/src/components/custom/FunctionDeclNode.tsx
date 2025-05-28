@@ -9,7 +9,7 @@ type FunctionDeclNode = Node<
 >;
 
 export default function FunctionDeclNode({
-  data: { decl, fullID },
+  data: { decl },
 }: NodeProps<FunctionDeclNode>) {
   const fontSize = getFontSize(8);
 

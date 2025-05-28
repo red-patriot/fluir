@@ -19,6 +19,14 @@
   font-family: 'Courier Prime', monospace;
 }
 
+.react-flow__pane,
+.react-flow__viewport,
+.react-flow__subflow,
+.react-flow__node,
+.react-flow__edge {
+  cursor: default !important;
+}
+
 .debug {
   border: 1px dashed #ff0000;
 }

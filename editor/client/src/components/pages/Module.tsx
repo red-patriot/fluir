@@ -3,6 +3,7 @@ import ToolHeader from '../layout/ToolHeader';
 import { actions, useAppDispatch } from '../../store';
 import { useProgramActions } from '../common/ProgramActionsContext';
 import { saveAsDialog } from '../../hooks/electronAPI';
+import { ReactFlowProvider } from '@xyflow/react';
 
 export default function ModulePage() {
   const dispatch = useAppDispatch();
@@ -30,12 +31,14 @@ export default function ModulePage() {
 
   return (
     <div className='flex flex-col h-lvh w-lvw'>
-      <ToolHeader
-        onSave={onSave}
-        onSaveAs={onSaveAs}
-        onCloseModule={closeModule}
-      />
-      <ViewWindow />
+      <ReactFlowProvider>
+        <ToolHeader
+          onSave={onSave}
+          onSaveAs={onSaveAs}
+          onCloseModule={closeModule}
+        />
+        <ViewWindow />
+      </ReactFlowProvider>
     </div>
   );
 }

@@ -28,6 +28,10 @@
   cursor: default !important;
 }
 
+.react-flow__edge {
+  pointer-events: auto;
+}
+
 .debug {
   border: 1px dashed #ff0000;
 }

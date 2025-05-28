@@ -16,10 +16,6 @@ export default function FunctionDeclNode({
   const headerRef = useRef<HTMLDivElement>(null);
   const [yOffset, setYOffset] = useState(0);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-  }, []);
-
   useEffect(() => {
     if (headerRef.current) {
       setYOffset(-headerRef.current.offsetHeight);
@@ -45,7 +41,6 @@ export default function FunctionDeclNode({
       <div
         className='text-gray-600'
         style={getSizeStyle(decl.location)}
-        onClick={handleClick}
       ></div>
     </div>
   );

@@ -21,6 +21,7 @@ import { useProgramActions } from '../common/ProgramActionsContext';
 import {
   MoveEditRequest,
   AddConduitEditRequest,
+  RemoveItemEditRequest,
 } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { toApiID } from '../../utility/idHelpers';
@@ -101,7 +102,25 @@ export default function ViewWindow() {
   );
   const onDelete: OnDelete = useCallback(
     (deleted) => {
+      // Remove any child nodes and leave only parents
+      deleted.nodes.filter((node) => {
+        return deleted.nodes.some(
+          (otherNode) =>
+            otherNode.parentId === node.id && otherNode.id !== node.id,
+        );
+      });
+      // TODO: Right now there is no way to select conduits, so they cannot be
+      // deleted. Figure out a way to handle that...
+
       console.log('onDelete', deleted);
+      if (deleted.nodes.length == 0) {
+        return;
+      }
+
+      const request = {
+        target: toApiID(deleted.nodes[0].id),
+      } as RemoveItemEditRequest;
+      editProgram(request);
     },
     [editProgram],
   );
@@ -142,9 +161,11 @@ export default function ViewWindow() {
         panOnDrag={[1]}
       >
         <Background
+          id='bg-1'
           variant={BackgroundVariant.Dots}
           gap={50}
           size={1}
+          offset={[250, 250]}
         />
       </ReactFlow>
     </div>

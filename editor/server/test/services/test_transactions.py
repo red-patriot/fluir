@@ -1,11 +1,17 @@
 import copy
+from typing import get_args
 
 import pytest
 
 from editor.models import FlType, Program, elements
 from editor.models.edit_errors import BadEdit
 from editor.services.module_editor import ModuleEditor
-from editor.services.transaction import AddConduit, MoveElement, UpdateConstant
+from editor.services.transaction import (
+    AddConduit,
+    AddNode,
+    MoveElement,
+    UpdateConstant,
+)
 
 
 @pytest.fixture
@@ -167,6 +173,65 @@ def test_add_conduit_removes_duplicate_targets(
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
     editor.edit(uut)
 
+    actual = editor.get()
+
+    assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "expected_node, input",
+    [
+        (
+            elements.Constant(
+                id=4,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="0.0",
+                flType=FlType.FLOATING_POINT,
+            ),
+            AddNode(
+                parent=[2],
+                new_type="Constant",
+                new_location=elements.Location(
+                    x=2, y=2, z=0, width=5, height=5
+                ),
+            ),
+        ),
+        (
+            elements.BinaryOperator(
+                id=4,
+                location=elements.Location(15, 2, 1, 5, 5),
+                op=elements.Operator.UNKNOWN,
+            ),
+            AddNode(
+                parent=[2],
+                new_type="BinaryOperator",
+                new_location=elements.Location(15, 2, 1, 5, 5),
+            ),
+        ),
+        (
+            elements.UnaryOperator(
+                id=4,
+                location=elements.Location(2, 7, 0, 7, 7),
+                op=elements.Operator.UNKNOWN,
+            ),
+            AddNode(
+                parent=[2],
+                new_type="UnaryOperator",
+                new_location=elements.Location(2, 7, 0, 7, 7),
+            ),
+        ),
+    ],
+)
+def test_add_node(
+    expected_node: elements.Node,
+    input: AddNode,
+    basic_program: Program,
+    editor: ModuleEditor,
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].nodes.append(expected_node)
+
+    editor.edit(input)
     actual = editor.get()
 
     assert expected == actual

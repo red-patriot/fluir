@@ -16,7 +16,7 @@ class FlType(StrEnum):
 
 
 class Operator(StrEnum):
-    UNKNOWN = "<?>"
+    UNKNOWN = " "
     PLUS = "+"
     MINUS = "-"
     STAR = "*"

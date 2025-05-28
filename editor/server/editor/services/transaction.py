@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Literal, override
+from typing import Literal, get_args, override
 
 from pydantic import BaseModel
 
@@ -159,4 +159,52 @@ class AddConduit(BaseModel, TransactionBase):
         return original
 
 
-type EditTransaction = MoveElement | UpdateConstant | AddConduit
+class AddNode(BaseModel, TransactionBase):
+    discriminator: Literal["add_node"] = "add_node"
+    parent: QualifiedID
+    new_type: Literal["Constant", "BinaryOperator", "UnaryOperator"]
+    new_location: elements.Location
+
+    @override
+    def do(self, original: Program) -> Program:
+        decl = find_element(self.parent, original)
+        if not isinstance(decl, elements.Function):
+            # TODO: Handle other types of decls better
+            raise BadEdit("Source must be a function to add a conduit")
+        new_id = next_id(decl)
+
+        match self.new_type:
+            case "Constant":
+                decl.nodes.append(
+                    elements.Constant(
+                        id=new_id,
+                        location=self.new_location,
+                        value="0.0",
+                        flType=elements.FlType.FLOATING_POINT,
+                    )
+                )
+            case "BinaryOperator":
+                decl.nodes.append(
+                    elements.BinaryOperator(
+                        id=new_id,
+                        location=self.new_location,
+                        op=elements.Operator.UNKNOWN,
+                    )
+                )
+            case "UnaryOperator":
+                decl.nodes.append(
+                    elements.UnaryOperator(
+                        id=new_id,
+                        location=self.new_location,
+                        op=elements.Operator.UNKNOWN,
+                    )
+                )
+
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original
+
+
+type EditTransaction = MoveElement | UpdateConstant | AddConduit | AddNode

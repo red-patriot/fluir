@@ -13,8 +13,6 @@ import {
   useReactFlow,
   getOutgoers,
   Node,
-  OnNodesDelete,
-  OnEdgesDelete,
   OnDelete,
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
@@ -23,7 +21,6 @@ import { useProgramActions } from '../common/ProgramActionsContext';
 import {
   MoveEditRequest,
   AddConduitEditRequest,
-  RemoveItemEditRequest,
 } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { toApiID } from '../../utility/idHelpers';

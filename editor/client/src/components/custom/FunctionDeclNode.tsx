@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import type { Node, NodeProps } from '@xyflow/react';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { type Node, type NodeProps } from '@xyflow/react';
 import { FunctionDecl } from '../../models/fluir_module';
 import { getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
@@ -13,12 +13,16 @@ export default function FunctionDeclNode({
   data: { decl },
   selected,
 }: NodeProps<FunctionDeclNode>) {
-  const nameRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [yOffset, setYOffset] = useState(0);
 
+  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+  }, []);
+
   useEffect(() => {
-    if (nameRef.current) {
-      setYOffset(-nameRef.current.offsetHeight);
+    if (headerRef.current) {
+      setYOffset(-headerRef.current.offsetHeight);
     }
   }, [decl.name]);
 
@@ -29,7 +33,7 @@ export default function FunctionDeclNode({
       style={{ transform: `translateY(${yOffset}px)` }}
     >
       <div
-        ref={nameRef}
+        ref={headerRef}
         className='leading-none
                    flex flex-row font-code rounded-t-lg
                    border-b bg-slate-700 p-1 w-full'
@@ -41,6 +45,7 @@ export default function FunctionDeclNode({
       <div
         className='text-gray-600'
         style={getSizeStyle(decl.location)}
+        onClick={handleClick}
       ></div>
     </div>
   );

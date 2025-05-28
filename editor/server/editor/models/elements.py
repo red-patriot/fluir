@@ -104,17 +104,24 @@ class Program:
 
 
 type Element = Declaration | Node
+type Item = Declaration | Node | Conduit
 
 
-def _find_impl(id: QualifiedID, elements: Sequence[Element]) -> Element | None:
+def _find_impl(
+    id: QualifiedID, elements: Sequence[Element | Conduit]
+) -> Item | None:
     first = id[0]
     for element in elements:
         if element.id == first:
             if len(id) == 1:
                 return element
+            if isinstance(element, Conduit):
+                return None
             match element.discriminator:
                 case "function":
-                    return _find_impl(id[1:], cast(Function, element).nodes)
+                    return _find_impl(
+                        id[1:], cast(Function, element).nodes
+                    ) or _find_impl(id[1:], cast(Function, element).conduits)
                 case "binary":
                     return None
                 case "unary":
@@ -127,6 +134,19 @@ def _find_impl(id: QualifiedID, elements: Sequence[Element]) -> Element | None:
 
 
 def find_element(id: QualifiedID, program: Program) -> Element:
+    """Find the element with the given ID in the program."""
+    if len(id) == 0 or INVALID_ID in id:
+        raise IdentifierError("ID is invalid")
+    found = _find_impl(id, program.declarations)
+    if found is not None and not isinstance(found, Conduit):
+        return found
+    raise IdentifierError(
+        f"An element with ID {':'.join(map(str, id))} was not found"
+    )
+
+
+def find_item(id: QualifiedID, program: Program) -> Item:
+    """Find the element or conduit with the given ID in the program."""
     if len(id) == 0 or INVALID_ID in id:
         raise IdentifierError("ID is invalid")
     found = _find_impl(id, program.declarations)

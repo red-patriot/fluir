@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Literal, get_args, override
+from typing import Literal, cast, override
 
 from pydantic import BaseModel
 
 from editor.models import Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
-from editor.models.elements import find_element
+from editor.models.elements import find_element, find_item
 from editor.models.id import make_qualified_id
 from editor.utility.next_id import next_id
 
@@ -207,4 +207,57 @@ class AddNode(BaseModel, TransactionBase):
         return original
 
 
-type EditTransaction = MoveElement | UpdateConstant | AddConduit | AddNode
+class RemoveItem(BaseModel, TransactionBase):
+    target: QualifiedID
+
+    @override
+    def do(self, original: Program) -> Program:
+        if len(self.target) < 1:
+            raise BadEdit("Cannot remove the program itself")
+
+        if len(self.target) == 1:
+            # Removing a function from the program
+            original.declarations = [
+                func
+                for func in original.declarations
+                if func.id != self.target[0]
+            ]
+            return original
+
+        parent_id = self.target[:-1]
+        parent = find_item(parent_id, original)
+        element_id = self.target[-1]
+
+        if isinstance(parent, elements.Function):
+            # Remove from nodes list
+            parent.nodes = [
+                node for node in parent.nodes if node.id != element_id
+            ]
+            parent.conduits = [
+                conduit
+                for conduit in parent.conduits
+                if conduit.id != element_id
+            ]
+            # Remove any conduits connected to this node
+            parent.conduits = [
+                conduit
+                for conduit in parent.conduits
+                if conduit.input != element_id
+                and not any(
+                    cast(elements.Conduit.Output, out).target == element_id
+                    for out in conduit.children
+                )
+            ]
+        else:
+            raise BadEdit("Can only remove elements from functions")
+
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original
+
+
+type EditTransaction = (
+    MoveElement | UpdateConstant | AddConduit | AddNode | RemoveItem
+)

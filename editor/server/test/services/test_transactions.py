@@ -10,6 +10,7 @@ from editor.services.transaction import (
     AddConduit,
     AddNode,
     MoveElement,
+    RemoveItem,
     UpdateConstant,
 )
 
@@ -45,6 +46,13 @@ def basic_program() -> Program:
                         value="2.0",
                         flType=FlType.FLOATING_POINT,
                     ),
+                ],
+                conduits=[
+                    elements.Conduit(
+                        id=5,
+                        input=2,
+                        children=[elements.Conduit.Output(target=1, index=1)],
+                    )
                 ],
             ),
         ]
@@ -126,7 +134,7 @@ def test_add_conduit_no_conflicts(
 ) -> None:
     expected = copy.deepcopy(basic_program)
     new_conduit = elements.Conduit(
-        id=4,
+        id=6,
         input=2,
         index=0,
         children=[
@@ -183,7 +191,7 @@ def test_add_conduit_removes_duplicate_targets(
     [
         (
             elements.Constant(
-                id=4,
+                id=6,
                 location=elements.Location(2, 2, 0, 5, 5),
                 value="0.0",
                 flType=FlType.FLOATING_POINT,
@@ -198,7 +206,7 @@ def test_add_conduit_removes_duplicate_targets(
         ),
         (
             elements.BinaryOperator(
-                id=4,
+                id=6,
                 location=elements.Location(15, 2, 1, 5, 5),
                 op=elements.Operator.UNKNOWN,
             ),
@@ -210,7 +218,7 @@ def test_add_conduit_removes_duplicate_targets(
         ),
         (
             elements.UnaryOperator(
-                id=4,
+                id=6,
                 location=elements.Location(2, 7, 0, 7, 7),
                 op=elements.Operator.UNKNOWN,
             ),
@@ -232,6 +240,53 @@ def test_add_node(
     expected.declarations[1].nodes.append(expected_node)
 
     editor.edit(input)
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].nodes.pop(2)
+
+    uut = RemoveItem(target=[2, 3])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_remove_node_with_conduits(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].nodes.pop(1)
+    expected.declarations[1].conduits.pop()
+
+    uut = RemoveItem(target=[2, 2])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations.pop(0)
+
+    uut = RemoveItem(target=[1])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].conduits.pop(0)
+
+    uut = RemoveItem(target=[2, 5])
+    editor.edit(uut)
     actual = editor.get()
 
     assert expected == actual

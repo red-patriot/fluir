@@ -1,6 +1,6 @@
 import type { Node, NodeProps } from '@xyflow/react';
 import { UnaryOp } from '../../models/fluir_module';
-import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
+import { getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { InputIndicator, OutputIndicator } from '../common/InOutIndicator';
 
@@ -13,7 +13,6 @@ export default function UnaryNode({
     <div
       className='leading-none
                 flex flex-row'
-      style={getFontSize(unary.location)}
     >
       <InputIndicator fullID={fullID} />
       <div

@@ -18,10 +18,3 @@ export const getLocationStyle = (location: Location) => {
     zIndex: `${z}`,
   };
 };
-
-export function getFontSize(unscaled: Location | number) {
-  const unscaledSize =
-    typeof unscaled === 'number' ? unscaled : (unscaled as Location).height;
-
-  return { fontSize: (unscaledSize * ZOOM_SCALAR) / 2 };
-}

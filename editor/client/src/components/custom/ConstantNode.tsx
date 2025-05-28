@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { type Node, type NodeProps } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
-import { getFontSize, getSizeStyle } from '../../hooks/useSizeStyle';
+import { getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { OutputIndicator } from '../common/InOutIndicator';
 import { useProgramActions } from '../common/ProgramActionsContext';
@@ -43,7 +43,6 @@ export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
     <div
       className='leading-none
                 flex flex-row'
-      style={getFontSize(constant.location)}
     >
       <div
         className=' flex flex-row items-center

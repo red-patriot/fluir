@@ -13,15 +13,20 @@ import {
   useReactFlow,
   getOutgoers,
   Node,
+  OnNodesDelete,
+  OnEdgesDelete,
+  OnDelete,
 } from '@xyflow/react';
-import createNodes, { createEdges, nodeTypes } from '../../hooks/createNodes';
+import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
 import { useAppSelector } from '../../store';
 import { useProgramActions } from '../common/ProgramActionsContext';
 import {
   MoveEditRequest,
   AddConduitEditRequest,
+  RemoveItemEditRequest,
 } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import { toApiID } from '../../utility/idHelpers';
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -46,7 +51,6 @@ export default function ViewWindow() {
   );
   const onEdgesChange: OnEdgesChange = useCallback(
     (changes) => {
-      console.log('onEdgesChange', changes);
       setEdges((eds) => applyEdgeChanges(changes, eds));
     },
     [setEdges],
@@ -86,17 +90,24 @@ export default function ViewWindow() {
     [setEdges],
   );
 
-  const onNodeDragStop = useCallback((_: React.MouseEvent, node: any) => {
-    const request = {
-      discriminator: 'move',
-      target: (node.id as string).split(':').map((str) => parseInt(str)),
-      x: Math.round(node.position.x / ZOOM_SCALAR),
-      y: Math.round(node.position.y / ZOOM_SCALAR),
-    } as MoveEditRequest;
-    console.log('onNodeDragStop', node);
-    console.log('onNodeDragStop', request);
-    editProgram(request);
-  }, []);
+  const onNodeDragStop = useCallback(
+    (_: React.MouseEvent, node: any) => {
+      const request = {
+        discriminator: 'move',
+        target: toApiID(node.id as string),
+        x: Math.round(node.position.x / ZOOM_SCALAR),
+        y: Math.round(node.position.y / ZOOM_SCALAR),
+      } as MoveEditRequest;
+      editProgram(request);
+    },
+    [editProgram],
+  );
+  const onDelete: OnDelete = useCallback(
+    (deleted) => {
+      console.log('onDelete', deleted);
+    },
+    [editProgram],
+  );
 
   useEffect(() => {
     setNodes(createNodes(module ? module : { declarations: [] }));
@@ -118,6 +129,7 @@ export default function ViewWindow() {
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onNodeDragStop={onNodeDragStop}
+        onDelete={onDelete}
         edges={edges}
         onEdgesChange={onEdgesChange}
         connectionMode={ConnectionMode.Strict}
@@ -134,7 +146,7 @@ export default function ViewWindow() {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={10}
+          gap={50}
           size={1}
         />
       </ReactFlow>

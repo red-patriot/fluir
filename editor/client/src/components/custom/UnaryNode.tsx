@@ -8,11 +8,13 @@ type UnaryNode = Node<{ unary: UnaryOp; fullID: string }, 'constant'>;
 
 export default function UnaryNode({
   data: { unary, fullID },
+  selected,
 }: NodeProps<UnaryNode>) {
   return (
     <div
-      className='leading-none
-                flex flex-row'
+      className={`leading-none
+                flex flex-row items-center
+                ${selected && 'ring-2 rounded-lg ring-white'}`}
     >
       <InputIndicator fullID={fullID} />
       <div

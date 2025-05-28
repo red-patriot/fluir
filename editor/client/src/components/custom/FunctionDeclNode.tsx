@@ -11,6 +11,7 @@ type FunctionDeclNode = Node<
 
 export default function FunctionDeclNode({
   data: { decl },
+  selected,
 }: NodeProps<FunctionDeclNode>) {
   const nameRef = useRef<HTMLDivElement>(null);
   const [yOffset, setYOffset] = useState(0);
@@ -22,10 +23,11 @@ export default function FunctionDeclNode({
   }, [decl.name]);
 
   return (
-    <div className='rounded-b-lg border-2 border-gray-200 space-y-0
+    <div
+      className={`rounded-lg border-2 border-gray-200 space-y-0
                     ${selected && 'ring-2 rounded-lg ring-white'}`}
       style={{ transform: `translateY(${yOffset}px)` }}
->
+    >
       <div
         ref={nameRef}
         className='leading-none

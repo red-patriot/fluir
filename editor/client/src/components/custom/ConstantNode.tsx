@@ -9,8 +9,10 @@ import { UpdateConstantEditRequest } from '../../models/edit_request';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'constant'>;
 
-export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
-  const { constant, fullID } = data;
+export default function ConstantNode({
+  data: { constant, fullID },
+  selected,
+}: NodeProps<ConstantNode>) {
   const { editProgram } = useProgramActions();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -41,8 +43,9 @@ export default function ConstantNode({ data }: NodeProps<ConstantNode>) {
 
   return (
     <div
-      className='leading-none
-                flex flex-row'
+      className={`leading-none
+                flex flex-row items-center
+                ${selected && 'ring-2 rounded-lg ring-white'}`}
     >
       <div
         className=' flex flex-row items-center

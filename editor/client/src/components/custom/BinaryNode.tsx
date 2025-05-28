@@ -8,11 +8,13 @@ type BinaryNode = Node<{ binary: BinaryOp; fullID: string }, 'constant'>;
 
 export default function BinaryNode({
   data: { binary, fullID },
+  selected,
 }: NodeProps<BinaryNode>) {
   return (
     <div
-      className='leading-none
-                flex flex-row items-center'
+      className={`leading-none
+                flex flex-row items-center
+                ${selected && 'ring-2 rounded-lg ring-white'}`}
     >
       <InputIndicator
         count={2}

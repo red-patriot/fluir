@@ -14,7 +14,10 @@ import {
 import createNodes, { createEdges, nodeTypes } from '../../hooks/createNodes';
 import { useAppSelector } from '../../store';
 import { useProgramActions } from '../common/ProgramActionsContext';
-import { MoveEditRequest } from '../../models/edit_request';
+import {
+  MoveEditRequest,
+  AddConduitEditRequest,
+} from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
@@ -45,8 +48,12 @@ export default function ViewWindow() {
     [setEdges],
   );
   const onConnect: OnConnect = useCallback(
-    (connecion) => {
-      console.log('onConnect', connecion);
+    (connection) => {
+      const request = {
+        source: connection.sourceHandle,
+        target: connection.targetHandle,
+      } as AddConduitEditRequest;
+      editProgram(request);
     },
     [setEdges],
   );

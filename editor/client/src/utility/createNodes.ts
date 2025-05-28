@@ -10,7 +10,7 @@ import FluirModule, {
   Node,
   UnaryOp,
 } from '../models/fluir_module';
-import { ZOOM_SCALAR } from './useSizeStyle';
+import { ZOOM_SCALAR } from '../hooks/useSizeStyle';
 import { Edge } from '@xyflow/react';
 
 function fullId(parentId: string | undefined, id: number): string {
@@ -29,6 +29,10 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         position: {
           x: decl.location.x * ZOOM_SCALAR,
           y: decl.location.y * ZOOM_SCALAR,
+        },
+        measured: {
+          width: decl.location.width * ZOOM_SCALAR,
+          height: decl.location.height * ZOOM_SCALAR,
         },
         data: {
           decl: decl,

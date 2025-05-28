@@ -7,7 +7,7 @@ import FluirModule, {
   Constant,
   Operator,
 } from '../../models/fluir_module';
-import { ZOOM_SCALAR } from '../useSizeStyle';
+import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 
 describe('createNodes', () => {
   describe('with empty module', () => {

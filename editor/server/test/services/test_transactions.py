@@ -11,6 +11,7 @@ from editor.services.transaction import (
     AddNode,
     MoveElement,
     RemoveItem,
+    RenameDeclaration,
     UpdateConstant,
 )
 
@@ -108,6 +109,18 @@ def test_move_node_raises_if_out_of_function(
 
     with pytest.raises(BadEdit):
         editor.edit(uut)
+
+
+def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].name = "baz"
+
+    uut = RenameDeclaration(target=[2], name="baz")
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
 
 
 def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:

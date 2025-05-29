@@ -66,6 +66,23 @@ class MoveElement(BaseModel, TransactionBase):
         return original
 
 
+class RenameDeclaration(BaseModel, TransactionBase):
+    target: QualifiedID
+    name: str
+
+    @override
+    def do(self, original: Program) -> Program:
+        decl = find_element(self.target, original)
+        if not isinstance(decl, elements.Declaration):
+            raise BadEdit("Only a declaration's name may be changed")
+        decl.name = self.name
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original
+
+
 class UpdateConstant(BaseModel, TransactionBase):
     discriminator: Literal["update_constant"] = "update_constant"
     target: QualifiedID
@@ -259,5 +276,10 @@ class RemoveItem(BaseModel, TransactionBase):
 
 
 type EditTransaction = (
-    MoveElement | UpdateConstant | AddConduit | AddNode | RemoveItem
+    MoveElement
+    | RenameDeclaration
+    | UpdateConstant
+    | AddConduit
+    | AddNode
+    | RemoveItem
 )

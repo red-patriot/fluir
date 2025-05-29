@@ -57,8 +57,8 @@ class UnaryOperator:
     op: Operator = Operator.UNKNOWN
 
 
-type Node = Constant | BinaryOperator | UnaryOperator
-type Nodes = list[Node]
+Node = Constant | BinaryOperator | UnaryOperator
+Nodes = list[Node]
 
 
 @dataclass
@@ -94,8 +94,8 @@ class Function:
     conduits: list[Conduit] = field(default_factory=list)
 
 
-type Declaration = Function
-type Declarations = list[Declaration]
+Declaration = Function
+Declarations = list[Declaration]
 
 
 @dataclass
@@ -103,8 +103,8 @@ class Program:
     declarations: Declarations = field(default_factory=list)
 
 
-type Element = Declaration | Node
-type Item = Declaration | Node | Conduit
+Element = Declaration | Node
+Item = Declaration | Node | Conduit
 
 
 def _find_impl(

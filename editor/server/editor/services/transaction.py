@@ -74,7 +74,7 @@ class RenameDeclaration(BaseModel, TransactionBase):
     def do(self, original: Program) -> Program:
         decl = find_element(self.target, original)
         if not isinstance(decl, elements.Declaration):
-            raise BadEdit("Only a declaration's name may be changed")
+            raise BadEdit("Only a declaration may be renamed")
         decl.name = self.name
         return original
 

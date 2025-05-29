@@ -123,6 +123,15 @@ def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
     assert expected == actual
 
 
+def test_rename_declaration_raises_if_target_is_not_a_decl(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    uut = RenameDeclaration(target=[2, 1], name="baz")
+
+    with pytest.raises(BadEdit, match="Only a declaration may be renamed"):
+        editor.edit(uut)
+
+
 def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
     assert isinstance(expected.declarations[1].nodes[1], elements.Constant)

@@ -1,4 +1,4 @@
-import { Location } from './fluir_module';
+import { Location, Operator } from './fluir_module';
 
 export type MoveEditRequest = {
   discriminator: 'move';
@@ -7,10 +7,22 @@ export type MoveEditRequest = {
   y: number;
 };
 
+export type RenameDeclarationEditRequest = {
+  discriminator: 'rename_declaration';
+  target: number[];
+  name: string;
+};
+
 export type UpdateConstantEditRequest = {
   discriminator: 'update_constant';
   target: number[];
   value: string;
+};
+
+export type UpdateOperatorEditRequest = {
+  discriminator: 'update_operator';
+  target: number[];
+  value: Operator;
 };
 
 export type AddConduitEditRequest = {
@@ -32,7 +44,9 @@ export type RemoveItemEditRequest = {
 
 type EditRequest =
   | MoveEditRequest
+  | RenameDeclarationEditRequest
   | UpdateConstantEditRequest
+  | UpdateOperatorEditRequest
   | AddConduitEditRequest
   | AddNodeEditRequest
   | RemoveItemEditRequest;

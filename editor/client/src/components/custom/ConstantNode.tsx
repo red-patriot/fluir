@@ -6,6 +6,7 @@ import DraggableElement from '../common/DraggableElement';
 import { OutputIndicator } from '../common/InOutIndicator';
 import { useProgramActions } from '../common/ProgramActionsContext';
 import { UpdateConstantEditRequest } from '../../models/edit_request';
+import InputField from '../common/InputField';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'constant'>;
 
@@ -16,30 +17,19 @@ export default function ConstantNode({
   const { editProgram } = useProgramActions();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [tempText, setTempText] = useState(constant.value || ' ');
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      const request: UpdateConstantEditRequest = {
-        discriminator: 'update_constant',
-        target: fullID.split(':').map((str) => parseInt(str)),
-        value: tempText,
-      };
-      console.log('handleKeyDown', request);
-      editProgram(request);
-      setIsEditing(false);
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-    }
+  const onEnter = (value: string) => {
+    const request: UpdateConstantEditRequest = {
+      discriminator: 'update_constant',
+      target: fullID.split(':').map((str) => parseInt(str)),
+      value: value,
+    };
+    editProgram(request);
+    setIsEditing(false);
   };
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
+  const onCancel = () => {
+    setIsEditing(false);
+  };
 
   return (
     <div
@@ -59,13 +49,12 @@ export default function ConstantNode({
           }}
         >
           {isEditing ? (
-            <input
-              ref={inputRef}
+            <InputField
+              id={fullID}
               type='number'
-              value={tempText}
-              onChange={(e) => setTempText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={() => setIsEditing(false)}
+              onValidateSucceed={onEnter}
+              onCancel={onCancel}
+              initialValue={constant.value}
               className='w-full h-full bg-transparent text-white outline-none'
             />
           ) : (

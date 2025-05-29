@@ -67,6 +67,7 @@ class MoveElement(BaseModel, TransactionBase):
 
 
 class RenameDeclaration(BaseModel, TransactionBase):
+    discriminator: Literal["rename_declaration"] = "rename_declaration"
     target: QualifiedID
     name: str
 
@@ -105,6 +106,7 @@ class UpdateConstant(BaseModel, TransactionBase):
 
 
 class UpdateOperator(BaseModel, TransactionBase):
+    discriminator: Literal["update_operator"] = "update_operator"
     target: QualifiedID
     value: str
 

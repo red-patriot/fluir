@@ -1,5 +1,4 @@
 import copy
-from typing import get_args
 
 import pytest
 
@@ -13,6 +12,7 @@ from editor.services.transaction import (
     RemoveItem,
     RenameDeclaration,
     UpdateConstant,
+    UpdateOperator,
 )
 
 
@@ -53,6 +53,31 @@ def basic_program() -> Program:
                         id=5,
                         input=2,
                         children=[elements.Conduit.Output(target=1, index=1)],
+                    )
+                ],
+            ),
+            elements.Function(
+                name="qux",
+                location=elements.Location(210, 10, 2, 100, 100),
+                id=3,
+                nodes=[
+                    elements.UnaryOperator(
+                        id=2,
+                        location=elements.Location(15, 2, 1, 5, 5),
+                        op=elements.Operator.MINUS,
+                    ),
+                    elements.Constant(
+                        id=3,
+                        location=elements.Location(2, 12, 1, 5, 5),
+                        value="2.0",
+                        flType=FlType.FLOATING_POINT,
+                    ),
+                ],
+                conduits=[
+                    elements.Conduit(
+                        id=5,
+                        input=3,
+                        children=[elements.Conduit.Output(target=2, index=0)],
                     )
                 ],
             ),
@@ -148,6 +173,54 @@ def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
 def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
     uut = UpdateConstant(target=[2, 1], value="-5.67")
     with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+@pytest.mark.parametrize(
+    "op",
+    ["+", "-", "*", "/"],
+)
+def test_update_binary_operator(
+    basic_program: Program, editor: ModuleEditor, op: str
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    assert isinstance(
+        expected.declarations[1].nodes[0], elements.BinaryOperator
+    )
+    expected.declarations[1].nodes[0].op = elements.Operator(op)
+
+    uut = UpdateOperator(target=[2, 1], value=op)
+    editor.edit(uut)
+
+    actual = editor.get()
+
+    assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "op",
+    ["+", "-", "*", "/"],
+)
+def test_update_unary_operator(
+    basic_program: Program, editor: ModuleEditor, op: str
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    assert isinstance(expected.declarations[2].nodes[0], elements.UnaryOperator)
+    expected.declarations[2].nodes[0].op = elements.Operator(op)
+
+    uut = UpdateOperator(target=[3, 2], value=op)
+    editor.edit(uut)
+
+    actual = editor.get()
+
+    assert expected == actual
+
+
+def test_update_operator_raises_if_not_operator(editor: ModuleEditor) -> None:
+    uut = UpdateOperator(target=[2, 2], value=elements.Operator.MINUS)
+    with pytest.raises(
+        BadEdit, match="Can only perform this update on an operator"
+    ):
         editor.edit(uut)
 
 

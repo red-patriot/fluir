@@ -104,6 +104,27 @@ class UpdateConstant(BaseModel, TransactionBase):
         return original
 
 
+class UpdateOperator(BaseModel, TransactionBase):
+    target: QualifiedID
+    value: str
+
+    @override
+    def do(self, original: Program) -> Program:
+        element = find_element(self.target, original)
+        if not (
+            isinstance(element, elements.BinaryOperator)
+            or isinstance(element, elements.UnaryOperator)
+        ):
+            raise BadEdit("Can only perform this update on an operator")
+
+        element.op = elements.Operator(self.value)
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original
+
+
 class AddConduit(BaseModel, TransactionBase):
     discriminator: Literal["add_conduit"] = "add_conduit"
     source: str  # "input-QualifiedID-index"
@@ -279,6 +300,7 @@ type EditTransaction = (
     MoveElement
     | RenameDeclaration
     | UpdateConstant
+    | UpdateOperator
     | AddConduit
     | AddNode
     | RemoveItem

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { type Node, type NodeProps } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
 import { getSizeStyle } from '../../hooks/useSizeStyle';

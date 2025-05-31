@@ -1,7 +1,7 @@
-[ERROR] on line 3 of 'function_missing_attributes.fl': fl:function element is missing attribute 'name'.
-[ERROR] on line 13 of 'function_missing_attributes.fl': fl:function element is missing attribute 'id'.
-[ERROR] on line 23 of 'function_missing_attributes.fl': fl:function element is missing attribute 'x'.
-[ERROR] on line 35 of 'function_missing_attributes.fl': fl:function element is missing attribute 'y'.
-[ERROR] on line 46 of 'function_missing_attributes.fl': fl:function element is missing attribute 'z'.
-[ERROR] on line 56 of 'function_missing_attributes.fl': fl:function element is missing attribute 'w'.
-[ERROR] on line 65 of 'function_missing_attributes.fl': fl:function element is missing attribute 'h'.
+[ERROR] on line 3 of 'function_missing_attributes.fl': function element is missing attribute 'name'.
+[ERROR] on line 13 of 'function_missing_attributes.fl': function element is missing attribute 'id'.
+[ERROR] on line 23 of 'function_missing_attributes.fl': function element is missing attribute 'x'.
+[ERROR] on line 35 of 'function_missing_attributes.fl': function element is missing attribute 'y'.
+[ERROR] on line 46 of 'function_missing_attributes.fl': function element is missing attribute 'z'.
+[ERROR] on line 56 of 'function_missing_attributes.fl': function element is missing attribute 'w'.
+[ERROR] on line 65 of 'function_missing_attributes.fl': function element is missing attribute 'h'.

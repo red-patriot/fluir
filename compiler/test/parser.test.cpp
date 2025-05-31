@@ -24,8 +24,8 @@ TEST_P(TestParser, Test) {
 namespace {
   TestParserData CanParseEmptyMain{
       R"(<?xml version="1.0" encoding="UTF-8"?>
-      <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-          <fl:function
+      <fluir >
+          <function
               name="main"
               id="1"
               x="10"
@@ -34,7 +34,7 @@ namespace {
               w="100"
               h="100">
             <body></body>
-          </fl:function>
+          </function>
       </fluir>)",
       fluir::pt::ParseTree{
           .declarations = {{1,
@@ -51,30 +51,30 @@ namespace {
 
   TestParserData CanParseSimpleBinaryExpression{
       R"(<?xml version="1.0" encoding="UTF-8"?>
-         <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-           <fl:function
+         <fluir >
+           <function
              name="main"
              id="1"
              x="10" y="10" z="3" w="100" h="100">
              <body>
-               <fl:binary
+               <binary
                  id="1"
                  x="0" y="20" z="2" w="7" h="7"
                  lhs="2"
                  rhs="3"
                  operator="-" />
-                <fl:constant
+                <constant
                  id="2"
                  x="5" y="5" z="0" w="5" h="5">
-                 <fl:float>5.6</fl:float>
-               </fl:constant>
-               <fl:constant
+                 <float>5.6</float>
+               </constant>
+               <constant
                  id="3"
                  x="5" y="12" z="0" w="5" h="5">
-                 <fl:float>-4.7</fl:float>
-               </fl:constant>
+                 <float>-4.7</float>
+               </constant>
              </body>
-           </fl:function>
+           </function>
          </fluir>)",
       fluir::pt::ParseTree{
           .declarations = {
@@ -106,24 +106,24 @@ namespace {
 
   TestParserData CanParseSimpleUnaryExpression{
       R"(<?xml version="1.0" encoding="UTF-8"?>
-        <fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-          <fl:function
+        <fluir >
+          <function
             name="main"
             id="1"
             x="10" y="10" z="3" w="100" h="100">
             <body>
-              <fl:unary
+              <unary
                 id="3"
                 x="0" y="20" z="2" w="7" h="7"
                 lhs="2"
                 operator="+" />
-              <fl:constant
+              <constant
                 id="2"
                 x="5" y="12" z="0" w="5" h="5">
-                <fl:float>12.4</fl:float>
-              </fl:constant>
+                <float>12.4</float>
+              </constant>
             </body>
-          </fl:function>
+          </function>
         </fluir>)",
       fluir::pt::ParseTree{
           .declarations = {

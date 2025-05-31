@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-    <fl:function
+<fluir >
+    <function
         name="foo"
         id="1"
         x="10"
@@ -8,5 +8,5 @@
         z="3"
         w="100"
         h="100">
-    </fl:function>
+    </function>
 </fluir>

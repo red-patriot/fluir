@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-    <fl:function
+<fluir >
+    <function
         name="foo"
         id="1"
         x="10" y="10" z="3" w="100" h="100">
         <body>
-            <fl:binary
+            <binary
                 id="3"
                 x="0" y="20" z="2" w="7" h="7"
                 lhs="2"
                 rhs="5"
                 operator="/" />
-            <fl:constant
+            <constant
                 id="2"
                 x="5" y="5" z="0" w="5" h="5">
-                <fl:float>1.2345</fl:float>
-            </fl:constant>
-            <fl:binary
+                <float>1.2345</float>
+            </constant>
+            <binary
                 id="5"
                 x="15" y="20" z="2" w="7" h="7"
                 lhs="2"
                 rhs="3"
                 operator="*" />
         </body>
-    </fl:function>
+    </function>
 </fluir>

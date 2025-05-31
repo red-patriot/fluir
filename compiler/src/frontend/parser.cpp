@@ -96,7 +96,7 @@ namespace fluir {
     std::string_view name = element->Name();
     try {
       // TODO: This could use a trie
-      if (name == "fl:function") {
+      if (name == "function") {
         functionDecl(element);
       } else {
         panicAt(element, "Unexpected element '{}'. Expected declaration.", name);
@@ -107,7 +107,7 @@ namespace fluir {
   }
 
   void Parser::functionDecl(Element* element) {
-    constexpr std::string_view type = "fl:function";
+    constexpr std::string_view type = "function";
     std::string_view name = getAttribute(element, type, "name");
     ID id = parseId(element, type);
     auto location = parseLocation(element, type);
@@ -151,11 +151,11 @@ namespace fluir {
   std::pair<ID, pt::Node> Parser::node(Element* element) {
     // TODO: This could use a trie
     std::string_view type = element->Name();
-    if (type == "fl:constant") {
+    if (type == "constant") {
       return constant(element);
-    } else if (type == "fl:binary") {
+    } else if (type == "binary") {
       return binary(element);
-    } else if (type == "fl:unary") {
+    } else if (type == "unary") {
       return unary(element);
     } else {
       panicAt(element,
@@ -165,7 +165,7 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Node> Parser::constant(Element* element) {
-    std::string_view type = "fl:constant";
+    std::string_view type = "constant";
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
     auto value = literal(element->FirstChildElement());
@@ -174,7 +174,7 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Node> Parser::binary(Element* element) {
-    std::string_view type = "fl:binary";
+    std::string_view type = "binary";
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
     auto lhs = parseIdReference(element, "lhs", type);
@@ -185,7 +185,7 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Node> Parser::unary(Element* element) {
-    std::string_view type = "fl:unary";
+    std::string_view type = "unary";
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
     auto lhs = parseIdReference(element, "lhs", type);
@@ -198,7 +198,7 @@ namespace fluir {
     // TODO: This could use a trie to be faster
     // TODO: Support other literal types
     std::string_view name = element->Name();
-    if (name == "fl:float") {
+    if (name == "float") {
       return fl_float(element);
     } else {
       // TODO: Error
@@ -211,7 +211,7 @@ namespace fluir {
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
-            "fl:float", element->GetText());
+            "float", element->GetText());
     return value;
   }
 

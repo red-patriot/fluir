@@ -1,1 +1,1 @@
-[ERROR] on line 19 of 'invalid_double_value.fl': Expected a numeric value in element '<fl:float>'. 'I AM A STRING' cannot be parsed as a number.
+[ERROR] on line 19 of 'invalid_double_value.fl': Expected a numeric value in element '<float>'. 'I AM A STRING' cannot be parsed as a number.

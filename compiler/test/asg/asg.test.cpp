@@ -27,23 +27,24 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
   fluir::pt::Block block = {
-      {1,
-       fluir::pt::Binary{
-           .id = 1,
-           .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
-           .lhs = 2,
-           .rhs = 3,
-           .op = fluir::Operator::STAR}},
-      {2,
-       fluir::pt::Constant{
-           .id = 2,
-           .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
-           .value = fluir::pt::Float{5.6}}},
-      {3,
-       fluir::pt::Constant{
-           .id = 3,
-           .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
-           .value = fluir::pt::Float{-4.7}}}};
+      .nodes = {
+          {1,
+           fluir::pt::Binary{
+               .id = 1,
+               .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
+               .lhs = 2,
+               .rhs = 3,
+               .op = fluir::Operator::STAR}},
+          {2,
+           fluir::pt::Constant{
+               .id = 2,
+               .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
+               .value = fluir::pt::Float{5.6}}},
+          {3,
+           fluir::pt::Constant{
+               .id = 3,
+               .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
+               .value = fluir::pt::Float{-4.7}}}}};
 
   auto results = fluir::buildDataFlowGraph(block);
   auto& actual = results.value();
@@ -63,24 +64,25 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
   fluir::pt::Block block = {
-      {1,
-       fluir::pt::Binary{
-           .id = 1,
-           .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
-           .lhs = 2,
-           .rhs = 3,
-           .op = fluir::Operator::STAR}},
-      {2,
-       fluir::pt::Constant{
-           .id = 2,
-           .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
-           .value = fluir::pt::Float{5.6}}},
-      {3,
-       fluir::pt::Unary{
-           .id = 3,
-           .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
-           .lhs = 2,
-           .op = fluir::Operator::PLUS}}};
+      .nodes = {
+          {1,
+           fluir::pt::Binary{
+               .id = 1,
+               .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
+               .lhs = 2,
+               .rhs = 3,
+               .op = fluir::Operator::STAR}},
+          {2,
+           fluir::pt::Constant{
+               .id = 2,
+               .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
+               .value = fluir::pt::Float{5.6}}},
+          {3,
+           fluir::pt::Unary{
+               .id = 3,
+               .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
+               .lhs = 2,
+               .op = fluir::Operator::PLUS}}}};
 
   auto results = fluir::buildDataFlowGraph(block);
   auto& actual = results.value();
@@ -105,30 +107,32 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
 
 TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   fluir::pt::Block block = {
-      {1,
-       fluir::pt::Binary{
-           .id = 1,
-           .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
-           .lhs = 2,
-           .rhs = 3,
-           .op = fluir::Operator::SLASH}},
-      {2,
-       fluir::pt::Constant{
-           .id = 2,
-           .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
-           .value = fluir::pt::Float{5.6}}},
-      {3,
-       fluir::pt::Unary{
-           .id = 3,
-           .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
-           .lhs = 2,
-           .op = fluir::Operator::PLUS}},
-      {4,
-       fluir::pt::Unary{
-           .id = 4,
-           .location = {.x = 15, .y = 12, .z = 0, .width = 5, .height = 5},
-           .lhs = 3,
-           .op = fluir::Operator::MINUS}}};
+      .nodes = {
+
+          {1,
+           fluir::pt::Binary{
+               .id = 1,
+               .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
+               .lhs = 2,
+               .rhs = 3,
+               .op = fluir::Operator::SLASH}},
+          {2,
+           fluir::pt::Constant{
+               .id = 2,
+               .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
+               .value = fluir::pt::Float{5.6}}},
+          {3,
+           fluir::pt::Unary{
+               .id = 3,
+               .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
+               .lhs = 2,
+               .op = fluir::Operator::PLUS}},
+          {4,
+           fluir::pt::Unary{
+               .id = 4,
+               .location = {.x = 15, .y = 12, .z = 0, .width = 5, .height = 5},
+               .lhs = 3,
+               .op = fluir::Operator::MINUS}}}};
 
   auto results = fluir::buildDataFlowGraph(block);
   auto& actual = results.value();

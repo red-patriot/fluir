@@ -9,7 +9,7 @@ namespace {
    public:
     static std::unordered_set<fluir::ID> getAll(const fluir::pt::Block& block) {
       DependencyWalker v;
-      for (const auto& node : block) {
+      for (const auto& node : block.nodes) {
         std::visit(v, node.second);
       }
 
@@ -97,7 +97,7 @@ namespace fluir {
     asg.lhs = getDependency(pt.lhs);
     asg.rhs = getDependency(pt.rhs);
 
-    block_.erase(pt.id);
+    block_.nodes.erase(pt.id);
     inProgressNodes_.pop_back();
     return asg;
   }
@@ -111,7 +111,7 @@ namespace fluir {
                      nullptr};
     asg.operand = getDependency(pt.lhs);
 
-    block_.erase(pt.id);
+    block_.nodes.erase(pt.id);
     inProgressNodes_.pop_back();
     return asg;
   }
@@ -120,7 +120,7 @@ namespace fluir {
     inProgressNodes_.emplace_back(pt.id);
 
     asg::ConstantFP asg{pt.id, pt.location, pt.value};
-    block_.erase(pt.id);
+    block_.nodes.erase(pt.id);
     // TODO: handle other literal types here
 
     inProgressNodes_.pop_back();
@@ -129,22 +129,22 @@ namespace fluir {
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
-    while (!block_.empty()) {
+    while (!block_.nodes.empty()) {
       auto treeDependencies = DependencyWalker::getAll(block_);
 
       auto topLevelNode = std::ranges::find_if_not(
-          block_,
-          [&treeDependencies](const pt::Block::value_type& v) {
+          block_.nodes,
+          [&treeDependencies](const pt::Block::Nodes::value_type& v) {
             auto& [key, value] = v;
             return treeDependencies.contains(key);
           });
-      if (topLevelNode == block_.end()) {
+      if (topLevelNode == block_.nodes.end()) {
         // There is a circular dependency in the nodes.
         // TODO: Detect which nodes form the cycle
         diagnostics_.emitError("Circular dependency detected.");
         return Results<asg::DataFlowGraph>{std::move(diagnostics_)};
       }
-      auto ptNode = block_.extract(topLevelNode);
+      auto ptNode = block_.nodes.extract(topLevelNode);
       auto asgNode = std::visit(*this, ptNode.mapped());
 
       graph_.emplace_back(std::move(asgNode));
@@ -164,7 +164,7 @@ namespace fluir {
     if (alreadyFound_.contains(id)) {
       return alreadyFound_.at(id);
     }
-    auto& pt = block_.at(id);  // TODO: Handle missing ID
+    auto& pt = block_.nodes.at(id);  // TODO: Handle missing ID
     auto dependency = std::make_shared<fluir::asg::Node>(std::visit(*this, pt));
     alreadyFound_.insert({id, dependency});
     return dependency;

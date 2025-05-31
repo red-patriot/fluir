@@ -133,8 +133,8 @@ namespace fluir {
       try {
         auto resultNode = node(element);
         // TODO: Check for duplicates
-        if (!block.contains(resultNode.first)) {
-          block.emplace(std::move(resultNode));
+        if (!block.nodes.contains(resultNode.first)) {
+          block.nodes.emplace(std::move(resultNode));
         } else {
           panicAt(element,
                   "Duplicate node IDs. Node <{}> has ID {}, but that ID is already in use.",

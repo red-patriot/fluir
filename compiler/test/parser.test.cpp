@@ -84,23 +84,24 @@ namespace {
                    .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100},
                    .name = "main",
                    .body = {
-                       {1,
-                        fluir::pt::Binary{
-                            .id = 1,
-                            .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
-                            .lhs = 2,
-                            .rhs = 3,
-                            .op = fluir::Operator::MINUS}},
-                       {2,
-                        fluir::pt::Constant{
-                            .id = 2,
-                            .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
-                            .value = fluir::pt::Float{5.6}}},
-                       {3,
-                        fluir::pt::Constant{
-                            .id = 3,
-                            .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
-                            .value = fluir::pt::Float{-4.7}}}}}}}},
+                       .nodes = {
+                           {1,
+                            fluir::pt::Binary{
+                                .id = 1,
+                                .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
+                                .lhs = 2,
+                                .rhs = 3,
+                                .op = fluir::Operator::MINUS}},
+                           {2,
+                            fluir::pt::Constant{
+                                .id = 2,
+                                .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5},
+                                .value = fluir::pt::Float{5.6}}},
+                           {3,
+                            fluir::pt::Constant{
+                                .id = 3,
+                                .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
+                                .value = fluir::pt::Float{-4.7}}}}}}}}},
       "CanParseSimpleBinaryExpression"};
 
   TestParserData CanParseSimpleUnaryExpression{
@@ -132,17 +133,18 @@ namespace {
                    .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100},
                    .name = "main",
                    .body = {
-                       {3,
-                        fluir::pt::Unary{
-                            .id = 3,
-                            .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
-                            .lhs = 2,
-                            .op = fluir::Operator::PLUS}},
-                       {2,
-                        fluir::pt::Constant{
-                            .id = 2,
-                            .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
-                            .value = fluir::pt::Float{12.4}}}}}}}},
+                       .nodes = {
+                           {3,
+                            fluir::pt::Unary{
+                                .id = 3,
+                                .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7},
+                                .lhs = 2,
+                                .op = fluir::Operator::PLUS}},
+                           {2,
+                            fluir::pt::Constant{
+                                .id = 2,
+                                .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5},
+                                .value = fluir::pt::Float{12.4}}}}}}}}},
       "CanParseSimpleUnaryExpression"};
 }  // namespace
 

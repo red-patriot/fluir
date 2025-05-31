@@ -25,8 +25,8 @@ namespace fluir::pt {
   struct Binary {
     ID id;
     FlowGraphLocation location;
-    ID lhs;
-    ID rhs;
+    ID lhs = 0;
+    ID rhs = 0;
     fluir::Operator op;
 
     friend bool operator==(const Binary&, const Binary&) = default;
@@ -35,7 +35,7 @@ namespace fluir::pt {
   struct Unary {
     ID id;
     FlowGraphLocation location;
-    ID lhs;
+    ID lhs = 0;
     fluir::Operator op;
 
     friend bool operator==(const Unary&, const Unary&) = default;

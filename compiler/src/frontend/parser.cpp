@@ -9,20 +9,15 @@ using namespace std::string_literals;
 
 namespace fluir {
   template <typename... FmtArgs>
-  void Parser::panicIf(bool condition, Element* element,
-                       std::string_view format,
-                       FmtArgs&&... args) {
+  void Parser::panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args) {
     if (condition) {
       panicAt(element, format, std::forward<FmtArgs>(args)...);
     }
   }
   template <typename... FmtArgs>
-  [[noreturn]] void Parser::panicAt(Element* element,
-                                    std::string_view format,
-                                    FmtArgs&&... args) {
-    diagnostics_.emitError(
-        fmt::vformat(format, fmt::make_format_args(std::forward<FmtArgs>(args)...)),
-        std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
+  [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs&&... args) {
+    diagnostics_.emitError(fmt::vformat(format, fmt::make_format_args(std::forward<FmtArgs>(args)...)),
+                           std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
     throw PanicMode{};
   }
 
@@ -50,8 +45,7 @@ namespace fluir {
     if (diagnostics_.containsErrors()) {
       return Results<pt::ParseTree>{std::move(diagnostics_)};
     } else {
-      return {std::move(tree_),
-              std::move(diagnostics_)};
+      return {std::move(tree_), std::move(diagnostics_)};
     }
   }
 
@@ -65,8 +59,7 @@ namespace fluir {
     if (diagnostics_.containsErrors()) {
       return Results<pt::ParseTree>{std::move(diagnostics_)};
     } else {
-      return {std::move(tree_),
-              std::move(diagnostics_)};
+      return {std::move(tree_), std::move(diagnostics_)};
     }
   }
 
@@ -76,13 +69,13 @@ namespace fluir {
       auto root = doc_.RootElement();
 
       panicIf(root->Name() != expectedRoot,
-              root, "Expected root element to be '{}', found '{}'.",
-              expectedRoot, root->Name());
+              root,
+              "Expected root element to be '{}', found '{}'.",
+              expectedRoot,
+              root->Name());
       // TODO: Check metadata
 
-      for (auto child = root->FirstChildElement();
-           child != nullptr;
-           child = child->NextSiblingElement()) {
+      for (auto child = root->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
         declaration(child);
       }
     } catch (const PanicMode&) {
@@ -113,32 +106,45 @@ namespace fluir {
     auto location = parseLocation(element, type);
 
     auto bodyElement = element->FirstChildElement("body");
-    panicIf(!bodyElement, element,
-            "Function '{}' has no body. Expected a '<body>' element.", name);
+    panicIf(!bodyElement, element, "Function '{}' has no body. Expected a '<body>' element.", name);
 
     pt::Block body = block(bodyElement->FirstChildElement());
 
     panicIf(tree_.declarations.contains(id),
             element,
             "Duplicate declaration IDs. Function '{}' has id {}, but that ID is already in use.",
-            name, id);
-    tree_.declarations.emplace(
-        id,
-        pt::FunctionDecl{id, location, std::string(name), body});
+            name,
+            id);
+    tree_.declarations.emplace(id, pt::FunctionDecl{id, location, std::string(name), body});
   }
 
   pt::Block Parser::block(Element* element) {
     auto block = pt::EMPTY_BLOCK;
     for (; element != nullptr; element = element->NextSiblingElement()) {
       try {
-        auto resultNode = node(element);
-        // TODO: Check for duplicates
-        if (!block.nodes.contains(resultNode.first)) {
-          block.nodes.emplace(std::move(resultNode));
+        if (element->Name() == "conduit"s) {
+          // Parse a conduit
+          auto resultConduit = conduit(element);
+          if (!block.conduits.contains(resultConduit.first)) {
+            block.conduits.emplace(std::move(resultConduit));
+          } else {
+            panicAt(element,
+                    "Duplicate conduit IDs. Conduit <{}> has ID {}, but that ID is already in use.",
+                    element->Name(),
+                    resultConduit.first);
+          }
         } else {
-          panicAt(element,
-                  "Duplicate node IDs. Node <{}> has ID {}, but that ID is already in use.",
-                  element->Name(), resultNode.first);
+          // Parse any other node
+          auto resultNode = node(element);
+          // TODO: Check for duplicates
+          if (!block.nodes.contains(resultNode.first)) {
+            block.nodes.emplace(std::move(resultNode));
+          } else {
+            panicAt(element,
+                    "Duplicate node IDs. Node <{}> has ID {}, but that ID is already in use.",
+                    element->Name(),
+                    resultNode.first);
+          }
         }
       } catch (const PanicMode&) {
         // Synchronize here
@@ -158,10 +164,39 @@ namespace fluir {
     } else if (type == "unary") {
       return unary(element);
     } else {
-      panicAt(element,
-              "Unexpected element '{}'. Expected a node.",
-              type);
+      panicAt(element, "Unexpected element '{}'. Expected a node.", type);
     }
+  }
+
+  std::pair<ID, pt::Conduit> Parser::conduit(Element* element) {
+    constexpr std::string_view type = "conduit";
+    auto id = parseId(element, type);
+    auto input = parseIdReference(element, "input", type);
+    auto indexStr = getOptionalAttribute(element, "index", "0");
+    auto index = std::stoi(indexStr.data());
+    std::vector<pt::Conduit::Output> children;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      children.push_back(conduitOutput(child));
+    }
+
+    return {id, pt::Conduit{.id = id, .input = input, .index = index, .children = children}};
+  }
+
+  pt::Conduit::Output Parser::conduitOutput(Element* element) {
+    std::string_view text = element->GetText();
+    auto separator = text.find(':');
+    panicIf(separator == std::string_view::npos,
+            element,
+            "Malformed output format. Expected 'target:index', found '{}'.",
+            text);
+
+    auto targetText = text.substr(0, separator);
+    auto indexText = text.substr(separator + 1);
+
+    ID target = std::stoull(std::string(targetText));
+    int index = std::stoi(std::string(indexText));
+
+    return pt::Conduit::Output{.target = target, .index = index};
   }
 
   std::pair<ID, pt::Node> Parser::constant(Element* element) {
@@ -177,8 +212,9 @@ namespace fluir {
     std::string_view type = "binary";
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
-    auto lhs = parseIdReference(element, "lhs", type);
-    auto rhs = parseIdReference(element, "rhs", type);
+    // TODO: Remove this
+    auto lhs = parseOptionalIdReference(element, "lhs", type);
+    auto rhs = parseOptionalIdReference(element, "rhs", type);
     auto op = parseOperator(element, "operator", type);
 
     return {id, pt::Binary{id, location, lhs, rhs, op}};
@@ -188,7 +224,8 @@ namespace fluir {
     std::string_view type = "unary";
     auto id = parseId(element, type);
     auto location = parseLocation(element, type);
-    auto lhs = parseIdReference(element, "lhs", type);
+    // TODO: Remove this
+    auto lhs = parseOptionalIdReference(element, "lhs", type);
     auto op = parseOperator(element, "operator", type);
 
     return {id, pt::Unary{id, location, lhs, op}};
@@ -211,51 +248,57 @@ namespace fluir {
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
-            "float", element->GetText());
+            "float",
+            element->GetText());
     return value;
   }
 
-  std::string_view Parser::getAttribute(Element* element,
-                                        std::string_view type,
-                                        std::string_view attribute) {
+  std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
-    panicIf(value == nullptr,
-            element,
-            "{} element is missing attribute '{}'.",
-            type, attribute);
+    panicIf(value == nullptr, element, "{} element is missing attribute '{}'.", type, attribute);
 
     return value;
   }
 
-  ID Parser::parseId(Element* element, std::string_view type) {
-    return parseIdReference(element, "id", type);
+  std::string_view Parser::getOptionalAttribute(Element* element,
+                                                std::string_view attribute,
+                                                std::string_view defaultValue) {
+    auto value = element->Attribute(attribute.data());
+    if (value == nullptr) {
+      return defaultValue;
+    } else {
+      return value;
+    }
   }
 
-  ID Parser::parseIdReference(Element* element,
-                              std::string_view attribute,
-                              std::string_view type) {
+  ID Parser::parseId(Element* element, std::string_view type) { return parseIdReference(element, "id", type); }
+
+  ID Parser::parseIdReference(Element* element, std::string_view attribute, std::string_view type) {
     ID reference = INVALID_ID;
     auto error = element->QueryUnsigned64Attribute(attribute.data(), &reference);
-    panicIf(error != tinyxml2::XML_SUCCESS,
-            element,
-            "{} element is missing attribute '{}'.", type, attribute);
+    panicIf(error != tinyxml2::XML_SUCCESS, element, "{} element is missing attribute '{}'.", type, attribute);
+
+    return reference;
+  }
+
+  ID Parser::parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view) {
+    ID reference = INVALID_ID;
+    element->QueryUnsigned64Attribute(attribute.data(), &reference);
 
     return reference;
   }
 
   FlowGraphLocation Parser::parseLocation(Element* element, std::string_view type) {
     return {
-        .x = std::atoi(getAttribute(element, type, "x").data()),
-        .y = std::atoi(getAttribute(element, type, "y").data()),
-        .z = std::atoi(getAttribute(element, type, "z").data()),
-        .width = std::atoi(getAttribute(element, type, "w").data()),
-        .height = std::atoi(getAttribute(element, type, "h").data()),
+      .x = std::atoi(getAttribute(element, type, "x").data()),
+      .y = std::atoi(getAttribute(element, type, "y").data()),
+      .z = std::atoi(getAttribute(element, type, "z").data()),
+      .width = std::atoi(getAttribute(element, type, "w").data()),
+      .height = std::atoi(getAttribute(element, type, "h").data()),
     };
   }
 
-  Operator Parser::parseOperator(Element* element,
-                                 std::string_view attribute,
-                                 std::string_view type) {
+  Operator Parser::parseOperator(Element* element, std::string_view attribute, std::string_view type) {
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
     if (opText == "+") {
@@ -267,12 +310,9 @@ namespace fluir {
     } else if (opText == "/") {
       return Operator::SLASH;
     } else {
-      panicAt(element,
-              "Unrecognized operator '{}' in element '<{}>'.", opText, type);
+      panicAt(element, "Unrecognized operator '{}' in element '<{}>'.", opText, type);
     }
   }
 
-  std::string Parser::SourceLocation::str() const {
-    return fmt::format("on line {} of '{}'", lineNo, filename);
-  }
+  std::string Parser::SourceLocation::str() const { return fmt::format("on line {} of '{}'", lineNo, filename); }
 }  // namespace fluir

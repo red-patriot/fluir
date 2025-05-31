@@ -124,27 +124,24 @@ namespace fluir {
       try {
         if (element->Name() == "conduit"s) {
           // Parse a conduit
-          auto resultConduit = conduit(element);
-          if (!block.conduits.contains(resultConduit.first)) {
-            block.conduits.emplace(std::move(resultConduit));
-          } else {
-            panicAt(element,
-                    "Duplicate conduit IDs. Conduit <{}> has ID {}, but that ID is already in use.",
-                    element->Name(),
-                    resultConduit.first);
-          }
+          auto result = conduit(element);
+          auto& [id, resultConduit] = result;
+          panicIf(block.nodes.contains(id) || block.conduits.contains(id),
+                  element,
+                  "Duplicate IDs. Conduit has ID {}, but that ID is already in use.",
+                  id);
+          block.conduits.emplace(std::move(result));
+
         } else {
           // Parse any other node
-          auto resultNode = node(element);
-          // TODO: Check for duplicates
-          if (!block.nodes.contains(resultNode.first)) {
-            block.nodes.emplace(std::move(resultNode));
-          } else {
-            panicAt(element,
-                    "Duplicate node IDs. Node <{}> has ID {}, but that ID is already in use.",
-                    element->Name(),
-                    resultNode.first);
-          }
+          auto result = node(element);
+          auto& [id, resultNode] = result;
+          panicIf(block.nodes.contains(id) || block.conduits.contains(id),
+                  element,
+                  "Duplicate IDs. Node <{}> has ID {}, but that ID is already in use.",
+                  element->Name(),
+                  id);
+          block.nodes.emplace(std::move(result));
         }
       } catch (const PanicMode&) {
         // Synchronize here

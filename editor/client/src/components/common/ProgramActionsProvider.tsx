@@ -13,7 +13,7 @@ export default function ProgramActionsProvider({
   // Local functions
   const openProgram = useOpenProgram({
     onOpen: (response) => {
-      dispatch(actions.setOpenModule(response.data));
+      dispatch(actions.setModuleState(response.data));
       dispatch(actions.goToPage('module'));
     },
     onError: (error) => {
@@ -24,7 +24,7 @@ export default function ProgramActionsProvider({
   const editProgram = useEditProgram({
     onEdit: (response) => {
       console.log(response);
-      dispatch(actions.setOpenModule(response.data));
+      dispatch(actions.setModuleState(response.data));
     },
     onError: (error) => {
       console.log(error);
@@ -34,6 +34,7 @@ export default function ProgramActionsProvider({
   const saveProgramAs = useSaveFileAs({
     onSave: (response) => {
       // TODO: Do something better here
+      dispatch(actions.setModuleState(response.data));
       console.log(response);
     },
     onError: (error) => {

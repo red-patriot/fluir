@@ -8,5 +8,6 @@ class ProgramStatus:
     """The overall status of the open program"""
 
     saved: bool
-    path: str
+    path: str | None
     program: Program
+    # TODO: Undo/Redo stack sizes here too

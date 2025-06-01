@@ -5,11 +5,15 @@
         id="1"
         x="10" y="10" z="3" w="100" h="100">
         <body>
+            <conduit id="7" input="1">
+                <output>3:1</output>
+            </conduit>
+            <conduit id="8" input="2">
+                <output>3:0</output>
+            </conduit>
             <binary
                 id="3"
                 x="0" y="20" z="2" w="7" h="7"
-                lhs="2"
-                rhs="1"
                 operator="/" />
             <constant
                 id="2"
@@ -24,8 +28,6 @@
             <binary
                 id="5"
                 x="0" y="20" z="2" w="7" h="7"
-                lhs="4"
-                rhs="6"
                 operator="*" />
             <constant
                 id="4"
@@ -35,8 +37,16 @@
             <unary
                 id="6"
                 x="5" y="5" z="0" w="5" h="5"
-                operator="+"
-                lhs="2" />
+                operator="+"/>
+            <conduit id="9" input="4">
+                <output>5:0</output>
+            </conduit>
+            <conduit id="11" input="6">
+                <output>5:1</output>
+            </conduit>
+            <conduit id="15" input="2">
+                <output>6:0</output>
+            </conduit>
         </body>
     </function>
 </fluir>

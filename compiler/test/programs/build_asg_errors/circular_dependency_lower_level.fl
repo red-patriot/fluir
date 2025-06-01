@@ -1,32 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir >
+<fluir>
     <function
-        name="foo"
-        id="1"
-        x="10" y="10" z="3" w="100" h="100">
+            name="foo"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
         <body>
             <unary
-                id="1"
-                x="0" y="10" z="2" w="7" h="7"
-                lhs="3"
-                operator="/" />
+                    id="1"
+                    x="0" y="10" z="2" w="7" h="7"
+                    operator="/"/>
+            <conduit id="6" input="3">
+                <output>1:0</output>
+            </conduit>
             <binary
-                id="3"
-                x="0" y="20" z="2" w="7" h="7"
-                lhs="2"
-                rhs="5"
-                operator="/" />
+                    id="3"
+                    x="0" y="20" z="2" w="7" h="7"
+                    operator="/"/>
+            <conduit id="7" input="2">
+                <output>3:0</output>
+            </conduit>
+            <conduit id="10" input="5">
+                <output>3:1</output>
+            </conduit>
             <constant
-                id="2"
-                x="5" y="5" z="0" w="5" h="5">
+                    id="2"
+                    x="5" y="5" z="0" w="5" h="5">
                 <float>1.2345</float>
             </constant>
             <binary
-                id="5"
-                x="15" y="20" z="2" w="7" h="7"
-                lhs="2"
-                rhs="3"
-                operator="*" />
+                    id="5"
+                    x="15" y="20" z="2" w="7" h="7"
+                    operator="*"/>
+            <conduit id="8" input="2">
+                <output>5:0</output>
+            </conduit>
+            <conduit id="9" input="3">
+                <output>5:1</output>
+            </conduit>
         </body>
     </function>
 </fluir>

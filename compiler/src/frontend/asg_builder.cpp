@@ -1,55 +1,39 @@
 #include "compiler/frontend/asg_builder.hpp"
 
 #include <algorithm>
+#include <ranges>
 #include <unordered_set>
 #include <variant>
 
 namespace {
-  class DependencyWalker {
-   public:
-    static std::unordered_set<fluir::ID> getAll(const fluir::pt::Block& block) {
-      DependencyWalker v;
-      for (const auto& node : block.nodes) {
-        std::visit(v, node.second);
-      }
+  std::unordered_set<fluir::ID> getTopLevelNodes(const fluir::pt::Block& block) {
+    std::unordered_set<fluir::ID> topLevelNodes;
 
-      return v.idsInTree();
+    // Start with all Nodes in the block
+    std::ranges::transform(
+      block.nodes, std::inserter(topLevelNodes, topLevelNodes.begin()), [](const auto& pair) { return pair.first; });
+
+    // Remove all Nodes that are dependencies of other Nodes
+    for (const auto& conduit : block.conduits | std::views::values) {
+      topLevelNodes.erase(conduit.input);
     }
 
-    std::unordered_set<fluir::ID> idsInTree() const { return std::move(deps_); }
-
-    void operator()(const fluir::pt::Constant&) { }
-    void operator()(const fluir::pt::Unary& n) {
-      deps_.insert(n.lhs);
-    }
-    void operator()(const fluir::pt::Binary& n) {
-      deps_.insert(n.lhs);
-      deps_.insert(n.rhs);
-    }
-
-   private:
-    std::unordered_set<fluir::ID> deps_;
-  };
+    return topLevelNodes;
+  }
 }  // namespace
 
 namespace fluir {
-  Results<asg::ASG> buildGraph(const pt::ParseTree& tree) {
-    return ASGBuilder::buildFrom(tree);
-  }
+  Results<asg::ASG> buildGraph(const pt::ParseTree& tree) { return ASGBuilder::buildFrom(tree); }
 
   Results<asg::ASG> ASGBuilder::buildFrom(const pt::ParseTree& tree) {
     ASGBuilder builder{tree};
     return builder.run();
   }
 
-  ASGBuilder::ASGBuilder(const pt::ParseTree& tree) :
-      tree_(tree) { }
+  ASGBuilder::ASGBuilder(const pt::ParseTree& tree) : tree_(tree) { }
 
   fluir::asg::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
-    fluir::asg::FunctionDecl decl{func.id,
-                                  func.location,
-                                  func.name,
-                                  {}};
+    fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
 
     auto bodyResults = buildDataFlowGraph(func.body);
     std::ranges::move(bodyResults.diagnostics(), std::back_inserter(diagnostics_));
@@ -69,8 +53,7 @@ namespace fluir {
       return Results<asg::ASG>{std::move(diagnostics_)};
     }
 
-    return Results<asg::ASG>{std::move(graph_),
-                             std::move(diagnostics_)};
+    return Results<asg::ASG>{std::move(graph_), std::move(diagnostics_)};
   }
 
   Results<asg::DataFlowGraph> buildDataFlowGraph(pt::Block block) {
@@ -83,19 +66,14 @@ namespace fluir {
     return builder.run();
   }
 
-  FlowGraphBuilder::FlowGraphBuilder(pt::Block block) :
-      block_(std::move(block)) { }
+  FlowGraphBuilder::FlowGraphBuilder(pt::Block block) : block_(std::move(block)) { }
 
   fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
-    fluir::asg::BinaryOp asg{
-        pt.id,
-        pt.location,
-        pt.op,
-        nullptr, nullptr};
+    fluir::asg::BinaryOp asg{pt.id, pt.location, pt.op, nullptr, nullptr};
 
-    asg.lhs = getDependency(pt.lhs);
-    asg.rhs = getDependency(pt.rhs);
+    asg.lhs = getDependency(pt.id, 0);
+    asg.rhs = getDependency(pt.id, 1);
 
     block_.nodes.erase(pt.id);
     inProgressNodes_.pop_back();
@@ -105,11 +83,8 @@ namespace fluir {
   asg::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
 
-    asg::UnaryOp asg{pt.id,
-                     pt.location,
-                     pt.op,
-                     nullptr};
-    asg.operand = getDependency(pt.lhs);
+    asg::UnaryOp asg{pt.id, pt.location, pt.op, nullptr};
+    asg.operand = getDependency(pt.id, 0);
 
     block_.nodes.erase(pt.id);
     inProgressNodes_.pop_back();
@@ -129,44 +104,48 @@ namespace fluir {
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
-    while (!block_.nodes.empty()) {
-      auto treeDependencies = DependencyWalker::getAll(block_);
+    auto topLevelNodes = getTopLevelNodes(block_);
+    if (topLevelNodes.empty() && !block_.nodes.empty()) {
+      // There is a circular dependency in the nodes, none of them are top-level
+      // TODO: Detect which nodes form the cycle
+      diagnostics_.emitError("Circular dependency detected.");
+      return Results<asg::DataFlowGraph>{std::move(diagnostics_)};
+    }
 
-      auto topLevelNode = std::ranges::find_if_not(
-          block_.nodes,
-          [&treeDependencies](const pt::Block::Nodes::value_type& v) {
-            auto& [key, value] = v;
-            return treeDependencies.contains(key);
-          });
-      if (topLevelNode == block_.nodes.end()) {
-        // There is a circular dependency in the nodes.
-        // TODO: Detect which nodes form the cycle
-        diagnostics_.emitError("Circular dependency detected.");
-        return Results<asg::DataFlowGraph>{std::move(diagnostics_)};
-      }
-      auto ptNode = block_.nodes.extract(topLevelNode);
-      auto asgNode = std::visit(*this, ptNode.mapped());
-
+    for (const auto& ptNode : topLevelNodes) {
+      auto asgNode = std::visit(*this, block_.nodes.at(ptNode));
       graph_.emplace_back(std::move(asgNode));
     }
 
     return {std::move(graph_), std::move(diagnostics_)};
   }
 
-  asg::SharedDependency FlowGraphBuilder::getDependency(ID id) {
-    if (std::ranges::find(inProgressNodes_, id) != inProgressNodes_.end()) {
+  asg::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
+    // Find the dependency of ID:index in the graph
+    const auto dependencyPt =
+      std::ranges::find_if(block_.conduits, [&dependentId, &index](const pt::Block::Conduits::value_type& v) {
+        auto& [_, conduit] = v;
+        return std::ranges::any_of(conduit.children, [&dependentId, &index](const pt::Conduit::Output& out) {
+          return out.target == dependentId && out.index == index;
+        });
+      });
+    const auto& dependencyId = dependencyPt->second.input;
+
+    // Check that the dependency index isn't already in progress
+    if (std::ranges::find(inProgressNodes_, dependencyId) != inProgressNodes_.end()) {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
       // TODO: Detect which nodes form the cycle
       diagnostics_.emitError("Circular dependency detected.");
       return nullptr;
     }
-    if (alreadyFound_.contains(id)) {
-      return alreadyFound_.at(id);
+
+    if (alreadyFound_.contains(dependencyId)) {
+      return alreadyFound_.at(dependencyId);
     }
-    auto& pt = block_.nodes.at(id);  // TODO: Handle missing ID
+    auto& pt = block_.nodes.at(dependencyId);  // TODO: Handle missing ID
     auto dependency = std::make_shared<fluir::asg::Node>(std::visit(*this, pt));
-    alreadyFound_.insert({id, dependency});
+    alreadyFound_.insert({dependencyId, dependency});
     return dependency;
   }
 }  // namespace fluir

@@ -19,16 +19,16 @@
                     x="15" y="20" z="2" w="7" h="7"
                     operator="*"/>
             <conduit id="6" input="2">
-                <output>3:0</output>
+                <output target="3" index="0"/>
             </conduit>
             <conduit id="7" input="5">
-                <output>3:1</output>
+                <output target="3" index="1"/>
             </conduit>
             <conduit id="8" input="2">
-                <output>5:0</output>
+                <output target="5" index="0"/>
             </conduit>
             <conduit id="9" input="3">
-                <output>5:1</output>
+                <output target="5" index="1"/>
             </conduit>
         </body>
     </function>

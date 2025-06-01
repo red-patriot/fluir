@@ -1,51 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir >
+<fluir>
     <function
-        name="foo"
-        id="1"
-        x="10" y="10" z="3" w="100" h="100">
+            name="foo"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
         <body>
             <conduit id="7" input="1">
-                <output>3:1</output>
+                <output target="3" index="1"/>
             </conduit>
             <conduit id="8" input="2">
-                <output>3:0</output>
+                <output target="3" index="0"/>
             </conduit>
             <binary
-                id="3"
-                x="0" y="20" z="2" w="7" h="7"
-                operator="/" />
+                    id="3"
+                    x="0" y="20" z="2" w="7" h="7"
+                    operator="/"/>
             <constant
-                id="2"
-                x="5" y="5" z="0" w="5" h="5">
+                    id="2"
+                    x="5" y="5" z="0" w="5" h="5">
                 <float>1.2345</float>
             </constant>
             <constant
-                id="1"
-                x="5" y="12" z="0" w="5" h="5">
+                    id="1"
+                    x="5" y="12" z="0" w="5" h="5">
                 <float>6.7890</float>
             </constant>
             <binary
-                id="5"
-                x="0" y="20" z="2" w="7" h="7"
-                operator="*" />
+                    id="5"
+                    x="0" y="20" z="2" w="7" h="7"
+                    operator="*"/>
             <constant
-                id="4"
-                x="5" y="5" z="0" w="5" h="5">
+                    id="4"
+                    x="5" y="5" z="0" w="5" h="5">
                 <float>7.6543</float>
             </constant>
             <unary
-                id="6"
-                x="5" y="5" z="0" w="5" h="5"
-                operator="+"/>
+                    id="6"
+                    x="5" y="5" z="0" w="5" h="5"
+                    operator="+"/>
             <conduit id="9" input="4">
-                <output>5:0</output>
+                <output target="5" index="0"/>
             </conduit>
             <conduit id="11" input="6">
-                <output>5:1</output>
+                <output target="5" index="1"/>>
             </conduit>
             <conduit id="15" input="2">
-                <output>6:0</output>
+                <output target="6"/>
             </conduit>
         </body>
     </function>

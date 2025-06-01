@@ -147,19 +147,19 @@ namespace {
       <binary id="5" x="57" y="4" z="2" w="5" h="5" operator="*"/>
       <unary id="6" x="35" y="12" z="0" w="5" h="5" operator="-"/>
       <conduit id="7" input="1">
-        <output>3:0</output>
+        <output target="3" index="0"/>
       </conduit>
       <conduit id="8" input="2" index="0">
-        <output>3:1</output>
+        <output target="3" index="1"/>
       </conduit>
       <conduit id="10" input="6">
-        <output>5:1</output>
+        <output target="5" index="1"/>
       </conduit>
       <conduit id="11" input="2">
-        <output>6:0</output>
+        <output target="6"/>
       </conduit>
       <conduit id="12" input="3">
-        <output>5:0</output>
+        <output target="5" index="0"/>
       </conduit>
     </body>
   </function>

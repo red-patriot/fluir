@@ -180,19 +180,10 @@ namespace fluir {
   }
 
   pt::Conduit::Output Parser::conduitOutput(Element* element) {
-    // TODO: Make output stuff be attributes, not text
-    std::string_view text = element->GetText();
-    auto separator = text.find(':');
-    panicIf(separator == std::string_view::npos,
-            element,
-            "Malformed output format. Expected 'target:index', found '{}'.",
-            text);
-
-    auto targetText = text.substr(0, separator);
-    auto indexText = text.substr(separator + 1);
-
-    ID target = std::stoull(std::string(targetText));
-    int index = std::stoi(std::string(indexText));
+    constexpr std::string_view type = "output";
+    auto target = parseIdReference(element, "target", type);
+    auto indexStr = getOptionalAttribute(element, "index", "0");
+    auto index = std::stoi(indexStr.data());
 
     return pt::Conduit::Output{.target = target, .index = index};
   }

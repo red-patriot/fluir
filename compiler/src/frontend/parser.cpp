@@ -180,6 +180,7 @@ namespace fluir {
   }
 
   pt::Conduit::Output Parser::conduitOutput(Element* element) {
+    // TODO: Make output stuff be attributes, not text
     std::string_view text = element->GetText();
     auto separator = text.find(':');
     panicIf(separator == std::string_view::npos,

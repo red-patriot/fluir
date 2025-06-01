@@ -4,21 +4,22 @@
 #include <ranges>
 #include <unordered_set>
 #include <variant>
+#include <experimental/scope>
 
 namespace {
-  std::unordered_set<fluir::ID> getTopLevelNodes(const fluir::pt::Block& block) {
-    std::unordered_set<fluir::ID> topLevelNodes;
+  /** Returns the set of Nodes that are not dependencies of other Nodes */
+  std::unordered_set<fluir::ID> getSinkNodes(const fluir::pt::Block& block) {
+    std::unordered_set<fluir::ID> sinkNodes;
 
     // Start with all Nodes in the block
     std::ranges::transform(
-      block.nodes, std::inserter(topLevelNodes, topLevelNodes.begin()), [](const auto& pair) { return pair.first; });
+      block.nodes, std::inserter(sinkNodes, sinkNodes.begin()), [](const auto& pair) { return pair.first; });
 
     // Remove all Nodes that are dependencies of other Nodes
-    for (const auto& conduit : block.conduits | std::views::values) {
-      topLevelNodes.erase(conduit.input);
-    }
+    std::ranges::for_each(block.conduits | std::views::values,
+                          [&sinkNodes](const auto& conduit) { sinkNodes.erase(conduit.input); });
 
-    return topLevelNodes;
+    return sinkNodes;
   }
 }  // namespace
 
@@ -46,7 +47,7 @@ namespace fluir {
   }
 
   Results<asg::ASG> ASGBuilder::run() {
-    for (const auto& [id, declaration] : tree_.declarations) {
+    for (const auto& declaration : tree_.declarations | std::views::values) {
       graph_.declarations.emplace_back(std::visit(*this, declaration));
     }
     if (diagnostics_.containsErrors()) {
@@ -70,49 +71,46 @@ namespace fluir {
 
   fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
+    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
     fluir::asg::BinaryOp asg{pt.id, pt.location, pt.op, nullptr, nullptr};
 
     asg.lhs = getDependency(pt.id, 0);
     asg.rhs = getDependency(pt.id, 1);
 
-    block_.nodes.erase(pt.id);
-    inProgressNodes_.pop_back();
     return asg;
   }
 
   asg::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
+    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
 
     asg::UnaryOp asg{pt.id, pt.location, pt.op, nullptr};
     asg.operand = getDependency(pt.id, 0);
 
-    block_.nodes.erase(pt.id);
-    inProgressNodes_.pop_back();
     return asg;
   }
 
   asg::Node FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
+    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
 
     asg::ConstantFP asg{pt.id, pt.location, pt.value};
-    block_.nodes.erase(pt.id);
     // TODO: handle other literal types here
 
-    inProgressNodes_.pop_back();
     return asg;
   }
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
-    auto topLevelNodes = getTopLevelNodes(block_);
-    if (topLevelNodes.empty() && !block_.nodes.empty()) {
+    const auto sinkNodes = getSinkNodes(block_);
+    if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
       // TODO: Detect which nodes form the cycle
       diagnostics_.emitError("Circular dependency detected.");
       return Results<asg::DataFlowGraph>{std::move(diagnostics_)};
     }
 
-    for (const auto& ptNode : topLevelNodes) {
+    for (const auto& ptNode : sinkNodes) {
       auto asgNode = std::visit(*this, block_.nodes.at(ptNode));
       graph_.emplace_back(std::move(asgNode));
     }

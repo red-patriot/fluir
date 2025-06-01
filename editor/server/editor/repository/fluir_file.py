@@ -129,13 +129,11 @@ class _XMLReader:
         return Conduit.Segment(x=x, y=y, children=children)
 
     def _conduit_output(self, element: Any) -> Conduit.Output:
-        raw_target = element.text
-        if raw_target is None:
-            raise ValueError("Conduit output target is None")
-        full_target = raw_target.split(":")
+        target = int(element.get("target"))
+        index = int(element.get("index")) if "index" in element.keys() else 0
         return Conduit.Output(
-            target=int(full_target[0]),
-            index=full_target[1] if len(full_target) > 1 else 0,
+            target=target,
+            index=index,
         )
 
     def _binary(self, element: Any) -> _NodePair:
@@ -314,4 +312,5 @@ class _XMLWriter:
         self, output: Conduit.Output, parent: etree._Element
     ) -> None:
         output_element = etree.SubElement(parent, "output")
-        output_element.text = f"{output.target}:{output.index}"
+        output_element.set("target", str(output.target))
+        output_element.set("index", str(output.index))

@@ -131,10 +131,10 @@ _TEST_DATA = [
                     <float>2.0</float>
                 </constant>
                 <conduit id="4" input="2">
-                    <output>1</output>
+                    <output target="1"/>
                 </conduit>
                 <conduit id="5" input="3">
-                    <output>1</output>
+                    <output target="1"/>
                 </conduit>
             </body>
         </function>
@@ -188,7 +188,7 @@ _TEST_DATA = [
                     <float>3.5</float>
                 </constant>
                 <conduit id="5" input="3">
-                    <output>7:0</output>
+                    <output target="7" index="0"/>
                 </conduit>
             </body>
         </function>
@@ -290,19 +290,19 @@ _TEST_DATA = [
       </constant>
       <unary id="6" x="35" y="28" z="0" w="5" h="5" operator="+" />
       <conduit id="7" input="2">
-        <output>3:0</output>
-        <output>6</output>
+        <output target="3" index="0"/>
+        <output target="6"/>
       </conduit>
       <conduit id="8" input="1">
         <segment x="84" y="19">
-          <output>3:1</output>
+          <output target="3" index="1"/>
         </segment>
       </conduit>
       <conduit id="9" input="4">
-        <output>5:1</output>
+        <output target="5" index="1"/>
       </conduit>
       <conduit id="10" input="6">
-        <output>5:0</output>
+        <output target="5" index="0"/>
       </conduit>
     </body>
   </function>

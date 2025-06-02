@@ -4,7 +4,6 @@ import IconButton from '../common/IconButton';
 import {
   faSave,
   faFilePen,
-  faFile,
   faArrowUpRightFromSquare,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAppSelector } from '../../store';

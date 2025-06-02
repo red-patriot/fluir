@@ -37,7 +37,6 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
     },
   });
-  Menu.setApplicationMenu(null);
 
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
@@ -48,6 +47,7 @@ function createWindow() {
     win.loadURL(VITE_DEV_SERVER_URL);
   } else {
     // win.loadFile('dist/index.html')
+    Menu.setApplicationMenu(null);
     win.loadFile(path.join(RENDERER_DIST, 'index.html'));
   }
 }

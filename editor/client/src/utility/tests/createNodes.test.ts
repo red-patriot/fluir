@@ -240,6 +240,10 @@ describe('createNodes', () => {
           x: 50 * ZOOM_SCALAR,
           y: 75 * ZOOM_SCALAR,
         },
+        measured: {
+          height: 1500,
+          width: 2000,
+        },
         data: {
           decl: func,
           fullID: '5',
@@ -290,6 +294,10 @@ describe('createNodes', () => {
         position: {
           x: 50 * ZOOM_SCALAR,
           y: 75 * ZOOM_SCALAR,
+        },
+        measured: {
+          height: 2000,
+          width: 3000,
         },
         data: {
           decl: func,

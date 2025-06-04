@@ -38,17 +38,17 @@ export default function ToolHeader({
       />
       <span className='grow' />
       <div
-        className='w-1/2 h-full flex items-center justify-around
+        className='w-1/2 h-full flex items-center justify-around overflow-hidden
           rounded-lg cursor-default
           bg-[#1a1a1a] text-white font-code
           hover:bg-[#2a2a2a] transition-colors'
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <h2>
+        <div className='overflow-hidden truncate'>
           {hovered ? modulePath : moduleName}
           {saved ? '' : '*'}
-        </h2>
+        </div>
       </div>
       <span className='grow' />
       <IconButton

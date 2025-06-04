@@ -31,10 +31,12 @@ export type AddConduitEditRequest = {
   target: string; // "output-QualifiedID-index"
 };
 
+export type NodeOptions = 'Constant' | 'BinaryOperator' | 'UnaryOperator';
+
 export type AddNodeEditRequest = {
   discriminator: 'add_node';
   parent: number[];
-  new_type: 'Constant' | 'BinaryOperator' | 'UnaryOperator';
+  new_type: NodeOptions;
   new_location: Location;
 };
 

@@ -14,6 +14,7 @@ import {
   getOutgoers,
   Node,
   OnDelete,
+  NodeMouseHandler,
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
 import { useAppSelector } from '../../store';
@@ -25,6 +26,7 @@ import {
 } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { toApiID } from '../../utility/idHelpers';
+import { ContextMenu } from 'radix-ui';
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -140,34 +142,36 @@ export default function ViewWindow() {
 
   return (
     <div className='grow'>
-      <ReactFlow
-        nodes={nodes}
-        nodeTypes={nodeTypes}
-        onNodesChange={onNodesChange}
-        onNodeDragStop={onNodeDragStop}
-        onDelete={onDelete}
-        edges={edges}
-        onEdgesChange={onEdgesChange}
-        connectionMode={ConnectionMode.Strict}
-        onConnect={onConnect}
-        isValidConnection={isValidConnection}
-        defaultEdgeOptions={defaultEdgeOptions}
-        fitView
-        minZoom={0.1}
-        maxZoom={10}
-        defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-        snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
-        snapToGrid
-        panOnDrag={[1]}
-      >
-        <Background
-          id='bg-1'
-          variant={BackgroundVariant.Dots}
-          gap={50}
-          size={1}
-          offset={[250, 250]}
-        />
-      </ReactFlow>
+      <ContextMenu.Root>
+        <ReactFlow
+          nodes={nodes}
+          nodeTypes={nodeTypes}
+          onNodesChange={onNodesChange}
+          onNodeDragStop={onNodeDragStop}
+          onDelete={onDelete}
+          edges={edges}
+          onEdgesChange={onEdgesChange}
+          connectionMode={ConnectionMode.Strict}
+          onConnect={onConnect}
+          isValidConnection={isValidConnection}
+          defaultEdgeOptions={defaultEdgeOptions}
+          fitView
+          minZoom={0.1}
+          maxZoom={10}
+          defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
+          snapToGrid
+          panOnDrag={[1]}
+        >
+          <Background
+            id='bg-1'
+            variant={BackgroundVariant.Dots}
+            gap={50}
+            size={1}
+            offset={[250, 250]}
+          />
+        </ReactFlow>
+      </ContextMenu.Root>
     </div>
   );
 }

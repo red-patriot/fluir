@@ -19,7 +19,7 @@ class ModuleController(Controller):
 
     def _make_status(self, saved: bool) -> ProgramStatus:
         program = self._editor.get()
-        path = self._editor.get_path() or None
+        path = self._editor.get_path()
         if not program:
             raise HTTPException(404, "The requested program does not exist")
 
@@ -29,10 +29,18 @@ class ModuleController(Controller):
 
     @override
     def register(self, app: FastAPI) -> None:
+        app.post("/api/module/new")(self.new)
         app.post("/api/module/open")(self.open)
         app.post("/api/module/close")(self.close)
         app.post("/api/module/edit")(self.edit)
         app.post("/api/module/save")(self.save)
+
+    def new(self) -> ProgramStatus:
+        self._editor.new_module()
+        program = self._editor.get()
+        if not program:
+            raise HTTPException(404, "Could not create a new module")
+        return self._make_status(saved=False)
 
     def open(self, request: OpenRequest) -> ProgramStatus:
         """Handles requests to open a module"""

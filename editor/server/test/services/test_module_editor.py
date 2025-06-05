@@ -220,3 +220,23 @@ def test_module_editor_accepts_explicit_file_path(tmp_path: Path) -> None:
 
     assert expected == actual
     assert expected_path == uut.get_path(), "Should switch to new path"
+
+
+def test_module_editor_can_open_new_file() -> None:
+    # For now, create an empty main when making a new module
+    expected = Program(
+        [
+            Function(
+                name="main",
+                location=Location(0, 0, 0, 100, 100),
+                id=1,
+            )
+        ]
+    )
+
+    uut = ModuleEditor()
+    uut.new_module()
+
+    assert uut.get_path() is None
+    assert uut.get_name() == ""
+    assert expected == uut.get()

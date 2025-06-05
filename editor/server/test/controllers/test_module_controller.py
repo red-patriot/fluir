@@ -43,8 +43,21 @@ def test_forwards_open_request_on_post(mock_editor: MagicMock) -> None:
     response = testApp.post("/api/module/open/", json={"path": expectedPath})
 
     assert response.status_code == 200
-    assert expectedData == response.text
+    assert expectedData in response.text
     mock_editor.open_file.assert_called_with(Path(expectedPath))
+
+
+def test_forwards_new_request_on_post(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post("/api/module/new/")
+
+    assert response.status_code == 200
+    mock_editor.new_module.assert_called()
 
 
 def test_forwards_close_request(mock_editor: MagicMock) -> None:

@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import Field
 
-from editor.models import Program
+from editor.models import Function, Location, Program
 from editor.models.edit_errors import BadEdit, EditorError
 from editor.repository.fluir_file import XMLFileManager
 from editor.repository.interface.file_manager import FileManager
@@ -29,6 +29,21 @@ class ModuleEditor:
     def get(self) -> Program | None:
         """Accesses the contents of the current module"""
         return self._module
+
+    def new_module(self) -> None:
+        """Create a new module"""
+        self._path = None
+        # For now, create an empty main when making a new module
+        # TODO: Update this in the future
+        self._module = Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(0, 0, 0, 100, 100),
+                    id=1,
+                )
+            ]
+        )
 
     def open_module(
         self, module: Program, path: Path | None = Path("/fake/path.fl")

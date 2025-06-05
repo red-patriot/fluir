@@ -60,7 +60,7 @@ export default function ConstantNode({
           ) : (
             <span
               onClick={() => setIsEditing(true)}
-              className='cursor-text'
+              className='cursor-text overflow-hidden truncate'
             >
               {constant.value ?? 'undefined'}
             </span>

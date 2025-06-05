@@ -1,12 +1,54 @@
-import { useRef, useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { type Node, type NodeProps } from '@xyflow/react';
 import { FunctionDecl } from '../../models/fluir_module';
-import { getSizeStyle, ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import {
+  getSizeStyle,
+  HEADER_HEIGHT,
+  ZOOM_SCALAR,
+} from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { ContextMenu } from 'radix-ui';
 import AddNodeMenu from './AddNodeMenu';
 import { useReactFlow, XYZPosition } from '@xyflow/react';
 import { useProgramActions } from '../common/ProgramActionsContext';
+
+type FunctionDeclHeaderNode = Node<
+  { decl: FunctionDecl; fullID: string },
+  'function__header'
+>;
+
+export function FunctionDeclHeaderNode({
+  data: { decl },
+  selected,
+}: NodeProps<FunctionDeclHeaderNode>) {
+  const sizeStyle = useMemo(() => {
+    let location = {
+      ...decl.location,
+      height: decl.location.height + HEADER_HEIGHT,
+      z: decl.location.z - 1,
+    };
+    return getSizeStyle(location);
+  }, [decl.location]);
+
+  return (
+    <div
+      className={`leading-none
+        rounded-lg border-2
+        ${selected && 'ring-2 rounded-lg ring-white'}`}
+      style={sizeStyle}
+    >
+      <div
+        className='leading-none bg-slate-700
+        flex flex-row font-code rounded-lg w-full'
+      >
+        <p>{decl.name}</p>
+        <span className='grow' />
+        <DraggableElement />
+      </div>
+      <div className='grow' />
+    </div>
+  );
+}
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -15,39 +57,16 @@ type FunctionDeclNode = Node<
 
 export default function FunctionDeclNode({
   data: { decl, fullID },
-  selected,
 }: NodeProps<FunctionDeclNode>) {
   const { editProgram } = useProgramActions();
   const { screenToFlowPosition } = useReactFlow();
 
-  const headerRef = useRef<HTMLDivElement>(null);
-  const [yOffset, setYOffset] = useState(0);
   const [addNodePosition, setAddNodePosition] = useState<
     XYZPosition | undefined
   >(undefined);
 
-  useEffect(() => {
-    if (headerRef.current) {
-      setYOffset(-headerRef.current.offsetHeight);
-    }
-  }, [decl.name]);
-
   return (
-    <div
-      className={`rounded-lg border-2 border-gray-200 space-y-0
-                    ${selected && 'ring-2 rounded-lg ring-white'}`}
-      style={{ transform: `translateY(${yOffset}px)` }}
-    >
-      <div
-        ref={headerRef}
-        className='leading-none
-        flex flex-row font-code rounded-t-lg
-        border-b bg-slate-700 p-1 w-full'
-      >
-        <p>{decl.name}</p>
-        <span className='grow' />
-        <DraggableElement />
-      </div>
+    <div className='rounded-lg border-gray-200'>
       <ContextMenu.Trigger
         asChild
         onContextMenu={(event: React.MouseEvent) => {
@@ -65,7 +84,7 @@ export default function FunctionDeclNode({
         }}
       >
         <div
-          className='text-gray-600 cursor-copy'
+          className='cursor-copy'
           onClick={(event: React.MouseEvent) => {
             event.stopPropagation();
           }}

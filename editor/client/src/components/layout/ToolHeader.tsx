@@ -22,7 +22,7 @@ export default function ToolHeader({
   const modulePath = useAppSelector((state) => state.program.path);
   const saved = useAppSelector((state) => state.program.saved);
   const moduleName =
-    modulePath?.split('/')[modulePath?.split('/').length - 1] || '';
+    modulePath?.split('/')[modulePath?.split('/').length - 1] || '<unnamed>';
 
   const [hovered, setIsHovered] = useState(false);
 
@@ -31,6 +31,7 @@ export default function ToolHeader({
       <IconButton
         iconProps={{ icon: faSave }}
         onClick={onSave}
+        disabled={!modulePath}
       />
       <IconButton
         iconProps={{ icon: faFilePen }}

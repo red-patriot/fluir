@@ -3,10 +3,11 @@ import { faFileCirclePlus, faFilePen } from '@fortawesome/free-solid-svg-icons';
 import IconButton from '../common/IconButton';
 
 interface HomeProps {
-  onOpenFile: () => void;
+  onNewFile?: () => void;
+  onOpenFile?: () => void;
 }
 
-export default function Home({ onOpenFile }: HomeProps) {
+export default function Home({ onNewFile, onOpenFile }: HomeProps) {
   return (
     <div className='flex justify-center h-lvh align-bottom items-center'>
       <img
@@ -16,6 +17,7 @@ export default function Home({ onOpenFile }: HomeProps) {
       <div className='flex flex-col align-middle'>
         <IconButton
           aria-label='new-file-button'
+          onClick={onNewFile}
           iconProps={{ icon: faFileCirclePlus }}
           text='New File'
         />

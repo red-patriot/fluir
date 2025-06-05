@@ -1,30 +1,36 @@
+import React from 'react';
 import {
   FontAwesomeIcon,
   FontAwesomeIconProps,
 } from '@fortawesome/react-fontawesome';
 
-interface IconButtonProps {
+interface IconButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   onClick?: () => void;
   iconProps?: FontAwesomeIconProps;
   text?: string;
-  label?: string;
 }
 
 export default function IconButton({
   onClick,
   iconProps,
   text,
-  label,
+  ...props
 }: IconButtonProps) {
   return (
     <button
-      aria-label={label}
       onClick={onClick && onClick}
-      className='border text-[1em] font-medium bg-[#1a1a1a]
-                 cursor-pointer transition-[border-color]
-                 duration-[0.25s] px-[0.6em] py-[0.4em]
-                 border-solid border-transparent
-                 hover:border-[#646cff] m-px'
+      className={`border text-[1em] font-medium
+           transition-[border-color]
+           duration-[0.25s] px-[0.6em] py-[0.4em]
+           border-solid border-transparent
+           ${
+             props.disabled
+               ? 'bg-[#3a3a3a] cursor-not-allowed'
+               : 'bg-[#1a1a1a] hover:border-[#646cff]'
+           }
+           m-px`}
+      {...props}
     >
       {iconProps && <FontAwesomeIcon {...iconProps} />}
       {text && text}

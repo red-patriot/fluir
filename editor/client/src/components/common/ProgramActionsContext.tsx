@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 import EditRequest from '../../models/edit_request';
 
 export interface ProgramActions {
+  newProgram: () => void;
   openProgram: (programPath: string) => void;
   saveProgramAs: (programPath: string) => void;
   editProgram: (request: EditRequest) => void;

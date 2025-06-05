@@ -1,4 +1,5 @@
 import { PropsWithChildren } from 'react';
+import { useNewProgram } from '../../hooks/useNewProgram';
 import { useOpenProgram } from '../../hooks/useOpenProgram';
 import { useEditProgram } from '../../hooks/useEditProgram';
 import { useSaveFileAs } from '../../hooks/useSaveProgram';
@@ -9,6 +10,16 @@ export default function ProgramActionsProvider({
   children,
 }: PropsWithChildren) {
   const dispatch = useAppDispatch();
+
+  const newProgram = useNewProgram({
+    onOpen: (response) => {
+      dispatch(actions.setModuleState(response.data));
+      dispatch(actions.goToPage('module'));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
 
   // Local functions
   const openProgram = useOpenProgram({
@@ -45,7 +56,7 @@ export default function ProgramActionsProvider({
 
   return (
     <ProgramActionsContext.Provider
-      value={{ openProgram, editProgram, saveProgramAs }}
+      value={{ newProgram, openProgram, editProgram, saveProgramAs }}
     >
       {children}
     </ProgramActionsContext.Provider>

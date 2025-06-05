@@ -1,4 +1,4 @@
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen } from '@testing-library/react';
 import { renderWithStore } from '../../../utility/testStore';
 import { describe, it, vi, expect, afterEach, beforeEach } from 'vitest';
 import Home from '../Home';

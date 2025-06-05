@@ -14,7 +14,6 @@ import {
   getOutgoers,
   Node,
   OnDelete,
-  NodeMouseHandler,
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
 import { useAppSelector } from '../../store';

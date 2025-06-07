@@ -31,7 +31,7 @@ export function InputIndicator({ fullID, count = 1 }: InOutIndicatorProps) {
             >
               <FontAwesomeIcon
                 icon={faCaretRight}
-                className='pointer-events-none'
+                className='pointer-events-none text-3xl'
               />
             </Handle>
           </div>
@@ -65,7 +65,7 @@ export function OutputIndicator({ fullID, count = 1 }: InOutIndicatorProps) {
             >
               <FontAwesomeIcon
                 icon={faCaretRight}
-                className='pointer-events-none'
+                className='pointer-events-none text-3xl'
               />
             </Handle>
           </div>

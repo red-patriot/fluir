@@ -66,6 +66,45 @@ class MoveElement(BaseModel, TransactionBase):
         return original
 
 
+class ResizeElement(BaseModel, TransactionBase):
+    discriminator: Literal["resize"] = "resize"
+    target: QualifiedID
+    width: int
+    height: int
+
+    @override
+    def do(self, original: Program) -> Program:
+        element = find_element(self.target, original)
+        limits = self._get_limits(original)
+        if limits:
+            horizontal, vertical = limits
+            self.width = max(
+                horizontal.lower,
+                min(self.width, horizontal.upper - element.location.x),
+            )
+            self.height = max(
+                vertical.lower,
+                min(self.height, vertical.upper - element.location.y),
+            )
+        element.location.width = self.width
+        element.location.height = self.height
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        return original
+
+    def _get_limits(self, program: Program) -> tuple[_Limits, _Limits] | None:
+        if len(self.target) <= 1:
+            # Elements with no parent have no limits
+            return None
+        enclosing = find_element(self.target[:-1], program)
+        return (
+            _Limits(upper=enclosing.location.width, lower=4),
+            _Limits(upper=enclosing.location.height, lower=4),
+        )
+
+
 class RenameDeclaration(BaseModel, TransactionBase):
     discriminator: Literal["rename_declaration"] = "rename_declaration"
     target: QualifiedID
@@ -300,6 +339,7 @@ class RemoveItem(BaseModel, TransactionBase):
 
 type EditTransaction = (
     MoveElement
+    | ResizeElement
     | RenameDeclaration
     | UpdateConstant
     | UpdateOperator

@@ -2,8 +2,9 @@ import copy
 
 import pytest
 
-from editor.models import FlType, Program, elements
+from editor.models import FlType, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
+from editor.models.elements import find_element
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
@@ -11,6 +12,7 @@ from editor.services.transaction import (
     MoveElement,
     RemoveItem,
     RenameDeclaration,
+    ResizeElement,
     UpdateConstant,
     UpdateOperator,
 )
@@ -58,7 +60,7 @@ def basic_program() -> Program:
             ),
             elements.Function(
                 name="qux",
-                location=elements.Location(210, 10, 2, 100, 100),
+                location=elements.Location(210, 10, 2, 100, 110),
                 id=3,
                 nodes=[
                     elements.UnaryOperator(
@@ -134,6 +136,65 @@ def test_move_node_raises_if_out_of_function(
 
     with pytest.raises(BadEdit):
         editor.edit(uut)
+
+
+@pytest.mark.parametrize(
+    "name, target, input, expected",
+    [
+        (
+            "resize_node",
+            [3, 3],
+            {"width": 16, "height": 5},
+            {"width": 16, "height": 5},
+        ),
+        (
+            "resize_function_decl",
+            [1],
+            {"width": 160, "height": 150},
+            {"width": 160, "height": 150},
+        ),
+        (
+            "resize_node_clamps_to_x_limits",
+            [3, 3],
+            {"width": 100, "height": 5},
+            {"width": 98, "height": 5},
+        ),
+        (
+            "resize_node_clamps_to_y_limits",
+            [3, 3],
+            {"width": 14, "height": 150},
+            {"width": 14, "height": 98},
+        ),
+        (
+            "resize_node_clamps_to_min_limits",
+            [3, 3],
+            {"width": 3, "height": -6},
+            {"width": 4, "height": 4},
+        ),
+    ],
+    ids=lambda x: x if isinstance(x, str) else "",
+)
+def test_resize_element(
+    basic_program: Program,
+    editor: ModuleEditor,
+    target: QualifiedID,
+    input: dict[str, int],
+    expected: dict[str, int],
+    name: str,
+) -> None:
+    expected_program = copy.deepcopy(basic_program)
+    e = find_element(target, expected_program)
+    e.location.width = expected["width"]
+    e.location.height = expected["height"]
+
+    uut = ResizeElement(
+        target=target, width=input["width"], height=input["height"]
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected_program == actual
 
 
 def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:

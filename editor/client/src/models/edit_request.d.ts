@@ -7,6 +7,13 @@ export type MoveEditRequest = {
   y: number;
 };
 
+export type ResizeEditRequest = {
+  discriminator: 'resize';
+  target: number[];
+  width: number;
+  height: number;
+};
+
 export type RenameDeclarationEditRequest = {
   discriminator: 'rename_declaration';
   target: number[];
@@ -46,6 +53,7 @@ export type RemoveItemEditRequest = {
 
 type EditRequest =
   | MoveEditRequest
+  | ResizeEditRequest
   | RenameDeclarationEditRequest
   | UpdateConstantEditRequest
   | UpdateOperatorEditRequest

@@ -45,7 +45,7 @@ export function OutputIndicator({ fullID, count = 1 }: InOutIndicatorProps) {
   return (
     <div className='self-center'>
       <div
-        className='flex flex-col shrink h-full'
+        className='flex flex-col shrink h-full mr-1'
         style={{
           fontSize: `${150}%`,
         }}

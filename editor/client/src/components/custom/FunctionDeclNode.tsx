@@ -38,8 +38,8 @@ export function FunctionDeclHeaderNode({
       style={sizeStyle}
     >
       <div
-        className='leading-none bg-slate-700
-        flex flex-row font-code rounded-lg w-full'
+        className='leading-none bg-slate-700 border-b-2
+        flex flex-row font-code rounded-t-lg w-full'
       >
         <p>{decl.name}</p>
         <span className='grow' />
@@ -85,9 +85,6 @@ export default function FunctionDeclNode({
       >
         <div
           className='cursor-copy'
-          onClick={(event: React.MouseEvent) => {
-            event.stopPropagation();
-          }}
           style={getSizeStyle(decl.location)}
         ></div>
       </ContextMenu.Trigger>

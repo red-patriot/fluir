@@ -85,10 +85,8 @@ export function ResizeControl({
 
   return (
     <NodeResizeControl
-      className='text-white flex flex-row items-center bg-transparent'
-      style={{
-        border: 'none',
-      }}
+      className='text-white flex flex-row items-center
+      -translate-x-7 -translate-y-5'
       variant={ResizeControlVariant.Handle}
       onResizeEnd={onResizeEnd}
       minWidth={minWidth && minWidth * ZOOM_SCALAR}

@@ -23,7 +23,7 @@ export default function IconButton({
       className={`border text-[1em] font-medium
            transition-[border-color]
            duration-[0.25s] px-[0.6em] py-[0.4em]
-           border-solid border-transparent
+           border-solid border-transparent rounded-lg
            ${
              props.disabled
                ? 'bg-[#3a3a3a] cursor-not-allowed'

@@ -7,7 +7,7 @@ import { ReactFlowProvider } from '@xyflow/react';
 
 export default function ModulePage() {
   const dispatch = useAppDispatch();
-  const { saveProgramAs } = useProgramActions();
+  const { saveProgramAs, undoEdit, redoEdit } = useProgramActions();
 
   // Local functions
   const onSaveAs = async () => {
@@ -36,6 +36,8 @@ export default function ModulePage() {
           onSave={onSave}
           onSaveAs={onSaveAs}
           onCloseModule={closeModule}
+          onUndo={undoEdit}
+          onRedo={redoEdit}
         />
         <ViewWindow />
       </ReactFlowProvider>

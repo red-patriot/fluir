@@ -6,4 +6,6 @@ export const mockActions: ProgramActions = {
   editProgram: vi.fn(),
   openProgram: vi.fn(),
   saveProgramAs: vi.fn(),
+  undoEdit: vi.fn(),
+  redoEdit: vi.fn(),
 };

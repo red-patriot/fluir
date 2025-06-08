@@ -18,3 +18,23 @@ export function useEditProgram({ onEdit, onError }: UseEditProgramParams) {
 
   return editProgram;
 }
+
+export function useUndo({ onEdit, onError }: UseEditProgramParams) {
+  const doUndo = () => {
+    axios.post(SERVER_API.undo).then(onEdit).catch(onError);
+  };
+
+  const undoProgramEdit = useCallback(doUndo, []);
+
+  return undoProgramEdit;
+}
+
+export function useRedo({ onEdit, onError }: UseEditProgramParams) {
+  const doRedo = () => {
+    axios.post(SERVER_API.redo).then(onEdit).catch(onError);
+  };
+
+  const redoProgramEdit = useCallback(doRedo, []);
+
+  return redoProgramEdit;
+}

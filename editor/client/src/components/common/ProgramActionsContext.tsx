@@ -6,6 +6,8 @@ export interface ProgramActions {
   openProgram: (programPath: string) => void;
   saveProgramAs: (programPath: string) => void;
   editProgram: (request: EditRequest) => void;
+  undoEdit: () => void;
+  redoEdit: () => void;
 }
 
 const ProgramActionsContext = createContext<ProgramActions | undefined>(

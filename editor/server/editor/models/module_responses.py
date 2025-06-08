@@ -10,4 +10,5 @@ class ProgramStatus:
     saved: bool
     path: str | None
     program: Program
-    # TODO: Undo/Redo stack sizes here too
+    can_undo: bool
+    can_redo: bool

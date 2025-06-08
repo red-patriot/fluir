@@ -5,6 +5,8 @@ import {
   faSave,
   faFilePen,
   faArrowUpRightFromSquare,
+  faRotateLeft,
+  faRotateRight,
 } from '@fortawesome/free-solid-svg-icons';
 import { useAppSelector } from '../../store';
 
@@ -12,15 +14,21 @@ interface ToolHeaderProps {
   onSave?: () => void;
   onSaveAs?: () => void;
   onCloseModule?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
 }
 
 export default function ToolHeader({
   onSave,
   onSaveAs,
   onCloseModule,
+  onUndo,
+  onRedo,
 }: ToolHeaderProps) {
   const modulePath = useAppSelector((state) => state.program.path);
   const saved = useAppSelector((state) => state.program.saved);
+  const canUndo = useAppSelector((state) => state.program.canUndo);
+  const canRedo = useAppSelector((state) => state.program.canRedo);
   const moduleName =
     modulePath?.split('/')[modulePath?.split('/').length - 1] || '<unnamed>';
 
@@ -36,6 +44,16 @@ export default function ToolHeader({
       <IconButton
         iconProps={{ icon: faFilePen }}
         onClick={onSaveAs}
+      />
+      <IconButton
+        iconProps={{ icon: faRotateLeft }}
+        onClick={onUndo}
+        disabled={!canUndo}
+      />
+      <IconButton
+        iconProps={{ icon: faRotateRight }}
+        onClick={onRedo}
+        disabled={!canRedo}
       />
       <span className='grow' />
       <div

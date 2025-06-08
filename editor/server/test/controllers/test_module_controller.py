@@ -16,6 +16,8 @@ from editor.services.transaction import MoveElement, UpdateConstant
 def mock_editor() -> MagicMock:
     fake = MagicMock(spec=ModuleEditor)
     fake.get.return_value = Program()
+    fake.can_undo.return_value = True
+    fake.can_redo.return_value = True
 
     return fake
 
@@ -153,3 +155,67 @@ def test_forwards_save_request_parameters_on_post(
 
     assert response.status_code == 200
     mock_editor.save_file.assert_called_with(Path("/path/to/save/module.fl"))
+
+
+def test_forwards_undo_constant_request_on_post(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/undo/",
+    )
+
+    assert response.status_code == 200
+    mock_editor.undo.assert_called()
+    mock_editor.can_undo.assert_called()
+    mock_editor.can_redo.assert_called()
+
+
+def test_prevents_undo_if_not_possible(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    mock_editor.can_undo.return_value = False
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/undo/",
+    )
+
+    assert response.status_code == 412
+
+
+def test_forwards_redo_constant_request_on_post(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/redo/",
+    )
+
+    assert response.status_code == 200
+    mock_editor.redo.assert_called()
+    mock_editor.can_undo.assert_called()
+    mock_editor.can_redo.assert_called()
+
+
+def test_prevents_redo_if_not_possible(mock_editor: MagicMock) -> None:
+    app = FastAPI()
+
+    mock_editor.can_redo.return_value = False
+    uut = ModuleController(mock_editor)
+    uut.register(app)
+    testApp = TestClient(app)
+
+    response = testApp.post(
+        "/api/module/redo/",
+    )
+
+    assert response.status_code == 412

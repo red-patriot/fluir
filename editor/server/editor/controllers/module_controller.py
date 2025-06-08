@@ -24,7 +24,11 @@ class ModuleController(Controller):
             raise HTTPException(404, "The requested program does not exist")
 
         return ProgramStatus(
-            saved=saved, path=str(path) if path else None, program=program
+            saved=saved,
+            path=str(path) if path else None,
+            program=program,
+            can_undo=self._editor.can_undo(),
+            can_redo=self._editor.can_redo(),
         )
 
     @override
@@ -34,6 +38,8 @@ class ModuleController(Controller):
         app.post("/api/module/close")(self.close)
         app.post("/api/module/edit")(self.edit)
         app.post("/api/module/save")(self.save)
+        app.post("/api/module/undo")(self.undo)
+        app.post("/api/module/redo")(self.redo)
 
     def new(self) -> ProgramStatus:
         self._editor.new_module()
@@ -59,6 +65,18 @@ class ModuleController(Controller):
     ) -> ProgramStatus:
         self._editor.edit(request)
 
+        return self._make_status(saved=False)
+
+    def undo(self) -> ProgramStatus:
+        if not self._editor.can_undo():
+            raise HTTPException(412, "There are no actions to undo")
+        self._editor.undo()
+        return self._make_status(saved=False)
+
+    def redo(self) -> ProgramStatus:
+        if not self._editor.can_redo():
+            raise HTTPException(412, "There are no actions to redo")
+        self._editor.redo()
         return self._make_status(saved=False)
 
     def save(self, request: SaveRequest) -> ProgramStatus:

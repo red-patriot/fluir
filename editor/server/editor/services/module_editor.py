@@ -49,6 +49,8 @@ class ModuleEditor:
                 )
             ]
         )
+        self._undo_stack.clear()
+        self._redo_stack.clear()
 
     def open_module(
         self, module: Program, path: Path | None = Path("/fake/path.fl")
@@ -59,6 +61,8 @@ class ModuleEditor:
 
         self._module = module
         self._path = path
+        self._undo_stack.clear()
+        self._redo_stack.clear()
 
     def open_file(self, path: Path) -> None:
         """Opens a new file"""
@@ -87,6 +91,7 @@ class ModuleEditor:
         self._undo_stack.append(command)
         if len(self._undo_stack) > self._stack_max:
             self._undo_stack.pop(0)
+        self._redo_stack.clear()
 
     def undo(self) -> None:
         if self._module is None:
@@ -117,3 +122,5 @@ class ModuleEditor:
         # TODO: Check if we need to save?
         self._module = None
         self._path = None
+        self._undo_stack.clear()
+        self._redo_stack.clear()

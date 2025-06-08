@@ -1,7 +1,7 @@
 import { PropsWithChildren } from 'react';
 import { useNewProgram } from '../../hooks/useNewProgram';
 import { useOpenProgram } from '../../hooks/useOpenProgram';
-import { useEditProgram } from '../../hooks/useEditProgram';
+import { useEditProgram, useRedo, useUndo } from '../../hooks/useEditProgram';
 import { useSaveFileAs } from '../../hooks/useSaveProgram';
 import { ProgramActionsContext } from './ProgramActionsContext';
 import { useAppDispatch, actions } from '../../store';
@@ -42,6 +42,26 @@ export default function ProgramActionsProvider({
     },
   });
 
+  const undoEdit = useUndo({
+    onEdit: (response) => {
+      console.log(response);
+      dispatch(actions.setModuleState(response.data));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
+  const redoEdit = useRedo({
+    onEdit: (response) => {
+      console.log(response);
+      dispatch(actions.setModuleState(response.data));
+    },
+    onError: (error) => {
+      console.log(error);
+    },
+  });
+
   const saveProgramAs = useSaveFileAs({
     onSave: (response) => {
       // TODO: Do something better here
@@ -56,7 +76,14 @@ export default function ProgramActionsProvider({
 
   return (
     <ProgramActionsContext.Provider
-      value={{ newProgram, openProgram, editProgram, saveProgramAs }}
+      value={{
+        newProgram,
+        openProgram,
+        editProgram,
+        saveProgramAs,
+        undoEdit,
+        redoEdit,
+      }}
     >
       {children}
     </ProgramActionsContext.Provider>

@@ -362,3 +362,49 @@ def test_redo_max_size(basic_program: Program) -> None:
         uut.redo()
 
     assert not uut.can_redo()
+
+
+def test_open_module_clears_undo_redo(basic_program: Program) -> None:
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+
+    for _ in range(10):
+        uut.edit(action)
+
+    assert uut.can_undo()
+
+    uut.open_module(basic_program)
+    assert not uut.can_undo()
+    assert not uut.can_redo()
+
+
+def test_edit_module_clears_redo(basic_program: Program) -> None:
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+
+    for _ in range(10):
+        uut.edit(action)
+
+    for _ in range(3):
+        uut.undo()
+    assert uut.can_redo()
+
+    uut.edit(action)
+    assert not uut.can_redo()
+
+
+def test_new_module_clears_undo_redo(basic_program: Program) -> None:
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+
+    for _ in range(10):
+        uut.edit(action)
+
+    assert uut.can_undo()
+
+    uut.new_module()
+    assert not uut.can_undo()
+    assert not uut.can_redo()

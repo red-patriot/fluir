@@ -7,6 +7,11 @@ import { ContextMenu } from 'radix-ui';
 import AddNodeMenu from './AddNodeMenu';
 import { useReactFlow, XYZPosition } from '@xyflow/react';
 import { useProgramActions } from '../common/ProgramActionsContext';
+import { ResizeControl } from '../common/ResizeControl';
+import { ResizeEditRequest } from '../../models/edit_request';
+import { toApiID } from '../../utility/idHelpers';
+
+export const FUNC_HEADER_HEIGHT = 4;
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -16,33 +21,37 @@ type FunctionDeclNode = Node<
 export default function FunctionDeclNode({
   data: { decl, fullID },
   selected,
+  width,
+  height,
 }: NodeProps<FunctionDeclNode>) {
   const { editProgram } = useProgramActions();
   const { screenToFlowPosition } = useReactFlow();
 
-  const headerRef = useRef<HTMLDivElement>(null);
-  const [yOffset, setYOffset] = useState(0);
   const [addNodePosition, setAddNodePosition] = useState<
     XYZPosition | undefined
   >(undefined);
 
-  useEffect(() => {
-    if (headerRef.current) {
-      setYOffset(-headerRef.current.offsetHeight);
-    }
-  }, [decl.name]);
+  const onFinishResize = (deltaWidth: number, deltaHeight: number) => {
+    const request: ResizeEditRequest = {
+      discriminator: 'resize',
+      target: toApiID(fullID),
+      width: decl.location.width + deltaWidth,
+      height: decl.location.height + deltaHeight,
+    };
+    editProgram(request);
+  };
 
   return (
     <div
-      className={`rounded-lg border-2 border-gray-200 space-y-0
+      className={`rounded-lg border-2 border-gray-200
                     ${selected && 'ring-2 rounded-lg ring-white'}`}
-      style={{ transform: `translateY(${yOffset}px)` }}
+      style={getSizeStyle(decl.location)}
     >
       <div
-        ref={headerRef}
         className='leading-none
-        flex flex-row font-code rounded-t-lg
-        border-b bg-slate-700 p-1 w-full'
+        flex flex-row items-center font-code rounded-t-lg
+        border-b bg-slate-700 p-2 w-full'
+        style={{ height: FUNC_HEADER_HEIGHT * ZOOM_SCALAR }}
       >
         <p>{decl.name}</p>
         <span className='grow' />
@@ -65,17 +74,24 @@ export default function FunctionDeclNode({
         }}
       >
         <div
-          className='text-gray-600 cursor-copy'
+          className='text-gray-600 cursor-copy debug flex-grow'
+          style={{ height: `calc(100% - ${FUNC_HEADER_HEIGHT * ZOOM_SCALAR}px)` }}
           onClick={(event: React.MouseEvent) => {
             event.stopPropagation();
           }}
-          style={getSizeStyle(decl.location)}
         ></div>
       </ContextMenu.Trigger>
       <AddNodeMenu
         parentID={fullID}
         editProgram={editProgram}
         addLocation={addNodePosition}
+      />
+      <ResizeControl
+        width={width as number}
+        height={height as number}
+        minWidth={15}
+        minHeight={15}
+        onFinishResize={onFinishResize}
       />
     </div>
   );

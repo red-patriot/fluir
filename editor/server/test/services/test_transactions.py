@@ -154,6 +154,12 @@ def test_move_node_raises_if_out_of_function(
             {"width": 160, "height": 150},
         ),
         (
+            "resize_function_decl_stays_larger_than_children",
+            [2],
+            {"width": 12, "height": 15},
+            {"width": 20, "height": 17},
+        ),
+        (
             "resize_node_clamps_to_x_limits",
             [3, 3],
             {"width": 100, "height": 5},

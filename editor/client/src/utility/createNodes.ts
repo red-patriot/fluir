@@ -1,6 +1,8 @@
 import BinaryNode from '../components/custom/BinaryNode';
 import ConstantNode from '../components/custom/ConstantNode';
-import FunctionDeclNode from '../components/custom/FunctionDeclNode';
+import FunctionDeclNode, {
+  FUNC_HEADER_HEIGHT,
+} from '../components/custom/FunctionDeclNode';
 import UnaryNode from '../components/custom/UnaryNode';
 import FluirModule, {
   BinaryOp,
@@ -11,21 +13,31 @@ import FluirModule, {
   UnaryOp,
 } from '../models/fluir_module';
 import { ZOOM_SCALAR } from '../hooks/useSizeStyle';
-import { Edge } from '@xyflow/react';
+import { Edge, Node as FlowNode, CoordinateExtent } from '@xyflow/react';
 
 function fullId(parentId: string | undefined, id: number): string {
   return parentId ? `${parentId}:${id}` : `${id}`;
 }
 
-function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
+function addNodes(
+  nodes: FlowNode[],
+  item: Declaration | Node,
+  parentId?: string,
+  extent?: 'parent' | CoordinateExtent,
+) {
   switch (item.discriminator) {
     case 'function':
       const decl = item as FunctionDecl;
+      const id = fullId(parentId, decl.id);
+      const childrenExtent: CoordinateExtent = [
+        [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+        [decl.location.width * ZOOM_SCALAR, decl.location.height * ZOOM_SCALAR],
+      ];
       nodes.push({
         type: 'function',
-        id: fullId(parentId, decl.id),
+        id: id,
         parentId: parentId,
-        extent: 'parent',
+        extent: extent,
         position: {
           x: decl.location.x * ZOOM_SCALAR,
           y: decl.location.y * ZOOM_SCALAR,
@@ -36,12 +48,12 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         },
         data: {
           decl: decl,
-          fullID: fullId(parentId, decl.id),
+          fullID: id,
         },
         dragHandle: '.dragHandle__custom',
       });
       decl.nodes.forEach((node) => {
-        addNodes(nodes, node, fullId(parentId, decl.id));
+        addNodes(nodes, node, id, childrenExtent);
       });
       break;
     case 'constant':
@@ -49,7 +61,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         type: 'constant',
         id: fullId(parentId, item.id),
         parentId: parentId,
-        extent: 'parent',
+        extent: extent,
         position: {
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
@@ -66,7 +78,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         type: 'binary',
         id: fullId(parentId, item.id),
         parentId: parentId,
-        extent: 'parent',
+        extent: extent,
         position: {
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
@@ -83,7 +95,7 @@ function addNodes(nodes: any[], item: Declaration | Node, parentId?: string) {
         type: 'unary',
         id: fullId(parentId, item.id),
         parentId: parentId,
-        extent: 'parent',
+        extent: extent,
         position: {
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,

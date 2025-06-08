@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { type Node, type NodeProps } from '@xyflow/react';
 import { Constant } from '../../models/fluir_module';
-import { getSizeStyle, ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import { getSizeStyle } from '../../hooks/useSizeStyle';
 import DraggableElement from '../common/DraggableElement';
 import { OutputIndicator } from '../common/InOutIndicator';
 import { useProgramActions } from '../common/ProgramActionsContext';
@@ -88,7 +88,7 @@ export default function ConstantNode({
       <OutputIndicator fullID={fullID} />
       {selected && (
         <HorizontalResizeControl
-          width={width}
+          width={width as number}
           minWidth={10}
           onFinishResize={onFinishResize}
         />

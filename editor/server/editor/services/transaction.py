@@ -75,7 +75,7 @@ class ResizeElement(BaseModel, TransactionBase):
     @override
     def do(self, original: Program) -> Program:
         element = find_element(self.target, original)
-        limits = self._get_limits(original)
+        limits = self._get_limits(original, element)
         if limits:
             horizontal, vertical = limits
             self.width = max(
@@ -94,15 +94,35 @@ class ResizeElement(BaseModel, TransactionBase):
     def undo(self, original: Program) -> Program:
         return original
 
-    def _get_limits(self, program: Program) -> tuple[_Limits, _Limits] | None:
-        if len(self.target) <= 1:
-            # Elements with no parent have no limits
-            return None
-        enclosing = find_element(self.target[:-1], program)
-        return (
-            _Limits(upper=enclosing.location.width, lower=4),
-            _Limits(upper=enclosing.location.height, lower=4),
+    def _get_limits(
+        self, program: Program, element: elements.Element
+    ) -> tuple[_Limits, _Limits] | None:
+        ret = (
+            _Limits(upper=1000, lower=4),
+            _Limits(upper=1000, lower=4),
         )
+
+        if isinstance(element, elements.Declaration):
+            # TODO: Handle other declarations
+            ret[0].lower = max(
+                (
+                    node.location.x + node.location.width
+                    for node in element.nodes
+                ),
+                default=15,
+            )
+            ret[1].lower = max(
+                (
+                    node.location.y + node.location.height
+                    for node in element.nodes
+                ),
+                default=15,
+            )
+        if len(self.target) > 1:
+            enclosing = find_element(self.target[:-1], program)
+            ret[0].upper = enclosing.location.width
+            ret[1].upper = enclosing.location.height
+        return ret
 
 
 class RenameDeclaration(BaseModel, TransactionBase):

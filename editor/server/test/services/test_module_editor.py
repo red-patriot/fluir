@@ -333,3 +333,32 @@ def test_redo(basic_program: Program, action: EditTransaction) -> None:
     assert expected == redone
     assert not uut.can_redo()
     assert uut.can_undo()
+
+
+def test_undo_max_size(basic_program: Program) -> None:
+    uut = ModuleEditor(stack_max=10)
+    uut.open_module(basic_program)
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+
+    for _ in range(20):
+        uut.edit(action)
+
+    for _ in range(11):
+        uut.undo()
+
+    assert not uut.can_undo()
+
+
+def test_redo_max_size(basic_program: Program) -> None:
+    uut = ModuleEditor(stack_max=10)
+    uut.open_module(basic_program)
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+
+    for _ in range(20):
+        uut.edit(action)
+        uut.undo()
+
+    for _ in range(11):
+        uut.redo()
+
+    assert not uut.can_redo()

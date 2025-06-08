@@ -13,10 +13,13 @@ from editor.services.transaction import EditTransaction
 class ModuleEditor:
     """A Service to edit Fluir modules"""
 
-    def __init__(self, manager: FileManager = XMLFileManager()) -> None:
+    def __init__(
+        self, manager: FileManager = XMLFileManager(), stack_max: int = 100
+    ) -> None:
         self._repo = manager
         self._module: Program | None = None
         self._path: Path | None = None
+        self._stack_max = stack_max
         self._undo_stack: list[EditTransaction] = []
         self._redo_stack: list[EditTransaction] = []
 
@@ -82,8 +85,8 @@ class ModuleEditor:
 
         self._module = command.do(self._module)
         self._undo_stack.append(command)
-        # TODO: Manage redo stack
-        # TODO: Max number of undos
+        if len(self._undo_stack) > self._stack_max:
+            self._undo_stack.pop(0)
 
     def undo(self) -> None:
         if self._module is None:
@@ -94,6 +97,8 @@ class ModuleEditor:
         action = self._undo_stack.pop()
         self._module = action.undo(self._module)
         self._redo_stack.append(action)
+        if len(self._redo_stack) > self._stack_max:
+            self._redo_stack.pop(0)
 
     def redo(self) -> None:
         if not self.can_redo():

@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
@@ -24,8 +25,8 @@ namespace fluir::pt {
   struct Binary {
     ID id;
     FlowGraphLocation location;
-    ID lhs;
-    ID rhs;
+    ID lhs = 0;
+    ID rhs = 0;
     fluir::Operator op;
 
     friend bool operator==(const Binary&, const Binary&) = default;
@@ -34,14 +35,38 @@ namespace fluir::pt {
   struct Unary {
     ID id;
     FlowGraphLocation location;
-    ID lhs;
+    ID lhs = 0;
     fluir::Operator op;
 
     friend bool operator==(const Unary&, const Unary&) = default;
   };
 
+  struct Conduit {
+    struct Output {
+      ID target = INVALID_ID;
+      int index = 0;
+      friend bool operator==(const Output&, const Output&) = default;
+    };
+    // TODO: Support segment types
+
+    ID id = INVALID_ID;
+    ID input = INVALID_ID;
+    int index = 0;
+    std::vector<Output> children;
+
+    friend bool operator==(const Conduit&, const Conduit&) = default;
+  };
+
   using Node = std::variant<Binary, Unary, Constant>;
-  using Block = std::unordered_map<ID, Node>;
+  struct Block {
+    using Nodes = std::unordered_map<ID, Node>;
+    using Conduits = std::unordered_map<ID, Conduit>;
+
+    Nodes nodes;
+    Conduits conduits;
+
+    friend bool operator==(const Block&, const Block&) = default;
+  };
 
   inline const Block EMPTY_BLOCK = {};
 

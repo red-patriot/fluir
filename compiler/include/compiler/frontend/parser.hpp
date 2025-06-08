@@ -37,14 +37,19 @@ namespace fluir {
     std::pair<ID, pt::Node> binary(Element* element);
     std::pair<ID, pt::Node> unary(Element* element);
 
+    std::pair<ID, pt::Conduit> conduit(Element* element);
+    pt::Conduit::Output conduitOutput(Element* element);
+
     pt::Literal literal(Element* element);
     pt::Float fl_float(Element* element);
 
-    std::string_view getAttribute(Element* element,
-                                  std::string_view type,
-                                  std::string_view attribute);
+    std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
+    std::string_view getOptionalAttribute(Element* element,
+                                          std::string_view attribute,
+                                          std::string_view defaultValue = "");
     ID parseId(Element* element, std::string_view type);
     ID parseIdReference(Element* element, std::string_view attribute, std::string_view type);
+    ID parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view type);
     FlowGraphLocation parseLocation(Element* element, std::string_view type);
     Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
 
@@ -60,9 +65,7 @@ namespace fluir {
      */
     class SourceLocation : public Diagnostic::Location {
      public:
-      SourceLocation(int line, std::string file) :
-          lineNo(line),
-          filename(std::move(file)) { }
+      SourceLocation(int line, std::string file) : lineNo(line), filename(std::move(file)) { }
       std::string str() const override;
 
      private:

@@ -48,7 +48,7 @@ namespace fluir {
 
     Results<asg::DataFlowGraph> run();
 
-    asg::SharedDependency getDependency(ID id);
+    asg::SharedDependency getDependency(ID dependentId, int index);
   };
 }  // namespace fluir
 

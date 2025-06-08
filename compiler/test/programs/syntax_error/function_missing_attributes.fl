@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-    <fl:function
+<fluir >
+    <function
         id="1"
         x="10"
         y="10"
@@ -9,8 +9,8 @@
         h="100">
         <body>
         </body>
-    </fl:function>
-    <fl:function
+    </function>
+    <function
         name="foo"
         x="10"
         y="10"
@@ -19,8 +19,8 @@
         h="100">
         <body>
         </body>
-    </fl:function>
-    <fl:function
+    </function>
+    <function
         name="missing_x"
         id="4"
         y="10"
@@ -29,10 +29,10 @@
         h="100">
         <body>
         </body>
-    </fl:function>
+    </function>
 
 
-    <fl:function
+    <function
         name="missing_y"
         id="4"
         x="11"
@@ -41,9 +41,9 @@
         h="100">
         <body>
         </body>
-    </fl:function>
+    </function>
 
-    <fl:function
+    <function
         name="missing_z"
         id="4"
         x="3"
@@ -52,8 +52,8 @@
         h="100">
         <body>
         </body>
-    </fl:function>
-    <fl:function
+    </function>
+    <function
         name="missing_w"
         id="4"
         x="100"
@@ -62,7 +62,7 @@
         h="100">
         <body>
         </body>
-    </fl:function>    <fl:function
+    </function>    <function
         name="missing_h"
         id="4"
         y="10"
@@ -71,5 +71,5 @@
         x="1">
         <body>
         </body>
-    </fl:function>
+    </function>
 </fluir>

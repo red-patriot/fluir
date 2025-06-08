@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-    <fl:bad_func
+<fluir >
+    <bad_func
         name="bad"
         id="1"
         x="10"
@@ -10,5 +10,5 @@
         h="100">
         <body>
         </body>
-    </fl:bad_func>
+    </bad_func>
 </fluir>

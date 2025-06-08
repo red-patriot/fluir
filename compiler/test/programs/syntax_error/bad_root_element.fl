@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluid xmlns:fl="FLUIR::LANGUAGE::SOURCE">
-    <fl:function
+<fluid >
+    <function
         name="main"
         id="1"
         x="10"
@@ -10,5 +10,5 @@
         h="100">
         <body>
         </body>
-    </fl:function>
+    </function>
 </fluid>

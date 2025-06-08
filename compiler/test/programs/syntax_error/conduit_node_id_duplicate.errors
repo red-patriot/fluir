@@ -1,0 +1,2 @@
+[ERROR] on line 19 of 'conduit_node_id_duplicate.fl': Duplicate IDs. Conduit has ID 3, but that ID is already in use.
+[ERROR] on line 28 of 'conduit_node_id_duplicate.fl': Duplicate IDs. Node <binary> has ID 12, but that ID is already in use.

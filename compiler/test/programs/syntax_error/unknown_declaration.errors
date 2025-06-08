@@ -1,1 +1,1 @@
-[ERROR] on line 3 of 'unknown_declaration.fl': Unexpected element 'fl:bad_func'. Expected declaration.
+[ERROR] on line 3 of 'unknown_declaration.fl': Unexpected element 'bad_func'. Expected declaration.

@@ -1,3 +1,4 @@
+import copy
 import os
 from pathlib import Path
 from typing import Iterator
@@ -5,8 +6,16 @@ from unittest.mock import create_autospec
 
 import pytest
 
+from editor.models import elements
 from editor.models.edit_errors import BadEdit, EditorError
-from editor.models.elements import Function, Location, Program
+from editor.models.elements import (
+    FlType,
+    Function,
+    Location,
+    Program,
+    find_element,
+)
+from editor.services import transaction
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import EditTransaction, TransactionBase
 
@@ -47,6 +56,39 @@ def test_file2(tmp_path: Path) -> Iterator[Path]:
         """)
     yield filename
     os.remove(filename)
+
+
+@pytest.fixture
+def basic_program() -> Program:
+    return Program(
+        [
+            elements.Function(
+                name="qux",
+                location=elements.Location(210, 10, 2, 100, 110),
+                id=3,
+                nodes=[
+                    elements.UnaryOperator(
+                        id=2,
+                        location=elements.Location(15, 2, 1, 5, 5),
+                        op=elements.Operator.MINUS,
+                    ),
+                    elements.Constant(
+                        id=3,
+                        location=elements.Location(2, 12, 1, 5, 5),
+                        value="2.0",
+                        flType=FlType.FLOATING_POINT,
+                    ),
+                ],
+                conduits=[
+                    elements.Conduit(
+                        id=5,
+                        input=3,
+                        children=[elements.Conduit.Output(target=2, index=0)],
+                    )
+                ],
+            ),
+        ]
+    )
 
 
 def test_module_editor_can_open_files(test_file1: Path) -> None:
@@ -240,3 +282,54 @@ def test_module_editor_can_open_new_file() -> None:
     assert uut.get_path() is None
     assert uut.get_name() == ""
     assert expected == uut.get()
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        transaction.MoveElement(target=[3, 3], x=6, y=90),
+        transaction.RemoveItem(target=[3, 5]),
+    ],
+    ids=lambda x: x.__class__,
+)
+def test_undo(basic_program: Program, action: EditTransaction) -> None:
+    expected = copy.deepcopy(basic_program)
+
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+
+    uut.edit(action)
+    edited = uut.get()
+    assert expected != edited
+    assert uut.can_undo()
+
+    uut.undo()
+    undone = uut.get()
+    assert expected == undone
+    assert not uut.can_undo()
+    assert uut.can_redo()
+
+
+@pytest.mark.parametrize(
+    "action",
+    [
+        transaction.MoveElement(target=[3, 3], x=6, y=90),
+        transaction.RemoveItem(target=[3, 5]),
+    ],
+    ids=lambda x: x.__class__,
+)
+def test_redo(basic_program: Program, action: EditTransaction) -> None:
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+
+    uut.edit(action)
+    expected = copy.deepcopy(uut.get())
+    uut.undo()
+
+    assert uut.can_redo()
+    uut.redo()
+    redone = uut.get()
+
+    assert expected == redone
+    assert not uut.can_redo()
+    assert uut.can_undo()

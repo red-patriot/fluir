@@ -17,6 +17,8 @@ class ModuleEditor:
         self._repo = manager
         self._module: Program | None = None
         self._path: Path | None = None
+        self._undo_stack: list[EditTransaction] = []
+        self._redo_stack: list[EditTransaction] = []
 
     def get_path(self) -> Path | None:
         """Accesses the path of the current module"""
@@ -78,8 +80,32 @@ class ModuleEditor:
         if self._module is None:
             raise BadEdit("Open a program to make edits")
 
-        # TODO: Save the command for undo/redo
         self._module = command.do(self._module)
+        self._undo_stack.append(command)
+        # TODO: Manage redo stack
+        # TODO: Max number of undos
+
+    def undo(self) -> None:
+        if self._module is None:
+            raise BadEdit("Open a program to make edits")
+
+        if not self.can_undo():
+            return
+        action = self._undo_stack.pop()
+        self._module = action.undo(self._module)
+        self._redo_stack.append(action)
+
+    def redo(self) -> None:
+        if not self.can_redo():
+            return
+        action = self._redo_stack.pop()
+        self.edit(action)
+
+    def can_undo(self) -> bool:
+        return len(self._undo_stack) > 0
+
+    def can_redo(self) -> bool:
+        return len(self._redo_stack) > 0
 
     def close(self) -> None:
         """Closes the current module"""

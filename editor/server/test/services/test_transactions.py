@@ -9,6 +9,7 @@ from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
     AddNode,
+    EditTransaction,
     MoveElement,
     RemoveItem,
     RenameDeclaration,
@@ -95,6 +96,7 @@ def editor(basic_program: Program) -> ModuleEditor:
 
 
 def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[0].location = elements.Location(22, 57, 3, 100, 100)
 
@@ -105,8 +107,12 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
 
     assert expected == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes[2].location = elements.Location(
         6, 90, 1, 5, 5
@@ -118,6 +124,9 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 @pytest.mark.parametrize(
@@ -188,6 +197,7 @@ def test_resize_element(
     expected: dict[str, int],
     name: str,
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected_program = copy.deepcopy(basic_program)
     e = find_element(target, expected_program)
     e.location.width = expected["width"]
@@ -202,8 +212,12 @@ def test_resize_element(
 
     assert expected_program == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].name = "baz"
 
@@ -213,6 +227,9 @@ def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 def test_rename_declaration_raises_if_target_is_not_a_decl(
@@ -225,6 +242,7 @@ def test_rename_declaration_raises_if_target_is_not_a_decl(
 
 
 def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     assert isinstance(expected.declarations[1].nodes[1], elements.Constant)
     expected.declarations[1].nodes[1].value = "-5.67"
@@ -235,6 +253,9 @@ def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
@@ -250,6 +271,7 @@ def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
 def test_update_binary_operator(
     basic_program: Program, editor: ModuleEditor, op: str
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     assert isinstance(
         expected.declarations[1].nodes[0], elements.BinaryOperator
@@ -263,6 +285,9 @@ def test_update_binary_operator(
 
     assert expected == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 @pytest.mark.parametrize(
     "op",
@@ -271,6 +296,7 @@ def test_update_binary_operator(
 def test_update_unary_operator(
     basic_program: Program, editor: ModuleEditor, op: str
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     assert isinstance(expected.declarations[2].nodes[0], elements.UnaryOperator)
     expected.declarations[2].nodes[0].op = elements.Operator(op)
@@ -281,6 +307,9 @@ def test_update_unary_operator(
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 def test_update_operator_raises_if_not_operator(editor: ModuleEditor) -> None:
@@ -294,6 +323,7 @@ def test_update_operator_raises_if_not_operator(editor: ModuleEditor) -> None:
 def test_add_conduit_no_conflicts(
     basic_program: Program, editor: ModuleEditor
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     new_conduit = elements.Conduit(
         id=6,
@@ -312,20 +342,13 @@ def test_add_conduit_no_conflicts(
 
     assert expected == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 def test_add_conduit_removes_duplicate_targets(
     basic_program: Program, editor: ModuleEditor
 ) -> None:
-    expected = copy.deepcopy(basic_program)
-    new_conduit = elements.Conduit(
-        id=4,
-        input=2,
-        index=0,
-        children=[
-            elements.Conduit.Output(target=1, index=0),
-        ],
-    )
-    expected.declarations[1].conduits.append(new_conduit)
     existing_conduit = elements.Conduit(
         id=4,
         input=3,
@@ -340,12 +363,26 @@ def test_add_conduit_removes_duplicate_targets(
     assert program is not None
     program.declarations[1].conduits.append(existing_conduit)
 
+    original = copy.deepcopy(program)
+    expected = copy.deepcopy(basic_program)
+    new_conduit = elements.Conduit(
+        id=4,
+        input=2,
+        index=0,
+        children=[
+            elements.Conduit.Output(target=1, index=0),
+        ],
+    )
+    expected.declarations[1].conduits.append(new_conduit)
+
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
     editor.edit(uut)
-
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 @pytest.mark.parametrize(
@@ -398,6 +435,7 @@ def test_add_node(
     basic_program: Program,
     editor: ModuleEditor,
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes.append(expected_node)
 
@@ -406,8 +444,12 @@ def test_add_node(
 
     assert expected == actual
 
+    actual = input.undo(actual)
+    assert original == actual
+
 
 def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes.pop(2)
 
@@ -417,33 +459,45 @@ def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
 
     assert expected == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 def test_remove_node_with_conduits(
     basic_program: Program, editor: ModuleEditor
 ) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
-    expected.declarations[1].nodes.pop(1)
-    expected.declarations[1].conduits.pop()
+    expected.declarations[2].nodes.pop(1)
+    expected.declarations[2].conduits.pop()
 
-    uut = RemoveItem(target=[2, 2])
+    uut = RemoveItem(target=[3, 3])
     editor.edit(uut)
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
-    expected.declarations.pop(0)
+    expected.declarations.pop(2)
 
-    uut = RemoveItem(target=[1])
+    uut = RemoveItem(target=[3])
     editor.edit(uut)
     actual = editor.get()
 
     assert expected == actual
 
+    actual = uut.undo(actual)
+    assert original == actual
+
 
 def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].conduits.pop(0)
 
@@ -452,3 +506,6 @@ def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual

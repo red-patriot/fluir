@@ -74,12 +74,11 @@ export default function FunctionDeclNode({
         }}
       >
         <div
-          className='text-gray-600 cursor-copy debug flex-grow'
-          style={{ height: `calc(100% - ${FUNC_HEADER_HEIGHT * ZOOM_SCALAR}px)` }}
-          onClick={(event: React.MouseEvent) => {
-            event.stopPropagation();
+          className='text-gray-600 cursor-copy'
+          style={{
+            height: `calc(100% - ${FUNC_HEADER_HEIGHT * ZOOM_SCALAR}px)`,
           }}
-        ></div>
+        />
       </ContextMenu.Trigger>
       <AddNodeMenu
         parentID={fullID}

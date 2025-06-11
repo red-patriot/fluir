@@ -35,6 +35,8 @@ set(FLUIR_COMPILER_BACKEND_INTERFACES
 
 set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 
+set(FLUIR_COMPILER_DEBUG_INTERFACES "debug/debug.ixx" "debug/asg_printer.ixx")
+
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
@@ -45,6 +47,7 @@ target_sources(
            CXX_MODULES
            FILES
            ${FLUIR_COMPILER_BACKEND_INTERFACES}
+           ${FLUIR_COMPILER_DEBUG_INTERFACES}
            ${FLUIR_COMPILER_FRONTEND_INTERFACES}
 )
 

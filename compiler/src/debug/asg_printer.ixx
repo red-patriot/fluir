@@ -1,13 +1,13 @@
-#ifndef FLUIR_COMPILER_DEBUG_ASG_PRINTER_HPP
-#define FLUIR_COMPILER_DEBUG_ASG_PRINTER_HPP
-
+module;
 #include <ostream>
 
 #include "compiler/models/asg.hpp"
 #include "compiler/utility/indent_formatter.hpp"
 
+export module fluir.debug.asg_printer;
+
 namespace fluir::debug {
-  class AsgPrinter : private IndentFormatter<> {
+  export class AsgPrinter : private IndentFormatter<> {
    public:
     explicit AsgPrinter(std::ostream& out, bool inOrder = false);
 
@@ -27,5 +27,3 @@ namespace fluir::debug {
     void doInOrderPrint(const asg::DataFlowGraph& graph);
   };
 }  // namespace fluir::debug
-
-#endif

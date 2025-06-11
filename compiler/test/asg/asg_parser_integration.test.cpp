@@ -3,10 +3,10 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/debug/asg_printer.hpp"
 #include "file_utility.hpp"
 
 import fluir.frontend;
+import fluir.debug;
 
 namespace fs = std::filesystem;
 

@@ -9,14 +9,14 @@ using namespace std::string_literals;
 
 namespace fluir {
   template <typename... FmtArgs>
-  void Parser::panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args) {
+  void Parser::panicIf(bool condition, Element* element, std::string_view format, FmtArgs... args) {
     if (condition) {
-      panicAt(element, format, std::forward<FmtArgs>(args)...);
+      panicAt(element, format, args...);
     }
   }
   template <typename... FmtArgs>
-  [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs&&... args) {
-    diagnostics_.emitError(fmt::vformat(format, fmt::make_format_args(std::forward<FmtArgs>(args)...)),
+  [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs... args) {
+    diagnostics_.emitError(fmt::vformat(format, fmt::make_format_args(args...)),
                            std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
     throw PanicMode{};
   }

@@ -54,9 +54,9 @@ namespace fluir {
     Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
 
     template <typename... FmtArgs>
-    void panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args);
+    void panicIf(bool condition, Element* element, std::string_view format, FmtArgs... args);
     template <typename... FmtArgs>
-    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs&&... args);
+    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs... args);
     /** Indicates the parser is in a panic */
     class PanicMode { };
 

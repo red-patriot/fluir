@@ -26,6 +26,13 @@ set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/inspect_writer.cpp"
 )
 
+set(FLUIR_COMPILER_BACKEND_INTERFACES
+    "backend/backend.ixx"
+    "backend/bytecode_generator.ixx"
+    "backend/code_writer.ixx"
+    "backend/inspect_writer.ixx"
+)
+
 set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 
 target_sources(
@@ -37,6 +44,7 @@ target_sources(
     PUBLIC FILE_SET
            CXX_MODULES
            FILES
+           ${FLUIR_COMPILER_BACKEND_INTERFACES}
            ${FLUIR_COMPILER_FRONTEND_INTERFACES}
 )
 

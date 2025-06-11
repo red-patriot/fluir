@@ -1,33 +1,31 @@
-#include "compiler/backend/inspect_writer.hpp"
-
+module;
 #include <string>
 
 #include "fmt/format.h"
+#include "bytecode/instruction.hpp"
+#include "bytecode/byte_code.hpp"
+
+module fluir.backend.inspect_writer;
 
 namespace fluir {
   namespace {
 #define STRINGIFY(i) #i
 #define FLUIR_INSTRUCTION_TO_STR(inst) STRINGIFY(I##inst),
-    std::string instructionNames[] = {
-        FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TO_STR)};
+    std::string instructionNames[] = {FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TO_STR)};
 #undef FLUIR_INSTRUCTION_TO_STR
 #undef STRINGIFY
   }  // namespace
 
-  void InspectWriter::writeHeader(const code::Header& header,
-                                  std::ostream& os) {
-    os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch,
-                      header.entryOffset);
+  void InspectWriter::writeHeader(const code::Header& header, std::ostream& os) {
+    os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
   }
-  void InspectWriter::writeChunk(const code::Chunk& chunk,
-                                 std::ostream& os) {
+  void InspectWriter::writeChunk(const code::Chunk& chunk, std::ostream& os) {
     os << fmt::format("CHUNK {}\n", chunk.name);
     [[maybe_unused]] auto _ = indent();
     os << formatIndented("CONSTANTS x{:X}\n", chunk.constants.size());
     writeConstants(chunk.constants, os);
 
-    os << formatIndented("CODE x{:X}\n",
-                         chunk.code.size());
+    os << formatIndented("CODE x{:X}\n", chunk.code.size());
 
     writeCode(chunk.code, os);
   }
@@ -48,14 +46,11 @@ namespace fluir {
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH_FP:
-          os << formatIndented("{} x{:X}\n",
-                               instructionNames[*i],
-                               *(i + 1));
+          os << formatIndented("{} x{:X}\n", instructionNames[*i], *(i + 1));
           ++i;
           break;
         default:
-          os << formatIndented("{}\n",
-                               instructionNames[*i]);
+          os << formatIndented("{}\n", instructionNames[*i]);
       }
     }
   }

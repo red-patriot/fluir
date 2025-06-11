@@ -1,16 +1,17 @@
-#ifndef FLUIR_COMPILER_BACKEND_BYTECODE_GENERATOR_HPP
-#define FLUIR_COMPILER_BACKEND_BYTECODE_GENERATOR_HPP
+module;
 
 #include "bytecode/byte_code.hpp"
-#include "compiler/backend/code_writer.hpp"
 #include "compiler/models/asg.hpp"
 #include "compiler/utility/results.hpp"
 
-namespace fluir {
-  Results<code::ByteCode> generateCode(const asg::ASG& graph);
-  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
+export module fluir.backend.bytecode_generator;
+export import fluir.backend.code_writer;
 
-  class BytecodeGenerator {
+namespace fluir {
+  export Results<code::ByteCode> generateCode(const asg::ASG& graph);
+  export void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
+
+  export class BytecodeGenerator {
    public:
     static Results<code::ByteCode> generate(const asg::ASG& graph);
 
@@ -35,5 +36,3 @@ namespace fluir {
     void doTopLevel(const asg::Node& node);
   };
 }  // namespace fluir
-
-#endif

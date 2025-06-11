@@ -1,15 +1,20 @@
-#include "compiler/backend/bytecode_generator.hpp"
+module;
 
 #include <cstdint>
+#include <variant>
 
 #include <fmt/format.h>
+#include <bytecode/byte_code.hpp>
+
+#include "compiler/models/asg.hpp"
+#include "compiler/utility/results.hpp"
+
+module fluir.backend.bytecode_generator;
 
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(const asg::ASG& graph) {
-    return BytecodeGenerator::generate(graph);
-  }
+  Results<code::ByteCode> generateCode(const asg::ASG& graph) { return BytecodeGenerator::generate(graph); }
 
   void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination) {
     return writer.write(code, destination);
@@ -82,20 +87,15 @@ namespace fluir {
     emitBytes(Instruction::PUSH_FP, static_cast<std::uint8_t>(constant));
   }
 
-  BytecodeGenerator::BytecodeGenerator(const asg::ASG& graph) :
-      graph_(graph),
-      code_{} { }
+  BytecodeGenerator::BytecodeGenerator(const asg::ASG& graph) : graph_(graph), code_{} { }
 
-  void BytecodeGenerator::emitByte(std::uint8_t byte) {
-    current_.code.push_back(byte);
-  }
+  void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
     emitByte(byte2);
   }
   size_t BytecodeGenerator::addConstant(code::Value value) {
-    if (auto found = std::ranges::find(current_.constants, value);
-        found != current_.constants.end()) {
+    if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
       return found - current_.constants.begin();
     }
     current_.constants.emplace_back(std::move(value));

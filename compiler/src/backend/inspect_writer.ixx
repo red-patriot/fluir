@@ -1,11 +1,13 @@
-#ifndef FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
-#define FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
+module;
 
-#include "compiler/backend/code_writer.hpp"
+#include "bytecode/byte_code.hpp"
 #include "compiler/utility/indent_formatter.hpp"
 
+export module fluir.backend.inspect_writer;
+export import fluir.backend.code_writer;
+
 namespace fluir {
-  class InspectWriter : public CodeWriter, private IndentFormatter<> {
+  export class InspectWriter : public CodeWriter, private IndentFormatter<> {
    private:
     void writeHeader(const code::Header&, std::ostream&) override;
     void writeChunk(const code::Chunk&, std::ostream&) override;
@@ -15,5 +17,3 @@ namespace fluir {
     void writeCode(const code::Bytes&, std::ostream&);
   };
 }  // namespace fluir
-
-#endif

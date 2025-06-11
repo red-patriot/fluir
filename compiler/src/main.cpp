@@ -2,10 +2,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "compiler/backend/bytecode_generator.hpp"
-#include "compiler/backend/inspect_writer.hpp"
+#include "compiler/utility/diagnostics.hpp"
 
 import fluir.frontend;
+import fluir.backend;
 
 namespace fs = std::filesystem;
 

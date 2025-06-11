@@ -1,11 +1,11 @@
-#include "compiler/backend/inspect_writer.hpp"
-
 #include <filesystem>
 #include <fstream>
 
 #include <gtest/gtest.h>
+#include "bytecode/byte_code.hpp"
 
-#include "compiler/backend/bytecode_generator.hpp"
+import fluir.backend.bytecode_generator;
+import fluir.backend.inspect_writer;
 
 namespace fc = fluir::code;
 
@@ -17,13 +17,8 @@ CHUNK main
     IEXIT
 )";
 
-  fc::ByteCode code{
-      .header = {.filetype = '\0',
-                 .major = 1,
-                 .minor = 12,
-                 .patch = 17,
-                 .entryOffset = 255},
-      .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+  fc::ByteCode code{.header = {.filetype = '\0', .major = 1, .minor = 12, .patch = 17, .entryOffset = 255},
+                    .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -59,34 +54,16 @@ CHUNK bar
 )";
 
   fc::ByteCode code{
-      .header = {
-          .filetype = '\0',
-          .major = 24,
-          .minor = 6,
-          .patch = 16,
-          .entryOffset = 5},
-      .chunks = {fc::Chunk{.name = "bar", .code = {
-                                              fc::PUSH_FP,
-                                              0x00,
-                                              fc::PUSH_FP,
-                                              0x01,
-                                              fc::FP_NEGATE,
-                                              fc::PUSH_FP,
-                                              0x02,
-                                              fc::FP_DIVIDE,
-                                              fc::FP_ADD,
-                                              fc::POP,
-                                              fc::PUSH_FP,
-                                              0x01,
-                                              fc::FP_NEGATE,
-                                              fc::PUSH_FP,
-                                              0x02,
-                                              fc::FP_DIVIDE,
-                                              fc::FP_NEGATE,
-                                              fc::POP,
-                                              fc::Instruction::EXIT,
-                                          },
-                           .constants = {100.0, 3.5, -4.4}}}};
+    .header = {.filetype = '\0', .major = 24, .minor = 6, .patch = 16, .entryOffset = 5},
+    .chunks = {fc::Chunk{
+      .name = "bar",
+      .code =
+        {
+          fc::PUSH_FP,   0x00,    fc::PUSH_FP,           0x01, fc::FP_NEGATE, fc::PUSH_FP, 0x02, fc::FP_DIVIDE,
+          fc::FP_ADD,    fc::POP, fc::PUSH_FP,           0x01, fc::FP_NEGATE, fc::PUSH_FP, 0x02, fc::FP_DIVIDE,
+          fc::FP_NEGATE, fc::POP, fc::Instruction::EXIT,
+        },
+      .constants = {100.0, 3.5, -4.4}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -115,27 +92,23 @@ CHUNK bar
     IEXIT
 )";
 
-  fc::ByteCode code{
-      .header = {
-          .filetype = '\0',
-          .major = 4,
-          .minor = 7,
-          .patch = 17,
-          .entryOffset = 15},
-      .chunks = {fc::Chunk{.name = "bar", .code = {
-                                              fc::PUSH_FP,
-                                              0x00,
-                                              fc::PUSH_FP,
-                                              0x01,
-                                              fc::FP_NEGATE,
-                                              fc::PUSH_FP,
-                                              0x02,
-                                              fc::FP_DIVIDE,
-                                              fc::FP_ADD,
-                                              fc::POP,
-                                              fc::EXIT,
-                                          },
-                           .constants = {102.0, 3.5123, 4.46}}}};
+  fc::ByteCode code{.header = {.filetype = '\0', .major = 4, .minor = 7, .patch = 17, .entryOffset = 15},
+                    .chunks = {fc::Chunk{.name = "bar",
+                                         .code =
+                                           {
+                                             fc::PUSH_FP,
+                                             0x00,
+                                             fc::PUSH_FP,
+                                             0x01,
+                                             fc::FP_NEGATE,
+                                             fc::PUSH_FP,
+                                             0x02,
+                                             fc::FP_DIVIDE,
+                                             fc::FP_ADD,
+                                             fc::POP,
+                                             fc::EXIT,
+                                           },
+                                         .constants = {102.0, 3.5123, 4.46}}}};
 
   auto file = std::filesystem::temp_directory_path() / "code.flc";
   {

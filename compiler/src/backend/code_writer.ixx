@@ -1,12 +1,13 @@
-#ifndef FLUIR_COMPILER_BACKEND_CODE_WRITER_HPP
-#define FLUIR_COMPILER_BACKEND_CODE_WRITER_HPP
+module;
 
 #include <ostream>
 
 #include "bytecode/byte_code.hpp"
 
+export module fluir.backend.code_writer;
+
 namespace fluir {
-  class CodeWriter {
+  export class CodeWriter {
    public:
     void write(const code::ByteCode& code, std::ostream& destination);
 
@@ -15,5 +16,3 @@ namespace fluir {
     virtual void writeChunk(const code::Chunk&, std::ostream&) = 0;
   };
 }  // namespace fluir
-
-#endif

@@ -1,10 +1,17 @@
-#include "compiler/frontend/asg_builder.hpp"
-
+module;
 #include <algorithm>
+#include <experimental/scope>
 #include <ranges>
+#include <unordered_map>
 #include <unordered_set>
 #include <variant>
-#include <experimental/scope>
+#include <vector>
+
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/asg.hpp"
+#include "compiler/utility/results.hpp"
+
+module fluir.frontend.asg_builder;
 
 namespace {
   /** Returns the set of Nodes that are not dependencies of other Nodes */

@@ -4,9 +4,9 @@
 #include <gtest/gtest.h>
 
 #include "compiler/debug/asg_printer.hpp"
-#include "compiler/frontend/asg_builder.hpp"
-#include "compiler/frontend/parser.hpp"
 #include "file_utility.hpp"
+
+import fluir.frontend;
 
 namespace fs = std::filesystem;
 
@@ -29,7 +29,7 @@ TEST_P(TestAsgParserIntegration, Test) {
   EXPECT_EQ(expected, actual);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestAsgParserIntegration, TestAsgParserIntegration,
-                         ::testing::ValuesIn(
-                             fluir::test::getTestPrograms("asg")),
+INSTANTIATE_TEST_SUITE_P(TestAsgParserIntegration,
+                         TestAsgParserIntegration,
+                         ::testing::ValuesIn(fluir::test::getTestPrograms("asg")),
                          fluir::test::filePathName);

@@ -14,6 +14,12 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
                                     "frontend/asg_builder.cpp"
 )
 
+set(FLUIR_COMPILER_FRONTEND_INTERFACES
+    "frontend/frontend.ixx"
+    "frontend/parser.ixx"
+    "frontend/asg_builder.ixx"
+)
+
 set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/bytecode_generator.cpp"
     "backend/code_writer.cpp"
@@ -28,6 +34,10 @@ target_sources(
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
             utility/diagnostics.cpp
+    PUBLIC FILE_SET
+           CXX_MODULES
+           FILES
+           ${FLUIR_COMPILER_FRONTEND_INTERFACES}
 )
 
 turn_up_warnings_on(fluir.libcompiler)

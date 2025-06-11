@@ -1,6 +1,4 @@
-#ifndef FLUIR_COMPILER_FRONTEND_PARSER_HPP
-#define FLUIR_COMPILER_FRONTEND_PARSER_HPP
-
+module;
 #include <filesystem>
 #include <string>
 #include <utility>
@@ -10,11 +8,13 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/results.hpp"
 
-namespace fluir {
-  Results<pt::ParseTree> parseString(const std::string_view source);
-  Results<pt::ParseTree> parseFile(const std::filesystem::path& source);
+export module fluir.frontend.parser;
 
-  class Parser {
+namespace fluir {
+  export Results<pt::ParseTree> parseString(const std::string_view source);
+  export Results<pt::ParseTree> parseFile(const std::filesystem::path& source);
+
+  export class Parser {
    public:
     Results<pt::ParseTree> parseString(const std::string_view source);
     Results<pt::ParseTree> parseFile(const std::filesystem::path& file);
@@ -74,5 +74,3 @@ namespace fluir {
     };
   };
 }  // namespace fluir
-
-#endif

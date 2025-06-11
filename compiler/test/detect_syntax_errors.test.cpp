@@ -4,13 +4,14 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parser.hpp"
 #include "file_utility.hpp"
+#include "compiler/utility/diagnostics.hpp"
+
+import fluir.frontend.parser;
 
 namespace fs = std::filesystem;
 
-class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
-};
+class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> { };
 
 TEST_P(TestDetectSyntaxError, Test) {
   const auto programFile = GetParam();
@@ -32,7 +33,7 @@ TEST_P(TestDetectSyntaxError, Test) {
   EXPECT_EQ(errors, actual);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestDetectSyntaxError, TestDetectSyntaxError,
-                         ::testing::ValuesIn(
-                             fluir::test::getTestPrograms("syntax_error")),
+INSTANTIATE_TEST_SUITE_P(TestDetectSyntaxError,
+                         TestDetectSyntaxError,
+                         ::testing::ValuesIn(fluir::test::getTestPrograms("syntax_error")),
                          fluir::test::filePathName);

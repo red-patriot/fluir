@@ -1,9 +1,18 @@
-#include "compiler/frontend/parser.hpp"
-
+module;
+#include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <utility>
+
+#include <tinyxml2.h>
+
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/utility/results.hpp"
 
 #include <fmt/format.h>
+
+module fluir.frontend.parser;
 
 using namespace std::string_literals;
 

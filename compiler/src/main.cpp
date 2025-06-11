@@ -4,8 +4,8 @@
 
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
-#include "compiler/frontend/asg_builder.hpp"
-#include "compiler/frontend/parser.hpp"
+
+import fluir.frontend;
 
 namespace fs = std::filesystem;
 

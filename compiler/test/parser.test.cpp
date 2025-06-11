@@ -1,10 +1,11 @@
-#include "compiler/frontend/parser.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 
 #include <string>
 #include <tuple>
 
 #include <gtest/gtest.h>
+
+import fluir.frontend.parser;
 
 using std::tuple;
 using TestParserData = tuple<std::string, fluir::pt::ParseTree, std::string>;

@@ -1,6 +1,4 @@
-#ifndef FLUIR_COMPILER_FRONTEND_ASG_BUILDER_HPP
-#define FLUIR_COMPILER_FRONTEND_ASG_BUILDER_HPP
-
+module;
 #include <unordered_map>
 #include <vector>
 
@@ -8,12 +6,14 @@
 #include "compiler/models/asg.hpp"
 #include "compiler/utility/results.hpp"
 
+export module fluir.frontend.asg_builder;
+
 namespace fluir {
-  Results<asg::ASG> buildGraph(const pt::ParseTree& tree);
+  export Results<asg::ASG> buildGraph(const pt::ParseTree& tree);
 
-  Results<asg::DataFlowGraph> buildDataFlowGraph(pt::Block block);
+  export Results<asg::DataFlowGraph> buildDataFlowGraph(pt::Block block);
 
-  class ASGBuilder {
+  export class ASGBuilder {
    public:
     static Results<asg::ASG> buildFrom(const pt::ParseTree& tree);
 
@@ -29,7 +29,7 @@ namespace fluir {
     explicit ASGBuilder(const pt::ParseTree& tree);
   };
 
-  class FlowGraphBuilder {
+  export class FlowGraphBuilder {
    public:
     static Results<asg::DataFlowGraph> buildFrom(pt::Block block);
 
@@ -51,5 +51,3 @@ namespace fluir {
     asg::SharedDependency getDependency(ID dependentId, int index);
   };
 }  // namespace fluir
-
-#endif

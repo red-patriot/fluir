@@ -7,8 +7,9 @@ module;
 #include <variant>
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
-#include "compiler/models/asg.hpp"
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 #include "compiler/utility/results.hpp"
 
 module fluir.frontend.asg_builder;

@@ -1,10 +1,10 @@
 module;
 #include <ostream>
 
-#include "compiler/models/asg.hpp"
 #include "compiler/utility/indent_formatter.hpp"
 
 export module fluir.debug.asg_printer;
+export import fluir.models.asg;
 
 namespace fluir::debug {
   export class AsgPrinter : private IndentFormatter<> {

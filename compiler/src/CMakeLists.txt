@@ -16,6 +16,7 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
 
 set(FLUIR_COMPILER_FRONTEND_INTERFACES
     "frontend/frontend.ixx"
+    "frontend/parse_tree.ixx"
     "frontend/parser.ixx"
     "frontend/asg_builder.ixx"
 )
@@ -37,6 +38,12 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 
 set(FLUIR_COMPILER_DEBUG_INTERFACES "debug/debug.ixx" "debug/asg_printer.ixx")
 
+set(FLUIR_COMPILER_MODELS_INTERFACES
+    "models/asg.ixx"
+    "models/asg/node.ixx"
+    "models/asg/declaration.ixx"
+)
+
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
@@ -46,6 +53,7 @@ target_sources(
     PUBLIC FILE_SET
            CXX_MODULES
            FILES
+           ${FLUIR_COMPILER_MODELS_INTERFACES}
            ${FLUIR_COMPILER_BACKEND_INTERFACES}
            ${FLUIR_COMPILER_DEBUG_INTERFACES}
            ${FLUIR_COMPILER_FRONTEND_INTERFACES}

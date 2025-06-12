@@ -1,5 +1,4 @@
-#ifndef FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
-#define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
+module;
 
 #include <string>
 #include <unordered_map>
@@ -10,11 +9,13 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
-namespace fluir::pt {
-  using Float = double;
-  using Literal = Float;  // TODO: Support other literal types
+export module fluir.frontend.parse_tree;
 
-  struct Constant {
+namespace fluir::pt {
+  export using Float = double;
+  export using Literal = Float;  // TODO: Support other literal types
+
+  export struct Constant {
     ID id;
     FlowGraphLocation location;
     Literal value;
@@ -22,7 +23,7 @@ namespace fluir::pt {
     friend bool operator==(const Constant&, const Constant&) = default;
   };
 
-  struct Binary {
+  export struct Binary {
     ID id;
     FlowGraphLocation location;
     ID lhs = 0;
@@ -32,7 +33,7 @@ namespace fluir::pt {
     friend bool operator==(const Binary&, const Binary&) = default;
   };
 
-  struct Unary {
+  export struct Unary {
     ID id;
     FlowGraphLocation location;
     ID lhs = 0;
@@ -41,7 +42,7 @@ namespace fluir::pt {
     friend bool operator==(const Unary&, const Unary&) = default;
   };
 
-  struct Conduit {
+  export struct Conduit {
     struct Output {
       ID target = INVALID_ID;
       int index = 0;
@@ -57,8 +58,8 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant>;
-  struct Block {
+  export using Node = std::variant<Binary, Unary, Constant>;
+  export struct Block {
     using Nodes = std::unordered_map<ID, Node>;
     using Conduits = std::unordered_map<ID, Conduit>;
 
@@ -68,9 +69,9 @@ namespace fluir::pt {
     friend bool operator==(const Block&, const Block&) = default;
   };
 
-  inline const Block EMPTY_BLOCK = {};
+  export inline const Block EMPTY_BLOCK = {};
 
-  struct FunctionDecl {
+  export struct FunctionDecl {
     ID id;
     FlowGraphLocation location;
 
@@ -80,13 +81,11 @@ namespace fluir::pt {
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };
 
-  using Declaration = std::variant<FunctionDecl>;  // TODO: Support other top-level declarations here
+  export using Declaration = std::variant<FunctionDecl>;  // TODO: Support other top-level declarations here
 
-  struct ParseTree {
+  export struct ParseTree {
     std::unordered_map<ID, Declaration> declarations;
 
     friend bool operator==(const ParseTree&, const ParseTree&) = default;
   };
 }  // namespace fluir::pt
-
-#endif

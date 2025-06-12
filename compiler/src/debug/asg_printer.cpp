@@ -2,10 +2,14 @@ module;
 
 #include <algorithm>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include <fmt/format.h>
 
-#include "compiler/models/asg.hpp"
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 
 module fluir.debug.asg_printer;
 

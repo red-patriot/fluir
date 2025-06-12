@@ -1,5 +1,4 @@
-#ifndef FLUIR_COMPILER_MODELS_ASG_NODE_HPP
-#define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
+module;
 
 #include <memory>
 #include <variant>
@@ -9,32 +8,34 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
+export module fluir.models.asg.node;
+
 namespace fluir::asg {
-  struct NodeBase {
+  export struct NodeBase {
     ID id;
     FlowGraphLocation location;
   };
 
-  struct Node;
+  export struct Node;
 
-  using SharedDependency = std::shared_ptr<Node>;
+  export using SharedDependency = std::shared_ptr<Node>;
 
-  struct ConstantFP : public NodeBase {
+  export struct ConstantFP : public NodeBase {
     double value;
   };
 
-  struct BinaryOp : public NodeBase {
+  export struct BinaryOp : public NodeBase {
     Operator op;
     SharedDependency lhs;
     SharedDependency rhs;
   };
 
-  struct UnaryOp : public NodeBase {
+  export struct UnaryOp : public NodeBase {
     Operator op;
     SharedDependency operand;
   };
 
-  struct Node : public std::variant<ConstantFP, BinaryOp, UnaryOp> {
+  export struct Node : public std::variant<ConstantFP, BinaryOp, UnaryOp> {
     using variant::variant;
 
     template <typename Concrete>
@@ -57,8 +58,6 @@ namespace fluir::asg {
     }
   };
 
-  using DataFlowGraph = std::vector<Node>;
+  export using DataFlowGraph = std::vector<Node>;
 
 }  // namespace fluir::asg
-
-#endif

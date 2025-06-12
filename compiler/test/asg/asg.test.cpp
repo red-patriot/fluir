@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "compiler/models/asg.hpp"
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 
 import fluir.frontend.asg_builder;
+import fluir.frontend.parse_tree;
+import fluir.models.asg;
 
 TEST(TestAstBuilder, SingleEmptyFunction) {
   fluir::pt::ParseTree pt{

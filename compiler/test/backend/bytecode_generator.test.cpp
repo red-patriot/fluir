@@ -2,11 +2,14 @@
 
 #include "bytecode_assertions.hpp"
 #include "bytecode/byte_code.hpp"
-#include "compiler/models/asg.hpp"
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 
 import fluir.backend.bytecode_generator;
 import fluir.backend.inspect_writer;
+import fluir.models.asg;
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;

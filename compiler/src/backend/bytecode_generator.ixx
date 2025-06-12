@@ -1,11 +1,11 @@
 module;
 
 #include "bytecode/byte_code.hpp"
-#include "compiler/models/asg.hpp"
 #include "compiler/utility/results.hpp"
 
 export module fluir.backend.bytecode_generator;
 export import fluir.backend.code_writer;
+export import fluir.models.asg;
 
 namespace fluir {
   export Results<code::ByteCode> generateCode(const asg::ASG& graph);

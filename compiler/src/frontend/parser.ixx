@@ -5,12 +5,13 @@ module;
 
 #include <tinyxml2.h>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
 #include "compiler/utility/results.hpp"
 
 export module fluir.frontend.parser;
+
+import fluir.models.id;
+import fluir.models.location;
+import fluir.models.operators;
 import fluir.frontend.parse_tree;
 
 namespace fluir {

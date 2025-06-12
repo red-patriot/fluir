@@ -7,11 +7,10 @@ module;
 
 #include <fmt/format.h>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
-
 module fluir.debug.asg_printer;
+import fluir.models.id;
+import fluir.models.location;
+import fluir.models.operators;
 
 namespace fluir::debug {
   AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }

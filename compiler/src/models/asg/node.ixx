@@ -4,11 +4,10 @@ module;
 #include <variant>
 #include <vector>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
-
 export module fluir.models.asg.node;
+export import fluir.models.id;
+export import fluir.models.location;
+export import fluir.models.operators;
 
 namespace fluir::asg {
   export struct NodeBase {

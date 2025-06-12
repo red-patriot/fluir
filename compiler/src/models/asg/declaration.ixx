@@ -2,9 +2,6 @@ module;
 
 #include <string>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-
 export module fluir.models.asg.declaration;
 export import fluir.models.asg.node;
 

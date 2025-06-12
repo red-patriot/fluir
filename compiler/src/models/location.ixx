@@ -1,8 +1,7 @@
-#ifndef FLUIR_COMPILER_MODELS_LOCATION_HPP
-#define FLUIR_COMPILER_MODELS_LOCATION_HPP
+export module fluir.models.location;
 
 namespace fluir {
-  struct FlowGraphLocation {
+  export struct FlowGraphLocation {
     int x;
     int y;
     int z;
@@ -12,5 +11,3 @@ namespace fluir {
     friend bool operator==(const FlowGraphLocation&, const FlowGraphLocation&) = default;
   };
 }  // namespace fluir
-
-#endif

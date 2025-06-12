@@ -3,13 +3,10 @@ module;
 #include <vector>
 
 #include "compiler/utility/results.hpp"
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
 
 export module fluir.frontend.asg_builder;
-export import fluir.models.asg;
 
+import fluir.models.asg;
 import fluir.frontend.parse_tree;
 
 namespace fluir {

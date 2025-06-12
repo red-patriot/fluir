@@ -7,9 +7,6 @@ module;
 #include <variant>
 #include <vector>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
 #include "compiler/utility/results.hpp"
 
 module fluir.frontend.asg_builder;

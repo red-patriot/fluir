@@ -5,11 +5,10 @@ module;
 #include <variant>
 #include <vector>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
-
 export module fluir.frontend.parse_tree;
+export import fluir.models.id;
+export import fluir.models.location;
+export import fluir.models.operators;
 
 namespace fluir::pt {
   export using Float = double;

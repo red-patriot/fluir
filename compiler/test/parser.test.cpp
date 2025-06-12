@@ -3,10 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
-
 import fluir.frontend.parser;
 import fluir.frontend.parse_tree;
 

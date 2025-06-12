@@ -7,9 +7,6 @@ module;
 
 #include <tinyxml2.h>
 
-#include "compiler/models/id.hpp"
-#include "compiler/models/location.hpp"
-#include "compiler/models/operator.hpp"
 #include "compiler/utility/results.hpp"
 
 #include <fmt/format.h>

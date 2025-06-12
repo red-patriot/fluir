@@ -42,6 +42,9 @@ set(FLUIR_COMPILER_MODELS_INTERFACES
     "models/asg.ixx"
     "models/asg/node.ixx"
     "models/asg/declaration.ixx"
+    "models/id.ixx"
+    "models/location.ixx"
+    "models/operators.ixx"
 )
 
 target_sources(

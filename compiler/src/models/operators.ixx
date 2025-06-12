@@ -1,10 +1,11 @@
-#ifndef FLUIR_COMPILER_MODELS_OPERATOR_HPP
-#define FLUIR_COMPILER_MODELS_OPERATOR_HPP
+module;
 
 #include <string>
 
+export module fluir.models.operators;
+
 namespace fluir {
-  enum class Operator {
+  export enum class Operator {
     UNKNOWN,  //
     PLUS,     // +
     MINUS,    // -
@@ -12,7 +13,7 @@ namespace fluir {
     SLASH     // /
   };
 
-  inline std::string_view stringify(Operator op) {
+  export inline std::string_view stringify(Operator op) {
     switch (op) {
       case Operator::PLUS:
         return "+";
@@ -27,5 +28,3 @@ namespace fluir {
     }
   }
 };  // namespace fluir
-
-#endif

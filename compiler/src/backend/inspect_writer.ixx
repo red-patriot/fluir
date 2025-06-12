@@ -1,10 +1,10 @@
 module;
 
 #include "bytecode/byte_code.hpp"
-#include "compiler/utility/indent_formatter.hpp"
 
 export module fluir.backend.inspect_writer;
 export import fluir.backend.code_writer;
+import fluir.utility.indent_formatter;
 
 namespace fluir {
   export class InspectWriter : public CodeWriter, private IndentFormatter<> {

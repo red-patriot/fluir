@@ -1,9 +1,9 @@
-#include "compiler/utility/results.hpp"
-
 #include <string>
 #include <type_traits>
 
 #include <gtest/gtest.h>
+
+import fluir.utility.results;
 
 TEST(TestResults, Typedefs) {
   using ResultsType = fluir::Results<int>;
@@ -83,8 +83,7 @@ TEST(TestResults, MoveConstructorWithValue) {
 }
 
 TEST(TestResults, MoveConstructorWithDiagnostics) {
-  fluir::Diagnostics expected{
-      fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}};
+  fluir::Diagnostics expected{fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}};
   fluir::Results<std::string> first{{fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}}};
   fluir::Results<std::string> second = std::move(first);
 
@@ -126,8 +125,7 @@ TEST(TestResults, MoveAssignWithValue) {
 }
 
 TEST(TestResults, MoveAssignWithDiagnostics) {
-  fluir::Diagnostics expected{
-      fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}};
+  fluir::Diagnostics expected{fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}};
   fluir::Results<std::string> first{{fluir::Diagnostic{fluir::Diagnostic::NOTE, ""}}};
   fluir::Results<std::string> second{"no problem here"};
   second = std::move(first);

@@ -6,10 +6,9 @@ module;
 #include <fmt/format.h>
 #include <bytecode/byte_code.hpp>
 
-#include "compiler/utility/results.hpp"
-
 module fluir.backend.bytecode_generator;
 import fluir.models.operators;
+import fluir.utility.results;
 
 using fluir::code::Instruction;
 

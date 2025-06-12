@@ -4,10 +4,9 @@ module;
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <tinyxml2.h>
-
-#include "compiler/utility/results.hpp"
 
 #include <fmt/format.h>
 

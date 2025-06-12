@@ -1,5 +1,4 @@
-#ifndef FLUIR_COMPILER_UTILITY_DIAGNOSTICS_HPP
-#define FLUIR_COMPILER_UTILITY_DIAGNOSTICS_HPP
+module;
 
 #include <memory>
 #include <string>
@@ -7,15 +6,12 @@
 
 #include <fmt/format.h>
 
+export module fluir.utility.diagnostics;
+
 namespace fluir {
   /** A diagnostic emitted by the compiler */
-  struct Diagnostic {
-    enum class Level {
-      NOTE = 0,
-      WARNING = 1,
-      ERROR = 2,
-      INTERNAL_ERROR = 3
-    };
+  export struct Diagnostic {
+    enum class Level { NOTE = 0, WARNING = 1, ERROR = 2, INTERNAL_ERROR = 3 };
     using enum Level;
 
     class Location {
@@ -33,11 +29,11 @@ namespace fluir {
     }
   };
 
-  bool isError(const Diagnostic& diagnostic);
+  export bool isError(const Diagnostic& diagnostic);
 
-  std::string toString(const Diagnostic& diagnostic);
+  export std::string toString(const Diagnostic& diagnostic);
 
-  class Diagnostics : public std::vector<Diagnostic> {
+  export class Diagnostics : public std::vector<Diagnostic> {
    public:
     using vector::vector;
 
@@ -50,12 +46,9 @@ namespace fluir {
   };
 }  // namespace fluir
 
-template <>
+export template <>
 struct fmt::formatter<fluir::Diagnostic::Level> : formatter<fmt::string_view> {
   // parse is inherited from formatter<string_view>.
 
-  auto format(fluir::Diagnostic::Level l, format_context& ctx) const
-      -> fmt::format_context::iterator;
+  auto format(fluir::Diagnostic::Level l, format_context& ctx) const -> fmt::format_context::iterator;
 };
-
-#endif

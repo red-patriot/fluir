@@ -5,7 +5,6 @@
 #include <gtest/gtest.h>
 
 #include "file_utility.hpp"
-#include "compiler/utility/diagnostics.hpp"
 
 import fluir.frontend.parser;
 

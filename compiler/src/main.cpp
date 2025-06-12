@@ -2,10 +2,9 @@
 #include <fstream>
 #include <iostream>
 
-#include "compiler/utility/diagnostics.hpp"
-
 import fluir.frontend;
 import fluir.backend;
+import fluir.utility.diagnostics;
 
 namespace fs = std::filesystem;
 

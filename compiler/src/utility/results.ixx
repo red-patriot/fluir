@@ -1,9 +1,10 @@
-#ifndef FLUIR_COMPILER_UTILITY_RESULTS_HPP
-#define FLUIR_COMPILER_UTILITY_RESULTS_HPP
+module;
 
 #include <optional>
 
-#include "diagnostics.hpp"
+export module fluir.utility.results;
+
+export import fluir.utility.diagnostics;
 
 namespace fluir {
   /** Contains data and accompanying diagnostics.
@@ -11,26 +12,21 @@ namespace fluir {
    * and if the diagnostics represent an error. It is valid to provide both
    * a value and errors.
    */
-  template <typename T>
+  export template <typename T>
   class Results {
    public:
     using ValueType = T;
     using DiagsType = Diagnostics;
 
     Results() = default;
-    explicit Results(const ValueType& value) :
-        value_(value), diagnostics_() { }
-    explicit Results(const DiagsType& diagnostics) :
-        value_(std::nullopt), diagnostics_(diagnostics) { }
-    Results(const ValueType& value, const DiagsType& diagnostics) :
-        value_(value), diagnostics_(diagnostics) { }
+    explicit Results(const ValueType& value) : value_(value), diagnostics_() { }
+    explicit Results(const DiagsType& diagnostics) : value_(std::nullopt), diagnostics_(diagnostics) { }
+    Results(const ValueType& value, const DiagsType& diagnostics) : value_(value), diagnostics_(diagnostics) { }
 
     Results(const Results&) = default;
     Results& operator=(const Results&) = default;
 
-    Results(Results&& other) :
-        value_(std::move(other.value_)),
-        diagnostics_(std::move(other.diagnostics_)) {
+    Results(Results&& other) : value_(std::move(other.value_)), diagnostics_(std::move(other.diagnostics_)) {
       other.value_ = std::nullopt;
       other.diagnostics_ = Diagnostics{};
     }
@@ -67,5 +63,3 @@ namespace fluir {
     DiagsType diagnostics_;          /**< Diagnostics which accompany the production of value_ */
   };
 };  // namespace fluir
-
-#endif

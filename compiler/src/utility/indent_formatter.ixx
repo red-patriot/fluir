@@ -1,17 +1,16 @@
-#ifndef FLUIR_COMPILER_UTILITY_INDENT_FORMATTER_HPP
-#define FLUIR_COMPILER_UTILITY_INDENT_FORMATTER_HPP
-
+module;
 #include <string>
 
 #include "fmt/format.h"
 
+export module fluir.utility.indent_formatter;
+
 namespace fluir {
-  template <unsigned int Level = 2>
+  export template <unsigned int Level = 2>
   class IndentFormatter {
     class IndentLevel {
       friend IndentFormatter;
-      explicit IndentLevel(IndentFormatter* formatter) :
-          formatter_(formatter) { }
+      explicit IndentLevel(IndentFormatter* formatter) : formatter_(formatter) { }
       IndentLevel(const IndentLevel&) = delete;
       IndentLevel& operator=(const IndentLevel&) = delete;
       IndentLevel(IndentLevel&&) = delete;
@@ -25,8 +24,7 @@ namespace fluir {
 
    public:
     template <typename... FmtArgs>
-    std::string
-    formatIndented(fmt::format_string<FmtArgs...> format, FmtArgs&&... args) {
+    std::string formatIndented(fmt::format_string<FmtArgs...> format, FmtArgs&&... args) {
       return fmt::format("{}", indentation()) + fmt::format(format, std::forward<FmtArgs>(args)...);
     }
 
@@ -45,5 +43,3 @@ namespace fluir {
     std::string indent_ = std::string(8, ' ');
   };
 }  // namespace fluir
-
-#endif

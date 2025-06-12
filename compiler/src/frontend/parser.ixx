@@ -5,14 +5,13 @@ module;
 
 #include <tinyxml2.h>
 
-#include "compiler/utility/results.hpp"
-
 export module fluir.frontend.parser;
 
 import fluir.models.id;
 import fluir.models.location;
 import fluir.models.operators;
 import fluir.frontend.parse_tree;
+export import fluir.utility.results;
 
 namespace fluir {
   export Results<pt::ParseTree> parseString(const std::string_view source);

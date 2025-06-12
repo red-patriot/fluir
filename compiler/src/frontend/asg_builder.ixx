@@ -2,12 +2,11 @@ module;
 #include <unordered_map>
 #include <vector>
 
-#include "compiler/utility/results.hpp"
-
 export module fluir.frontend.asg_builder;
 
 import fluir.models.asg;
 import fluir.frontend.parse_tree;
+import fluir.utility.results;
 
 namespace fluir {
   export Results<asg::ASG> buildGraph(const pt::ParseTree& tree);

@@ -47,12 +47,20 @@ set(FLUIR_COMPILER_MODELS_INTERFACES
     "models/operators.ixx"
 )
 
+set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostics.cpp")
+
+set(FLUIR_COMPILER_UTILITY_INTERFACES
+    "utility/diagnostics.ixx"
+    "utility/indent_formatter.ixx"
+    "utility/results.ixx"
+)
+
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
-            utility/diagnostics.cpp
+            ${FLUIR_COMPILER_UTILITY_SOURCES}
     PUBLIC FILE_SET
            CXX_MODULES
            FILES
@@ -60,6 +68,7 @@ target_sources(
            ${FLUIR_COMPILER_BACKEND_INTERFACES}
            ${FLUIR_COMPILER_DEBUG_INTERFACES}
            ${FLUIR_COMPILER_FRONTEND_INTERFACES}
+           ${FLUIR_COMPILER_UTILITY_INTERFACES}
 )
 
 turn_up_warnings_on(fluir.libcompiler)
@@ -77,4 +86,4 @@ target_link_libraries(
 
 add_executable(fluir.compiler main.cpp)
 
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler)
+target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)

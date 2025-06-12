@@ -1,15 +1,13 @@
-#ifndef FLUIR_VM_CM_HPP
-#define FLUIR_VM_CM_HPP
+module;
 
 #include <bytecode/byte_code.hpp>
 
-namespace fluir {
-  enum class ExecResult {
-    SUCCESS,
-    ERROR
-  };
+export module fluir.vm;
 
-  class VirtualMachine {
+namespace fluir {
+  export enum class ExecResult { SUCCESS, ERROR };
+
+  export class VirtualMachine {
    public:
     using Stack = std::vector<code::Value>;
 
@@ -33,5 +31,3 @@ namespace fluir {
     ExecResult run();
   };
 }  // namespace fluir
-
-#endif

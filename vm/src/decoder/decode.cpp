@@ -1,8 +1,10 @@
-#include "vm/decoder/decode.hpp"
-
+module;
 #include <stdexcept>
+#include "bytecode/byte_code.hpp"
 
-#include "vm/decoder/inspect.hpp"
+module fluir.decoder;
+import fluir.decoder.inspect;
+
 namespace fluir {
   code::ByteCode decode(std::string_view source) {
     if (source.size() >= 1) {

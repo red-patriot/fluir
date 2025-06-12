@@ -9,9 +9,15 @@ add_library(
 
 target_sources(
     fluir.libvm
-    PRIVATE decode.cpp
-            decoder/inspect.cpp
-            vm.cpp
+    PRIVATE "decoder/decode.cpp"
+            "decoder/inspect.cpp"
+            "vm.cpp"
+    PUBLIC FILE_SET
+           CXX_MODULES
+           FILES
+           "vm.ixx"
+           "decoder/decode.ixx"
+           "decoder/inspect.ixx"
 )
 
 turn_up_warnings_on(fluir.libvm)

@@ -1,7 +1,11 @@
-#include "vm/decoder/inspect.hpp"
+module;
 
 #include <charconv>
 #include <stdexcept>
+
+#include "bytecode/byte_code.hpp"
+
+module fluir.decoder.inspect;
 
 namespace fluir {
   code::ByteCode InspectDecoder::decode(const std::string_view source) {
@@ -24,21 +28,16 @@ namespace fluir {
     header.filetype = source_.at(0);
 
     auto majorStr = source_.substr(1, 2);
-    auto result = std::from_chars(majorStr.begin(), majorStr.end(),
-                                  header.major, 16);
+    auto result = std::from_chars(majorStr.begin(), majorStr.end(), header.major, 16);
 
     auto minorStr = std::string_view(result.ptr, 2);
-    result = std::from_chars(minorStr.begin(), minorStr.end(),
-                             header.minor, 16);
+    result = std::from_chars(minorStr.begin(), minorStr.end(), header.minor, 16);
 
     auto patchStr = std::string_view(result.ptr, 2);
-    result = std::from_chars(patchStr.begin(), patchStr.end(),
-                             header.patch, 16);
+    result = std::from_chars(patchStr.begin(), patchStr.end(), header.patch, 16);
 
     auto entryOffsetStr = std::string_view(result.ptr, 16);
-    result = std::from_chars(entryOffsetStr.begin(),
-                             entryOffsetStr.end(),
-                             header.entryOffset, 16);
+    result = std::from_chars(entryOffsetStr.begin(), entryOffsetStr.end(), header.entryOffset, 16);
 
     // Consume the header part of the string
     source_ = std::string_view{result.ptr, source_.end()};
@@ -67,9 +66,8 @@ namespace fluir {
     auto codeBlock = code();
     // TODO: Check for errors
 
-    code_.chunks.push_back(code::Chunk{.name = std::string{name.source},
-                                       .code = codeBlock,
-                                       .constants = constantBlock});
+    code_.chunks.push_back(
+      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .constants = constantBlock});
   }
 
   std::vector<code::Value> InspectDecoder::constants() {
@@ -119,18 +117,14 @@ namespace fluir {
     return createToken(TokenType::FLOAT_LITERAL);
   }
 
-  bool InspectDecoder::atEnd() {
-    return current_ == source_.end();
-  }
+  bool InspectDecoder::atEnd() { return current_ == source_.end(); }
 
   char InspectDecoder::next() {
     current_++;
     return current_[-1];
   }
 
-  char InspectDecoder::peek() {
-    return *current_;
-  }
+  char InspectDecoder::peek() { return *current_; }
 
   Token InspectDecoder::scanNext() {
     eatWhitespace();
@@ -197,8 +191,7 @@ namespace fluir {
   }
   TokenType InspectDecoder::checkKeyword(std::string_view expected, TokenType type) {
     std::string_view current{start_, current_};
-    if (current.size() == expected.size() &&
-        current == expected) {
+    if (current.size() == expected.size() && current == expected) {
       return type;
     }
     return TokenType::IDENTIFIER;
@@ -318,8 +311,7 @@ namespace fluir {
   code::Value InspectDecoder::decodeFloatConstant() {
     auto rawConstant = scanNext();
     double number;
-    std::from_chars(rawConstant.source.begin(), rawConstant.source.end(),
-                    number);
+    std::from_chars(rawConstant.source.begin(), rawConstant.source.end(), number);
     // TODO: Check error
     return number;
   }

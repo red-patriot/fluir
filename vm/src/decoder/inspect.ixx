@@ -1,13 +1,14 @@
-#ifndef FLUIR_VM_DECODER_INSPECT_HPP
-#define FLUIR_VM_DECODER_INSPECT_HPP
+module;
 
 #include <string>
 
 #include "bytecode/byte_code.hpp"
 
+export module fluir.decoder.inspect;
+
 namespace fluir {
   // clang-format off
-  enum class TokenType {
+  export enum class TokenType {
     // Literals
     HEX_LITERAL, FLOAT_LITERAL, IDENTIFIER,
     // Sections
@@ -24,12 +25,12 @@ namespace fluir {
   };
   // clang-format on
 
-  struct Token {
+  export struct Token {
     TokenType type;
     std::string_view source;
   };
 
-  class InspectDecoder {
+  export class InspectDecoder {
    public:
     code::ByteCode decode(const std::string_view source);
 
@@ -68,5 +69,3 @@ namespace fluir {
     code::Value decodeFloatConstant();
   };
 }  // namespace fluir
-
-#endif

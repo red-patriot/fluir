@@ -3,8 +3,8 @@
 #include <sstream>
 #include <type_traits>
 
-#include "vm/decoder/decode.hpp"
-#include "vm/vm.hpp"
+import fluir.vm;
+import fluir.decoder;
 
 int main(int argc, char** argv) {
   // TODO: Make this work better and add other flags

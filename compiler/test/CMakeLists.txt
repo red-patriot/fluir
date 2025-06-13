@@ -14,8 +14,10 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(fluir.compiler.test)
 
-set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
-                               utility/results.test.cpp
+set(FLUIR_UTILITY_TEST_SOURCES
+    utility/diagnostics.test.cpp
+    utility/results.test.cpp
+    utility/pass.test.cpp
 )
 
 set(FLUIR_ASG_TEST_SOURCES

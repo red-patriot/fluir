@@ -21,6 +21,13 @@ function (turn_up_warnings_on target_name)
             ${target_name}
             PRIVATE -Wall
                     -Wextra
+                    -Wshadow
+                    -Wcast-align
+                    -Wunused
+                    -Wunreachable-code
+                    -Wformat=2
+                    -Woverloaded-virtual
+                    -Wsign-promo
                     -Werror
                     -pedantic
         )

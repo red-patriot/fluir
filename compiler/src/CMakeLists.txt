@@ -50,8 +50,10 @@ set(FLUIR_COMPILER_MODELS_INTERFACES
 set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostics.cpp")
 
 set(FLUIR_COMPILER_UTILITY_INTERFACES
+    "utility/context.ixx"
     "utility/diagnostics.ixx"
     "utility/indent_formatter.ixx"
+    "utility/pass.ixx"
     "utility/results.ixx"
 )
 

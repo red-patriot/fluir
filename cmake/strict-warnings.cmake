@@ -17,7 +17,13 @@ function (turn_up_warnings_on target_name)
         STREQUAL
         "Clang"
     )
-        message(WARNING "Clang is not yet fully supported, YMMV")
+        target_compile_options(
+            ${target_name}
+            PRIVATE -Wall
+                    -Wextra
+                    -Werror
+                    -pedantic
+        )
     elseif (
         CMAKE_CXX_COMPILER_ID
         STREQUAL

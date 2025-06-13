@@ -76,7 +76,7 @@ namespace fluir {
   fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
-    fluir::asg::BinaryOp asg{pt.id, pt.location, pt.op, nullptr, nullptr};
+    fluir::asg::BinaryOp asg{{pt.id, pt.location}, pt.op, nullptr, nullptr};
 
     asg.lhs = getDependency(pt.id, 0);
     asg.rhs = getDependency(pt.id, 1);
@@ -88,7 +88,7 @@ namespace fluir {
     inProgressNodes_.emplace_back(pt.id);
     auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
 
-    asg::UnaryOp asg{pt.id, pt.location, pt.op, nullptr};
+    asg::UnaryOp asg{{pt.id, pt.location}, pt.op, nullptr};
     asg.operand = getDependency(pt.id, 0);
 
     return asg;
@@ -98,7 +98,7 @@ namespace fluir {
     inProgressNodes_.emplace_back(pt.id);
     auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
 
-    asg::ConstantFP asg{pt.id, pt.location, pt.value};
+    asg::ConstantFP asg{{pt.id, pt.location}, pt.value};
     // TODO: handle other literal types here
 
     return asg;

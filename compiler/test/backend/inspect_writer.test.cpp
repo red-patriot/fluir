@@ -2,7 +2,6 @@
 #include <fstream>
 
 #include <gtest/gtest.h>
-#include "bytecode/byte_code.hpp"
 
 import fluir.backend.bytecode_generator;
 import fluir.backend.inspect_writer;

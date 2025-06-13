@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "bytecode/byte_code.hpp"
-
 import fluir.vm;
 
 namespace fc = fluir::code;

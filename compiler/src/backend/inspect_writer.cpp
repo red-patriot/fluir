@@ -1,9 +1,11 @@
 module;
-#include <string>
 
-#include "fmt/format.h"
-#include "bytecode/instruction.hpp"
-#include "bytecode/byte_code.hpp"
+#include <string>
+#include <vector>
+
+#include <fmt/format.h>
+
+#include "byte_code/instruction.hpp"
 
 module fluir.backend.inspect_writer;
 

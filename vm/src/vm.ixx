@@ -1,8 +1,10 @@
 module;
 
-#include <bytecode/byte_code.hpp>
+#include <cstdint>
+#include <vector>
 
 export module fluir.vm;
+export import fluir.byte_code;
 
 namespace fluir {
   export enum class ExecResult { SUCCESS, ERROR };

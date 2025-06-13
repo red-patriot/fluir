@@ -1,10 +1,11 @@
 module;
 
+#include <cstdint>
 #include <string>
-
-#include "bytecode/byte_code.hpp"
+#include <vector>
 
 export module fluir.decoder.inspect;
+export import fluir.byte_code;
 
 namespace fluir {
   // clang-format off

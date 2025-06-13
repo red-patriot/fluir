@@ -1,6 +1,7 @@
 module;
 
-#include "bytecode/byte_code.hpp"
+#include <cstdint>
+#include <ostream>
 
 export module fluir.backend.bytecode_generator;
 export import fluir.backend.code_writer;

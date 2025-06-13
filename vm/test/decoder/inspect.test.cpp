@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "bytecode/byte_code.hpp"
 #include "bytecode_assertions.hpp"
 
 import fluir.decoder.inspect;

@@ -2,9 +2,9 @@ module;
 
 #include <string>
 
-#include "bytecode/byte_code.hpp"
-
 export module fluir.decoder;
+export import fluir.byte_code;
+import fluir.byte_code;
 
 namespace fluir {
   export code::ByteCode decode(std::string_view source);

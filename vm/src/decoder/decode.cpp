@@ -1,6 +1,5 @@
 module;
 #include <stdexcept>
-#include "bytecode/byte_code.hpp"
 
 module fluir.decoder;
 import fluir.decoder.inspect;

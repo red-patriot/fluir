@@ -1,7 +1,7 @@
 module;
 
+#include <cstdint>
 #include <iostream>
-#include "bytecode/byte_code.hpp"
 
 module fluir.vm;
 

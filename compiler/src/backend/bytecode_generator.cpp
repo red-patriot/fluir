@@ -4,7 +4,6 @@ module;
 #include <variant>
 
 #include <fmt/format.h>
-#include <bytecode/byte_code.hpp>
 
 module fluir.backend.bytecode_generator;
 import fluir.models.operators;

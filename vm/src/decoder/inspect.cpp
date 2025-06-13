@@ -1,9 +1,9 @@
 module;
 
 #include <charconv>
+#include <cstdint>
 #include <stdexcept>
-
-#include "bytecode/byte_code.hpp"
+#include <vector>
 
 module fluir.decoder.inspect;
 

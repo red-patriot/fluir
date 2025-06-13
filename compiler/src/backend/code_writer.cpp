@@ -1,6 +1,6 @@
 module;
 
-#include "bytecode/byte_code.hpp"
+#include <ostream>
 
 module fluir.backend.code_writer;
 

@@ -2,9 +2,8 @@ module;
 
 #include <ostream>
 
-#include "bytecode/byte_code.hpp"
-
 export module fluir.backend.code_writer;
+export import fluir.byte_code;
 
 namespace fluir {
   export class CodeWriter {

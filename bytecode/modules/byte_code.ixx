@@ -1,14 +1,13 @@
-#ifndef FLUIR_BYTECODE_BYTE_CODE_HPP
-#define FLUIR_BYTECODE_BYTE_CODE_HPP
+module;
 
 #include <cstdint>
 #include <vector>
 
-#include "code_chunk.hpp"
-#include "instruction.hpp"
+export module fluir.byte_code;
+export import fluir.code_chunk;
 
 namespace fluir::code {
-  struct Header {
+  export struct Header {
     char filetype{0};
 
     std::uint8_t major{0};
@@ -18,10 +17,8 @@ namespace fluir::code {
     std::uint64_t entryOffset{0};
   };
 
-  struct ByteCode {
+  export struct ByteCode {
     Header header{};
     std::vector<Chunk> chunks{};
   };
 }  // namespace fluir::code
-
-#endif

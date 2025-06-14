@@ -2,6 +2,7 @@
 #define FLUIR_COMPILER_UTILITY_CONTEXT_HPP
 
 #include "compiler/utility/diagnostics.hpp"
+#include "compiler/utility/results.hpp"
 
 namespace fluir {
   /** The context of compilation. */

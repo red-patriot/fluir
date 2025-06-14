@@ -24,22 +24,21 @@ namespace {
 }  // namespace
 
 namespace fluir {
-  Results<asg::ASG> buildGraph(const pt::ParseTree& tree) { return ASGBuilder::buildFrom(tree); }
+  Results<asg::ASG> buildGraph(Context& ctx, const pt::ParseTree& tree) { return ASGBuilder::buildFrom(ctx, tree); }
 
-  Results<asg::ASG> ASGBuilder::buildFrom(const pt::ParseTree& tree) {
-    ASGBuilder builder{tree};
+  Results<asg::ASG> ASGBuilder::buildFrom(Context& ctx, const pt::ParseTree& tree) {
+    ASGBuilder builder{ctx, tree};
     return builder.run();
   }
 
-  ASGBuilder::ASGBuilder(const pt::ParseTree& tree) : tree_(tree) { }
+  ASGBuilder::ASGBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
 
   fluir::asg::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
     fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
 
-    auto bodyResults = buildDataFlowGraph(func.body);
-    std::ranges::move(bodyResults.diagnostics(), std::back_inserter(diagnostics_));
+    auto bodyResults = buildDataFlowGraph(ctx_, func.body);
 
-    if (!diagnostics_.containsErrors()) {
+    if (!ctx_.diagnostics.containsErrors()) {
       decl.statements = std::move(bodyResults.value());
     }
 
@@ -50,24 +49,24 @@ namespace fluir {
     for (const auto& declaration : tree_.declarations | std::views::values) {
       graph_.declarations.emplace_back(std::visit(*this, declaration));
     }
-    if (diagnostics_.containsErrors()) {
-      return Results<asg::ASG>{std::move(diagnostics_)};
+    if (ctx_.diagnostics.containsErrors()) {
+      return NoResult;
     }
 
-    return Results<asg::ASG>{std::move(graph_), std::move(diagnostics_)};
+    return std::move(graph_);
   }
 
-  Results<asg::DataFlowGraph> buildDataFlowGraph(pt::Block block) {
-    return FlowGraphBuilder::buildFrom(std::move(block));
+  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block) {
+    return FlowGraphBuilder::buildFrom(ctx, std::move(block));
   }
 
-  Results<asg::DataFlowGraph> FlowGraphBuilder::buildFrom(pt::Block block) {
-    FlowGraphBuilder builder{std::move(block)};
+  Results<asg::DataFlowGraph> FlowGraphBuilder::buildFrom(Context& ctx, pt::Block block) {
+    FlowGraphBuilder builder{ctx, std::move(block)};
 
     return builder.run();
   }
 
-  FlowGraphBuilder::FlowGraphBuilder(pt::Block block) : block_(std::move(block)) { }
+  FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block) : ctx_(ctx), block_(std::move(block)) { }
 
   fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
@@ -106,8 +105,8 @@ namespace fluir {
     if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
       // TODO: Detect which nodes form the cycle
-      diagnostics_.emitError("Circular dependency detected.");
-      return Results<asg::DataFlowGraph>{std::move(diagnostics_)};
+      ctx_.diagnostics.emitError("Circular dependency detected.");
+      return NoResult;
     }
 
     for (const auto& ptNode : sinkNodes) {
@@ -115,7 +114,7 @@ namespace fluir {
       graph_.emplace_back(std::move(asgNode));
     }
 
-    return {std::move(graph_), std::move(diagnostics_)};
+    return std::move(graph_);
   }
 
   asg::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
@@ -134,7 +133,7 @@ namespace fluir {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
       // TODO: Detect which nodes form the cycle
-      diagnostics_.emitError("Circular dependency detected.");
+      ctx_.diagnostics.emitError("Circular dependency detected.");
       return nullptr;
     }
 

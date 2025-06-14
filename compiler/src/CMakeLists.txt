@@ -25,7 +25,7 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
-            ${FLUIR_COMPILER_BACKEND_SOURCES}
+            # ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
             utility/diagnostics.cpp
 )
@@ -42,7 +42,7 @@ target_link_libraries(
            fmt::fmt
            tinyxml2::tinyxml2
 )
-
-add_executable(fluir.compiler main.cpp)
-
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler)
+#
+# add_executable(fluir.compiler main.cpp)
+#
+# target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)

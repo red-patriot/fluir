@@ -6,7 +6,6 @@
 #include <concepts>
 #include <functional>
 #include <type_traits>
-#include <fmt/core.h>
 
 #include "compiler/utility/context.hpp"
 
@@ -47,8 +46,8 @@ namespace fluir {
   }
 
   template <typename T>
-  DataWithContext<std::optional<std::decay_t<T>>> addContext(Context& ctx, T&& t) {
-    return DataWithContext<std::optional<std::decay_t<T>>>{ctx, std::forward<T>(t)};
+  DataWithContext<std::optional<std::decay_t<T>>> addContext(Context ctx, T&& t) {
+    return DataWithContext<std::optional<std::decay_t<T>>>{std::move(ctx), std::forward<T>(t)};
   }
 }  // namespace fluir
 

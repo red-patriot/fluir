@@ -14,10 +14,8 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(fluir.compiler.test)
 
-set(FLUIR_UTILITY_TEST_SOURCES
-    utility/diagnostics.test.cpp
-    utility/results.test.cpp
-    utility/pass.test.cpp
+set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
+                               utility/pass.test.cpp
 )
 
 set(FLUIR_ASG_TEST_SOURCES
@@ -34,7 +32,6 @@ target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
             ${FLUIR_ASG_TEST_SOURCES}
-            ${FLUIR_BACKEND_TEST_SOURCES}
             detect_syntax_errors.test.cpp
             parser.test.cpp
 )

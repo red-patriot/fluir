@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <optional>
 #include <vector>
 
 #include "compiler/utility/context.hpp"
@@ -9,12 +10,12 @@
 namespace {
   class MockPass1 {
    public:
-    static int run(fluir::Context& ctx, int a) { return a + 1; }
+    static std::optional<int> run(fluir::Context& ctx, int a) { return a + 1; }
   };
 
   class MockPass2 {
    public:
-    static std::vector<double> run(fluir::Context& ctx, const std::vector<int>& a) {
+    static std::optional<std::vector<double>> run(fluir::Context& ctx, const std::vector<int>& a) {
       std::vector<double> result(a.size(), 0.0);
       std::ranges::transform(a, result.begin(), [](int i) { return static_cast<double>(i); });
       return result;
@@ -23,7 +24,15 @@ namespace {
 
   class MockPass3 {
    public:
-    static std::vector<int> run(fluir::Context& ctx, int a) { return {a, a + 1, a + 2}; }
+    static std::optional<std::vector<int>> run(fluir::Context& ctx, int a) { return std::vector{a, a + 1, a + 2}; }
+  };
+
+  class ReportsErrors {
+   public:
+    static std::optional<int> run(fluir::Context& ctx, int a) {
+      ctx.diagnostics.emitError("Something went wrong.");
+      return a - 1;
+    }
   };
 }  // namespace
 
@@ -56,4 +65,14 @@ TEST(TestCompilerPass, PipeDataThroughMultiplePasses) {
 
   EXPECT_EQ(expected, results.data);
   EXPECT_TRUE(results.ctx.diagnostics.empty());
+}
+
+TEST(TestCompilerPass, StopsEarlyOnError) {
+  fluir::Context ctx;
+  int a = 1;
+
+  auto results = fluir::addContext(ctx, a) | MockPass1::run | ReportsErrors::run | MockPass3::run | MockPass2::run;
+
+  EXPECT_FALSE(results.data.has_value());
+  EXPECT_FALSE(results.ctx.diagnostics.empty());
 }

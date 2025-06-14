@@ -5,6 +5,7 @@
 import fluir.backend.bytecode_generator;
 import fluir.backend.inspect_writer;
 import fluir.models.asg;
+import fluir.utility.pass;
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;
@@ -15,9 +16,9 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto actual = fluir::generateCode(input);
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
@@ -32,9 +33,9 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
                                    fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto actual = fluir::generateCode(input);
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
@@ -67,9 +68,9 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                },
                                              .constants = {1.5, 2.5}}}};
 
-  auto actual = fluir::generateCode(input);
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
@@ -95,9 +96,9 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                },
                                              .constants = {3.456}}}};
 
-  auto actual = fluir::generateCode(input);
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
@@ -132,9 +133,9 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
         },
       .constants = {100.0, 3.5, -4.4}}}};
 
-  auto actual = fluir::generateCode(input);
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());

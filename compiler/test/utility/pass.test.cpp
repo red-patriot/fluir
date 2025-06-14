@@ -25,27 +25,35 @@ namespace {
    public:
     static std::vector<int> run(fluir::Context& ctx, int a) { return {a, a + 1, a + 2}; }
   };
-
-  class NotAPass1 {
-   public:
-    static std::vector<int> doRun(fluir::Context& ctx, int a) { return {a, a + 1, a + 2}; }
-  };
-  class NotAPass2 {
-   public:
-    static std::vector<int> run(int a) { return {a, a + 1, a + 2}; }
-  };
-  class NotAPass3 {
-   public:
-    static std::vector<int> run(fluir::Context& ctx) { return {}; }
-  };
 }  // namespace
 
-TEST(TestCompilerPass, DetectPassType) {
-  EXPECT_TRUE((fluir::CompilerPass<MockPass1, int>));
-  EXPECT_TRUE((fluir::CompilerPass<MockPass2, std::vector<int>>));
-  EXPECT_TRUE((fluir::CompilerPass<MockPass3, int>));
+TEST(TestCompilerPass, PackageDataAndContextTogether) {
+  fluir::Context ctx;
+  int a = 1;
 
-  EXPECT_FALSE((fluir::CompilerPass<NotAPass1, int>));
-  EXPECT_FALSE((fluir::CompilerPass<NotAPass2, int>));
-  EXPECT_FALSE((fluir::CompilerPass<NotAPass3, void>));
+  auto results = fluir::addContext(ctx, a);
+
+  EXPECT_EQ(1, results.data);
+  EXPECT_TRUE(results.ctx.diagnostics.empty());
+}
+
+TEST(TestCompilerPass, PipeDataThroughOnePass) {
+  fluir::Context ctx;
+  int a = 1;
+
+  auto results = fluir::addContext(ctx, a) | MockPass1::run;
+
+  EXPECT_EQ(2, results.data);
+  EXPECT_TRUE(results.ctx.diagnostics.empty());
+}
+
+TEST(TestCompilerPass, PipeDataThroughMultiplePasses) {
+  fluir::Context ctx;
+  int a = 1;
+  std::vector<double> expected{2.0, 3.0, 4.0};
+
+  auto results = fluir::addContext(ctx, a) | MockPass1::run | MockPass3::run | MockPass2::run;
+
+  EXPECT_EQ(expected, results.data);
+  EXPECT_TRUE(results.ctx.diagnostics.empty());
 }

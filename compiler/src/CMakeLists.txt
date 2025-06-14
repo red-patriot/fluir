@@ -42,7 +42,7 @@ target_link_libraries(
            fmt::fmt
            tinyxml2::tinyxml2
 )
-#
-# add_executable(fluir.compiler "main.cpp")
-#
-# target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)
+
+add_executable(fluir.compiler "main.cpp")
+
+target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)

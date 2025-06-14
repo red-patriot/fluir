@@ -12,21 +12,24 @@ import fluir.models.location;
 import fluir.models.operators;
 import fluir.frontend.parse_tree;
 export import fluir.utility.results;
+export import fluir.utility.context;
 
 namespace fluir {
-  export Results<pt::ParseTree> parseString(const std::string_view source);
-  export Results<pt::ParseTree> parseFile(const std::filesystem::path& source);
+  export Results<pt::ParseTree> parseString(Context& ctx, const std::string_view source);
+  export Results<pt::ParseTree> parseFile(Context& ctx, const std::filesystem::path& source);
 
   export class Parser {
    public:
+    explicit Parser(Context& ctx);
+
     Results<pt::ParseTree> parseString(const std::string_view source);
     Results<pt::ParseTree> parseFile(const std::filesystem::path& file);
 
    private:
+    Context& ctx_;
     std::string filename_;
     tinyxml2::XMLDocument doc_;
     pt::ParseTree tree_;
-    Diagnostics diagnostics_;
 
     using Element = tinyxml2::XMLElement;
 

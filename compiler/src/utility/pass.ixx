@@ -5,10 +5,9 @@ module;
 #include <concepts>
 #include <functional>
 #include <type_traits>
-#include <fmt/core.h>
 
 export module fluir.utility.pass;
-import fluir.utility.context;
+export import fluir.utility.context;
 
 namespace fluir {
   template <typename T>
@@ -47,7 +46,7 @@ namespace fluir {
   }
 
   export template <typename T>
-  DataWithContext<std::optional<std::decay_t<T>>> addContext(Context& ctx, T&& t) {
-    return DataWithContext<std::optional<std::decay_t<T>>>{ctx, std::forward<T>(t)};
+  DataWithContext<std::optional<std::decay_t<T>>> addContext(Context ctx, T&& t) {
+    return DataWithContext<std::optional<std::decay_t<T>>>{std::move(ctx), std::forward<T>(t)};
   }
 }  // namespace fluir

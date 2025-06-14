@@ -60,14 +60,14 @@ set(FLUIR_COMPILER_UTILITY_INTERFACES
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
-            ${FLUIR_COMPILER_BACKEND_SOURCES}
+            # ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
             ${FLUIR_COMPILER_UTILITY_SOURCES}
     PUBLIC FILE_SET
            CXX_MODULES
            FILES
            ${FLUIR_COMPILER_MODELS_INTERFACES}
-           ${FLUIR_COMPILER_BACKEND_INTERFACES}
+           # ${FLUIR_COMPILER_BACKEND_INTERFACES}
            ${FLUIR_COMPILER_DEBUG_INTERFACES}
            ${FLUIR_COMPILER_FRONTEND_INTERFACES}
            ${FLUIR_COMPILER_UTILITY_INTERFACES}
@@ -85,7 +85,7 @@ target_link_libraries(
            fmt::fmt
            tinyxml2::tinyxml2
 )
-
-add_executable(fluir.compiler main.cpp)
-
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)
+#
+# add_executable(fluir.compiler main.cpp)
+#
+# target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)

@@ -1,6 +1,7 @@
 module;
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -23,20 +24,22 @@ namespace fluir {
   }
   template <typename... FmtArgs>
   [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs... args) {
-    diagnostics_.emitError(fmt::vformat(format, fmt::make_format_args(args...)),
-                           std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
+    ctx_.diagnostics.emitError(fmt::vformat(format, fmt::make_format_args(args...)),
+                               std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
     throw PanicMode{};
   }
 
-  Results<pt::ParseTree> parseFile(const std::filesystem::path& source) {
-    Parser parser{};
+  Results<pt::ParseTree> parseFile(Context& ctx, const std::filesystem::path& source) {
+    Parser parser{ctx};
     return parser.parseFile(source);
   }
 
-  Results<pt::ParseTree> parseString(const std::string_view source) {
-    Parser parser{};
+  Results<pt::ParseTree> parseString(Context& ctx, const std::string_view source) {
+    Parser parser{ctx};
     return parser.parseString(source);
   }
+
+  Parser::Parser(Context& ctx) : ctx_(ctx) { }
 
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
     filename_ = file.filename();
@@ -49,10 +52,10 @@ namespace fluir {
 
     flowGraph();
 
-    if (diagnostics_.containsErrors()) {
-      return Results<pt::ParseTree>{std::move(diagnostics_)};
+    if (ctx_.diagnostics.containsErrors()) {
+      return NoResult;
     } else {
-      return {std::move(tree_), std::move(diagnostics_)};
+      return std::move(tree_);
     }
   }
 
@@ -63,10 +66,10 @@ namespace fluir {
 
     flowGraph();
 
-    if (diagnostics_.containsErrors()) {
-      return Results<pt::ParseTree>{std::move(diagnostics_)};
+    if (ctx_.diagnostics.containsErrors()) {
+      return NoResult;
     } else {
-      return {std::move(tree_), std::move(diagnostics_)};
+      return std::move(tree_);
     }
   }
 

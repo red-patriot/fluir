@@ -7,27 +7,27 @@
 #include "file_utility.hpp"
 
 import fluir.frontend;
+import fluir.utility.pass;
 
 namespace fs = std::filesystem;
 
 class TestASGError : public ::testing::TestWithParam<fs::path> { };
 
 TEST_P(TestASGError, Test) {
-  const auto programFile = GetParam();
+  const fs::path programFile = GetParam();
   const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
   const auto errors = fluir::test::readContents(errorsFile);
 
-  auto parseResults = fluir::parseFile(programFile);
-  auto results = fluir::buildGraph(parseResults.value());
+  auto [ctx, results] = fluir::addContext(fluir::Context{}, programFile) | fluir::parseFile | fluir::buildGraph;
 
   std::stringstream ss;
-  for (const auto& diagnostic : results.diagnostics()) {
+  for (const auto& diagnostic : ctx.diagnostics) {
     ss << fluir::toString(diagnostic) << '\n';
   }
 
   auto actual = ss.str();
 
-  EXPECT_FALSE(results.hasValue());
+  EXPECT_FALSE(results.has_value());
   EXPECT_EQ(errors, actual);
 }
 

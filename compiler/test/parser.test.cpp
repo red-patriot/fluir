@@ -12,11 +12,12 @@ using TestParserData = tuple<std::string, fluir::pt::ParseTree, std::string>;
 class TestParser : public ::testing::TestWithParam<TestParserData> { };
 
 TEST_P(TestParser, Test) {
+  fluir::Context ctx;
   const auto& [source, expected, name] = GetParam();
 
-  auto actual = fluir::parseString(source);
+  auto actual = fluir::parseString(ctx, source);
 
-  EXPECT_FALSE(actual.containsErrors());
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
   EXPECT_EQ(expected, actual.value());
 }
 

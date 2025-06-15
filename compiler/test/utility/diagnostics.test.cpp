@@ -15,7 +15,7 @@ namespace {
 
 TEST(TestDiagnostics, EmitError) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::ERROR,
+    fluir::Diagnostic::Level::ERROR,
     "Something went wrong",
   };
 
@@ -26,7 +26,7 @@ TEST(TestDiagnostics, EmitError) {
 }
 
 TEST(TestDiagnostics, EmitErrorWithLocation) {
-  fluir::Diagnostic expected{fluir::Diagnostic::ERROR, "Something went wrong"};
+  fluir::Diagnostic expected{fluir::Diagnostic::Level::ERROR, "Something went wrong"};
 
   fluir::Diagnostics actual;
   actual.emitError("Something went wrong", std::make_unique<TestingLocation>(4));
@@ -39,7 +39,7 @@ TEST(TestDiagnostics, EmitErrorWithLocation) {
 
 TEST(TestDiagnostics, EmitWarning) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::WARNING,
+    fluir::Diagnostic::Level::WARNING,
     "Something is worrying...",
   };
 
@@ -50,7 +50,7 @@ TEST(TestDiagnostics, EmitWarning) {
 }
 
 TEST(TestDiagnostics, EmitWarningWithLocation) {
-  fluir::Diagnostic expected{fluir::Diagnostic::WARNING, "Something is worrying..."};
+  fluir::Diagnostic expected{fluir::Diagnostic::Level::WARNING, "Something is worrying..."};
 
   fluir::Diagnostics actual;
   actual.emitWarning("Something is worrying...", std::make_unique<TestingLocation>(7));
@@ -63,7 +63,7 @@ TEST(TestDiagnostics, EmitWarningWithLocation) {
 
 TEST(TestDiagnostics, EmitNote) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::NOTE,
+    fluir::Diagnostic::Level::NOTE,
     "You may be interested in this",
   };
 
@@ -75,7 +75,7 @@ TEST(TestDiagnostics, EmitNote) {
 
 TEST(TestDiagnostics, EmitNoteWithLocation) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::NOTE,
+    fluir::Diagnostic::Level::NOTE,
     "You may be interested in this",
   };
 
@@ -90,7 +90,7 @@ TEST(TestDiagnostics, EmitNoteWithLocation) {
 
 TEST(TestDiagnostics, EmitInternalError) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::INTERNAL_ERROR,
+    fluir::Diagnostic::Level::INTERNAL_ERROR,
     "This is likely a bug.",
   };
 
@@ -102,7 +102,7 @@ TEST(TestDiagnostics, EmitInternalError) {
 
 TEST(TestDiagnostics, EmitInternalErrorWithLocation) {
   fluir::Diagnostic expected{
-    fluir::Diagnostic::INTERNAL_ERROR,
+    fluir::Diagnostic::Level::INTERNAL_ERROR,
     "This is likely a bug.",
   };
 
@@ -118,7 +118,7 @@ TEST(TestDiagnostics, EmitInternalErrorWithLocation) {
 TEST(TestDiagnostics, StringifyError) {
   std::string expected = "[ERROR]: A problem occurred.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::ERROR, "A problem occurred."};
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::Level::ERROR, "A problem occurred."};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -128,7 +128,8 @@ TEST(TestDiagnostics, StringifyError) {
 TEST(TestDiagnostics, StringifyErrorWithLocation) {
   std::string expected = "[ERROR] at 4: A problem occurred.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::ERROR, "A problem occurred.", std::make_unique<TestingLocation>(4)};
+  fluir::Diagnostic diagnostic{
+    fluir::Diagnostic::Level::ERROR, "A problem occurred.", std::make_unique<TestingLocation>(4)};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -138,7 +139,7 @@ TEST(TestDiagnostics, StringifyErrorWithLocation) {
 TEST(TestDiagnostics, StringifyWarning) {
   std::string expected = "[WARNING]: An issue.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::WARNING, "An issue."};
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::Level::WARNING, "An issue."};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -148,7 +149,7 @@ TEST(TestDiagnostics, StringifyWarning) {
 TEST(TestDiagnostics, StringifyWarningWithLocation) {
   std::string expected = "[WARNING] at -59: An issue.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::WARNING, "An issue.", std::make_unique<TestingLocation>(-59)};
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::Level::WARNING, "An issue.", std::make_unique<TestingLocation>(-59)};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -158,7 +159,7 @@ TEST(TestDiagnostics, StringifyWarningWithLocation) {
 TEST(TestDiagnostics, StringifyNote) {
   std::string expected = "[NOTE]: Some important information.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::NOTE, "Some important information."};
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::Level::NOTE, "Some important information."};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -169,7 +170,7 @@ TEST(TestDiagnostics, StringifyNoteWithLocation) {
   std::string expected = "[NOTE] at 112: Some important information.";
 
   fluir::Diagnostic diagnostic{
-    fluir::Diagnostic::NOTE, "Some important information.", std::make_unique<TestingLocation>(112)};
+    fluir::Diagnostic::Level::NOTE, "Some important information.", std::make_unique<TestingLocation>(112)};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -179,7 +180,7 @@ TEST(TestDiagnostics, StringifyNoteWithLocation) {
 TEST(TestDiagnostics, StringifyInternalError) {
   std::string expected = "[INTERNAL ERROR]: If you see this, file a bug.";
 
-  fluir::Diagnostic diagnostic{fluir::Diagnostic::INTERNAL_ERROR, "If you see this, file a bug."};
+  fluir::Diagnostic diagnostic{fluir::Diagnostic::Level::INTERNAL_ERROR, "If you see this, file a bug."};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -190,7 +191,7 @@ TEST(TestDiagnostics, StringifyInternalErrorWithLocation) {
   std::string expected = "[INTERNAL ERROR] at 9: If you see this, file a bug.";
 
   fluir::Diagnostic diagnostic{
-    fluir::Diagnostic::INTERNAL_ERROR, "If you see this, file a bug.", std::make_unique<TestingLocation>(9)};
+    fluir::Diagnostic::Level::INTERNAL_ERROR, "If you see this, file a bug.", std::make_unique<TestingLocation>(9)};
 
   auto actual = fluir::toString(diagnostic);
 
@@ -198,25 +199,25 @@ TEST(TestDiagnostics, StringifyInternalErrorWithLocation) {
 }
 
 TEST(TestDiagnostics, DetectLevelNote) {
-  fluir::Diagnostic diag{fluir::Diagnostic::NOTE, ""};
+  fluir::Diagnostic diag{fluir::Diagnostic::Level::NOTE, ""};
 
   EXPECT_FALSE(fluir::isError(diag));
 }
 
 TEST(TestDiagnostics, DetectLevelNWarning) {
-  fluir::Diagnostic diag{fluir::Diagnostic::WARNING, ""};
+  fluir::Diagnostic diag{fluir::Diagnostic::Level::WARNING, ""};
 
   EXPECT_FALSE(fluir::isError(diag));
 }
 
 TEST(TestDiagnostics, DetectLevelError) {
-  fluir::Diagnostic diag{fluir::Diagnostic::ERROR, ""};
+  fluir::Diagnostic diag{fluir::Diagnostic::Level::ERROR, ""};
 
   EXPECT_TRUE(fluir::isError(diag));
 }
 
 TEST(TestDiagnostics, DetectLevelInternalError) {
-  fluir::Diagnostic diag{fluir::Diagnostic::INTERNAL_ERROR, ""};
+  fluir::Diagnostic diag{fluir::Diagnostic::Level::INTERNAL_ERROR, ""};
 
   EXPECT_TRUE(fluir::isError(diag));
 }

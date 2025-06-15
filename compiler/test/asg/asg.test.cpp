@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <variant>
+
 import fluir.frontend.asg_builder;
 import fluir.frontend.parse_tree;
 import fluir.models.asg;

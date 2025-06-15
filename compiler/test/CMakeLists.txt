@@ -35,6 +35,7 @@ target_sources(
             ${FLUIR_BACKEND_TEST_SOURCES}
             detect_syntax_errors.test.cpp
             parser.test.cpp
+            scope_guard.test.cpp
 )
 target_include_directories(
     fluir.compiler.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

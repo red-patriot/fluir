@@ -1,4 +1,8 @@
-find_package(fmt REQUIRED)
+find_package(
+    fmt
+    CONFIG
+    REQUIRED
+)
 find_package(tinyxml2 REQUIRED)
 
 include(strict-warnings)

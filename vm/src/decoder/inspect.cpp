@@ -2,6 +2,7 @@ module;
 
 #include <charconv>
 #include <cstdint>
+#include <string>
 #include <stdexcept>
 #include <vector>
 
@@ -14,8 +15,8 @@ namespace fluir {
     code_ = code::ByteCode{};
 
     decodeHeader();
-    start_ = source_.begin();
-    current_ = source_.begin();
+    start_ = source_.data();
+    current_ = source_.data();
 
     decodeChunks();
 
@@ -28,19 +29,20 @@ namespace fluir {
     header.filetype = source_.at(0);
 
     auto majorStr = source_.substr(1, 2);
-    auto result = std::from_chars(majorStr.begin(), majorStr.end(), header.major, 16);
+    auto result = std::from_chars(majorStr.data(), majorStr.data() + majorStr.size(), header.major, 16);
 
     auto minorStr = std::string_view(result.ptr, 2);
-    result = std::from_chars(minorStr.begin(), minorStr.end(), header.minor, 16);
+    result = std::from_chars(minorStr.data(), minorStr.data() + minorStr.size(), header.minor, 16);
 
     auto patchStr = std::string_view(result.ptr, 2);
-    result = std::from_chars(patchStr.begin(), patchStr.end(), header.patch, 16);
+    result = std::from_chars(patchStr.data(), patchStr.data() + patchStr.size(), header.patch, 16);
 
     auto entryOffsetStr = std::string_view(result.ptr, 16);
-    result = std::from_chars(entryOffsetStr.begin(), entryOffsetStr.end(), header.entryOffset, 16);
+    result =
+      std::from_chars(entryOffsetStr.data(), entryOffsetStr.data() + entryOffsetStr.size(), header.entryOffset, 16);
 
     // Consume the header part of the string
-    source_ = std::string_view{result.ptr, source_.end()};
+    source_ = std::string_view{result.ptr, source_.data() + source_.size()};
 
     code_.header = header;
   }
@@ -117,7 +119,7 @@ namespace fluir {
     return createToken(TokenType::FLOAT_LITERAL);
   }
 
-  bool InspectDecoder::atEnd() { return current_ == source_.end(); }
+  bool InspectDecoder::atEnd() { return current_ == source_.data() + source_.size(); }
 
   char InspectDecoder::next() {
     current_++;
@@ -266,7 +268,7 @@ namespace fluir {
     }
     size_t number;
     // Skip the 'x' at the beginning of the source when converting
-    std::from_chars(rawNumber.source.begin() + 1, rawNumber.source.end(), number, 16);
+    std::from_chars(rawNumber.source.data() + 1, rawNumber.source.data() + rawNumber.source.size(), number, 16);
     // TODO: Check error
     return number;
   }
@@ -311,7 +313,7 @@ namespace fluir {
   code::Value InspectDecoder::decodeFloatConstant() {
     auto rawConstant = scanNext();
     double number;
-    std::from_chars(rawConstant.source.begin(), rawConstant.source.end(), number);
+    std::from_chars(rawConstant.source.data(), rawConstant.source.data() + rawConstant.source.size(), number);
     // TODO: Check error
     return number;
   }

@@ -42,7 +42,7 @@ namespace fluir {
   Parser::Parser(Context& ctx) : ctx_(ctx) { }
 
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
-    filename_ = file.filename();
+    filename_ = file.filename().string();
     doc_.Clear();
     std::ifstream fin(file);
     std::stringstream ss;

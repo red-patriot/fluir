@@ -1,5 +1,6 @@
 #include <string>
 #include <tuple>
+#include <variant>
 
 #include <gtest/gtest.h>
 

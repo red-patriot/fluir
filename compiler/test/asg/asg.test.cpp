@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <variant>
+
 #include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"

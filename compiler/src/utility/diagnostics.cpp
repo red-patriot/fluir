@@ -18,22 +18,22 @@ namespace fluir {
   }
 
   void Diagnostics::emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::NOTE,
+    this->emplace_back(Diagnostic{Diagnostic::Level::NOTE,
                                   std::move(message),
                                   std::move(where)});
   }
   void Diagnostics::emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::WARNING,
+    this->emplace_back(Diagnostic{Diagnostic::Level::WARNING,
                                   std::move(message),
                                   std::move(where)});
   }
   void Diagnostics::emitError(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::ERROR,
+    this->emplace_back(Diagnostic{Diagnostic::Level::ERROR,
                                   std::move(message),
                                   std::move(where)});
   }
   void Diagnostics::emitInternalError(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::INTERNAL_ERROR,
+    this->emplace_back(Diagnostic{Diagnostic::Level::INTERNAL_ERROR,
                                   std::move(message),
                                   std::move(where)});
   }

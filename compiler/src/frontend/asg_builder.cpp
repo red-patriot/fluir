@@ -1,10 +1,12 @@
 #include "compiler/frontend/asg_builder.hpp"
 
 #include <algorithm>
+
 #include <ranges>
 #include <unordered_set>
 #include <variant>
-#include <experimental/scope>
+
+#include "compiler/scope_guard.hpp"
 
 namespace {
   /** Returns the set of Nodes that are not dependencies of other Nodes */
@@ -70,7 +72,7 @@ namespace fluir {
 
   fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
-    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
+    FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
     fluir::asg::BinaryOp asg{{pt.id, pt.location}, pt.op, nullptr, nullptr};
 
     asg.lhs = getDependency(pt.id, 0);
@@ -81,7 +83,7 @@ namespace fluir {
 
   asg::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
-    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
+    FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     asg::UnaryOp asg{{pt.id, pt.location}, pt.op, nullptr};
     asg.operand = getDependency(pt.id, 0);
@@ -91,7 +93,7 @@ namespace fluir {
 
   asg::Node FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
-    auto guard = std::experimental::scope_exit([&]() { inProgressNodes_.pop_back(); });
+    FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     asg::ConstantFP asg{{pt.id, pt.location}, pt.value};
     // TODO: handle other literal types here

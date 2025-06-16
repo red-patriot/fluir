@@ -49,4 +49,4 @@ target_link_libraries(
 
 add_executable(fluir.compiler "main.cpp")
 
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler fmt::fmt)
+target_link_libraries(fluir.compiler PRIVATE fluir::compiler)

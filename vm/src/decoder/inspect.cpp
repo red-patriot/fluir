@@ -295,7 +295,8 @@ namespace fluir {
         return code::Instruction::FP_NEGATE;
       case TokenType::HEX_LITERAL:
         // This is an operand to one of the above instructions
-        return toUnsignedInteger(token);
+        // TODO: Handle sizes that are too large
+        return static_cast<std::uint8_t>(toUnsignedInteger(token));
       default:
         throw std::runtime_error{"Expected a decodable instruction"};
     }

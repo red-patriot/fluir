@@ -1,6 +1,9 @@
-#include "vm/vm.hpp"
+module;
 
+#include <cstdint>
 #include <iostream>
+
+module fluir.vm;
 
 namespace fluir {
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {

@@ -78,7 +78,9 @@
         "_debug-base"
       ],
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "cmake/msvc-toolchain.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "cmake/msvc-toolchain.cmake",
+        "CMAKE_TOOLCHAIN_FILE_VCPKG": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     },
     {
@@ -89,7 +91,9 @@
         "_release-base"
       ],
       "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "cmake/msvc-toolchain.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "cmake/msvc-toolchain.cmake",
+        "CMAKE_TOOLCHAIN_FILE_VCPKG": "C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
       }
     }
   ],

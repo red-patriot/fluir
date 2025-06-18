@@ -1,11 +1,11 @@
-#include "compiler/utility/diagnostics.hpp"
-
+module;
 #include <algorithm>
+#include <fmt/format.h>
+
+module fluir.utility.diagnostics;
 
 namespace fluir {
-  bool isError(const Diagnostic& diagnostic) {
-    return diagnostic.level >= Diagnostic::Level::ERROR;
-  }
+  bool isError(const Diagnostic& diagnostic) { return diagnostic.level >= Diagnostic::Level::ERROR; }
 
   std::string toString(const Diagnostic& diagnostic) {
     auto& [level, message, where] = diagnostic;
@@ -18,29 +18,19 @@ namespace fluir {
   }
 
   void Diagnostics::emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::NOTE,
-                                  std::move(message),
-                                  std::move(where)});
+    this->emplace_back(Diagnostic{Diagnostic::Level::NOTE, std::move(message), std::move(where)});
   }
   void Diagnostics::emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::WARNING,
-                                  std::move(message),
-                                  std::move(where)});
+    this->emplace_back(Diagnostic{Diagnostic::Level::WARNING, std::move(message), std::move(where)});
   }
   void Diagnostics::emitError(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::ERROR,
-                                  std::move(message),
-                                  std::move(where)});
+    this->emplace_back(Diagnostic{Diagnostic::Level::ERROR, std::move(message), std::move(where)});
   }
   void Diagnostics::emitInternalError(std::string message, std::shared_ptr<Diagnostic::Location> where) {
-    this->emplace_back(Diagnostic{Diagnostic::INTERNAL_ERROR,
-                                  std::move(message),
-                                  std::move(where)});
+    this->emplace_back(Diagnostic{Diagnostic::Level::INTERNAL_ERROR, std::move(message), std::move(where)});
   }
 
-  bool Diagnostics::containsErrors() const {
-    return std::ranges::any_of(*this, isError);
-  }
+  bool Diagnostics::containsErrors() const { return std::ranges::any_of(*this, isError); }
 }  // namespace fluir
 
 auto fmt::formatter<fluir::Diagnostic::Level>::format(fluir::Diagnostic::Level l,

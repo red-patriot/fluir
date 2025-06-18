@@ -2,10 +2,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "compiler/backend/bytecode_generator.hpp"
-#include "compiler/backend/inspect_writer.hpp"
-#include "compiler/frontend/asg_builder.hpp"
-#include "compiler/frontend/parser.hpp"
+import fluir.frontend;
+import fluir.backend;
+import fluir.utility.context;
+import fluir.utility.pass;
 
 namespace fs = std::filesystem;
 
@@ -23,21 +23,15 @@ int main(int argc, char** argv) {
   }
 
   fs::path source = fs::canonical(fs::path{argv[1]});
-  auto parseResults = fluir::parseFile(source);
-  printDiagnostics(parseResults.diagnostics());
-  if (parseResults.containsErrors()) {
+  auto frontendResults = fluir::addContext(fluir::Context{}, source) | fluir::parseFile | fluir::buildGraph;
+  printDiagnostics(frontendResults.ctx.diagnostics);
+  if (frontendResults.ctx.diagnostics.containsErrors()) {
     return 1;
   }
 
-  auto asgResults = fluir::buildGraph(parseResults.value());
-  printDiagnostics(asgResults.diagnostics());
-  if (asgResults.containsErrors()) {
-    return 1;
-  }
-
-  auto bytecodeResults = fluir::generateCode(asgResults.value());
-  printDiagnostics(bytecodeResults.diagnostics());
-  if (bytecodeResults.containsErrors()) {
+  auto backendResults = frontendResults | fluir::generateCode;
+  printDiagnostics(backendResults.ctx.diagnostics);
+  if (backendResults.ctx.diagnostics.containsErrors()) {
     return 1;
   }
 
@@ -45,7 +39,7 @@ int main(int argc, char** argv) {
     fs::path destination{"./out.flc"};
     std::ofstream fout{destination};
     fluir::InspectWriter writer{};
-    fluir::writeCode(bytecodeResults.value(), writer, fout);
+    fluir::writeCode(backendResults.data.value(), writer, fout);
   }
 
   return 0;

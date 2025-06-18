@@ -1,4 +1,8 @@
-#include "compiler/backend/code_writer.hpp"
+module;
+
+#include <ostream>
+
+module fluir.backend.code_writer;
 
 namespace fluir {
   void CodeWriter::write(const code::ByteCode& code, std::ostream& destination) {

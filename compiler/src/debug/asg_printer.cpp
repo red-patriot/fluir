@@ -1,15 +1,19 @@
-#include "compiler/debug/asg_printer.hpp"
+module;
 
 #include <algorithm>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include <fmt/format.h>
 
+module fluir.debug.asg_printer;
+import fluir.models.id;
+import fluir.models.location;
+import fluir.models.operators;
+
 namespace fluir::debug {
-  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) :
-      out_(out),
-      inOrder_(inOrder) {
-  }
+  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
 
   void AsgPrinter::print(const asg::ASG& asg) {
     // TODO: Sort decls if needed
@@ -64,10 +68,9 @@ namespace fluir::debug {
       idIndices.emplace_back(std::pair{graph.at(i).id(), i});
     }
 
-    std::ranges::sort(idIndices,
-                      [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
-                        return lhs.first < rhs.first;
-                      });
+    std::ranges::sort(idIndices, [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
+      return lhs.first < rhs.first;
+    });
 
     for (const auto& [id, index] : idIndices) {
       auto& node = graph.at(index);

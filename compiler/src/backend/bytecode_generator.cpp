@@ -1,22 +1,27 @@
-#include "compiler/backend/bytecode_generator.hpp"
+module;
 
 #include <cstdint>
+#include <variant>
 
 #include <fmt/format.h>
+
+module fluir.backend.bytecode_generator;
+import fluir.models.operators;
+import fluir.utility.results;
 
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(const asg::ASG& graph) {
-    return BytecodeGenerator::generate(graph);
+  Results<code::ByteCode> generateCode(Context& ctx, const asg::ASG& graph) {
+    return BytecodeGenerator::generate(ctx, graph);
   }
 
   void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination) {
     return writer.write(code, destination);
   }
 
-  Results<code::ByteCode> BytecodeGenerator::generate(const asg::ASG& graph) {
-    BytecodeGenerator generator{graph};
+  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const asg::ASG& graph) {
+    BytecodeGenerator generator{ctx, graph};
     return generator.run();
   }
 
@@ -53,7 +58,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -70,7 +75,7 @@ namespace fluir {
         break;
       default:
         // TODO: Handle this better
-        diagnostics_.emitError("Unknown operator encountered. Expected one of +, -");
+        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -");
         break;
     }
   }
@@ -82,25 +87,20 @@ namespace fluir {
     emitBytes(Instruction::PUSH_FP, static_cast<std::uint8_t>(constant));
   }
 
-  BytecodeGenerator::BytecodeGenerator(const asg::ASG& graph) :
-      graph_(graph),
-      code_{} { }
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
-  void BytecodeGenerator::emitByte(std::uint8_t byte) {
-    current_.code.push_back(byte);
-  }
+  void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
     emitByte(byte2);
   }
   size_t BytecodeGenerator::addConstant(code::Value value) {
-    if (auto found = std::ranges::find(current_.constants, value);
-        found != current_.constants.end()) {
+    if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
       return found - current_.constants.begin();
     }
     current_.constants.emplace_back(std::move(value));
     if (current_.constants.size() > UINT8_MAX) {
-      diagnostics_.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
+      ctx_.diagnostics.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
     }
     return current_.constants.size() - 1;
   }
@@ -114,7 +114,7 @@ namespace fluir {
     // TODO: Put the language version in the header here
     code_.header = code::Header{};
 
-    return {std::move(code_), std::move(diagnostics_)};
+    return std::move(code_);
   }
 
   void BytecodeGenerator::doTopLevel(const asg::Node& node) {

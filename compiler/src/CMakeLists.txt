@@ -1,4 +1,8 @@
-find_package(fmt REQUIRED)
+find_package(
+    fmt
+    CONFIG
+    REQUIRED
+)
 find_package(tinyxml2 REQUIRED)
 
 include(strict-warnings)
@@ -14,20 +18,63 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
                                     "frontend/asg_builder.cpp"
 )
 
+set(FLUIR_COMPILER_FRONTEND_INTERFACES
+    "frontend/frontend.ixx"
+    "frontend/parse_tree.ixx"
+    "frontend/parser.ixx"
+    "frontend/asg_builder.ixx"
+)
+
 set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/bytecode_generator.cpp"
     "backend/code_writer.cpp"
     "backend/inspect_writer.cpp"
 )
 
+set(FLUIR_COMPILER_BACKEND_INTERFACES
+    "backend/backend.ixx"
+    "backend/bytecode_generator.ixx"
+    "backend/code_writer.ixx"
+    "backend/inspect_writer.ixx"
+)
+
 set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
+
+set(FLUIR_COMPILER_DEBUG_INTERFACES "debug/debug.ixx" "debug/asg_printer.ixx")
+
+set(FLUIR_COMPILER_MODELS_INTERFACES
+    "models/asg.ixx"
+    "models/asg/node.ixx"
+    "models/asg/declaration.ixx"
+    "models/id.ixx"
+    "models/location.ixx"
+    "models/operators.ixx"
+)
+
+set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostics.cpp")
+
+set(FLUIR_COMPILER_UTILITY_INTERFACES
+    "utility/context.ixx"
+    "utility/diagnostics.ixx"
+    "utility/indent_formatter.ixx"
+    "utility/pass.ixx"
+    "utility/results.ixx"
+)
 
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
-            utility/diagnostics.cpp
+            ${FLUIR_COMPILER_UTILITY_SOURCES}
+    PUBLIC FILE_SET
+           CXX_MODULES
+           FILES
+           ${FLUIR_COMPILER_MODELS_INTERFACES}
+           ${FLUIR_COMPILER_BACKEND_INTERFACES}
+           ${FLUIR_COMPILER_DEBUG_INTERFACES}
+           ${FLUIR_COMPILER_FRONTEND_INTERFACES}
+           ${FLUIR_COMPILER_UTILITY_INTERFACES}
 )
 
 turn_up_warnings_on(fluir.libcompiler)

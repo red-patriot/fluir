@@ -1,9 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/asg_builder.hpp"
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include <variant>
+
+import fluir.frontend.asg_builder;
+import fluir.frontend.parse_tree;
+import fluir.models.asg;
+import fluir.utility.context;
 
 TEST(TestAstBuilder, SingleEmptyFunction) {
+  fluir::Context ctx;
   fluir::pt::ParseTree pt{
     .declarations = {{1,
                       fluir::pt::FunctionDecl{.id = 1,
@@ -13,9 +18,9 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 
   fluir::FlowGraphLocation expectedLocation{.x = 10, .y = 10, .z = 3, .width = 100, .height = 100};
 
-  auto results = fluir::buildGraph(pt);
+  auto results = fluir::buildGraph(ctx, pt);
   auto& actual = results.value();
-  auto& diagnostics = results.diagnostics();
+  auto& diagnostics = ctx.diagnostics;
 
   ASSERT_FALSE(diagnostics.containsErrors());
   EXPECT_EQ(1, actual.declarations.size());
@@ -26,6 +31,7 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
+  fluir::Context ctx;
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -43,9 +49,9 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
       {5, fluir::pt::Conduit{.id = 5, .input = 3, .children = {fluir::pt::Conduit::Output{.target = 1, .index = 1}}}},
     }};
 
-  auto results = fluir::buildDataFlowGraph(block);
+  auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = results.diagnostics();
+  auto& diagnostics = ctx.diagnostics;
 
   ASSERT_FALSE(diagnostics.containsErrors());
   ASSERT_EQ(1, actual.size());
@@ -60,6 +66,7 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
+  fluir::Context ctx;
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -78,9 +85,9 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
       {6, fluir::pt::Conduit{.id = 6, .input = 2, .children = {fluir::pt::Conduit::Output{.target = 3, .index = 0}}}},
     }};
 
-  auto results = fluir::buildDataFlowGraph(block);
+  auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = results.diagnostics();
+  auto& diagnostics = ctx.diagnostics;
 
   ASSERT_FALSE(diagnostics.containsErrors());
   ASSERT_EQ(1, actual.size());
@@ -100,6 +107,7 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
 }
 
 TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
+  fluir::Context ctx;
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{.id = 1,
@@ -128,9 +136,9 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
       {8, fluir::pt::Conduit{.id = 8, .input = 3, .children = {fluir::pt::Conduit::Output{.target = 4, .index = 0}}}},
     }};
 
-  auto results = fluir::buildDataFlowGraph(block);
+  auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = results.diagnostics();
+  auto& diagnostics = ctx.diagnostics;
 
   ASSERT_FALSE(diagnostics.containsErrors());
   ASSERT_EQ(2, actual.size());

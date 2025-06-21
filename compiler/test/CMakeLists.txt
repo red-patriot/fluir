@@ -15,7 +15,7 @@ FetchContent_MakeAvailable(googletest)
 add_executable(fluir.compiler.test)
 
 set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
-                               utility/results.test.cpp
+                               utility/pass.test.cpp
 )
 
 set(FLUIR_ASG_TEST_SOURCES
@@ -35,6 +35,7 @@ target_sources(
             ${FLUIR_BACKEND_TEST_SOURCES}
             detect_syntax_errors.test.cpp
             parser.test.cpp
+            scope_guard.test.cpp
 )
 target_include_directories(
     fluir.compiler.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}

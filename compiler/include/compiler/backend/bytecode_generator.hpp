@@ -4,15 +4,15 @@
 #include "bytecode/byte_code.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/asg.hpp"
-#include "compiler/utility/results.hpp"
+#include "compiler/utility/context.hpp"
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(const asg::ASG& graph);
+  Results<code::ByteCode> generateCode(Context& ctx, const asg::ASG& graph);
   void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
 
   class BytecodeGenerator {
    public:
-    static Results<code::ByteCode> generate(const asg::ASG& graph);
+    static Results<code::ByteCode> generate(Context& ctx, const asg::ASG& graph);
 
     void operator()(const asg::FunctionDecl& func);
     void operator()(const asg::BinaryOp& binary);
@@ -20,12 +20,12 @@ namespace fluir {
     void operator()(const asg::ConstantFP& constant);
 
    private:
+    Context& ctx_;
     const asg::ASG& graph_;
     code::ByteCode code_;
-    Diagnostics diagnostics_;
     code::Chunk current_;
 
-    explicit BytecodeGenerator(const asg::ASG& graph);
+    explicit BytecodeGenerator(Context& ctx, const asg::ASG& graph);
 
     void emitByte(std::uint8_t byte);
     void emitBytes(std::uint8_t byte1, std::uint8_t byte2);

@@ -1,4 +1,8 @@
-find_package(fmt REQUIRED)
+find_package(
+    fmt
+    CONFIG
+    REQUIRED
+)
 find_package(tinyxml2 REQUIRED)
 
 include(strict-warnings)
@@ -27,7 +31,7 @@ target_sources(
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
-            utility/diagnostics.cpp
+            "utility/diagnostics.cpp"
 )
 
 turn_up_warnings_on(fluir.libcompiler)
@@ -43,6 +47,6 @@ target_link_libraries(
            tinyxml2::tinyxml2
 )
 
-add_executable(fluir.compiler main.cpp)
+add_executable(fluir.compiler "main.cpp")
 
 target_link_libraries(fluir.compiler PRIVATE fluir::compiler)

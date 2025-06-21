@@ -9,21 +9,24 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/results.hpp"
+#include "compiler/utility/context.hpp"
 
 namespace fluir {
-  Results<pt::ParseTree> parseString(const std::string_view source);
-  Results<pt::ParseTree> parseFile(const std::filesystem::path& source);
+  Results<pt::ParseTree> parseString(Context& ctx, const std::string_view source);
+  Results<pt::ParseTree> parseFile(Context& ctx, const std::filesystem::path& source);
 
   class Parser {
    public:
+    explicit Parser(Context& ctx);
+
     Results<pt::ParseTree> parseString(const std::string_view source);
     Results<pt::ParseTree> parseFile(const std::filesystem::path& file);
 
    private:
+    Context& ctx_;
     std::string filename_;
     tinyxml2::XMLDocument doc_;
     pt::ParseTree tree_;
-    Diagnostics diagnostics_;
 
     using Element = tinyxml2::XMLElement;
 
@@ -54,9 +57,9 @@ namespace fluir {
     Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
 
     template <typename... FmtArgs>
-    void panicIf(bool condition, Element* element, std::string_view format, FmtArgs&&... args);
+    void panicIf(bool condition, Element* element, std::string_view format, FmtArgs... args);
     template <typename... FmtArgs>
-    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs&&... args);
+    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs... args);
     /** Indicates the parser is in a panic */
     class PanicMode { };
 

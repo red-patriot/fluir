@@ -13,6 +13,10 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+      - name: setup-msbuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
       - name: Install Dependencies
         run: |
           vcpkg install tinyxml2 fmt

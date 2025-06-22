@@ -262,7 +262,7 @@ namespace fluir {
     if (rawNumber.type != TokenType::HEX_LITERAL) {
       throw std::runtime_error{"Expected a HEX literal."};
     }
-    size_t number;
+    size_t number = 0;
     // Skip the 'x' at the beginning of the source when converting
     std::from_chars(rawNumber.source.data() + 1, rawNumber.source.data() + rawNumber.source.size(), number, 16);
     // TODO: Check error

@@ -1,0 +1,36 @@
+name: ubuntu-gcc-build-fluir
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install libtinyxml2-dev libfmt-dev
+
+      - name: Configure CMake
+        run: cmake --preset gcc-release
+      - name: Build
+        run: cmake --build --preset gcc-release
+      - name: Run tests
+        run: ctest --preset gcc-release
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: GCC-Release
+          path: |
+            build/gcc-release/
+            !build/gcc-release/**/*.o
+            !build/gcc-release/**/*.obj
+            !build/gcc-release/CMakeFiles/
+          retention-days: 7

@@ -30,6 +30,17 @@ jobs:
         run: cmake --build --preset llvm-release
       - name: Run tests
         run: ctest --preset llvm-release
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: LLVM-Release
+          path: |
+            build/llvm-release/
+            !build/llvm-release/**/*.o
+            !build/llvm-release/**/*.obj
+            !build/llvm-release/CMakeFiles/
+          retention-days: 7
+          
   build-debug:
     if: github.event.inputs.build_debug == true
     runs-on: ubuntu-latest
@@ -47,3 +58,13 @@ jobs:
         run: cmake --build --preset llvm-debug
       - name: Run tests
         run: ctest --preset llvm-debug
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: LLVM-Debug
+          path: |
+            build/llvm-debug/
+            !build/llvm-debug/**/*.o
+            !build/llvm-debug/**/*.obj
+            !build/llvm-debug/CMakeFiles/
+          retention-days: 7

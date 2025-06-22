@@ -1,4 +1,4 @@
-name: ubuntu-llvm-build-fluir
+name: ubuntu-gcc-build-fluir
 
 on:
   push:
@@ -19,18 +19,18 @@ jobs:
           sudo apt install libtinyxml2-dev libfmt-dev
 
       - name: Configure CMake
-        run: cmake --preset llvm-release
+        run: cmake --preset gcc-release
       - name: Build
-        run: cmake --build --preset llvm-release
+        run: cmake --build --preset gcc-release
       - name: Run tests
-        run: ctest --preset llvm-release
+        run: ctest --preset gcc-release
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: LLVM-Release
+          name: GCC-Release
           path: |
-            build/llvm-release/
-            !build/llvm-release/**/*.o
-            !build/llvm-release/**/*.obj
-            !build/llvm-release/CMakeFiles/
+            build/gcc-release/
+            !build/gcc-release/**/*.o
+            !build/gcc-release/**/*.obj
+            !build/gcc-release/CMakeFiles/
           retention-days: 7

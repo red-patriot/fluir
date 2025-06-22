@@ -6,12 +6,6 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
   workflow_dispatch:
-    inputs:
-      build_debug:
-        description: "Also build the debug configuration"
-        required: false
-        default: false
-        type: boolean
 
 jobs:
   build-release:
@@ -39,32 +33,4 @@ jobs:
             !build/llvm-release/**/*.o
             !build/llvm-release/**/*.obj
             !build/llvm-release/CMakeFiles/
-          retention-days: 7
-          
-  build-debug:
-    if: github.event.inputs.build_debug == true
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install libtinyxml2-dev libfmt-dev
-
-      - name: Configure CMake
-        run: cmake --preset llvm-debug
-      - name: Build
-        run: cmake --build --preset llvm-debug
-      - name: Run tests
-        run: ctest --preset llvm-debug
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: LLVM-Debug
-          path: |
-            build/llvm-debug/
-            !build/llvm-debug/**/*.o
-            !build/llvm-debug/**/*.obj
-            !build/llvm-debug/CMakeFiles/
           retention-days: 7

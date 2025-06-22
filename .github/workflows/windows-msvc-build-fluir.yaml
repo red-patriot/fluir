@@ -1,0 +1,35 @@
+name: windows-msvc-build-fluir
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          vcpkg install tinyxml2 fmt --triplet x64-windows
+      - name: Setup Developer Command Prompt and Build
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake --preset msvc-release
+          cmake --build --preset msvc-release
+          ctest --preset msvc-release
+        shell: cmd
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: MSVC-Release
+          path: |
+            build/msvc-release/
+            !build/msvc-release/**/*.o
+            !build/msvc-release/**/*.obj
+            !build/msvc-release/CMakeFiles/
+          retention-days: 7

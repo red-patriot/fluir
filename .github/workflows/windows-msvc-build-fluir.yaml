@@ -13,15 +13,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: setup-msbuild
-        uses: microsoft/setup-msbuild@v2
-        with:
-          msbuild-architecture: x64
       - name: Install Dependencies
         run: |
           vcpkg install tinyxml2 fmt --triplet x64-windows
       - name: Setup Developer Command Prompt and Build
         run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cmake --preset msvc-release
           cmake --build --preset msvc-release
           ctest --preset msvc-release

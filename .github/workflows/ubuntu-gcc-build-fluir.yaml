@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-release:
+  build-cpp:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -17,7 +17,6 @@ jobs:
         run: |
           sudo apt update
           sudo apt install libtinyxml2-dev libfmt-dev
-
       - name: Configure CMake
         run: cmake --preset gcc-release
       - name: Build
@@ -34,3 +33,38 @@ jobs:
             !build/gcc-release/**/*.obj
             !build/gcc-release/CMakeFiles/
           retention-days: 7
+  build-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.13'
+      - name: Create Venv
+        run: |
+          pwd
+          python -m venv .venv
+        working-directory: editor/server
+      - name: Setup Venv
+        run: |
+          ls
+          ls .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -e .[build]
+        working-directory: editor/server
+      - name: Build executable
+        run: |
+          source .venv/bin/activate
+          python build.py
+        working-directory: editor/server
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Editor-BE
+          path: |
+            editor/server/dist/
+          retention-days: 7
+  

@@ -1,0 +1,94 @@
+name: ubuntu-build-fluir
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build-cpp:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        preset: [gcc-release, llvm-release]
+        artifact-name: [GCC-Release, LLVM-Release]
+      fail-fast: false
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install libtinyxml2-dev libfmt-dev
+      - name: Configure CMake
+        run: cmake --preset ${{ matrix.preset }}
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+      - name: Run tests
+        run: ctest --preset ${{ matrix.preset }}
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            build/${{ matrix.preset }}/
+            !build/${{ matrix.preset }}/**/*.o
+            !build/${{ matrix.preset }}/**/*.obj
+            !build/${{ matrix.preset }}/CMakeFiles/
+          retention-days: 7
+
+  build-python:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.13'
+      - name: Create Venv
+        run: |
+          python -m venv .venv
+        working-directory: editor/server
+      - name: Setup Venv
+        run: |
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -e .[build]
+        working-directory: editor/server
+      - name: Build executable
+        run: |
+          source .venv/bin/activate
+          python build.py
+        working-directory: editor/server
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Editor-BE
+          path: |
+            editor/server/dist/
+          retention-days: 7
+  build-electron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v3.9.1
+        with:
+          node-version: '22'
+      - name: Install Dependencies
+        run: npm install
+        working-directory: editor/client
+      - name: Build Electron App
+        run: npm run dist
+        working-directory: editor/client
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Editor-FE
+          path: |
+            editor/client/release/
+          retention-days: 7

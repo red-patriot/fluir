@@ -1,0 +1,142 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient circle -->
+  <defs>
+    <!-- Background gradient from magenta to navy -->
+    <radialGradient id="backgroundGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FF00FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#000080;stop-opacity:1" />
+    </radialGradient>
+
+    <!-- Wave gradients -->
+    <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1D4ED8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#93C5FD;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Main circle with background -->
+  <circle cx="200" cy="200" r="190" fill="url(#backgroundGradient)" stroke="#1E3A8A"
+    stroke-width="2" />
+
+  <!-- Waves -->
+  <path d="M 40 240 Q 110 190 200 210 T 360 220 Q 330 260 200 250 T 40 240 Z"
+    fill="url(#waveGradient1)" opacity="0.95" />
+
+  <path d="M 45 210 Q 125 160 200 180 T 355 200 Q 315 240 200 225 T 45 210 Z"
+    fill="url(#waveGradient2)" opacity="0.9" />
+
+  <path d="M 50 180 Q 140 130 200 150 T 350 170 Q 290 210 200 195 T 50 180 Z"
+    fill="url(#waveGradient3)" opacity="0.8" />
+
+
+  <g id="binary-ring">
+    <animateTransform
+      attributeName="transform"
+      attributeType="XML"
+      type="rotate"
+      from="0 200 200"
+      to="360 200 200"
+      dur="30s"
+      repeatCount="indefinite" />
+
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(0 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(9 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(18 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(27 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(36 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(45 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(54 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(63 200 200)" />
+
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(72 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(81 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(90 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(99 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(108 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(117 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(126 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(135 200 200)" />
+
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(144 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(153 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(162 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(171 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(180 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(189 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(198 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(207 200 200)" />
+
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(216 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(225 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(234 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(243 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(252 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(261 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(270 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(279 200 200)" />
+
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(288 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(297 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(306 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(315 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(324 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(333 200 200)" />
+    <rect x="195" y="20" width="2" height="16" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(342 200 200)" />
+    <rect x="195" y="20" width="2" height="8" fill="#E0E7FF" opacity="0.9"
+      transform="rotate(351 200 200)" />
+  </g>
+
+  <circle cx="200" cy="200" r="185" fill="none" stroke="#60A5FA" stroke-width="1" opacity="0.3" />
+</svg>

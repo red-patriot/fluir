@@ -64,3 +64,24 @@ jobs:
           path: |
             editor/server/dist/
           retention-days: 7
+  build-electron:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v3.9.1
+        with:
+          node-version: '22'
+      - name: Install Dependencies
+        run: npm install
+        working-directory: editor/client
+      - name: Build Electron App
+        run: npm run dist
+        working-directory: editor/client
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Editor-FE
+          path: |
+            editor/client/release/

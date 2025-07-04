@@ -10,11 +10,6 @@ on:
 jobs:
   build-cpp:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        preset: [gcc-release, llvm-release]
-        artifact-name: [GCC-Release, LLVM-Release]
-      fail-fast: false
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -22,21 +17,29 @@ jobs:
         run: |
           sudo apt update
           sudo apt install libtinyxml2-dev libfmt-dev
-      - name: Configure CMake
-        run: cmake --preset ${{ matrix.preset }}
-      - name: Build
-        run: cmake --build --preset ${{ matrix.preset }}
-      - name: Run tests
-        run: ctest --preset ${{ matrix.preset }}
+      - name: Configure GCC
+        run: cmake --preset gcc-release
+      - name: Build GCC
+        run: cmake --build --preset gcc-release
+      - name: Run tests GCC
+        run: ctest --preset gcc-release
+        # LLVM is not published as an artifact, but is built for testing and
+        # standards compliance verification
+      - name: Configure LLVM
+        run: cmake --preset llvm-release
+      - name: Build LLVM
+        run: cmake --build --preset llvm-release
+      - name: Run tests LLVM
+        run: ctest --preset llvm-release
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
-          name: ${{ matrix.artifact-name }}
+          name: Compiler-VM-Release
           path: |
-            build/${{ matrix.preset }}/
-            !build/${{ matrix.preset }}/**/*.o
-            !build/${{ matrix.preset }}/**/*.obj
-            !build/${{ matrix.preset }}/CMakeFiles/
+            build/gcc-release/
+            !build/gcc-release/**/*.o
+            !build/gcc-release/**/*.obj
+            !build/gcc-release/CMakeFiles/
           retention-days: 7
 
   build-python:

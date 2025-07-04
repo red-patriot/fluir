@@ -44,13 +44,10 @@ jobs:
           python-version: '3.13'
       - name: Create Venv
         run: |
-          pwd
           python -m venv .venv
         working-directory: editor/server
       - name: Setup Venv
         run: |
-          ls
-          ls .venv
           source .venv/bin/activate
           python -m pip install --upgrade pip
           pip install -e .[build]
@@ -67,4 +64,3 @@ jobs:
           path: |
             editor/server/dist/
           retention-days: 7
-  

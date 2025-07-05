@@ -85,3 +85,4 @@ jobs:
           name: Editor-FE
           path: |
             editor/client/release/
+          retention-days: 7

@@ -52,6 +52,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .[build]
         working-directory: editor/server
+      - name: Run Tests
+        run: |
+          .venv/Scripts/activate
+          pytest --junitxml test_results.xml
+        working-directory: editor/server
       - name: Build executable
         run: |
           .venv/Scripts/activate

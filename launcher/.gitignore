@@ -1,0 +1,9 @@
+.venv/
+
+**/__pycache__
+build/*
+dist/*
+fluid-editor.egg-info/*
+*.egg-info/*
+*.egg
+*.spec

@@ -1,0 +1,4 @@
+compiler_path: ./fluir-compiler
+vm_path: ./fluir-vm
+editor_backend_path: ./fluir-editor-be
+editor_frontend_path: ./fluir-editor-fe

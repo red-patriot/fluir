@@ -1,6 +1,5 @@
 // TODO: Get the path from config
-const BASE_URL =
-  window.location.protocol + '//' + window.location.hostname + ':8001';
+const BASE_URL = 'http://localhost:8001';
 
 export const SERVER_API = {
   newProgram: BASE_URL + '/api/module/new/',

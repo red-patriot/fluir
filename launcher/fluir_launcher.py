@@ -107,8 +107,11 @@ class FluirLauncher:
             frontend_proc = subprocess.Popen([frontend_path] + args)
 
             # Wait for both processes to complete
-            backend_result = backend_proc.wait()
             frontend_result = frontend_proc.wait()
+            print("Stopping BE!")
+            backend_proc.terminate()
+            backend_result = backend_proc.wait()
+            print("BE stopped!")
 
             # Return non-zero if either process failed
             return backend_result or frontend_result

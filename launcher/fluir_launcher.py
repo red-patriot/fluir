@@ -7,7 +7,7 @@ from typing import Final
 
 import yaml
 
-HELP_TEXT: Final = """Fluir Programming Language Launcher
+HELP_TEXT: Final = """The Fluir Programming Language
 
 Usage: fluir <command> [arguments...]
 Commands:
@@ -23,8 +23,8 @@ Examples:
 
 
 class FluirLauncher:
-    def __init__(self) -> None:
-        self.script_dir = Path(__file__).parent
+    def __init__(self, script_dir: Path) -> None:
+        self.script_dir = script_dir
         self.config_file = self.script_dir / "fluir-config.yaml"
         self.config = self.load_config()
 
@@ -152,7 +152,7 @@ class FluirLauncher:
 
 def main() -> int:
     """Entry point when run as a script."""
-    launcher = FluirLauncher()
+    launcher = FluirLauncher(Path(os.getcwd()))
     return launcher.main(sys.argv[1:])
 
 

@@ -153,3 +153,20 @@ jobs:
           path: |
             launcher/launcher.tar.gz
           retention-days: 7
+  
+  build-installer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4.3.0
+        with:
+          path: artifacts
+      - name: debug
+        run: |
+          cd artifacts
+          pwd
+          ls
+      
+

@@ -31,20 +31,15 @@ jobs:
         run: cmake --build --preset llvm-release
       - name: Run tests LLVM
         run: ctest --preset llvm-release
-      - name: Create tar archive
-        run: |
-          cd build
-          tar -czf gcc-release.tar.gz \
-            --exclude='gcc-release/**/*.o' \
-            --exclude='gcc-release/**/*.obj' \
-            --exclude='gcc-release/CMakeFiles/' \
-            gcc-release/
-
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
           name: Compiler-VM-Release
-          path: build/gcc-release.tar.gz
+          path: |
+            build/gcc-release/
+            !build/gcc-release/**/*.o
+            !build/gcc-release/**/*.obj
+            !build/gcc-release/CMakeFiles/
           retention-days: 7
 
   build-editor-be:
@@ -76,17 +71,12 @@ jobs:
           source .venv/bin/activate
           python build.py
         working-directory: editor/server
-      - name: Create tar archive
-        run: |
-          cd editor/server
-          tar -czf editor-be.tar.gz \
-          dist/
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
           name: Editor-BE
           path: |
-            editor/server/editor-be.tar.gz
+            editor/server/dist
           retention-days: 7
 
   build-editor-fe:
@@ -104,17 +94,12 @@ jobs:
       - name: Build Electron App
         run: npm run dist
         working-directory: editor/client
-      - name: Create tar archive preserving permissions
-        run: |
-          cd editor/client
-          tar -czf editor-fe.tar.gz \
-            release/
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
           name: Editor-FE
           path: |
-            editor/client/editor-fe.tar.gz
+            editor/client/release
           retention-days: 7
 
   build-launcher:
@@ -141,17 +126,12 @@ jobs:
           source .venv/bin/activate
           python build.py
         working-directory: launcher
-      - name: Create tar archive
-        run: |
-          cd launcher
-          tar -czf launcher.tar.gz \
-          dist/
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4.6.2
         with:
           name: Launcher
           path: |
-            launcher/launcher.tar.gz
+            launcher/dist
           retention-days: 7
   
   build-installer:

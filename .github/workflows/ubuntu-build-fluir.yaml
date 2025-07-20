@@ -169,5 +169,8 @@ jobs:
           cd artifacts
           pwd
           ls
+          ls Editor-FE
+          ls Compiler-VM-Release
+          ls Launcher
       
 

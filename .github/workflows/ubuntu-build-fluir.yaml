@@ -47,7 +47,7 @@ jobs:
           path: build/gcc-release.tar.gz
           retention-days: 7
 
-  build-python:
+  build-editor-be:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -89,7 +89,7 @@ jobs:
             editor/server/editor-be.tar.gz
           retention-days: 7
 
-  build-electron:
+  build-editor-fe:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -156,6 +156,7 @@ jobs:
   
   build-installer:
     runs-on: ubuntu-latest
+    needs: [build-cpp, build-editor-be, build-editor-fe, build-launcher]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4

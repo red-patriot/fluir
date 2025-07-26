@@ -8,40 +8,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-cpp:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v4
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install libtinyxml2-dev libfmt-dev
-      - name: Configure GCC
-        run: cmake --preset gcc-release
-      - name: Build GCC
-        run: cmake --build --preset gcc-release
-      - name: Run tests GCC
-        run: ctest --preset gcc-release --output-junit test_results.xml
-        # LLVM is not published as an artifact, but is built for testing and
-        # standards compliance verification
-      - name: Configure LLVM
-        run: cmake --preset llvm-release
-      - name: Build LLVM
-        run: cmake --build --preset llvm-release
-      - name: Run tests LLVM
-        run: ctest --preset llvm-release
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v4.6.2
-        with:
-          name: Compiler-VM-Release
-          path: |
-            build/gcc-release/
-            !build/gcc-release/**/*.o
-            !build/gcc-release/**/*.obj
-            !build/gcc-release/CMakeFiles/
-          retention-days: 7
-
   build-editor-be:
     runs-on: ubuntu-latest
     steps:
@@ -133,24 +99,38 @@ jobs:
           path: |
             launcher/dist
           retention-days: 7
-  
-  build-installer:
+
+  build-language:
     runs-on: ubuntu-latest
-    needs: [build-cpp, build-editor-be, build-editor-fe, build-launcher]
+    needs: [build-editor-be, build-editor-fe, build-launcher]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4.3.0
-        with:
-          path: artifacts
-      - name: debug
+      - name: Install Dependencies
         run: |
-          cd artifacts
-          pwd
-          ls
-          ls Editor-FE
-          ls Compiler-VM-Release
-          ls Launcher
-      
-
+          sudo apt update
+          sudo apt install libtinyxml2-dev libfmt-dev libgtest-dev
+      - name: Configure GCC
+        run: cmake --preset gcc-release
+      - name: Build GCC
+        run: cmake --build --preset gcc-release
+      - name: Run tests GCC
+        run: ctest --preset gcc-release --output-junit test_results.xml
+        # LLVM is not published as an artifact, but is built for testing and
+        # standards compliance verification
+      - name: Configure LLVM
+        run: cmake --preset llvm-release
+      - name: Build LLVM
+        run: cmake --build --preset llvm-release
+      - name: Run tests LLVM
+        run: ctest --preset llvm-release
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Compiler-VM-Release
+          path: |
+            build/gcc-release/
+            !build/gcc-release/**/*.o
+            !build/gcc-release/**/*.obj
+            !build/gcc-release/CMakeFiles/
+          retention-days: 7

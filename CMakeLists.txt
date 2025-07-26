@@ -35,3 +35,6 @@ add_subdirectory(vm)
 if (FLUIR_BUILD_TESTS)
     enable_testing()
 endif ()
+
+include(GNUInstallDirs)
+install(DIRECTORY artifacts/Launcher DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})

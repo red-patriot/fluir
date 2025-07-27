@@ -36,5 +36,6 @@ if (FLUIR_BUILD_TESTS)
     enable_testing()
 endif ()
 
-include(GNUInstallDirs)
-install(DIRECTORY artifacts/Launcher DESTINATION ${CMAKE_INSTALL_LIBEXECDIR})
+include(install-fluir)
+
+setup_fluir_install()

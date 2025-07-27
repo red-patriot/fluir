@@ -134,3 +134,15 @@ jobs:
             !build/gcc-release/**/*.obj
             !build/gcc-release/CMakeFiles/
           retention-days: 7
+      - name: Download Editor Artifacts
+        uses: actions/download-artifact@v4.3.0
+        with:
+          path: artifacts
+      - name: Build Installer
+        run: cpack -G DEB -B packages
+        working-directory: build/gcc-release
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Fluir-Installer
+          path: build/gcc-release/packages/fluir-*.deb

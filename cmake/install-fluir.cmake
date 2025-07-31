@@ -18,6 +18,10 @@ function(setup_fluir_install)
     install(TARGETS fluir.compiler fluir.vm
             DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir)
     install(FILES launcher/fluir-config.yaml DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir)
+    configure_file(launcher/fluir.desktop.in
+                   ${CMAKE_CURRENT_BINARY_DIR}/fluir.desktop)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/fluir.desktop
+            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/../applications)
 
     configure_cpack()
 endfunction()

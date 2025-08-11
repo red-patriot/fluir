@@ -1,0 +1,10 @@
+# Build files
+/compile_commands.json
+/build
+
+# Editor files
+.vscode/
+.vs/
+.idea/
+
+**/test_results.xml

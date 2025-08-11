@@ -1,0 +1,37 @@
+@import 'tailwindcss';
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-code {
+  font-family: 'Courier Prime', monospace;
+  font-size: 28px;
+}
+
+.react-flow__pane,
+.react-flow__viewport,
+.react-flow__subflow,
+.react-flow__node,
+.react-flow__edge {
+  cursor: default !important;
+}
+
+.react-flow__edge {
+  pointer-events: auto;
+}
+
+.debug {
+  border: 1px dashed #ff0000;
+}

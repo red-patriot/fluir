@@ -1,0 +1,3 @@
+[ERROR] on line 12 of 'reports_errors_in_several_nodes.fl': Unrecognized operator '@' in element '<binary>'.
+[ERROR] on line 29 of 'reports_errors_in_several_nodes.fl': Expected a numeric value in element '<float>'. 'I AM A STRING' cannot be parsed as a number.
+[ERROR] on line 31 of 'reports_errors_in_several_nodes.fl': constant element is missing attribute 'w'.

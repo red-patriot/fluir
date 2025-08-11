@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir >
+    <function
+        id="1"
+        x="10"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+    <function
+        name="foo"
+        x="10"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+    <function
+        name="missing_x"
+        id="4"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+
+
+    <function
+        name="missing_y"
+        id="4"
+        x="11"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+
+    <function
+        name="missing_z"
+        id="4"
+        x="3"
+        y="10"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+    <function
+        name="missing_w"
+        id="4"
+        x="100"
+        y="10"
+        z="3"
+        h="100">
+        <body>
+        </body>
+    </function>    <function
+        name="missing_h"
+        id="4"
+        y="10"
+        z="3"
+        w="100"
+        x="1">
+        <body>
+        </body>
+    </function>
+</fluir>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir >
+    <function
+        name="main"
+        id="1"
+        x="15"
+        y="7"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+            <binary
+                id="1"
+                x="0"
+                y="20"
+                z="2"
+                w="7"
+                h="7"
+                lhs="2"
+                rhs="3"
+                operator="@" />
+            <constant
+                id="2"
+                x="0"
+                y="10"
+                z="2"
+                w="5"
+                h="5">
+                <float>I AM A STRING</float>
+            </constant>
+            <constant
+                id="3"
+                x="0"
+                y="10"
+                z="3"
+                h="5">
+                <float>THIS SHOULDN'T CAUSE AN ERROR</float>
+            </constant>
+        </body>
+    </function>
+</fluir>

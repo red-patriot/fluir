@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir >
+    <function
+        name="first"
+        id="1"
+        x="10"
+        y="10"
+        z="3"
+        w="100"
+        h="100">
+        <body>
+        </body>
+    </function>
+    <function
+        name="second"
+        id="1"
+        x="250"
+        y="10"
+        z="3"
+        w="100"
+        h="190">
+        <body>
+            <constant
+                id="1"
+                x="0"
+                y="10"
+                z="3"
+                w="5"
+                h="5">
+                <float>9.4</float>
+            </constant>
+        </body>
+    </function>
+</fluir>

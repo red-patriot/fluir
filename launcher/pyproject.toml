@@ -1,0 +1,30 @@
+[project]
+name = "fluir.launcher"
+version = "0.1.0"
+dependencies = [
+    "pyyaml>=6.0.0",
+    "types-PyYAML>=6.0.0",
+    "mypy>=1.16.0"
+]
+
+[project.optional-dependencies]
+build = [
+    "pyinstaller>=6.0",
+    "setuptools>=61.0",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.ruff]
+line-length = 80
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+[tool.mypy]
+strict = true

@@ -1,8 +1,0 @@
-[Desktop Entry]
-Encoding=UTF-8
-Version=${PROJECT_VERSION}
-Type=Application
-Name=${PROJECT_NAME}
-Comment=${PROJECT_DESCRIPTION}
-Terminal=true
-Exec=/usr/libexec/fluir/fluir

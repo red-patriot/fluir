@@ -33,7 +33,7 @@ class FluirLauncher:
         if self.config_file.exists():
             try:
                 with open(self.config_file, "r") as f:
-                    config = yaml.safe_load(f) or {}
+                    config: dict[str, str] = yaml.safe_load(f) or {}
                 return config
             except Exception as e:
                 print(f"Error reading config file: {e}")
@@ -152,7 +152,8 @@ class FluirLauncher:
 
 def main() -> int:
     """Entry point when run as a script."""
-    launcher = FluirLauncher(Path(os.getcwd()))
+    # TODO: Get the correct directory in windows too
+    launcher = FluirLauncher(Path("/usr/share/fluir"))
     return launcher.main(sys.argv[1:])
 
 

@@ -1,4 +1,7 @@
-compiler_path: ./fluir.compiler
-vm_path: ./fluir.vm
-editor_backend_path: ./fluir-editor-be
-editor_frontend_path: ./editor-fe/fluir-editor-fe
+# TODO: Configure this for windows
+# TODO: Configure this for a relocatable package
+
+compiler_path: /usr/libexec/fluir/fluir.compiler
+vm_path: /usr/libexec/fluir/fluir.vm
+editor_backend_path: /usr/libexec/fluir/fluir-editor-be
+editor_frontend_path: /usr/libexec/fluir/editor-fe/fluir-editor-fe

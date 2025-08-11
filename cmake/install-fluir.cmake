@@ -11,10 +11,15 @@ function(configure_cpack)
 endfunction()
 
 function(setup_fluir_install)
-    install(DIRECTORY artifacts/Launcher/ DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install(DIRECTORY artifacts/Editor-BE/ DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir)
+    install(DIRECTORY artifacts/Launcher/
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            USE_SOURCE_PERMISSIONS)
+    install(DIRECTORY artifacts/Editor-BE/
+            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir
+            USE_SOURCE_PERMISSIONS)
     install(DIRECTORY artifacts/Editor-FE/linux-unpacked/
-            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir/editor-fe)
+            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir/editor-fe
+            USE_SOURCE_PERMISSIONS)
     install(TARGETS fluir.compiler fluir.vm
             DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir)
     install(FILES launcher/fluir-config.yaml DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/fluir)

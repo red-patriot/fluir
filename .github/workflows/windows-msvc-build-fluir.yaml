@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
-          vcpkg install tinyxml2 fmt --triplet x64-windows
+          vcpkg install tinyxml2 fmt gtest --triplet x64-windows
       - name: Setup Developer Command Prompt and Build
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -91,3 +91,35 @@ jobs:
           path: |
             editor/client/release/
           retention-days: 7
+  build-launcher:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5.6.0
+        with:
+          python-version: '3.13'
+      - name: Create Venv
+        run: |
+          python -m venv .venv
+        working-directory: launcher
+      - name: Setup Venv
+        run: |
+          .venv/Scripts/activate
+          python -m pip install --upgrade pip
+          pip install -e .[build]
+        working-directory: launcher
+      - name: Build executable
+        run: |
+          .venv/Scripts/activate
+          python build.py
+        working-directory: launcher
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: Launcher
+          path: |
+            launcher/dist/
+          retention-days: 7
+

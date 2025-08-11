@@ -1,5 +1,4 @@
 include(CTestUseLaunchers)
-include(FetchContent)
 
 add_subdirectory(src)
 

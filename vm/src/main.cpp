@@ -14,10 +14,13 @@ int main(int argc, char** argv) {
   }
 
   std::ifstream fin(argv[1]);
-  std::stringstream contents;
-  contents << fin.rdbuf();
+  std::stringstream ss;
+  ss << fin.rdbuf();
+  auto contents = ss.str();
 
-  auto bytecode = fluir::decode(contents.str());
+  auto header = fluir::decodeHeader(contents);
+  // TODO: Check for version compatibility
+  auto bytecode = fluir::decode(header, contents);
   fluir::VirtualMachine vm;
   auto result = vm.execute(&bytecode);
   return static_cast<std::underlying_type_t<fluir::ExecResult>>(result);

@@ -5,6 +5,17 @@
 #include <stdexcept>
 
 namespace fluir {
+  code::Header InspectDecoder::decodeHeader(const std::string_view source) {
+    source_ = source;
+    line_ = 1;
+    code_ = code::ByteCode{};
+
+    decodeHeader();
+
+    return std::move(code_.header);
+  }
+
+
   code::ByteCode InspectDecoder::decode(const std::string_view source) {
     source_ = source;
     line_ = 1;

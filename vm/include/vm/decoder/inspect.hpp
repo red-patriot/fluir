@@ -31,15 +31,20 @@ namespace fluir {
 
   class InspectDecoder {
    public:
-    code::Header decodeHeader(const std::string_view source);
     code::ByteCode decode(const std::string_view source);
+    code::Header decodeHeader(const std::string_view source);
+    code::ByteCode decode(code::Header header, const std::string_view source);
 
    private:
     std::string_view source_;
-    char const* start_;
-    char const* current_;
-    size_t line_;
+    char const* start_{nullptr};
+    char const* current_{nullptr};
+    size_t line_{0};
     code::ByteCode code_;
+
+    static constexpr size_t HEADER_LEN = 23; // The number of characters in the header
+
+    void reset(std::string_view source);
 
     void decodeHeader();
     void decodeChunks();

@@ -93,5 +93,11 @@ IFP_ADD IPUSH_FP x0D IFP_DIVIDE
 IPOP IEXIT
 )";
 
-  EXPECT_THROW(fluir::decode(source), std::runtime_error);
+  EXPECT_THROW(fluir::decode(source), fluir::InvalidBytecodeFile);
+}
+
+TEST(TestDecoder, DecodeDetectsNoString) {
+  std::string source = R"(Q0120030000000000000000)";
+
+  EXPECT_THROW(fluir::decodeHeader(source), fluir::InvalidBytecodeFile);
 }

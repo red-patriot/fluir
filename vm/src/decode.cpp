@@ -8,6 +8,11 @@
 using namespace std::string_literals;
 
 namespace fluir {
+  code::ByteCode decode(std::string_view source) {
+    auto header = decodeHeader(source);
+    return decode(header, source);
+  }
+
   code::Header decodeHeader(std::string_view source) {
     if (source.empty()) {
       throw InvalidBytecodeFile{"Bytecode file was unexpectedly empty."};
@@ -16,17 +21,16 @@ namespace fluir {
       case 'I':
         return InspectDecoder{}.decodeHeader(source);
       default:
-        throw InvalidBytecodeFile{ "'"s + source.at(0) + "' is an invalid bytecode file type."s};
+        throw InvalidBytecodeFile{"'"s + source.at(0) + "' is an invalid bytecode file type."s};
     }
   }
 
-  code::ByteCode decode(std::string_view source) {
-    if (source.size() >= 1) {
-      switch (source.at(0)) {
-        case 'I':
-          return InspectDecoder{}.decode(source);
-      }
+  code::ByteCode decode(code::Header header, std::string_view source) {
+    switch (header.filetype) {
+      case 'I':
+        return InspectDecoder{}.decode(std::move(header), source);
+      default:
+        throw InvalidBytecodeFile("Invalid header. File type must be 'I' (0x4C).");
     }
-    throw std::runtime_error("Invalid header. File type must be 'I' (0x4C).");
   }
 }  // namespace fluir

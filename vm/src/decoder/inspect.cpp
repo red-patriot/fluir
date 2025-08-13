@@ -6,28 +6,38 @@
 
 namespace fluir {
   code::Header InspectDecoder::decodeHeader(const std::string_view source) {
-    source_ = source;
-    line_ = 1;
-    code_ = code::ByteCode{};
+    reset(source);
 
     decodeHeader();
 
     return std::move(code_.header);
   }
 
-
   code::ByteCode InspectDecoder::decode(const std::string_view source) {
-    source_ = source;
-    line_ = 1;
-    code_ = code::ByteCode{};
+    reset(source);
 
     decodeHeader();
-    start_ = source_.data();
-    current_ = source_.data();
+    decodeChunks();
+
+    return std::move(code_);
+  }
+
+  code::ByteCode InspectDecoder::decode(code::Header header, const std::string_view source) {
+    reset(source);
+
+    code_.header = std::move(header);
+    start_ = source_.data() + HEADER_LEN;
+    current_ = start_;
 
     decodeChunks();
 
     return std::move(code_);
+  }
+
+  void InspectDecoder::reset(std::string_view source) {
+    source_ = source;
+    line_ = 1;
+    code_ = code::ByteCode{};
   }
 
   void InspectDecoder::decodeHeader() {
@@ -49,7 +59,8 @@ namespace fluir {
       std::from_chars(entryOffsetStr.data(), entryOffsetStr.data() + entryOffsetStr.size(), header.entryOffset, 16);
 
     // Consume the header part of the string
-    source_ = std::string_view{result.ptr, source_.data() + source_.size()};
+    start_ = source_.data() + HEADER_LEN;
+    current_ = start_;
 
     code_.header = header;
   }

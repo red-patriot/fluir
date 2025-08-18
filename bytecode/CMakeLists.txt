@@ -7,5 +7,8 @@ add_library(
 )
 
 target_include_directories(
-    fluir.code INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
+        fluir.code INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.hpp.in
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/bytecode/version.hpp)

@@ -28,7 +28,7 @@ namespace fluir {
   code::ByteCode decode(code::Header header, std::string_view source) {
     switch (header.filetype) {
       case 'I':
-        return InspectDecoder{}.decode(std::move(header), source);
+        return InspectDecoder{}.decode(header, source);
       default:
         throw InvalidBytecodeFile("Invalid header. File type must be 'I' (0x4C).");
     }

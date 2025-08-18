@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   auto contents = ss.str();
 
   auto header = fluir::decodeHeader(contents);
-  // TODO: Check for version compatibility
+  // Check for version compatibility
   auto bytecode = fluir::decode(header, contents);
   fluir::VirtualMachine vm;
   auto result = vm.execute(&bytecode);

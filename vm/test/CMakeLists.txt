@@ -6,6 +6,7 @@ target_sources(
     fluir.vm.test
     PRIVATE decoder/decode.test.cpp
             decoder/inspect.test.cpp
+            validate.test.cpp
             vm.test.cpp
 )
 

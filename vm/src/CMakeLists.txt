@@ -11,6 +11,7 @@ target_sources(
     fluir.libvm
     PRIVATE decode.cpp
             decoder/inspect.cpp
+            validate.cpp
             vm.cpp
 )
 

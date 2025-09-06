@@ -1,20 +1,25 @@
-import React from "react";
-import { IconProps } from "@radix-ui/react-icons/dist/types";
+import React from 'react';
+import { Button, ButtonProps } from '@radix-ui/themes';
 
-interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends ButtonProps {
   onClick?: () => void;
   text?: string;
-  icon?:  React.ReactElement
+  icon?: React.ReactElement;
 }
 
-export default function IconButton ({onClick, text, icon, ...props}: IconButtonProps){
+export default function IconButton({
+  onClick,
+  text,
+  icon,
+  ...props
+}: IconButtonProps) {
   return (
-    <button
-    onClick={onClick}
-    {...props}>
+    <Button
+      onClick={onClick}
+      {...props}
+    >
       {icon && icon}
       {text && text}
-    </button>
-  )
-
+    </Button>
+  );
 }

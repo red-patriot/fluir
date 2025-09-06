@@ -3,6 +3,7 @@ import Home from './components/pages/Home';
 import { openFileDialog } from './hooks/electronAPI';
 import ModulePage from './components/pages/Module';
 import { useProgramActions } from './components/common/ProgramActionsContext';
+import { Theme } from '@radix-ui/themes';
 
 function App() {
   // global state
@@ -20,10 +21,10 @@ function App() {
   };
 
   return (
-    <>
+    <Theme accentColor='blue' grayColor='gray' radius='none' appearance='dark'>
       {page == 'home' && <Home onNewFile={newProgram} onOpenFile={onOpenFile} />}
       {page == 'module' && <ModulePage />}
-    </>
+    </Theme>
   );
 }
 

@@ -2,7 +2,7 @@ import BinaryNode from '../components/custom/BinaryNode';
 import ConstantNode from '../components/custom/ConstantNode';
 import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
-} from '../components/custom/FunctionDeclNode';
+} from '@/components/flow_diagram/FunctionDeclNode';
 import UnaryNode from '../components/custom/UnaryNode';
 import FluirModule, {
   BinaryOp,
@@ -42,10 +42,8 @@ function addNodes(
           x: decl.location.x * ZOOM_SCALAR,
           y: decl.location.y * ZOOM_SCALAR,
         },
-        measured: {
-          width: decl.location.width * ZOOM_SCALAR,
-          height: decl.location.height * ZOOM_SCALAR,
-        },
+        width: decl.location.width * ZOOM_SCALAR,
+        height: decl.location.height * ZOOM_SCALAR,
         data: {
           decl: decl,
           fullID: id,

@@ -36,5 +36,6 @@ export default defineConfig({
     environment: 'jsdom',
     testMatch: ['./**/*.test.tsx'],
     globals: true,
+    setupFiles: ["./setupTests.ts"]
   }
 });

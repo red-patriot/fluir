@@ -2,7 +2,7 @@ import BinaryNode from '../components/custom/BinaryNode';
 import ConstantNode from '../components/custom/ConstantNode';
 import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
-} from '@/components/flow_diagram/FunctionDeclNode';
+} from '@/components/flow_diagram/elements/FunctionDeclNode';
 import UnaryNode from '../components/custom/UnaryNode';
 import FluirModule, {
   BinaryOp,

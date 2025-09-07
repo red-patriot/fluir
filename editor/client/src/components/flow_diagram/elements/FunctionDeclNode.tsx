@@ -2,7 +2,7 @@ import { type Node, type NodeProps, NodeResizer } from '@xyflow/react';
 import { FunctionDecl } from '@/models/fluir_module';
 import { Box, Code, Flex, Inset, Card } from '@radix-ui/themes';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
-import { blue, gray } from '@radix-ui/colors';
+import DragHandle from '@/components/flow_diagram/common/DragHandle';
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -12,8 +12,7 @@ type FunctionDeclNode = Node<
 export const FUNC_HEADER_HEIGHT = 26;
 
 export default function FunctionDeclNode({
-  data: { decl, fullID },
-  selected,
+  data: { decl },
   width,
   height,
 }: NodeProps<FunctionDeclNode>) {
@@ -31,7 +30,14 @@ export default function FunctionDeclNode({
         >
           <Inset>
             <Flex direction='row'>
-              <Code variant='soft'>{decl.name}</Code>
+              <Code
+                variant='soft'
+                size='2'
+              >
+                {decl.name}
+              </Code>
+              <Box className='grow' />
+              <DragHandle />
             </Flex>
           </Inset>
         </Card>

@@ -27,12 +27,12 @@ VFP 10.0
 VFP 11.0
 VFP 12.0
 CODE x0A
-IPUSH_FP
+IPUSH_F64
 x00
-IPUSH_FP
+IPUSH_F64
 x02
 IF64_ADD
-IPUSH_FP
+IPUSH_F64
 x0D
 IF64_MUL
 IPOP
@@ -43,12 +43,12 @@ IEXIT
     .chunks = {fluir::code::Chunk{.name = "main",
                                   .code =
                                     {
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x02,
                                       F64_ADD,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x0D,
                                       F64_MUL,
                                       POP,
@@ -70,18 +70,18 @@ VFP 0.0 VFP 1.0 VFP 2.0 VFP 3.0
 VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
 VFP 8.0 VFP 9.0 VFP 10.0
 CODE x07
-IPUSH_FP x00
-IPUSH_FP x02
+IPUSH_F64 x00
+IPUSH_F64 x02
 IF64_ADD
 IPOP
 IEXIT
 CHUNK foo
 CONSTANTS x01 VFP 3.5
 CODE x0A
-IPUSH_FP x00
-IPUSH_FP x00
+IPUSH_F64 x00
+IPUSH_F64 x00
 IF64_SUB
-IPUSH_FP x00
+IPUSH_F64 x00
 IPOP
 IPOP
 IEXIT
@@ -91,9 +91,9 @@ IEXIT
     .chunks = {fluir::code::Chunk{.name = "main",
                                   .code =
                                     {
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x02,
                                       F64_ADD,
                                       POP,
@@ -103,12 +103,12 @@ IEXIT
                fluir::code::Chunk{.name = "foo",
                                   .code =
                                     {
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
                                       F64_SUB,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
                                       POP,
                                       POP,
@@ -133,13 +133,13 @@ CHUNK foo
     VFP 1.234500000000
     VFP 6.789000000000
   CODE xF
-    IPUSH_FP x0
-    IPUSH_FP x1
+    IPUSH_F64 x0
+    IPUSH_F64 x1
     IF64_AFF
     IF64_MUL
     IPOP
-    IPUSH_FP x1
-    IPUSH_FP x2
+    IPUSH_F64 x1
+    IPUSH_F64 x2
     IF64_DIV
     IF64_NEG
     IPOP
@@ -147,16 +147,16 @@ CHUNK foo
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
                                  .chunks = {fluir::code::Chunk{.name = "foo",
-                                                               .code = {PUSH_FP,
+                                                               .code = {PUSH_F64,
                                                                         0x00,
-                                                                        PUSH_FP,
+                                                                        PUSH_F64,
                                                                         0x01,
                                                                         F64_AFF,
                                                                         F64_MUL,
                                                                         POP,
-                                                                        PUSH_FP,
+                                                                        PUSH_F64,
                                                                         0x01,
-                                                                        PUSH_FP,
+                                                                        PUSH_F64,
                                                                         0x02,
                                                                         F64_DIV,
                                                                         F64_NEG,

@@ -37,16 +37,16 @@ CHUNK bar
     VFP 3.500000000000
     VFP -4.400000000000
   CODE x13
-    IPUSH_FP x0
-    IPUSH_FP x1
+    IPUSH_F64 x0
+    IPUSH_F64 x1
     IF64_NEG
-    IPUSH_FP x2
+    IPUSH_F64 x2
     IF64_DIV
     IF64_ADD
     IPOP
-    IPUSH_FP x1
+    IPUSH_F64 x1
     IF64_NEG
-    IPUSH_FP x2
+    IPUSH_F64 x2
     IF64_DIV
     IF64_NEG
     IPOP
@@ -59,9 +59,9 @@ CHUNK bar
       fc::Chunk{.name = "bar",
                 .code =
                   {
-                    fc::PUSH_FP, 0x00,    fc::PUSH_FP,           0x01, fc::F64_NEG, fc::PUSH_FP, 0x02, fc::F64_DIV,
-                    fc::F64_ADD, fc::POP, fc::PUSH_FP,           0x01, fc::F64_NEG, fc::PUSH_FP, 0x02, fc::F64_DIV,
-                    fc::F64_NEG, fc::POP, fc::Instruction::EXIT,
+                    fc::PUSH_F64, 0x00,    fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
+                    fc::F64_ADD,  fc::POP, fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
+                    fc::F64_NEG,  fc::POP, fc::Instruction::EXIT,
                   },
                 .constants = {100.0, 3.5, -4.4}}}};
 
@@ -82,10 +82,10 @@ CHUNK bar
     VFP 3.512300000000
     VFP 4.460000000000
   CODE xB
-    IPUSH_FP x0
-    IPUSH_FP x1
+    IPUSH_F64 x0
+    IPUSH_F64 x1
     IF64_NEG
-    IPUSH_FP x2
+    IPUSH_F64 x2
     IF64_DIV
     IF64_ADD
     IPOP
@@ -96,12 +96,12 @@ CHUNK bar
                     .chunks = {fc::Chunk{.name = "bar",
                                          .code =
                                            {
-                                             fc::PUSH_FP,
+                                             fc::PUSH_F64,
                                              0x00,
-                                             fc::PUSH_FP,
+                                             fc::PUSH_F64,
                                              0x01,
                                              fc::F64_NEG,
-                                             fc::PUSH_FP,
+                                             fc::PUSH_F64,
                                              0x02,
                                              fc::F64_DIV,
                                              fc::F64_ADD,

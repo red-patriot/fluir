@@ -7,7 +7,7 @@ namespace fluir::code {
   // clang-format off
   #define FLUIR_CODE_INSTRUCTIONS(code)  \
   code(EXIT)                             \
-  code(PUSH_FP)                          \
+  code(PUSH_F64)                         \
   code(POP)                              \
   code(F64_ADD)                          \
   code(F64_SUB)                          \

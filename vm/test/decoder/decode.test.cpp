@@ -18,8 +18,8 @@ VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
 VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
 VFP 12.0
 CODE x0A
-IPUSH_FP x00 IPUSH_FP x02
-IF64_ADD IPUSH_FP x0D IF64_DIV
+IPUSH_F64 x00 IPUSH_F64 x02
+IF64_ADD IPUSH_F64 x0D IF64_DIV
 IPOP IEXIT
 )";
   fluir::code::ByteCode expected{
@@ -27,12 +27,12 @@ IPOP IEXIT
     .chunks = {fluir::code::Chunk{.name = "main",
                                   .code =
                                     {
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x00,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x02,
                                       F64_ADD,
-                                      PUSH_FP,
+                                      PUSH_F64,
                                       0x0D,
                                       F64_DIV,
                                       POP,
@@ -55,8 +55,8 @@ VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
 VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
 VFP 12.0
 CODE x0A
-IPUSH_FP x00 IPUSH_FP x02
-IF64_ADD IPUSH_FP x0D IF64_DIV
+IPUSH_F64 x00 IPUSH_F64 x02
+IF64_ADD IPUSH_F64 x0D IF64_DIV
 IPOP IEXIT
 )";
 

@@ -13,10 +13,10 @@ namespace fluir {
     // Sections
     CHUNK, CODE, CONSTANTS,
     // Data Types
-    TYPE_FP,
+    TYPE_F64,
     // Instructions
     INST_EXIT,
-    INST_PUSH_FP, INST_POP,
+    INST_PUSH_F64, INST_POP,
     INST_F64_ADD, INST_F64_SUB, INST_F64_MUL, INST_F64_DIV,
     INST_F64_AFF, INST_F64_NEG,
     // Meta Info

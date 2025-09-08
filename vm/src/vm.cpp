@@ -22,7 +22,7 @@ namespace fluir {
     for (;;) {
       std::uint8_t instruction = EXIT;
       switch (instruction = FLUIR_READ_BYTE()) {
-        case PUSH_FP:
+        case PUSH_F64:
           {
             uint8_t index = FLUIR_READ_BYTE();
             const code::Value& val = current_->constants[index];

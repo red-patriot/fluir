@@ -17,7 +17,7 @@ TEST(TestVM, ExecEmptyFunction) {
 
 TEST(TestVM, ExecuteSimpleAddition) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_FP, 0, PUSH_FP, 1, F64_ADD, EXIT}, .constants = {1.2, 2.5}}}};
+    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_F64, 0, PUSH_F64, 1, F64_ADD, EXIT}, .constants = {1.2, 2.5}}}};
   double expected = 3.7;
 
   fluir::VirtualMachine uut;
@@ -28,7 +28,7 @@ TEST(TestVM, ExecuteSimpleAddition) {
 
 TEST(TestVM, ExecuteSimpleSubtraction) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_FP, 0, PUSH_FP, 1, F64_SUB, EXIT}, .constants = {1.2, 2.5}}}};
+    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_F64, 0, PUSH_F64, 1, F64_SUB, EXIT}, .constants = {1.2, 2.5}}}};
   double expected = -1.3;
 
   fluir::VirtualMachine uut;
@@ -39,7 +39,7 @@ TEST(TestVM, ExecuteSimpleSubtraction) {
 
 TEST(TestVM, ExecuteSimpleMultiply) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_FP, 0, PUSH_FP, 1, F64_MUL, EXIT}, .constants = {1.2, 2.5}}}};
+    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_F64, 0, PUSH_F64, 1, F64_MUL, EXIT}, .constants = {1.2, 2.5}}}};
   double expected = 3.0;
 
   fluir::VirtualMachine uut;
@@ -50,7 +50,7 @@ TEST(TestVM, ExecuteSimpleMultiply) {
 
 TEST(TestVM, ExecuteSimpleDivide) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_FP, 0, PUSH_FP, 1, F64_DIV, EXIT}, .constants = {1.2, 2.5}}}};
+    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_F64, 0, PUSH_F64, 1, F64_DIV, EXIT}, .constants = {1.2, 2.5}}}};
   double expected = 0.48;
 
   fluir::VirtualMachine uut;
@@ -61,7 +61,8 @@ TEST(TestVM, ExecuteSimpleDivide) {
 
 TEST(TestVM, PushAndPopCorrectly) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.code = {PUSH_FP, 0, PUSH_FP, 1, F64_DIV, POP, EXIT}, .constants = {1.2, 2.5}}}};
+    .header = {},
+    .chunks = {fc::Chunk{.code = {PUSH_F64, 0, PUSH_F64, 1, F64_DIV, POP, EXIT}, .constants = {1.2, 2.5}}}};
 
   fluir::VirtualMachine uut;
 

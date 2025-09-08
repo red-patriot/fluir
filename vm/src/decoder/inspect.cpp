@@ -199,7 +199,7 @@ namespace fluir {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
         case 'F':
-          return checkKeyword("VFP", TokenType::TYPE_FP);
+          return checkKeyword("VFP", TokenType::TYPE_F64);
       }
     }
     return TokenType::IDENTIFIER;
@@ -218,7 +218,7 @@ namespace fluir {
               case 'O':
                 return checkKeyword("IPOP", TokenType::INST_POP);
               case 'U':
-                return checkKeyword("IPUSH_FP", TokenType::INST_PUSH_FP);
+                return checkKeyword("IPUSH_F64", TokenType::INST_PUSH_F64);
             }
           }
           break;
@@ -273,8 +273,8 @@ namespace fluir {
     switch (token.type) {
       case TokenType::INST_EXIT:
         return code::Instruction::EXIT;
-      case TokenType::INST_PUSH_FP:
-        return code::Instruction::PUSH_FP;
+      case TokenType::INST_PUSH_F64:
+        return code::Instruction::PUSH_F64;
       case TokenType::INST_POP:
         return code::Instruction::POP;
       case TokenType::INST_F64_ADD:
@@ -300,7 +300,7 @@ namespace fluir {
   code::Value InspectDecoder::decodeConstant() {
     auto type = scanNext();
     switch (type.type) {
-      case TokenType::TYPE_FP:
+      case TokenType::TYPE_F64:
         return decodeFloatConstant();
       default:
         throw std::runtime_error{"Expected a Type keyword."};

@@ -56,9 +56,9 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                         .chunks = {fc::Chunk{.name = "foo",
                                              .code =
                                                {
-                                                 fc::Instruction::PUSH_FP,
+                                                 fc::Instruction::PUSH_F64,
                                                  0x00,
-                                                 fc::Instruction::PUSH_FP,
+                                                 fc::Instruction::PUSH_F64,
                                                  0x01,
                                                  fc::Instruction::F64_MUL,
                                                  fc::Instruction::POP,
@@ -86,7 +86,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                         .chunks = {fc::Chunk{.name = "bar",
                                              .code =
                                                {
-                                                 fc::Instruction::PUSH_FP,
+                                                 fc::Instruction::PUSH_F64,
                                                  0x00,
                                                  fc::Instruction::F64_NEG,
                                                  fc::Instruction::POP,
@@ -125,9 +125,9 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
       fc::Chunk{.name = "bar",
                 .code =
                   {
-                    fc::PUSH_FP, 0x00,    fc::PUSH_FP,           0x01, fc::F64_NEG, fc::PUSH_FP, 0x02, fc::F64_DIV,
-                    fc::F64_ADD, fc::POP, fc::PUSH_FP,           0x01, fc::F64_NEG, fc::PUSH_FP, 0x02, fc::F64_DIV,
-                    fc::F64_NEG, fc::POP, fc::Instruction::EXIT,
+                    fc::PUSH_F64, 0x00,    fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
+                    fc::F64_ADD,  fc::POP, fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
+                    fc::F64_NEG,  fc::POP, fc::Instruction::EXIT,
                   },
                 .constants = {100.0, 3.5, -4.4}}}};
 

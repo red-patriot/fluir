@@ -31,35 +31,30 @@ IPUSH_FP
 x00
 IPUSH_FP
 x02
-IFP_ADD
+IF64_ADD
 IPUSH_FP
 x0D
-IFP_MULTIPLY
+IF64_MUL
 IPOP
 IEXIT
 )";
   fluir::code::ByteCode expected{
-      .header = {.filetype = 'I',
-                 .major = 1,
-                 .minor = 32,
-                 .patch = 3,
-                 .entryOffset = 0},
-      .chunks = {
-          fluir::code::Chunk{
-              .name = "main",
-              .code = {
-                  PUSH_FP,
-                  0x00,
-                  PUSH_FP,
-                  0x02,
-                  FP_ADD,
-                  PUSH_FP,
-                  0x0D,
-                  FP_MULTIPLY,
-                  POP,
-                  EXIT,
-              },
-              .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}}}};
+    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+    .chunks = {fluir::code::Chunk{.name = "main",
+                                  .code =
+                                    {
+                                      PUSH_FP,
+                                      0x00,
+                                      PUSH_FP,
+                                      0x02,
+                                      F64_ADD,
+                                      PUSH_FP,
+                                      0x0D,
+                                      F64_MUL,
+                                      POP,
+                                      EXIT,
+                                    },
+                                  .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -77,7 +72,7 @@ VFP 8.0 VFP 9.0 VFP 10.0
 CODE x07
 IPUSH_FP x00
 IPUSH_FP x02
-IFP_ADD
+IF64_ADD
 IPOP
 IEXIT
 CHUNK foo
@@ -85,42 +80,41 @@ CONSTANTS x01 VFP 3.5
 CODE x0A
 IPUSH_FP x00
 IPUSH_FP x00
-IFP_SUBTRACT
+IF64_SUB
 IPUSH_FP x00
 IPOP
 IPOP
 IEXIT
 )";
   fluir::code::ByteCode expected{
-      .header = {.filetype = 'I',
-                 .major = 7,
-                 .minor = 34,
-                 .patch = 10,
-                 .entryOffset = 26},
-      .chunks = {
-          fluir::code::Chunk{.name = "main", .code = {
-                                                 PUSH_FP,
-                                                 0x00,
-                                                 PUSH_FP,
-                                                 0x02,
-                                                 FP_ADD,
-                                                 POP,
-                                                 EXIT,
-                                             },
-                             .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}},
-          fluir::code::Chunk{.name = "foo", .code = {
-                                                PUSH_FP,
-                                                0x00,
-                                                PUSH_FP,
-                                                0x00,
-                                                FP_SUBTRACT,
-                                                PUSH_FP,
-                                                0x00,
-                                                POP,
-                                                POP,
-                                                EXIT,
-                                            },
-                             .constants = {3.5}}}};
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .chunks = {fluir::code::Chunk{.name = "main",
+                                  .code =
+                                    {
+                                      PUSH_FP,
+                                      0x00,
+                                      PUSH_FP,
+                                      0x02,
+                                      F64_ADD,
+                                      POP,
+                                      EXIT,
+                                    },
+                                  .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}},
+               fluir::code::Chunk{.name = "foo",
+                                  .code =
+                                    {
+                                      PUSH_FP,
+                                      0x00,
+                                      PUSH_FP,
+                                      0x00,
+                                      F64_SUB,
+                                      PUSH_FP,
+                                      0x00,
+                                      POP,
+                                      POP,
+                                      EXIT,
+                                    },
+                                  .constants = {3.5}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -141,40 +135,38 @@ CHUNK foo
   CODE xF
     IPUSH_FP x0
     IPUSH_FP x1
-    IFP_AFFIRM
-    IFP_MULTIPLY
+    IF64_AFF
+    IF64_MUL
     IPOP
     IPUSH_FP x1
     IPUSH_FP x2
-    IFP_DIVIDE
-    IFP_NEGATE
+    IF64_DIV
+    IF64_NEG
     IPOP
     IEXIT
 )";
-  fluir::code::ByteCode expected{
-      .header = {.filetype = 'I',
-                 .major = 7,
-                 .minor = 34,
-                 .patch = 10,
-                 .entryOffset = 26},
-      .chunks = {
-          fluir::code::Chunk{.name = "foo",
-                             .code = {PUSH_FP, 0x00,
-                                      PUSH_FP, 0x01,
-                                      FP_AFFIRM,
-                                      FP_MULTIPLY,
-                                      POP,
-                                      PUSH_FP, 0x01,
-                                      PUSH_FP, 0x02,
-                                      FP_DIVIDE,
-                                      FP_NEGATE,
-                                      POP,
-                                      EXIT},
-                             .constants = {
-                                 7.654300000000,
-                                 1.234500000000,
-                                 6.789000000000,
-                             }}}};
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+                                 .chunks = {fluir::code::Chunk{.name = "foo",
+                                                               .code = {PUSH_FP,
+                                                                        0x00,
+                                                                        PUSH_FP,
+                                                                        0x01,
+                                                                        F64_AFF,
+                                                                        F64_MUL,
+                                                                        POP,
+                                                                        PUSH_FP,
+                                                                        0x01,
+                                                                        PUSH_FP,
+                                                                        0x02,
+                                                                        F64_DIV,
+                                                                        F64_NEG,
+                                                                        POP,
+                                                                        EXIT},
+                                                               .constants = {
+                                                                 7.654300000000,
+                                                                 1.234500000000,
+                                                                 6.789000000000,
+                                                               }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 

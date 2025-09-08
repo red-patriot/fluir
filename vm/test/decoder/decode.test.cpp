@@ -19,31 +19,26 @@ VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
 VFP 12.0
 CODE x0A
 IPUSH_FP x00 IPUSH_FP x02
-IFP_ADD IPUSH_FP x0D IFP_DIVIDE
+IF64_ADD IPUSH_FP x0D IF64_DIV
 IPOP IEXIT
 )";
   fluir::code::ByteCode expected{
-      .header = {.filetype = 'I',
-                 .major = 1,
-                 .minor = 32,
-                 .patch = 3,
-                 .entryOffset = 0},
-      .chunks = {
-          fluir::code::Chunk{
-              .name = "main",
-              .code = {
-                  PUSH_FP,
-                  0x00,
-                  PUSH_FP,
-                  0x02,
-                  FP_ADD,
-                  PUSH_FP,
-                  0x0D,
-                  FP_DIVIDE,
-                  POP,
-                  EXIT,
-              },
-              .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}}}};
+    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+    .chunks = {fluir::code::Chunk{.name = "main",
+                                  .code =
+                                    {
+                                      PUSH_FP,
+                                      0x00,
+                                      PUSH_FP,
+                                      0x02,
+                                      F64_ADD,
+                                      PUSH_FP,
+                                      0x0D,
+                                      F64_DIV,
+                                      POP,
+                                      EXIT,
+                                    },
+                                  .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}}}};
 
   auto actual = fluir::decode(source);
 
@@ -61,7 +56,7 @@ VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
 VFP 12.0
 CODE x0A
 IPUSH_FP x00 IPUSH_FP x02
-IFP_ADD IPUSH_FP x0D IFP_DIVIDE
+IF64_ADD IPUSH_FP x0D IF64_DIV
 IPOP IEXIT
 )";
 

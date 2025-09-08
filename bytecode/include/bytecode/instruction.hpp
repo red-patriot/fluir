@@ -9,12 +9,12 @@ namespace fluir::code {
   code(EXIT)                             \
   code(PUSH_FP)                          \
   code(POP)                              \
-  code(FP_ADD)                           \
-  code(FP_SUBTRACT)                      \
-  code(FP_MULTIPLY)                      \
-  code(FP_DIVIDE)                        \
-  code(FP_NEGATE)                        \
-  code(FP_AFFIRM)
+  code(F64_ADD)                          \
+  code(F64_SUB)                          \
+  code(F64_MUL)                          \
+  code(F64_DIV)                          \
+  code(F64_NEG)                          \
+  code(F64_AFF)
 
   // clang-format on
 

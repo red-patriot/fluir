@@ -32,7 +32,7 @@ namespace fluir {
             stack_.push_back(val);
             break;
           }
-        case FP_ADD:
+        case F64_ADD:
           {
             double rhs = stack_.back();
             stack_.pop_back();
@@ -41,7 +41,7 @@ namespace fluir {
             stack_.push_back(lhs + rhs);
             break;
           }
-        case FP_SUBTRACT:
+        case F64_SUB:
           {
             double rhs = stack_.back();
             stack_.pop_back();
@@ -50,7 +50,7 @@ namespace fluir {
             stack_.push_back(lhs - rhs);
             break;
           }
-        case FP_MULTIPLY:
+        case F64_MUL:
           {
             double rhs = stack_.back();
             stack_.pop_back();
@@ -59,7 +59,7 @@ namespace fluir {
             stack_.push_back(lhs * rhs);
             break;
           }
-        case FP_DIVIDE:
+        case F64_DIV:
           {
             double rhs = stack_.back();
             stack_.pop_back();
@@ -68,14 +68,14 @@ namespace fluir {
             stack_.push_back(lhs / rhs);
             break;
           }
-        case FP_AFFIRM:
+        case F64_AFF:
           {
             double operand = stack_.back();
             stack_.pop_back();
             stack_.push_back(+operand);
             break;
           }
-        case FP_NEGATE:
+        case F64_NEG:
           {
             double operand = stack_.back();
             stack_.pop_back();

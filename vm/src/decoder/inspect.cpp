@@ -229,26 +229,26 @@ namespace fluir {
 
   TokenType InspectDecoder::checkFPInstruction() {
     std::string_view current{start_, current_};
-    if (current.starts_with("IFP_") && current.size() > 4) {
-      switch (current[4]) {
+    if (current.starts_with("IF64_") && current.size() > 5) {
+      switch (current[5]) {
         case 'A':
-          if (current.size() > 5) {
-            switch (current[5]) {
+          if (current.size() > 6) {
+            switch (current[6]) {
               case 'D':
-                return checkKeyword("IFP_ADD", TokenType::INST_FP_ADD);
+                return checkKeyword("IF64_ADD", TokenType::INST_F64_ADD);
               case 'F':
-                return checkKeyword("IFP_AFFIRM", TokenType::INST_FP_AFFIRM);
+                return checkKeyword("IF64_AFF", TokenType::INST_F64_AFF);
             }
           }
           break;
         case 'D':
-          return checkKeyword("IFP_DIVIDE", TokenType::INST_FP_DIVIDE);
+          return checkKeyword("IF64_DIV", TokenType::INST_F64_DIV);
         case 'M':
-          return checkKeyword("IFP_MULTIPLY", TokenType::INST_FP_MULTIPLY);
+          return checkKeyword("IF64_MUL", TokenType::INST_F64_MUL);
         case 'N':
-          return checkKeyword("IFP_NEGATE", TokenType::INST_FP_NEGATE);
+          return checkKeyword("IF64_NEG", TokenType::INST_F64_NEG);
         case 'S':
-          return checkKeyword("IFP_SUBTRACT", TokenType::INST_FP_SUBTRACT);
+          return checkKeyword("IF64_SUB", TokenType::INST_F64_SUB);
       }
     }
     return TokenType::IDENTIFIER;
@@ -277,18 +277,18 @@ namespace fluir {
         return code::Instruction::PUSH_FP;
       case TokenType::INST_POP:
         return code::Instruction::POP;
-      case TokenType::INST_FP_ADD:
-        return code::Instruction::FP_ADD;
-      case TokenType::INST_FP_SUBTRACT:
-        return code::Instruction::FP_SUBTRACT;
-      case TokenType::INST_FP_MULTIPLY:
-        return code::Instruction::FP_MULTIPLY;
-      case TokenType::INST_FP_DIVIDE:
-        return code::Instruction::FP_DIVIDE;
-      case TokenType::INST_FP_AFFIRM:
-        return code::Instruction::FP_AFFIRM;
-      case TokenType::INST_FP_NEGATE:
-        return code::Instruction::FP_NEGATE;
+      case TokenType::INST_F64_ADD:
+        return code::Instruction::F64_ADD;
+      case TokenType::INST_F64_SUB:
+        return code::Instruction::F64_SUB;
+      case TokenType::INST_F64_MUL:
+        return code::Instruction::F64_MUL;
+      case TokenType::INST_F64_DIV:
+        return code::Instruction::F64_DIV;
+      case TokenType::INST_F64_AFF:
+        return code::Instruction::F64_AFF;
+      case TokenType::INST_F64_NEG:
+        return code::Instruction::F64_NEG;
       case TokenType::HEX_LITERAL:
         // This is an operand to one of the above instructions
         // TODO: Handle sizes that are too large

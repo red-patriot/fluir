@@ -15,10 +15,9 @@ namespace fluir {
     // Data Types
     TYPE_F64,
     // Instructions
-    INST_EXIT,
-    INST_PUSH_F64, INST_POP,
-    INST_F64_ADD, INST_F64_SUB, INST_F64_MUL, INST_F64_DIV,
-    INST_F64_AFF, INST_F64_NEG,
+#define FLUIR_INSTRUCTION_TOKEN(code) INST_##code,
+    FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TOKEN)
+#undef FLUIR_INSTRUCTION_TOKEN
     // Meta Info
     END_OF_FILE, ERR
   };

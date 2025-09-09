@@ -59,6 +59,8 @@ namespace fluir {
     TokenType checkValueType();
     TokenType checkInstruction();
     TokenType checkFPInstruction();
+    TokenType checkIntInstruction();
+    TokenType checkUintInstruction();
     Token createToken(TokenType type);
     size_t toUnsignedInteger(Token rawNumber);
 

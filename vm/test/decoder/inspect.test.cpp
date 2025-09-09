@@ -62,6 +62,72 @@ IEXIT
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
 
+TEST(TestInspectDecoder, ParsesIntInstructions) {
+  std::string source = R"(I0120030000000000000000
+CHUNK main
+CONSTANTS x00
+CODE x07
+II64_ADD
+II64_SUB
+II64_MUL
+II64_DIV
+II64_NEG
+II64_AFF
+IEXIT
+)";
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .chunks = {fluir::code::Chunk{.name = "main",
+                                                               .code =
+                                                                 {
+                                                                   I64_ADD,
+                                                                   I64_SUB,
+                                                                   I64_MUL,
+                                                                   I64_DIV,
+                                                                   I64_NEG,
+                                                                   I64_AFF,
+                                                                   EXIT,
+                                                                 },
+                                                               .constants = {}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
+TEST(TestInspectDecoder, ParsesUintInstructions) {
+  std::string source = R"(I0120030000000000000000
+CHUNK main
+CONSTANTS x00
+CODE x07
+IU64_ADD
+IU64_SUB
+IU64_MUL
+IU64_DIV
+IU64_NEG
+IU64_AFF
+IEXIT
+)";
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .chunks = {fluir::code::Chunk{.name = "main",
+                                                               .code =
+                                                                 {
+                                                                   U64_ADD,
+                                                                   U64_SUB,
+                                                                   U64_MUL,
+                                                                   U64_DIV,
+                                                                   U64_NEG,
+                                                                   U64_AFF,
+                                                                   EXIT,
+                                                                 },
+                                                               .constants = {}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
 TEST(TestInspectDecoder, ParsesMultipleFunctions) {
   std::string source = R"(I07220A000000000000001A
 CHUNK main

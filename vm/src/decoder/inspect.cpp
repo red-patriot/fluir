@@ -1,8 +1,8 @@
 #include "vm/decoder/inspect.hpp"
 
 #include <charconv>
-#include <string>
 #include <stdexcept>
+#include <string>
 
 namespace fluir {
   code::ByteCode InspectDecoder::decode(const std::string_view source) {
@@ -80,6 +80,7 @@ namespace fluir {
 
     return constants;
   }
+
   std::vector<uint8_t> InspectDecoder::code() {
     [[maybe_unused]] auto codeSection = scanNext();
     auto rawCount = scanNext();
@@ -187,6 +188,7 @@ namespace fluir {
     }
     return TokenType::IDENTIFIER;
   }
+
   TokenType InspectDecoder::checkKeyword(std::string_view expected, TokenType type) {
     std::string_view current{start_, current_};
     if (current.size() == expected.size() && current == expected) {
@@ -212,6 +214,8 @@ namespace fluir {
           return checkKeyword("IEXIT", TokenType::INST_EXIT);
         case 'F':
           return checkFPInstruction();
+        case 'I':
+          return checkIntInstruction();
         case 'P':
           if (current_ - start_ > 2) {
             switch (start_[2]) {
@@ -222,6 +226,8 @@ namespace fluir {
             }
           }
           break;
+        case 'U':
+          return checkUintInstruction();
       }
     }
     return TokenType::IDENTIFIER;
@@ -254,6 +260,59 @@ namespace fluir {
     return TokenType::IDENTIFIER;
   }
 
+  TokenType InspectDecoder::checkIntInstruction() {
+    std::string_view current{start_, current_};
+    if (current.starts_with("II64_") && current.size() > 5) {
+      switch (current[5]) {
+        case 'A':
+          if (current.size() > 6) {
+            switch (current[6]) {
+              case 'D':
+                return checkKeyword("II64_ADD", TokenType::INST_I64_ADD);
+              case 'F':
+                return checkKeyword("II64_AFF", TokenType::INST_I64_AFF);
+            }
+          }
+          break;
+        case 'D':
+          return checkKeyword("II64_DIV", TokenType::INST_I64_DIV);
+        case 'M':
+          return checkKeyword("II64_MUL", TokenType::INST_I64_MUL);
+        case 'N':
+          return checkKeyword("II64_NEG", TokenType::INST_I64_NEG);
+        case 'S':
+          return checkKeyword("II64_SUB", TokenType::INST_I64_SUB);
+      }
+    }
+    return TokenType::IDENTIFIER;
+  }
+  TokenType InspectDecoder::checkUintInstruction() {
+    std::string_view current{start_, current_};
+    if (current.starts_with("IU64_") && current.size() > 5) {
+      switch (current[5]) {
+        case 'A':
+          if (current.size() > 6) {
+            switch (current[6]) {
+              case 'D':
+                return checkKeyword("IU64_ADD", TokenType::INST_U64_ADD);
+              case 'F':
+                return checkKeyword("IU64_AFF", TokenType::INST_U64_AFF);
+            }
+          }
+          break;
+        case 'D':
+          return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
+        case 'M':
+          return checkKeyword("IU64_MUL", TokenType::INST_U64_MUL);
+        case 'N':
+          return checkKeyword("IU64_NEG", TokenType::INST_U64_NEG);
+        case 'S':
+          return checkKeyword("IU64_SUB", TokenType::INST_U64_SUB);
+      }
+    }
+    return TokenType::IDENTIFIER;
+  }
+
   Token InspectDecoder::createToken(TokenType type) {
     return Token{.type = type, .source = std::string_view{start_, current_}};
   }
@@ -268,6 +327,7 @@ namespace fluir {
     // TODO: Check error
     return number;
   }
+
   std::uint8_t InspectDecoder::decodeInstruction() {
     auto token = scanNext();
     switch (token.type) {
@@ -289,6 +349,30 @@ namespace fluir {
         return code::Instruction::F64_AFF;
       case TokenType::INST_F64_NEG:
         return code::Instruction::F64_NEG;
+      case TokenType::INST_I64_ADD:
+        return code::Instruction::I64_ADD;
+      case TokenType::INST_I64_SUB:
+        return code::Instruction::I64_SUB;
+      case TokenType::INST_I64_MUL:
+        return code::Instruction::I64_MUL;
+      case TokenType::INST_I64_DIV:
+        return code::Instruction::I64_DIV;
+      case TokenType::INST_I64_AFF:
+        return code::Instruction::I64_AFF;
+      case TokenType::INST_I64_NEG:
+        return code::Instruction::I64_NEG;
+      case TokenType::INST_U64_ADD:
+        return code::Instruction::U64_ADD;
+      case TokenType::INST_U64_SUB:
+        return code::Instruction::U64_SUB;
+      case TokenType::INST_U64_MUL:
+        return code::Instruction::U64_MUL;
+      case TokenType::INST_U64_DIV:
+        return code::Instruction::U64_DIV;
+      case TokenType::INST_U64_AFF:
+        return code::Instruction::U64_AFF;
+      case TokenType::INST_U64_NEG:
+        return code::Instruction::U64_NEG;
       case TokenType::HEX_LITERAL:
         // This is an operand to one of the above instructions
         // TODO: Handle sizes that are too large
@@ -297,6 +381,7 @@ namespace fluir {
         throw std::runtime_error{"Expected a decodable instruction"};
     }
   }
+
   code::Value InspectDecoder::decodeConstant() {
     auto type = scanNext();
     switch (type.type) {

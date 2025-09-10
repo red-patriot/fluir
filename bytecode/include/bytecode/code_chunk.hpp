@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "instruction.hpp"
+#include "value.h"
 
 namespace fluir::code {
-  using Value = double;  // TODO: Support other value types
   using Bytes = std::vector<uint8_t>;
 
   struct Chunk {

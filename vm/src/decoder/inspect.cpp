@@ -201,7 +201,7 @@ namespace fluir {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
         case 'F':
-          return checkKeyword("VFP", TokenType::TYPE_F64);
+          return checkKeyword("VF64", TokenType::TYPE_F64);
       }
     }
     return TokenType::IDENTIFIER;

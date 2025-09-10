@@ -35,7 +35,7 @@ namespace fluir {
   }
 
   void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
-    os << formatIndented("VFP {:.12f}\n", constant);
+    os << formatIndented("VF64 {:.12f}\n", constant);
   }
 
   void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {

@@ -24,6 +24,8 @@ namespace fluir::code {
 
   /* A generic Fluir value */
   class Value {
+    friend bool operator==(const Value&, const Value&);
+
    public:
 #define FLUIR_VALUE_CONSTRUCTOR(Type, Concrete) \
   explicit Value(Concrete d) : type_{ValueType::Type}, data_(d) { }
@@ -48,7 +50,6 @@ namespace fluir::code {
     FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_ACCESSOR)
 
 #undef FLUIR_VALUE_ACCESSOR
-#undef TEMP_CONCAT
 
    private:
     ValueType type_;
@@ -80,6 +81,24 @@ namespace fluir::code {
     inline Value operator""_u16(unsigned long long int u) { return Value{static_cast<std::uint16_t>(u)}; }
     inline Value operator""_u8(unsigned long long int u) { return Value{static_cast<std::uint8_t>(u)}; }
   }  // namespace value_literals
+
+  inline bool operator==(const Value& lhs, const Value& rhs) {
+    if (lhs.type() != rhs.type()) {
+      return false;
+    }
+
+    switch (lhs.type()) {
+#define FLUIR_VALUE_COMPARE(Type, Concrete) \
+  case ValueType::Type:                     \
+    return TEMP_CONCAT(lhs.as, Type)() == TEMP_CONCAT(rhs.as, Type)();
+
+      FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_COMPARE)
+
+#undef FLUIR_VALUE_COMPARE
+#undef TEMP_CONCAT
+    }
+    return false;
+  }
 }  // namespace fluir::code
 
 #endif  // FLUIR_VALUE_H

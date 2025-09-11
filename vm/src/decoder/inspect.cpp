@@ -397,6 +397,6 @@ namespace fluir {
     double number;
     std::from_chars(rawConstant.source.data(), rawConstant.source.data() + rawConstant.source.size(), number);
     // TODO: Check error
-    return number;
+    return code::Value{number};
   }
 }  // namespace fluir

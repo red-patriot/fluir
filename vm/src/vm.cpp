@@ -34,59 +34,59 @@ namespace fluir {
           }
         case F64_ADD:
           {
-            double rhs = stack_.back();
+            double rhs = stack_.back().asF64();
             stack_.pop_back();
-            double lhs = stack_.back();
+            double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(lhs + rhs);
+            stack_.push_back(code::Value{lhs + rhs});
             break;
           }
         case F64_SUB:
           {
-            double rhs = stack_.back();
+            double rhs = stack_.back().asF64();
             stack_.pop_back();
-            double lhs = stack_.back();
+            double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(lhs - rhs);
+            stack_.push_back(code::Value{lhs - rhs});
             break;
           }
         case F64_MUL:
           {
-            double rhs = stack_.back();
+            double rhs = stack_.back().asF64();
             stack_.pop_back();
-            double lhs = stack_.back();
+            double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(lhs * rhs);
+            stack_.push_back(code::Value{lhs * rhs});
             break;
           }
         case F64_DIV:
           {
-            double rhs = stack_.back();
+            double rhs = stack_.back().asF64();
             stack_.pop_back();
-            double lhs = stack_.back();
+            double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(lhs / rhs);
+            stack_.push_back(code::Value{lhs / rhs});
             break;
           }
         case F64_AFF:
           {
-            double operand = stack_.back();
+            double operand = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(+operand);
+            stack_.push_back(code::Value{+operand});
             break;
           }
         case F64_NEG:
           {
-            double operand = stack_.back();
+            double operand = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(-operand);
+            stack_.push_back(code::Value{-operand});
             break;
           }
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
           // language is implemented
-          std::cout << stack_.back() << '\n';
+          std::cout << stack_.back().asF64() << '\n';
           stack_.pop_back();
           break;
         case EXIT:

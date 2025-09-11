@@ -27,6 +27,32 @@ TEST(TestValue, InitializeInt64) {
   EXPECT_DOUBLE_EQ(expected, value.asI64());
 }
 
+TEST(TestValue, InitializeInt32) {
+  std::int32_t expected = 190;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::I32, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asI32());
+}
+
+TEST(TestValue, InitializeInt16) {
+  std::int16_t expected = 13;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::I16, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asI16());
+}
+TEST(TestValue, InitializeInt8) {
+  std::int8_t expected = -4;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::I8, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asI8());
+}
+
 TEST(TestValue, InitializeUint64) {
   std::uint64_t expected = 12345;
 
@@ -34,6 +60,33 @@ TEST(TestValue, InitializeUint64) {
 
   ASSERT_EQ(fluir::code::ValueType::U64, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asU64());
+}
+
+TEST(TestValue, InitializeUint32) {
+  std::uint32_t expected = 321;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::U32, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asU32());
+}
+
+TEST(TestValue, InitializeUint16) {
+  std::uint16_t expected = 12;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::U16, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asU16());
+}
+
+TEST(TestValue, InitializeUint8) {
+  std::uint8_t expected = 89;
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::ValueType::U8, value.type());
+  EXPECT_DOUBLE_EQ(expected, value.asU8());
 }
 
 TEST(TestValue, I64AccessChecksForFloat) {

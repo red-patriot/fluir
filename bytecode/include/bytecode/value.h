@@ -9,7 +9,13 @@ namespace fluir::code {
 #define FLUIR_CODE_VALUE_TYPES(code)  \
   code(F64, double)                   \
   code(I64, std::int64_t)             \
-  code(U64, std::uint64_t)
+  code(I32, std::int32_t)             \
+  code(I16, std::int16_t)             \
+  code(I8, std::int8_t)               \
+  code(U64, std::uint64_t)            \
+  code(U32, std::uint32_t)            \
+  code(U16, std::uint16_t)            \
+  code(U8, std::uint8_t)
   // clang-format on
 
 #define enumerate(Type, ConcreteType) Type,
@@ -66,8 +72,13 @@ namespace fluir::code {
   namespace value_literals {
     inline Value operator""_f64(long double d) { return Value{static_cast<double>(d)}; }
     inline Value operator""_i64(unsigned long long i) { return Value{static_cast<std::int64_t>(i)}; }
-    inline Value operator""_u64(unsigned long long int i) { return Value{static_cast<std::uint64_t>(i)}; }
-
+    inline Value operator""_i32(unsigned long long i) { return Value{static_cast<std::int32_t>(i)}; }
+    inline Value operator""_i16(unsigned long long i) { return Value{static_cast<std::int16_t>(i)}; }
+    inline Value operator""_i8(unsigned long long i) { return Value{static_cast<std::int8_t>(i)}; }
+    inline Value operator""_u64(unsigned long long int u) { return Value{static_cast<std::uint64_t>(u)}; }
+    inline Value operator""_u32(unsigned long long int u) { return Value{static_cast<std::uint32_t>(u)}; }
+    inline Value operator""_u16(unsigned long long int u) { return Value{static_cast<std::uint16_t>(u)}; }
+    inline Value operator""_u8(unsigned long long int u) { return Value{static_cast<std::uint8_t>(u)}; }
   }  // namespace value_literals
 }  // namespace fluir::code
 

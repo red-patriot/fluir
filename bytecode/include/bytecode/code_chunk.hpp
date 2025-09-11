@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "instruction.hpp"
-#include "value.h"
+#include "value.hpp"
 
 namespace fluir::code {
   using Bytes = std::vector<uint8_t>;

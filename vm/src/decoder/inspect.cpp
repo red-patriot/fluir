@@ -359,48 +359,13 @@ namespace fluir {
   std::uint8_t InspectDecoder::decodeInstruction() {
     auto token = scanNext();
     switch (token.type) {
-      case TokenType::INST_EXIT:
-        return code::Instruction::EXIT;
-      case TokenType::INST_PUSH_F64:
-        return code::Instruction::PUSH_F64;
-      case TokenType::INST_POP:
-        return code::Instruction::POP;
-      case TokenType::INST_F64_ADD:
-        return code::Instruction::F64_ADD;
-      case TokenType::INST_F64_SUB:
-        return code::Instruction::F64_SUB;
-      case TokenType::INST_F64_MUL:
-        return code::Instruction::F64_MUL;
-      case TokenType::INST_F64_DIV:
-        return code::Instruction::F64_DIV;
-      case TokenType::INST_F64_AFF:
-        return code::Instruction::F64_AFF;
-      case TokenType::INST_F64_NEG:
-        return code::Instruction::F64_NEG;
-      case TokenType::INST_I64_ADD:
-        return code::Instruction::I64_ADD;
-      case TokenType::INST_I64_SUB:
-        return code::Instruction::I64_SUB;
-      case TokenType::INST_I64_MUL:
-        return code::Instruction::I64_MUL;
-      case TokenType::INST_I64_DIV:
-        return code::Instruction::I64_DIV;
-      case TokenType::INST_I64_AFF:
-        return code::Instruction::I64_AFF;
-      case TokenType::INST_I64_NEG:
-        return code::Instruction::I64_NEG;
-      case TokenType::INST_U64_ADD:
-        return code::Instruction::U64_ADD;
-      case TokenType::INST_U64_SUB:
-        return code::Instruction::U64_SUB;
-      case TokenType::INST_U64_MUL:
-        return code::Instruction::U64_MUL;
-      case TokenType::INST_U64_DIV:
-        return code::Instruction::U64_DIV;
-      case TokenType::INST_U64_AFF:
-        return code::Instruction::U64_AFF;
-      case TokenType::INST_U64_NEG:
-        return code::Instruction::U64_NEG;
+#define FLUIR_TRANSLATE_INSTRUCTION(Inst) \
+  case TokenType::INST_##Inst:            \
+    return code::Instruction::Inst;
+
+      FLUIR_CODE_INSTRUCTIONS(FLUIR_TRANSLATE_INSTRUCTION)
+#undef FLUIR_TRANSLATE_INSTRUCTION
+
       case TokenType::HEX_LITERAL:
         // This is an operand to one of the above instructions
         // TODO: Handle sizes that are too large

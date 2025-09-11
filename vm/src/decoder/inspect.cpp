@@ -202,6 +202,19 @@ namespace fluir {
       switch (start_[1]) {
         case 'F':
           return checkKeyword("VF64", TokenType::TYPE_F64);
+        case 'I':
+          if (current_ - start_ > 2) {
+            switch (start_[2]) {
+              case '1':
+                return checkKeyword("VI16", TokenType::TYPE_I16);
+              case '3':
+                return checkKeyword("VI32", TokenType::TYPE_I32);
+              case '6':
+                return checkKeyword("VI64", TokenType::TYPE_I64);
+              case '8':
+                return checkKeyword("VI8", TokenType::TYPE_I8);
+            }
+          }
       }
     }
     return TokenType::IDENTIFIER;
@@ -387,16 +400,44 @@ namespace fluir {
     switch (type.type) {
       case TokenType::TYPE_F64:
         return decodeFloatConstant();
+      case TokenType::TYPE_I8:
+        return decodeIntConstant(code::ValueType::I8);
+      case TokenType::TYPE_I16:
+        return decodeIntConstant(code::ValueType::I16);
+      case TokenType::TYPE_I32:
+        return decodeIntConstant(code::ValueType::I32);
+      case TokenType::TYPE_I64:
+        return decodeIntConstant(code::ValueType::I64);
       default:
-        throw std::runtime_error{"Expected a Type keyword."};
+        throw std::runtime_error{"Expected a type keyword."};
     }
   }
 
   code::Value InspectDecoder::decodeFloatConstant() {
     auto rawConstant = scanNext();
+    if (rawConstant.type != TokenType::FLOAT_LITERAL) {
+      throw std::runtime_error{"Expected a float constant."};
+    }
     double number;
     std::from_chars(rawConstant.source.data(), rawConstant.source.data() + rawConstant.source.size(), number);
     // TODO: Check error
     return code::Value{number};
+  }
+
+  code::Value InspectDecoder::decodeIntConstant(code::ValueType type) {
+    auto rawConstant = scanNext();
+    if (rawConstant.type != TokenType::HEX_LITERAL) {
+      throw std::runtime_error{"Expected a HEX literal."};
+    }
+    auto number = toUnsignedInteger(rawConstant);
+    switch (type) {
+#define FLUIR_RAW_TO_VALUE(Type, Concrete) \
+  case code::ValueType::Type:              \
+    return code::Value{static_cast<Concrete>(number)};
+
+      FLUIR_CODE_VALUE_TYPES(FLUIR_RAW_TO_VALUE)
+#undef FLUIR_RAW_TO_VALUE
+    }
+    throw std::runtime_error{"Unrecognized value type."};
   }
 }  // namespace fluir

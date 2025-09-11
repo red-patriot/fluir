@@ -13,9 +13,11 @@ namespace fluir {
     // Sections
     CHUNK, CODE, CONSTANTS,
     // Data Types
-    TYPE_F64,
+#define FLUIR_TYPE_TOKEN(type, concrete) TYPE_## type,
+    FLUIR_CODE_VALUE_TYPES(FLUIR_TYPE_TOKEN)
+#undef FLUIR_TYPE_TOKEN
     // Instructions
-#define FLUIR_INSTRUCTION_TOKEN(code) INST_##code,
+#define FLUIR_INSTRUCTION_TOKEN(code) INST_## code,
     FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TOKEN)
 #undef FLUIR_INSTRUCTION_TOKEN
     // Meta Info
@@ -67,6 +69,7 @@ namespace fluir {
     std::uint8_t decodeInstruction();
     code::Value decodeConstant();
     code::Value decodeFloatConstant();
+    code::Value decodeIntConstant(code::ValueType type);
   };
 }  // namespace fluir
 

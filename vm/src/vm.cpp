@@ -3,6 +3,25 @@
 #include <iostream>
 
 namespace fluir {
+  namespace {
+    // TODO: Remove this later
+    // This code is just for debugging purposes until the rest of the
+    // language is implemented
+    std::ostream& operator<<(std::ostream& os, const code::Value& value) {
+      switch (value.type()) {
+#define FLUIR_PRINT_VALUE(Type, Concrete)          \
+  case code::ValueType::Type:                      \
+    os << '(' << #Type << ')' << value.as##Type(); \
+    break;
+
+        FLUIR_CODE_VALUE_TYPES(FLUIR_PRINT_VALUE)
+#undef FLUIR_PRINT_VALUE
+      }
+
+      return os;
+    }
+  }  // namespace
+
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
     stack_.clear();
@@ -29,7 +48,7 @@ namespace fluir {
             if (!(stack_.size() < 256)) {
               return ExecResult::ERROR;
             }
-            stack_.push_back(val);
+            stack_.emplace_back(val);
             break;
           }
         case F64_ADD:
@@ -38,7 +57,7 @@ namespace fluir {
             stack_.pop_back();
             double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs + rhs});
+            stack_.emplace_back(code::Value{lhs + rhs});
             break;
           }
         case F64_SUB:
@@ -47,7 +66,7 @@ namespace fluir {
             stack_.pop_back();
             double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs - rhs});
+            stack_.emplace_back(lhs - rhs);
             break;
           }
         case F64_MUL:
@@ -56,7 +75,7 @@ namespace fluir {
             stack_.pop_back();
             double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs * rhs});
+            stack_.emplace_back(lhs * rhs);
             break;
           }
         case F64_DIV:
@@ -65,21 +84,21 @@ namespace fluir {
             stack_.pop_back();
             double lhs = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs / rhs});
+            stack_.emplace_back(lhs / rhs);
             break;
           }
         case F64_AFF:
           {
             double operand = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{+operand});
+            stack_.emplace_back(+operand);
             break;
           }
         case F64_NEG:
           {
             double operand = stack_.back().asF64();
             stack_.pop_back();
-            stack_.push_back(code::Value{-operand});
+            stack_.emplace_back(-operand);
             break;
           }
         case I64_ADD:
@@ -88,7 +107,7 @@ namespace fluir {
             stack_.pop_back();
             std::int64_t lhs = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs + rhs});
+            stack_.emplace_back(lhs + rhs);
             break;
           }
         case I64_SUB:
@@ -97,7 +116,7 @@ namespace fluir {
             stack_.pop_back();
             std::int64_t lhs = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs - rhs});
+            stack_.emplace_back(lhs - rhs);
             break;
           }
         case I64_MUL:
@@ -106,7 +125,7 @@ namespace fluir {
             stack_.pop_back();
             std::int64_t lhs = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs * rhs});
+            stack_.emplace_back(lhs * rhs);
             break;
           }
         case I64_DIV:
@@ -115,28 +134,28 @@ namespace fluir {
             stack_.pop_back();
             std::int64_t lhs = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{lhs / rhs});
+            stack_.emplace_back(lhs / rhs);
             break;
           }
         case I64_NEG:
           {
             std::int64_t operand = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{-operand});
+            stack_.emplace_back(-operand);
             break;
           }
         case I64_AFF:
           {
             std::int64_t operand = stack_.back().asI64();
             stack_.pop_back();
-            stack_.push_back(code::Value{+operand});
+            stack_.emplace_back(+operand);
             break;
           }
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
           // language is implemented
-          std::cout << stack_.back().asF64() << '\n';
+          std::cout << stack_.back() << '\n';
           stack_.pop_back();
           break;
         case EXIT:

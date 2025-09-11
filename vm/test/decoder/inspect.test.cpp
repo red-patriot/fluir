@@ -165,6 +165,31 @@ CODE x00
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
 
+TEST(TestInspectDecoder, ParsesUIntConstants) {
+  std::string source = R"(I0120030000000000000000
+CHUNK main
+CONSTANTS x04
+VU64 x123
+VU32 x345
+VU16 x542
+VU8  x1
+CODE x00
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+    .chunks = {fluir::code::Chunk{.name = "main",
+                                  .code = {},
+                                  .constants = {fluir::code::Value{static_cast<std::uint64_t>(0x123)},
+                                                fluir::code::Value{static_cast<std::uint32_t>(0x345)},
+                                                fluir::code::Value{static_cast<std::uint16_t>(0x542)},
+                                                fluir::code::Value{static_cast<std::uint8_t>(0x1)}}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
 TEST(TestInspectDecoder, ParsesMultipleFunctions) {
   std::string source = R"(I07220A000000000000001A
 CHUNK main

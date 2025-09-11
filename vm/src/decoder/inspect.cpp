@@ -215,6 +215,21 @@ namespace fluir {
                 return checkKeyword("VI8", TokenType::TYPE_I8);
             }
           }
+          break;
+        case 'U':
+          if (current_ - start_ > 2) {
+            switch (start_[2]) {
+              case '1':
+                return checkKeyword("VU16", TokenType::TYPE_U16);
+              case '3':
+                return checkKeyword("VU32", TokenType::TYPE_U32);
+              case '6':
+                return checkKeyword("VU64", TokenType::TYPE_U64);
+              case '8':
+                return checkKeyword("VU8", TokenType::TYPE_U8);
+            }
+          }
+          break;
       }
     }
     return TokenType::IDENTIFIER;
@@ -408,6 +423,14 @@ namespace fluir {
         return decodeIntConstant(code::ValueType::I32);
       case TokenType::TYPE_I64:
         return decodeIntConstant(code::ValueType::I64);
+      case TokenType::TYPE_U8:
+        return decodeIntConstant(code::ValueType::U8);
+      case TokenType::TYPE_U16:
+        return decodeIntConstant(code::ValueType::U16);
+      case TokenType::TYPE_U32:
+        return decodeIntConstant(code::ValueType::U32);
+      case TokenType::TYPE_U64:
+        return decodeIntConstant(code::ValueType::U64);
       default:
         throw std::runtime_error{"Expected a type keyword."};
     }

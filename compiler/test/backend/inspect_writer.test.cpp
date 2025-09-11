@@ -37,33 +37,47 @@ CHUNK bar
     VF64 3.500000000000
     VF64 -4.400000000000
   CODE x13
-    IPUSH_F64 x0
-    IPUSH_F64 x1
+    IPUSH x0
+    IPUSH x1
     IF64_NEG
-    IPUSH_F64 x2
+    IPUSH x2
     IF64_DIV
     IF64_ADD
     IPOP
-    IPUSH_F64 x1
+    IPUSH x1
     IF64_NEG
-    IPUSH_F64 x2
+    IPUSH x2
     IF64_DIV
     IF64_NEG
     IPOP
     IEXIT
 )";
 
-  fc::ByteCode code{
-    .header = {.filetype = '\0', .major = 24, .minor = 6, .patch = 16, .entryOffset = 5},
-    .chunks = {
-      fc::Chunk{.name = "bar",
-                .code =
-                  {
-                    fc::PUSH_F64, 0x00,    fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
-                    fc::F64_ADD,  fc::POP, fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
-                    fc::F64_NEG,  fc::POP, fc::Instruction::EXIT,
-                  },
-                .constants = {100.0, 3.5, -4.4}}}};
+  fc::ByteCode code{.header = {.filetype = '\0', .major = 24, .minor = 6, .patch = 16, .entryOffset = 5},
+                    .chunks = {fc::Chunk{.name = "bar",
+                                         .code =
+                                           {
+                                             fc::PUSH,
+                                             0x00,
+                                             fc::PUSH,
+                                             0x01,
+                                             fc::F64_NEG,
+                                             fc::PUSH,
+                                             0x02,
+                                             fc::F64_DIV,
+                                             fc::F64_ADD,
+                                             fc::POP,
+                                             fc::PUSH,
+                                             0x01,
+                                             fc::F64_NEG,
+                                             fc::PUSH,
+                                             0x02,
+                                             fc::F64_DIV,
+                                             fc::F64_NEG,
+                                             fc::POP,
+                                             fc::Instruction::EXIT,
+                                           },
+                                         .constants = {100.0, 3.5, -4.4}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -82,10 +96,10 @@ CHUNK bar
     VF64 3.512300000000
     VF64 4.460000000000
   CODE xB
-    IPUSH_F64 x0
-    IPUSH_F64 x1
+    IPUSH x0
+    IPUSH x1
     IF64_NEG
-    IPUSH_F64 x2
+    IPUSH x2
     IF64_DIV
     IF64_ADD
     IPOP
@@ -96,12 +110,12 @@ CHUNK bar
                     .chunks = {fc::Chunk{.name = "bar",
                                          .code =
                                            {
-                                             fc::PUSH_F64,
+                                             fc::PUSH,
                                              0x00,
-                                             fc::PUSH_F64,
+                                             fc::PUSH,
                                              0x01,
                                              fc::F64_NEG,
-                                             fc::PUSH_F64,
+                                             fc::PUSH,
                                              0x02,
                                              fc::F64_DIV,
                                              fc::F64_ADD,

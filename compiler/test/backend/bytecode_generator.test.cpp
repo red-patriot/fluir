@@ -56,9 +56,9 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                         .chunks = {fc::Chunk{.name = "foo",
                                              .code =
                                                {
-                                                 fc::Instruction::PUSH_F64,
+                                                 fc::Instruction::PUSH,
                                                  0x00,
-                                                 fc::Instruction::PUSH_F64,
+                                                 fc::Instruction::PUSH,
                                                  0x01,
                                                  fc::Instruction::F64_MUL,
                                                  fc::Instruction::POP,
@@ -86,7 +86,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                         .chunks = {fc::Chunk{.name = "bar",
                                              .code =
                                                {
-                                                 fc::Instruction::PUSH_F64,
+                                                 fc::Instruction::PUSH,
                                                  0x00,
                                                  fc::Instruction::F64_NEG,
                                                  fc::Instruction::POP,
@@ -119,17 +119,31 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
         fa::BinaryOp{1, {}, fluir::Operator::PLUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 100.0}), shared},
         fa::UnaryOp{7, {}, fluir::Operator::MINUS, shared}}}}};
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
-    .chunks = {
-      fc::Chunk{.name = "bar",
-                .code =
-                  {
-                    fc::PUSH_F64, 0x00,    fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
-                    fc::F64_ADD,  fc::POP, fc::PUSH_F64,          0x01, fc::F64_NEG, fc::PUSH_F64, 0x02, fc::F64_DIV,
-                    fc::F64_NEG,  fc::POP, fc::Instruction::EXIT,
-                  },
-                .constants = {100.0, 3.5, -4.4}}}};
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "bar",
+                                             .code =
+                                               {
+                                                 fc::PUSH,
+                                                 0x00,
+                                                 fc::PUSH,
+                                                 0x01,
+                                                 fc::F64_NEG,
+                                                 fc::PUSH,
+                                                 0x02,
+                                                 fc::F64_DIV,
+                                                 fc::F64_ADD,
+                                                 fc::POP,
+                                                 fc::PUSH,
+                                                 0x01,
+                                                 fc::F64_NEG,
+                                                 fc::PUSH,
+                                                 0x02,
+                                                 fc::F64_DIV,
+                                                 fc::F64_NEG,
+                                                 fc::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {100.0, 3.5, -4.4}}}};
 
   auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 

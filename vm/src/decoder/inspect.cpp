@@ -250,7 +250,7 @@ namespace fluir {
               case 'O':
                 return checkKeyword("IPOP", TokenType::INST_POP);
               case 'U':
-                return checkKeyword("IPUSH_F64", TokenType::INST_PUSH_F64);
+                return checkKeyword("IPUSH", TokenType::INST_PUSH);
             }
           }
           break;

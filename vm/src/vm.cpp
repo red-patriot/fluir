@@ -22,7 +22,7 @@ namespace fluir {
     for (;;) {
       std::uint8_t instruction = EXIT;
       switch (instruction = FLUIR_READ_BYTE()) {
-        case PUSH_F64:
+        case PUSH:
           {
             uint8_t index = FLUIR_READ_BYTE();
             const code::Value& val = current_->constants[index];
@@ -80,6 +80,56 @@ namespace fluir {
             double operand = stack_.back().asF64();
             stack_.pop_back();
             stack_.push_back(code::Value{-operand});
+            break;
+          }
+        case I64_ADD:
+          {
+            std::int64_t rhs = stack_.back().asI64();
+            stack_.pop_back();
+            std::int64_t lhs = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{lhs + rhs});
+            break;
+          }
+        case I64_SUB:
+          {
+            std::int64_t rhs = stack_.back().asI64();
+            stack_.pop_back();
+            std::int64_t lhs = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{lhs - rhs});
+            break;
+          }
+        case I64_MUL:
+          {
+            std::int64_t rhs = stack_.back().asI64();
+            stack_.pop_back();
+            std::int64_t lhs = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{lhs * rhs});
+            break;
+          }
+        case I64_DIV:
+          {
+            std::int64_t rhs = stack_.back().asI64();
+            stack_.pop_back();
+            std::int64_t lhs = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{lhs / rhs});
+            break;
+          }
+        case I64_NEG:
+          {
+            std::int64_t operand = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{-operand});
+            break;
+          }
+        case I64_AFF:
+          {
+            std::int64_t operand = stack_.back().asI64();
+            stack_.pop_back();
+            stack_.push_back(code::Value{+operand});
             break;
           }
         case POP:

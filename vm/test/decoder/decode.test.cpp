@@ -19,20 +19,20 @@ VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
 VF64 8.0 VF64 9.0 VF64 10.0 VF64 11.0
 VF64 12.0
 CODE x0A
-IPUSH_F64 x00 IPUSH_F64 x02
-IF64_ADD IPUSH_F64 x0D IF64_DIV
+IPUSH x00 IPUSH x02
+IF64_ADD IPUSH x0D IF64_DIV
 IPOP IEXIT
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",
                                                                .code =
                                                                  {
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x00,
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x02,
                                                                    F64_ADD,
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x0D,
                                                                    F64_DIV,
                                                                    POP,
@@ -67,8 +67,8 @@ VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
 VF64 8.0 VF64 9.0 VF64 10.0 VF64 11.0
 VF64 12.0
 CODE x0A
-IPUSH_F64 x00 IPUSH_F64 x02
-IF64_ADD IPUSH_F64 x0D IF64_DIV
+IPUSH x00 IPUSH x02
+IF64_ADD IPUSH x0D IF64_DIV
 IPOP IEXIT
 )";
 

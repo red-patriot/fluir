@@ -42,7 +42,7 @@ namespace fluir {
     [[maybe_unused]] auto _ = indent();
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
-        case code::Instruction::PUSH_F64:
+        case code::Instruction::PUSH:
           os << formatIndented("{} x{:X}\n", instructionNames[*i], *(i + 1));
           ++i;
           break;

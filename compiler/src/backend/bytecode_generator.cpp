@@ -79,7 +79,7 @@ namespace fluir {
     const auto constant = addConstant(node.value);
 
     // TODO: Handle more constants with special instruction
-    emitBytes(Instruction::PUSH_F64, static_cast<std::uint8_t>(constant));
+    emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }

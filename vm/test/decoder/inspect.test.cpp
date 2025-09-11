@@ -28,12 +28,12 @@ VF64 10.0
 VF64 11.0
 VF64 12.0
 CODE x0A
-IPUSH_F64
+IPUSH
 x00
-IPUSH_F64
+IPUSH
 x02
 IF64_ADD
-IPUSH_F64
+IPUSH
 x0D
 IF64_MUL
 IPOP
@@ -43,12 +43,12 @@ IEXIT
                                  .chunks = {fluir::code::Chunk{.name = "main",
                                                                .code =
                                                                  {
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x00,
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x02,
                                                                    F64_ADD,
-                                                                   PUSH_F64,
+                                                                   PUSH,
                                                                    0x0D,
                                                                    F64_MUL,
                                                                    POP,
@@ -198,18 +198,18 @@ VF64 0.0 VF64 1.0 VF64 2.0 VF64 3.0
 VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
 VF64 8.0 VF64 9.0 VF64 10.0
 CODE x07
-IPUSH_F64 x00
-IPUSH_F64 x02
+IPUSH x00
+IPUSH x02
 IF64_ADD
 IPOP
 IEXIT
 CHUNK foo
 CONSTANTS x01 VF64 3.5
 CODE x0A
-IPUSH_F64 x00
-IPUSH_F64 x00
+IPUSH x00
+IPUSH x00
 IF64_SUB
-IPUSH_F64 x00
+IPUSH x00
 IPOP
 IPOP
 IEXIT
@@ -222,9 +222,9 @@ IEXIT
            .name = "main",
            .code =
              {
-               PUSH_F64,
+               PUSH,
                0x00,
-               PUSH_F64,
+               PUSH,
                0x02,
                F64_ADD,
                POP,
@@ -235,12 +235,12 @@ IEXIT
          fluir::code::Chunk{.name = "foo",
                             .code =
                               {
-                                PUSH_F64,
+                                PUSH,
                                 0x00,
-                                PUSH_F64,
+                                PUSH,
                                 0x00,
                                 F64_SUB,
-                                PUSH_F64,
+                                PUSH,
                                 0x00,
                                 POP,
                                 POP,
@@ -265,40 +265,28 @@ CHUNK foo
     VF64 1.234500000000
     VF64 6.789000000000
   CODE xF
-    IPUSH_F64 x0
-    IPUSH_F64 x1
+    IPUSH x0
+    IPUSH x1
     IF64_AFF
     IF64_MUL
     IPOP
-    IPUSH_F64 x1
-    IPUSH_F64 x2
+    IPUSH x1
+    IPUSH x2
     IF64_DIV
     IF64_NEG
     IPOP
     IEXIT
 )";
-  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-                                 .chunks = {fluir::code::Chunk{.name = "foo",
-                                                               .code = {PUSH_F64,
-                                                                        0x00,
-                                                                        PUSH_F64,
-                                                                        0x01,
-                                                                        F64_AFF,
-                                                                        F64_MUL,
-                                                                        POP,
-                                                                        PUSH_F64,
-                                                                        0x01,
-                                                                        PUSH_F64,
-                                                                        0x02,
-                                                                        F64_DIV,
-                                                                        F64_NEG,
-                                                                        POP,
-                                                                        EXIT},
-                                                               .constants = {
-                                                                 7.654300000000_f64,
-                                                                 1.234500000000_f64,
-                                                                 6.789000000000_f64,
-                                                               }}}};
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .chunks = {fluir::code::Chunk{
+      .name = "foo",
+      .code = {PUSH, 0x00, PUSH, 0x01, F64_AFF, F64_MUL, POP, PUSH, 0x01, PUSH, 0x02, F64_DIV, F64_NEG, POP, EXIT},
+      .constants = {
+        7.654300000000_f64,
+        1.234500000000_f64,
+        6.789000000000_f64,
+      }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 

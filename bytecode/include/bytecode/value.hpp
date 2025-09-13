@@ -8,14 +8,14 @@ namespace fluir::code {
   // clang-format off
 #define FLUIR_CODE_VALUE_TYPES(code)  \
   code(F64, double)                   \
-  code(I64, std::int64_t)             \
-  code(I32, std::int32_t)             \
-  code(I16, std::int16_t)             \
   code(I8, std::int8_t)               \
-  code(U64, std::uint64_t)            \
-  code(U32, std::uint32_t)            \
+  code(I16, std::int16_t)             \
+  code(I32, std::int32_t)             \
+  code(I64, std::int64_t)             \
+  code(U8, std::uint8_t)              \
   code(U16, std::uint16_t)            \
-  code(U8, std::uint8_t)
+  code(U32, std::uint32_t)            \
+  code(U64, std::uint64_t)
   // clang-format on
 
 #define enumerate(Type, ConcreteType) Type,

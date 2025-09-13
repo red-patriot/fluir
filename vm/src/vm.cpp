@@ -51,11 +51,44 @@ namespace fluir {
         case code::ValueType::I32:
           return code::Value{static_cast<std::int32_t>(val)};
         case code::ValueType::I64:
-          return code::Value{static_cast<std::int64_t>(val)};
+          return code::Value{val};
         default:
           break;
       }
       throw VirtualMachineError{"EXPECTED AN INT TYPE"};
+    }
+
+    uint64_t widenU(const code::Value& value, code::ValueType& type) {
+      type = value.type();
+      switch (value.type()) {
+        case code::ValueType::U8:
+          return static_cast<std::uint64_t>(value.asU8());
+        case code::ValueType::U16:
+          return static_cast<std::uint64_t>(value.asU16());
+        case code::ValueType::U32:
+          return static_cast<std::uint64_t>(value.asU32());
+        case code::ValueType::U64:
+          return value.asU64();
+        default:
+          break;
+      }
+      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
+    }
+
+    code::Value narrowU(std::uint64_t val, const code::ValueType& type) {
+      switch (type) {
+        case code::ValueType::U8:
+          return code::Value{static_cast<std::uint8_t>(val)};
+        case code::ValueType::U16:
+          return code::Value{static_cast<std::uint16_t>(val)};
+        case code::ValueType::U32:
+          return code::Value{static_cast<std::uint32_t>(val)};
+        case code::ValueType::U64:
+          return code::Value{val};
+        default:
+          break;
+      }
+      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
     }
   }  // namespace
 
@@ -103,6 +136,26 @@ namespace fluir {
     stack_.pop_back();                                    \
     stack_.emplace_back(narrowI(OP operand, typeOp));     \
     break;                                                \
+  }
+
+#define FLUIR_UINT_BINARY(OP)                                         \
+  {                                                                   \
+    code::ValueType typeR, typeL;                                     \
+    std::uint64_t rhs = widenU(stack_.back(), typeR);                 \
+    stack_.pop_back();                                                \
+    std::uint64_t lhs = widenU(stack_.back(), typeL);                 \
+    stack_.pop_back();                                                \
+    stack_.emplace_back(narrowU(lhs OP rhs, std::max(typeR, typeL))); \
+    break;                                                            \
+  }
+
+#define FLUIR_UINT_UNARY(OP)                               \
+  {                                                        \
+    code::ValueType typeOp;                                \
+    std::uint64_t operand = widenU(stack_.back(), typeOp); \
+    stack_.pop_back();                                     \
+    stack_.emplace_back(narrowU(OP operand, typeOp));      \
+    break;                                                 \
   }
 
     using enum code::Instruction;
@@ -181,6 +234,19 @@ namespace fluir {
           FLUIR_INT_UNARY(-)
         case I64_AFF:
           FLUIR_INT_UNARY(+)
+        case U64_ADD:
+          FLUIR_UINT_BINARY(+)
+        case U64_SUB:
+          FLUIR_UINT_BINARY(-)
+        case U64_MUL:
+          FLUIR_UINT_BINARY(*)
+        case U64_DIV:
+          FLUIR_UINT_BINARY(/)
+        case U64_NEG:
+          FLUIR_UINT_UNARY(-)
+        case U64_AFF:
+          FLUIR_UINT_UNARY(+)
+
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the

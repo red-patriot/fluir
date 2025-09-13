@@ -118,6 +118,24 @@ namespace fluir {
   ExecResult VirtualMachine::run() {
 #define FLUIR_READ_BYTE() *ip_++
 
+#define FLUIR_FLOAT_BINARY(OP)                    \
+  {                                               \
+    double rhs = stack_.back().asF64();           \
+    stack_.pop_back();                            \
+    double lhs = stack_.back().asF64();           \
+    stack_.pop_back();                            \
+    stack_.emplace_back(code::Value{lhs OP rhs}); \
+    break;                                        \
+  }
+
+#define FLUIR_FLOAT_UNARY(OP)               \
+  {                                         \
+    double operand = stack_.back().asF64(); \
+    stack_.pop_back();                      \
+    stack_.emplace_back(OP operand);        \
+    break;                                  \
+  }
+
 #define FLUIR_INT_BINARY(OP)                                          \
   {                                                                   \
     code::ValueType typeR, typeL;                                     \
@@ -173,55 +191,17 @@ namespace fluir {
             break;
           }
         case F64_ADD:
-          {
-            double rhs = stack_.back().asF64();
-            stack_.pop_back();
-            double lhs = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(code::Value{lhs + rhs});
-            break;
-          }
+          FLUIR_FLOAT_BINARY(+)
         case F64_SUB:
-          {
-            double rhs = stack_.back().asF64();
-            stack_.pop_back();
-            double lhs = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(lhs - rhs);
-            break;
-          }
+          FLUIR_FLOAT_BINARY(-)
         case F64_MUL:
-          {
-            double rhs = stack_.back().asF64();
-            stack_.pop_back();
-            double lhs = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(lhs * rhs);
-            break;
-          }
+          FLUIR_FLOAT_BINARY(*)
         case F64_DIV:
-          {
-            double rhs = stack_.back().asF64();
-            stack_.pop_back();
-            double lhs = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(lhs / rhs);
-            break;
-          }
-        case F64_AFF:
-          {
-            double operand = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(+operand);
-            break;
-          }
+          FLUIR_FLOAT_BINARY(/)
         case F64_NEG:
-          {
-            double operand = stack_.back().asF64();
-            stack_.pop_back();
-            stack_.emplace_back(-operand);
-            break;
-          }
+          FLUIR_FLOAT_UNARY(-)
+        case F64_AFF:
+          FLUIR_FLOAT_UNARY(+)
         case I64_ADD:
           FLUIR_INT_BINARY(+)
         case I64_SUB:
@@ -264,8 +244,12 @@ namespace fluir {
   afterLoop:
     return ExecResult::SUCCESS;
 
+#undef FLUIR_UINT_UNARY
+#undef FLUIR_UINT_BINARY
 #undef FLUIR_INT_UNARY
 #undef FLUIR_INT_BINARY
+#undef FLUIR_FLOAT_UNARY
+#undef FLUIR_FLOAT_BINARY
 #undef FLUIR_READ_BYTE
   }  // namespace fluir
 }  // namespace fluir

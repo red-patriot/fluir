@@ -92,6 +92,53 @@ namespace fluir {
     }
   }  // namespace
 
+  template <typename Op>
+  void VirtualMachine::floatBinary() {
+    double rhs = stack_.back().asF64();
+    stack_.pop_back();
+    double lhs = stack_.back().asF64();
+    stack_.pop_back();
+    stack_.emplace_back(code::Value{Op{}(lhs, rhs)});
+  }
+  template <typename Op>
+  void VirtualMachine::floatUnary() {
+    double operand = stack_.back().asF64();
+    stack_.pop_back();
+    stack_.emplace_back(Op{}(operand));
+  }
+  template <typename Op>
+  void VirtualMachine::intBinary() {
+    code::ValueType typeR, typeL;
+    std::int64_t rhs = widenI(stack_.back(), typeR);
+    stack_.pop_back();
+    std::int64_t lhs = widenI(stack_.back(), typeL);
+    stack_.pop_back();
+    stack_.emplace_back(narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+  }
+  template <typename Op>
+  void VirtualMachine::intUnary() {
+    code::ValueType type;
+    std::int64_t operand = widenI(stack_.back(), type);
+    stack_.pop_back();
+    stack_.emplace_back(narrowI(Op{}(operand), type));
+  }
+  template <typename Op>
+  void VirtualMachine::uintBinary() {
+    code::ValueType typeR, typeL;
+    std::uint64_t rhs = widenU(stack_.back(), typeR);
+    stack_.pop_back();
+    std::uint64_t lhs = widenU(stack_.back(), typeL);
+    stack_.pop_back();
+    stack_.emplace_back(narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+  }
+  template <typename Op>
+  void VirtualMachine::uintUnary() {
+    code::ValueType type;
+    std::uint64_t operand = widenU(stack_.back(), type);
+    stack_.pop_back();
+    stack_.emplace_back(narrowU(Op{}(operand), type));
+  }
+
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
     stack_.clear();
@@ -118,64 +165,6 @@ namespace fluir {
   ExecResult VirtualMachine::run() {
 #define FLUIR_READ_BYTE() *ip_++
 
-#define FLUIR_FLOAT_BINARY(OP)                    \
-  {                                               \
-    double rhs = stack_.back().asF64();           \
-    stack_.pop_back();                            \
-    double lhs = stack_.back().asF64();           \
-    stack_.pop_back();                            \
-    stack_.emplace_back(code::Value{lhs OP rhs}); \
-    break;                                        \
-  }
-
-#define FLUIR_FLOAT_UNARY(OP)               \
-  {                                         \
-    double operand = stack_.back().asF64(); \
-    stack_.pop_back();                      \
-    stack_.emplace_back(OP operand);        \
-    break;                                  \
-  }
-
-#define FLUIR_INT_BINARY(OP)                                          \
-  {                                                                   \
-    code::ValueType typeR, typeL;                                     \
-    std::int64_t rhs = widenI(stack_.back(), typeR);                  \
-    stack_.pop_back();                                                \
-    std::int64_t lhs = widenI(stack_.back(), typeL);                  \
-    stack_.pop_back();                                                \
-    stack_.emplace_back(narrowI(lhs OP rhs, std::max(typeR, typeL))); \
-    break;                                                            \
-  }
-
-#define FLUIR_INT_UNARY(OP)                               \
-  {                                                       \
-    code::ValueType typeOp;                               \
-    std::int64_t operand = widenI(stack_.back(), typeOp); \
-    stack_.pop_back();                                    \
-    stack_.emplace_back(narrowI(OP operand, typeOp));     \
-    break;                                                \
-  }
-
-#define FLUIR_UINT_BINARY(OP)                                         \
-  {                                                                   \
-    code::ValueType typeR, typeL;                                     \
-    std::uint64_t rhs = widenU(stack_.back(), typeR);                 \
-    stack_.pop_back();                                                \
-    std::uint64_t lhs = widenU(stack_.back(), typeL);                 \
-    stack_.pop_back();                                                \
-    stack_.emplace_back(narrowU(lhs OP rhs, std::max(typeR, typeL))); \
-    break;                                                            \
-  }
-
-#define FLUIR_UINT_UNARY(OP)                               \
-  {                                                        \
-    code::ValueType typeOp;                                \
-    std::uint64_t operand = widenU(stack_.back(), typeOp); \
-    stack_.pop_back();                                     \
-    stack_.emplace_back(narrowU(OP operand, typeOp));      \
-    break;                                                 \
-  }
-
     using enum code::Instruction;
     for (;;) {
       std::uint8_t instruction = EXIT;
@@ -191,42 +180,56 @@ namespace fluir {
             break;
           }
         case F64_ADD:
-          FLUIR_FLOAT_BINARY(+)
+          floatBinary<std::plus<double>>();
+          break;
         case F64_SUB:
-          FLUIR_FLOAT_BINARY(-)
+          floatBinary<std::minus<double>>();
+          break;
         case F64_MUL:
-          FLUIR_FLOAT_BINARY(*)
+          floatBinary<std::multiplies<double>>();
+          break;
         case F64_DIV:
-          FLUIR_FLOAT_BINARY(/)
+          floatBinary<std::divides<double>>();
+          break;
         case F64_NEG:
-          FLUIR_FLOAT_UNARY(-)
+          floatUnary<std::negate<double>>();
+          break;
         case F64_AFF:
-          FLUIR_FLOAT_UNARY(+)
+          break;  // This is a No-op
         case I64_ADD:
-          FLUIR_INT_BINARY(+)
+          intBinary<std::plus<int64_t>>();
+          break;
         case I64_SUB:
-          FLUIR_INT_BINARY(-)
+          intBinary<std::minus<int64_t>>();
+          break;
         case I64_MUL:
-          FLUIR_INT_BINARY(*)
+          intBinary<std::multiplies<int64_t>>();
+          break;
         case I64_DIV:
-          FLUIR_INT_BINARY(/)
+          intBinary<std::divides<int64_t>>();
+          break;
         case I64_NEG:
-          FLUIR_INT_UNARY(-)
+          intUnary<std::negate<int64_t>>();
+          break;
         case I64_AFF:
-          FLUIR_INT_UNARY(+)
+          break;  // This is a No-Op
         case U64_ADD:
-          FLUIR_UINT_BINARY(+)
+          uintBinary<std::plus<uint64_t>>();
+          break;
         case U64_SUB:
-          FLUIR_UINT_BINARY(-)
+          uintBinary<std::minus<uint64_t>>();
+          break;
         case U64_MUL:
-          FLUIR_UINT_BINARY(*)
+          uintBinary<std::multiplies<uint64_t>>();
+          break;
         case U64_DIV:
-          FLUIR_UINT_BINARY(/)
+          uintBinary<std::divides<uint64_t>>();
+          break;
         case U64_NEG:
-          FLUIR_UINT_UNARY(-)
+          uintUnary<std::negate<uint64_t>>();
+          break;
         case U64_AFF:
-          FLUIR_UINT_UNARY(+)
-
+          break;  // This is a No-Op
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
@@ -243,13 +246,5 @@ namespace fluir {
     }
   afterLoop:
     return ExecResult::SUCCESS;
-
-#undef FLUIR_UINT_UNARY
-#undef FLUIR_UINT_BINARY
-#undef FLUIR_INT_UNARY
-#undef FLUIR_INT_BINARY
-#undef FLUIR_FLOAT_UNARY
-#undef FLUIR_FLOAT_BINARY
-#undef FLUIR_READ_BYTE
-  }  // namespace fluir
+  }
 }  // namespace fluir

@@ -614,3 +614,5 @@ TEST(TestVM, AffirmU8) {
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_EQ(expected, uut.viewStack().back().asU8());
 }
+
+// TODO: Tests for error cases

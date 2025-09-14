@@ -194,8 +194,6 @@ namespace fluir {
         case F64_NEG:
           floatUnary<std::negate<double>>();
           break;
-        case F64_AFF:
-          break;  // This is a No-op
         case I64_ADD:
           intBinary<std::plus<int64_t>>();
           break;
@@ -211,8 +209,6 @@ namespace fluir {
         case I64_NEG:
           intUnary<std::negate<int64_t>>();
           break;
-        case I64_AFF:
-          break;  // This is a No-Op
         case U64_ADD:
           uintBinary<std::plus<uint64_t>>();
           break;
@@ -228,6 +224,8 @@ namespace fluir {
         case U64_NEG:
           uintUnary<std::negate<uint64_t>>();
           break;
+        case F64_AFF:
+        case I64_AFF:
         case U64_AFF:
           break;  // This is a No-Op
         case POP:

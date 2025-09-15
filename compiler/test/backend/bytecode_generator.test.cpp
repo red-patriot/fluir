@@ -7,6 +7,7 @@
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;
+using namespace fc::value_literals;
 
 TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fa::ASG input{.declarations = {fa::FunctionDecl{.id = 3, .name = "main", .statements = {}}}};
@@ -64,7 +65,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                  fc::Instruction::POP,
                                                  fc::Instruction::EXIT,
                                                },
-                                             .constants = {1.5, 2.5}}}};
+                                             .constants = {1.5_f64, 2.5_f64}}}};
 
   auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
@@ -92,7 +93,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                  fc::Instruction::POP,
                                                  fc::Instruction::EXIT,
                                                },
-                                             .constants = {3.456}}}};
+                                             .constants = {3.456_f64}}}};
 
   auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 
@@ -110,7 +111,7 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                  fluir::Operator::SLASH,
                  std::make_shared<fa::Node>(
                    fa::UnaryOp{2, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{5, {}, 3.5})}),
-                 std::make_shared<fa::Node>(fa::ConstantFP{6, {}, -4.4})});
+                 std::make_shared<fa::Node>(fa::ConstantFP{6, {}, 4.4})});
   fa::ASG input{
     .declarations = {fa::FunctionDecl{
       .id = 3,
@@ -143,7 +144,7 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                  fc::POP,
                                                  fc::Instruction::EXIT,
                                                },
-                                             .constants = {100.0, 3.5, -4.4}}}};
+                                             .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
 
   auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
 

@@ -8,6 +8,8 @@
 namespace fluir {
   class CodeWriter {
    public:
+    virtual ~CodeWriter() = default;
+
     void write(const code::ByteCode& code, std::ostream& destination);
 
    private:

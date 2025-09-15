@@ -1,5 +1,6 @@
 #include "compiler/backend/inspect_writer.hpp"
 
+#include <format>
 #include <string>
 
 #include "fmt/format.h"
@@ -35,7 +36,36 @@ namespace fluir {
   }
 
   void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
-    os << formatIndented("VF64 {:.12f}\n", constant);
+    using enum code::ValueType;
+    switch (constant.type()) {
+      case I8:
+        os << formatIndented("VI8  x{:X}\n", constant.asI8());
+        break;
+      case I16:
+        os << formatIndented("VI16 x{:X}\n", constant.asI16());
+        break;
+      case I32:
+        os << formatIndented("VI32 x{:X}\n", constant.asI32());
+        break;
+      case I64:
+        os << formatIndented("VI64 x{:X}\n", constant.asI64());
+        break;
+      case U8:
+        os << formatIndented("VU8  x{:X}\n", constant.asU8());
+        break;
+      case U16:
+        os << formatIndented("VU16 x{:X}\n", constant.asU16());
+        break;
+      case U32:
+        os << formatIndented("VU32 x{:X}\n", constant.asU32());
+        break;
+      case U64:
+        os << formatIndented("VU64 x{:X}\n", constant.asU64());
+        break;
+      case F64:
+        os << formatIndented("VF64 {:.12f}\n", constant.asF64());
+        break;
+    }
   }
 
   void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {

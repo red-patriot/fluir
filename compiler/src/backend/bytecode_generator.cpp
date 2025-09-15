@@ -76,7 +76,7 @@ namespace fluir {
   }
 
   void BytecodeGenerator::operator()(const asg::ConstantFP& node) {
-    const auto constant = addConstant(node.value);
+    const auto constant = addConstant(code::Value(node.value));
 
     // TODO: Handle more constants with special instruction
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));

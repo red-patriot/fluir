@@ -165,9 +165,9 @@ export default function ViewWindow() {
           <Background
             id='bg-1'
             variant={BackgroundVariant.Dots}
-            gap={50}
-            size={1}
-            offset={[250, 250]}
+            gap={10}
+            size={0.5}
+            offset={[10,10]}
           />
         </ReactFlow>
       </ContextMenu.Root>

@@ -78,6 +78,8 @@ class ResizeElement(BaseModel, TransactionBase):
     target: QualifiedID
     width: int
     height: int
+    x: int | None = None
+    y: int | None = None
 
     @override
     def do(self, original: Program) -> Program:
@@ -98,6 +100,10 @@ class ResizeElement(BaseModel, TransactionBase):
 
         element.location.width = new_width
         element.location.height = new_height
+        if self.x is not None:
+            element.location.x, self.x = self.x, element.location.x
+        if self.y is not None:
+            element.location.y, self.y = self.y, element.location.y
         return original
 
     @override
@@ -108,6 +114,10 @@ class ResizeElement(BaseModel, TransactionBase):
 
         element.location.width = new_width
         element.location.height = new_height
+        if self.x is not None:
+            element.location.x, self.x = self.x, element.location.x
+        if self.y is not None:
+            element.location.y, self.y = self.y, element.location.y
         return original
 
     def _get_limits(

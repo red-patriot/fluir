@@ -216,6 +216,81 @@ def test_resize_element(
     assert original == actual
 
 
+@pytest.mark.parametrize(
+    "name, target, input, expected",
+    [
+        (
+            "resize_node",
+            [3, 3],
+            {"width": 16, "height": 5, "x": 5, "y": 10},
+            {"width": 16, "height": 5, "x": 5, "y": 10},
+        ),
+        (
+            "resize_function_decl",
+            [1],
+            {"width": 160, "height": 150, "x": 20, "y": 30},
+            {"width": 160, "height": 150, "x": 20, "y": 30},
+        ),
+        (
+            "resize_function_decl_stays_larger_than_children",
+            [2],
+            {"width": 12, "height": 15, "x": 15, "y": 17},
+            {"width": 20, "height": 17, "x": 15, "y": 17},
+        ),
+        (
+            "resize_node_clamps_to_x_limits",
+            [3, 3],
+            {"width": 100, "height": 5, "x": 2, "y": 12},
+            {"width": 98, "height": 5, "x": 2, "y": 12},
+        ),
+        (
+            "resize_node_clamps_to_y_limits",
+            [3, 3],
+            {"width": 14, "height": 150, "x": 14, "y": 20},
+            {"width": 14, "height": 98, "x": 14, "y": 20},
+        ),
+        (
+            "resize_node_clamps_to_min_limits",
+            [3, 3],
+            {"width": 3, "height": -6, "x": 4, "y": 4},
+            {"width": 4, "height": 4, "x": 4, "y": 4},
+        ),
+    ],
+    ids=lambda x: x if isinstance(x, str) else "",
+)
+def test_resize_element_with_location(
+    basic_program: Program,
+    editor: ModuleEditor,
+    target: QualifiedID,
+    input: dict[str, int],
+    expected: dict[str, int],
+    name: str,
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected_program = copy.deepcopy(basic_program)
+    e = find_element(target, expected_program)
+    e.location.width = expected["width"]
+    e.location.height = expected["height"]
+    e.location.x = expected["x"]
+    e.location.y = expected["y"]
+
+    uut = ResizeElement(
+        target=target,
+        width=input["width"],
+        height=input["height"],
+        x=input["x"],
+        y=input["y"],
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected_program == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
 def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)

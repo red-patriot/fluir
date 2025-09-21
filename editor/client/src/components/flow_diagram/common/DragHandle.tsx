@@ -3,7 +3,7 @@ import { Box } from '@radix-ui/themes';
 
 export default function DragHandle() {
   return (
-    <Box className='self-center text-xl cursor-move dragHandle__custom'>
+    <Box className='self-center cursor-move dragHandle__custom'>
       <DragHandleDots2Icon />
     </Box>
   );

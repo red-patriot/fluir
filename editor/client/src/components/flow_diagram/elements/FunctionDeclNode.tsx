@@ -13,13 +13,14 @@ import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { useProgramActions } from '@/components/common/ProgramActionsContext';
 import { ResizeEditRequest } from '@/models/edit_request';
 import { toApiID } from '@/utility/idHelpers';
+import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
   'function'
 >;
 
-export const FUNC_HEADER_HEIGHT = 26;
+export const FUNC_HEADER_HEIGHT = 0;
 
 export default function FunctionDeclNode({
   data: { decl, fullID },
@@ -35,10 +36,10 @@ export default function FunctionDeclNode({
     const request: ResizeEditRequest = {
       discriminator: 'resize',
       target: toApiID(fullID),
-      width: params.width,
-      height: params.height,
-      x: params.x,
-      y: params.y,
+      width: params.width / ZOOM_SCALAR,
+      height: params.height / ZOOM_SCALAR,
+      x: params.x / ZOOM_SCALAR,
+      y: params.y / ZOOM_SCALAR,
     };
     editProgram(request);
   };
@@ -48,28 +49,15 @@ export default function FunctionDeclNode({
       width={`${width}`}
       height={`${height}`}
     >
-      <Flex direction='row'>
-        <Card
-          variant='classic'
-          className='grow'
-        >
-          <Inset>
-            <Flex direction='row'>
-              <Code
-                variant='soft'
-                size='2'
-              >
-                {decl.name}
-              </Code>
-              <Box className='grow' />
-              <DragHandle />
-            </Flex>
-          </Inset>
-        </Card>
-      </Flex>
+      <DeclHeader
+        name={decl.name}
+        variant='solid'
+      >
+        <DragHandle />
+      </DeclHeader>
       <NodeResizer
-        minWidth={50 * ZOOM_SCALAR}
-        minHeight={50 * ZOOM_SCALAR}
+        minWidth={15 * ZOOM_SCALAR}
+        minHeight={15 * ZOOM_SCALAR}
         onResizeEnd={onFinishResize}
       />
     </Box>

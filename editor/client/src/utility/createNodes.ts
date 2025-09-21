@@ -1,8 +1,8 @@
 import BinaryNode from '../components/custom/BinaryNode';
-import ConstantNode from '../components/custom/ConstantNode';
 import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
 } from '@/components/flow_diagram/elements/FunctionDeclNode';
+import ConstantNode from '@/components/flow_diagram/elements/ConstantNode';
 import UnaryNode from '../components/custom/UnaryNode';
 import FluirModule, {
   BinaryOp,
@@ -11,7 +11,7 @@ import FluirModule, {
   FunctionDecl,
   Node,
   UnaryOp,
-} from '../models/fluir_module';
+} from '@/models/fluir_module';
 import { ZOOM_SCALAR } from '../hooks/useSizeStyle';
 import { Edge, Node as FlowNode, CoordinateExtent } from '@xyflow/react';
 
@@ -64,6 +64,8 @@ function addNodes(
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
         },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
         data: {
           constant: item as Constant,
           fullID: fullId(parentId, item.id),
@@ -71,40 +73,40 @@ function addNodes(
         dragHandle: '.dragHandle__custom',
       });
       break;
-    case 'binary':
-      nodes.push({
-        type: 'binary',
-        id: fullId(parentId, item.id),
-        parentId: parentId,
-        extent: extent,
-        position: {
-          x: item.location.x * ZOOM_SCALAR,
-          y: item.location.y * ZOOM_SCALAR,
-        },
-        data: {
-          binary: item as BinaryOp,
-          fullID: fullId(parentId, item.id),
-        },
-        dragHandle: '.dragHandle__custom',
-      });
-      break;
-    case 'unary':
-      nodes.push({
-        type: 'unary',
-        id: fullId(parentId, item.id),
-        parentId: parentId,
-        extent: extent,
-        position: {
-          x: item.location.x * ZOOM_SCALAR,
-          y: item.location.y * ZOOM_SCALAR,
-        },
-        data: {
-          unary: item as UnaryOp,
-          fullID: fullId(parentId, item.id),
-        },
-        dragHandle: '.dragHandle__custom',
-      });
-      break;
+    // case 'binary':
+    //   nodes.push({
+    //     type: 'binary',
+    //     id: fullId(parentId, item.id),
+    //     parentId: parentId,
+    //     extent: extent,
+    //     position: {
+    //       x: item.location.x * ZOOM_SCALAR,
+    //       y: item.location.y * ZOOM_SCALAR,
+    //     },
+    //     data: {
+    //       binary: item as BinaryOp,
+    //       fullID: fullId(parentId, item.id),
+    //     },
+    //     dragHandle: '.dragHandle__custom',
+    //   });
+    //   break;
+    // case 'unary':
+    //   nodes.push({
+    //     type: 'unary',
+    //     id: fullId(parentId, item.id),
+    //     parentId: parentId,
+    //     extent: extent,
+    //     position: {
+    //       x: item.location.x * ZOOM_SCALAR,
+    //       y: item.location.y * ZOOM_SCALAR,
+    //     },
+    //     data: {
+    //       unary: item as UnaryOp,
+    //       fullID: fullId(parentId, item.id),
+    //     },
+    //     dragHandle: '.dragHandle__custom',
+    //   });
+    //   break;
   }
 }
 

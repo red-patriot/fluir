@@ -1,6 +1,6 @@
 import { Location } from '../models/fluir_module';
 
-export const ZOOM_SCALAR = 1;
+export const ZOOM_SCALAR = 5;
 
 export const getSizeStyle = (location: Location) => {
   const { width, height } = location;

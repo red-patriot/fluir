@@ -8,6 +8,7 @@ import FluirModule, {
   Operator,
 } from '../../models/fluir_module';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import { FUNC_HEADER_HEIGHT } from '@/components/flow_diagram/elements/FunctionDeclNode';
 
 describe('createNodes', () => {
   describe('with empty module', () => {
@@ -58,13 +59,15 @@ describe('createNodes', () => {
         id: '1:1',
         parentId: '1',
         extent: [
-          [0, 26],
-          [200, 200],
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [200 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
         ],
         position: {
           x: 100 * ZOOM_SCALAR,
           y: 200 * ZOOM_SCALAR,
         },
+        width: 80 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
           constant: constant,
           fullID: '1:1',
@@ -243,11 +246,11 @@ describe('createNodes', () => {
       expect(result[0]).toEqual({
         type: 'function',
         id: '5',
-        height: 150,
-        width: 200,
+        height: 150 * ZOOM_SCALAR,
+        width: 200 * ZOOM_SCALAR,
         position: {
-          x: 50,
-          y: 75,
+          x: 50 * ZOOM_SCALAR,
+          y: 75 * ZOOM_SCALAR,
         },
         data: {
           decl: func,
@@ -392,12 +395,7 @@ describe('createNodes', () => {
         expect(result[1].type).toBe('constant');
         expect(result[2].type).toBe('binary');
         expect(result[3].type).toBe('unary');
-        expect(result.map((n) => n.id)).toEqual([
-          '4',
-          '4:1',
-          '4:2',
-          '4:3',
-        ]);
+        expect(result.map((n) => n.id)).toEqual(['4', '4:1', '4:2', '4:3']);
       });
 
       it('should handle multiple functions', () => {

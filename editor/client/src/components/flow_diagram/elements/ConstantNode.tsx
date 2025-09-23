@@ -1,6 +1,6 @@
-import { Box, Code, Flex } from '@radix-ui/themes';
+import { Code, Flex } from '@radix-ui/themes';
 import { purple, slate } from '@radix-ui/colors';
-import { Node, NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
+import { Node, NodeProps, NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
 import { Constant } from '@/models/fluir_module';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
@@ -8,9 +8,9 @@ import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
 
 export default function ConstantNode({
-  data: { constant, fullID },
+  data: { constant },
   selected,
-}: ConstantNode) {
+}: NodeProps<ConstantNode>) {
   return (
     <Flex
       direction='row'

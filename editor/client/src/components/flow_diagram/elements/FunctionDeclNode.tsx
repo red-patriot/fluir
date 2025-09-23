@@ -7,7 +7,7 @@ import {
   ResizeParams,
 } from '@xyflow/react';
 import { FunctionDecl } from '@/models/fluir_module';
-import { Box, Code, Flex, Inset, Card } from '@radix-ui/themes';
+import { Box } from '@radix-ui/themes';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { useProgramActions } from '@/components/common/ProgramActionsContext';
@@ -30,7 +30,7 @@ export default function FunctionDeclNode({
   const { editProgram } = useProgramActions();
 
   const onFinishResize: OnResizeEnd = (
-    event: ResizeDragEvent,
+    _: ResizeDragEvent,
     params: ResizeParams,
   ) => {
     const request: ResizeEditRequest = {

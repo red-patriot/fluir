@@ -1,4 +1,4 @@
-import { beforeEach, vi, it, describe, expect } from 'vitest';
+import { vi, it, describe, expect } from 'vitest';
 import { fireEvent, screen } from '@testing-library/react';
 import ToolHeader from '@/components/layout/ToolHeader';
 import { renderWithStore } from '@/utility/testStore';

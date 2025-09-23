@@ -1,9 +1,11 @@
-import BinaryNode from '../components/custom/BinaryNode';
 import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
 } from '@/components/flow_diagram/elements/FunctionDeclNode';
 import ConstantNode from '@/components/flow_diagram/elements/ConstantNode';
-import UnaryNode from '../components/custom/UnaryNode';
+import {
+  BinaryOperatorNode,
+  UnaryOperatorNode,
+} from '@/components/flow_diagram/elements/OperatorNode';
 import FluirModule, {
   BinaryOp,
   Constant,
@@ -73,40 +75,44 @@ function addNodes(
         dragHandle: '.dragHandle__custom',
       });
       break;
-    // case 'binary':
-    //   nodes.push({
-    //     type: 'binary',
-    //     id: fullId(parentId, item.id),
-    //     parentId: parentId,
-    //     extent: extent,
-    //     position: {
-    //       x: item.location.x * ZOOM_SCALAR,
-    //       y: item.location.y * ZOOM_SCALAR,
-    //     },
-    //     data: {
-    //       binary: item as BinaryOp,
-    //       fullID: fullId(parentId, item.id),
-    //     },
-    //     dragHandle: '.dragHandle__custom',
-    //   });
-    //   break;
-    // case 'unary':
-    //   nodes.push({
-    //     type: 'unary',
-    //     id: fullId(parentId, item.id),
-    //     parentId: parentId,
-    //     extent: extent,
-    //     position: {
-    //       x: item.location.x * ZOOM_SCALAR,
-    //       y: item.location.y * ZOOM_SCALAR,
-    //     },
-    //     data: {
-    //       unary: item as UnaryOp,
-    //       fullID: fullId(parentId, item.id),
-    //     },
-    //     dragHandle: '.dragHandle__custom',
-    //   });
-    //   break;
+    case 'binary':
+      nodes.push({
+        type: 'binary',
+        id: fullId(parentId, item.id),
+        parentId: parentId,
+        extent: extent,
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
+        data: {
+          operator: item as BinaryOp,
+          fullID: fullId(parentId, item.id),
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+      break;
+    case 'unary':
+      nodes.push({
+        type: 'unary',
+        id: fullId(parentId, item.id),
+        parentId: parentId,
+        extent: extent,
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
+        data: {
+          operator: item as UnaryOp,
+          fullID: fullId(parentId, item.id),
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+      break;
   }
 }
 
@@ -153,6 +159,6 @@ export function createEdges(module: FluirModule) {
 export const nodeTypes = {
   function: FunctionDeclNode,
   constant: ConstantNode,
-  binary: BinaryNode,
-  unary: UnaryNode,
+  binary: BinaryOperatorNode,
+  unary: UnaryOperatorNode,
 };

@@ -9,7 +9,6 @@ interface DeclHeaderProps {
 
 export default function DeclHeader({
   name,
-  variant = 'solid',
   children,
 }: React.PropsWithChildren<DeclHeaderProps>) {
   return (

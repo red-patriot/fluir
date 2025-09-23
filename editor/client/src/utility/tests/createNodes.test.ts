@@ -134,15 +134,17 @@ describe('createNodes', () => {
         id: '1:3',
         parentId: '1',
         extent: [
-          [0, 26],
-          [300, 300],
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 300 * ZOOM_SCALAR],
         ],
         position: {
           x: 75 * ZOOM_SCALAR,
           y: 125 * ZOOM_SCALAR,
         },
+        width: 100 * ZOOM_SCALAR,
+        height: 50 * ZOOM_SCALAR,
         data: {
-          binary: binary,
+          operator: binary,
           fullID: '1:3',
         },
         dragHandle: '.dragHandle__custom',
@@ -174,7 +176,7 @@ describe('createNodes', () => {
 
       expect(result).toHaveLength(5); // function + 5 binary nodes
       operators.forEach((op, index) => {
-        expect(result[index + 1].data.binary.op).toBe(op);
+        expect(result[index + 1].data.operator.op).toBe(op);
       });
     });
   });
@@ -209,15 +211,17 @@ describe('createNodes', () => {
         id: '1:4',
         parentId: '1',
         extent: [
-          [0, 26],
-          [500, 500],
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [500 * ZOOM_SCALAR, 500 * ZOOM_SCALAR],
         ],
         position: {
           x: 300 * ZOOM_SCALAR,
           y: 400 * ZOOM_SCALAR,
         },
+        width: 60 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
-          unary: unary,
+          operator: unary,
           fullID: '1:4',
         },
         dragHandle: '.dragHandle__custom',
@@ -297,11 +301,11 @@ describe('createNodes', () => {
       expect(result[0]).toEqual({
         type: 'function',
         id: '5',
-        width: 300,
-        height: 200,
+        width: 300 * ZOOM_SCALAR,
+        height: 200 * ZOOM_SCALAR,
         position: {
-          x: 50,
-          y: 75,
+          x: 50 * ZOOM_SCALAR,
+          y: 75 * ZOOM_SCALAR,
         },
         data: {
           decl: func,
@@ -316,13 +320,15 @@ describe('createNodes', () => {
         id: '5:6',
         parentId: '5',
         extent: [
-          [0, 26],
-          [300, 200],
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
         ],
         position: {
           x: 10 * ZOOM_SCALAR,
           y: 20 * ZOOM_SCALAR,
         },
+        width: 80 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
           constant: nestedConstant,
           fullID: '5:6',
@@ -336,15 +342,17 @@ describe('createNodes', () => {
         id: '5:7',
         parentId: '5',
         extent: [
-          [0, 26],
-          [300, 200],
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
         ],
         position: {
           x: 30 * ZOOM_SCALAR,
           y: 40 * ZOOM_SCALAR,
         },
+        width: 100 * ZOOM_SCALAR,
+        height: 50 * ZOOM_SCALAR,
         data: {
-          binary: nestedBinary,
+          operator: nestedBinary,
           fullID: '5:7',
         },
         dragHandle: '.dragHandle__custom',

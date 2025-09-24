@@ -7,7 +7,7 @@ import {
   ResizeParams,
 } from '@xyflow/react';
 import { FunctionDecl } from '@/models/fluir_module';
-import { Box } from '@radix-ui/themes';
+import { Box, Flex, Badge } from '@radix-ui/themes';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { useProgramActions } from '@/components/common/ProgramActionsContext';
@@ -45,21 +45,31 @@ export default function FunctionDeclNode({
   };
 
   return (
-    <Box
-      width={`${width}`}
-      height={`${height}`}
+    <Flex
+      width='100%'
+      height='100%'
+      direction='column'
     >
-      <DeclHeader
-        name={decl.name}
-        variant='solid'
+      <Box>
+        <DeclHeader
+          name={decl.name}
+          variant='solid'
+        >
+          <Flex className='grow' />
+          <DragHandle />
+        </DeclHeader>
+        <NodeResizer
+          minWidth={15 * ZOOM_SCALAR}
+          minHeight={15 * ZOOM_SCALAR}
+          onResizeEnd={onFinishResize}
+        />
+      </Box>
+      <Badge
+        className='grow'
+        variant='outline'
       >
-        <DragHandle />
-      </DeclHeader>
-      <NodeResizer
-        minWidth={15 * ZOOM_SCALAR}
-        minHeight={15 * ZOOM_SCALAR}
-        onResizeEnd={onFinishResize}
-      />
-    </Box>
+        <Flex className='grow ' />
+      </Badge>
+    </Flex>
   );
 }

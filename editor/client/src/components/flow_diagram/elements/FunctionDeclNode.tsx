@@ -1,18 +1,11 @@
-import {
-  type Node,
-  type NodeProps,
-  NodeResizer,
-  OnResizeEnd,
-  ResizeDragEvent,
-  ResizeParams,
-} from '@xyflow/react';
+import { type Node, type NodeProps } from '@xyflow/react';
 import { FunctionDecl } from '@/models/fluir_module';
 import { Box, Flex, Badge } from '@radix-ui/themes';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
-import { useProgramActions } from '@/components/common/ProgramActionsContext';
 import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
-import { resizeMove } from '@/components/flow_diagram/logic';
+import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
+import { useMemo } from 'react';
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -24,21 +17,19 @@ export const FUNC_HEADER_HEIGHT = 0;
 export default function FunctionDeclNode({
   data: { decl, fullID },
 }: NodeProps<FunctionDeclNode>) {
-  const { editProgram } = useProgramActions();
+  const minWidth = useMemo(() => {
+    const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
 
-  const doResize = resizeMove(editProgram, fullID);
+    return Math.max(...rightExtents, 15) * ZOOM_SCALAR;
+  }, [decl.nodes]);
 
-  const onFinishResize: OnResizeEnd = (
-    _: ResizeDragEvent,
-    params: ResizeParams,
-  ) => {
-    doResize(
-      params.width / ZOOM_SCALAR,
-      params.height / ZOOM_SCALAR,
-      params.x / ZOOM_SCALAR,
-      params.y / ZOOM_SCALAR,
+  const minHeight = useMemo(() => {
+    const bottomExtents = decl.nodes.map(
+      (n) => n.location.y + n.location.height,
     );
-  };
+
+    return Math.max(...bottomExtents, 15) * ZOOM_SCALAR;
+  }, [decl.nodes]);
 
   return (
     <Flex
@@ -54,10 +45,10 @@ export default function FunctionDeclNode({
           <Flex className='grow' />
           <DragHandle />
         </DeclHeader>
-        <NodeResizer
-          minWidth={15 * ZOOM_SCALAR}
-          minHeight={15 * ZOOM_SCALAR}
-          onResizeEnd={onFinishResize}
+        <XYResizeHandle
+          fullID={fullID}
+          minWidth={minWidth}
+          minHeight={minHeight}
         />
       </Box>
       <Badge

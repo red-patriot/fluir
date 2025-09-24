@@ -4,11 +4,12 @@ import { Node, NodeProps, NodeResizeControl, ResizeControlVariant } from '@xyflo
 import { Constant } from '@/models/fluir_module';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
+import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
 
 export default function ConstantNode({
-  data: { constant },
+  data: { constant, fullID },
   selected,
 }: NodeProps<ConstantNode>) {
   return (
@@ -34,6 +35,10 @@ export default function ConstantNode({
           variant={ResizeControlVariant.Line}
         />
       )}
+      <NodeOutput
+        fullID={fullID}
+        count={1}
+      />
     </Flex>
   );
 }

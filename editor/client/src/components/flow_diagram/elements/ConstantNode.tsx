@@ -1,10 +1,20 @@
 import { Code, Flex } from '@radix-ui/themes';
 import { purple, slate } from '@radix-ui/colors';
-import { Node, NodeProps, NodeResizeControl, ResizeControlVariant } from '@xyflow/react';
+import {
+  Node,
+  NodeProps,
+  NodeResizeControl,
+  ResizeControlVariant,
+  OnResizeEnd,
+  ResizeDragEvent,
+  ResizeParams,
+} from '@xyflow/react';
 import { Constant } from '@/models/fluir_module';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut';
+import { resize } from '@/components/flow_diagram/logic';
+import { useProgramActions } from '@/components/common/ProgramActionsContext';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
 
@@ -12,6 +22,17 @@ export default function ConstantNode({
   data: { constant, fullID },
   selected,
 }: NodeProps<ConstantNode>) {
+  const { editProgram } = useProgramActions();
+
+  const doResize = resize(editProgram, fullID);
+
+  const onFinishResize: OnResizeEnd = (
+    _: ResizeDragEvent,
+    params: ResizeParams,
+  ) => {
+    doResize(params.width / ZOOM_SCALAR, params.height / ZOOM_SCALAR);
+  };
+
   return (
     <Flex
       direction='row'
@@ -33,6 +54,7 @@ export default function ConstantNode({
           minWidth={12 * ZOOM_SCALAR}
           color={slate.slate8}
           variant={ResizeControlVariant.Line}
+          onResizeEnd={onFinishResize}
         />
       )}
       <NodeOutput

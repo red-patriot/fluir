@@ -21,15 +21,21 @@ export default function InputField({
   const [tempText, setTempText] = useState(initialValue);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const submit = () => {
+    if (validate && !validate(tempText)) {
+      onValidateFail && onValidateFail();
+    } else {
+      onValidateSucceed && onValidateSucceed(tempText);
+    }
+  };
+
+  const cancel = () => onCancel && onCancel();
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      if (validate && !validate(tempText)) {
-        onValidateFail && onValidateFail();
-      } else {
-        onValidateSucceed && onValidateSucceed(tempText);
-      }
+      submit();
     } else if (e.key === 'Escape') {
-      onCancel && onCancel();
+      cancel();
     }
   };
 
@@ -47,7 +53,9 @@ export default function InputField({
       value={tempText}
       onChange={(e) => setTempText(e.target.value)}
       onKeyDown={handleKeyDown}
-      onBlur={onCancel}
+      onSubmit={submit}
+      onBlur={cancel}
+      className='w-full h-full focus:outline-none'
       {...props}
     />
   );

@@ -31,6 +31,7 @@ export function NodeInput({ fullID, count = 1 }: NodeInOutProps) {
             position={Position.Left}
             type='target'
             id={`output-${fullID}-${i}`}
+            key={`output-${fullID}-${i}`}
             style={{
               translate: `-25% ${position}%`,
               backgroundColor: gray.gray10,

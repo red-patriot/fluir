@@ -10,6 +10,7 @@ import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
 import { useProgramActions } from '@/components/common/ProgramActionsContext';
 import { updateConstant } from '@/components/flow_diagram/logic/updateNode';
 import { validateF64 } from '@/components/flow_diagram/logic/validateEdit';
+import InputField from '@/components/flow_diagram/common/InputField';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
 
@@ -21,6 +22,16 @@ export default function ConstantNode({
 
   const updateValue = updateConstant(editProgram, fullID);
 
+  const doEdit = (id: string, current: string, onDone: () => void) => (
+    <InputField
+      id={id}
+      initialValue={current}
+      onDone={onDone}
+      validate={validateF64}
+      onValidateSucceed={updateValue}
+    />
+  );
+
   return (
     <Flex
       direction='row'
@@ -30,10 +41,8 @@ export default function ConstantNode({
     >
       <ValueDisplay
         fullID={fullID}
-        value={constant.value}
-        editable
-        validate={validateF64}
-        onValidateSucceed={updateValue}
+        value={constant.value || ''}
+        renderEdit={doEdit}
       />
       <DragHandle />
       {selected && (

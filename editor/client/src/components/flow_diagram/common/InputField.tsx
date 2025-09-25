@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   id: string;
   initialValue?: string;
+  onDone?: () => void;
   validate?: (text: string) => boolean;
   onValidateSucceed?: (text: string) => void;
   onValidateFail?: () => void;
@@ -12,6 +13,7 @@ interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
 export default function InputField({
   id,
   initialValue = '',
+  onDone = () => {},
   validate,
   onValidateSucceed,
   onValidateFail,
@@ -27,9 +29,13 @@ export default function InputField({
     } else {
       onValidateSucceed && onValidateSucceed(tempText);
     }
+    onDone();
   };
 
-  const cancel = () => onCancel && onCancel();
+  const cancel = () => {
+    onCancel && onCancel();
+    onDone();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {

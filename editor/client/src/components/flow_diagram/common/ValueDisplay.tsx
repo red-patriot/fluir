@@ -1,32 +1,26 @@
 import { Code } from '@radix-ui/themes';
 import { useState } from 'react';
-import InputField from '@/components/flow_diagram/common/InputField';
 
-interface ValueDisplayProps {
+interface ValueDisplayProps extends React.PropsWithChildren {
   fullID: string;
-  value?: string;
-  editable?: boolean;
-  validate?: (text: string) => boolean;
-  onValidateSucceed?: (text: string) => void;
-  onValidateFail?: () => void;
-  onCancel?: () => void;
+  value: string;
+  renderEdit?: (
+    id: string,
+    current: string,
+    onDone: () => void,
+  ) => React.ReactElement;
 }
 
-export function ValueDisplay({
-  fullID,
-  value,
-  editable = false,
-  validate,
-  onValidateSucceed,
-  onValidateFail,
-  onCancel,
-}: ValueDisplayProps) {
+export function ValueDisplay({ fullID, value, renderEdit }: ValueDisplayProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const startEditing = () => {
-    if (editable) {
+    if (renderEdit) {
       setIsEditing(true);
     }
+  };
+  const stopEditing = () => {
+    setIsEditing(false);
   };
 
   return (
@@ -36,24 +30,8 @@ export function ValueDisplay({
       size='2'
       className='grow ml-0.25 overflow-hidden text-ellipsis whitespace-nowrap'
     >
-      {isEditing ? (
-        <InputField
-          id={fullID}
-          initialValue={value}
-          validate={validate}
-          onValidateSucceed={(text: string) => {
-            onValidateSucceed && onValidateSucceed(text);
-            setIsEditing(false);
-          }}
-          onValidateFail={() => {
-            onValidateFail && onValidateFail();
-            setIsEditing(false);
-          }}
-          onCancel={() => {
-            onCancel && onCancel();
-            setIsEditing(false);
-          }}
-        />
+      {renderEdit && isEditing ? (
+        renderEdit(fullID, value, stopEditing)
       ) : (
         <span
           aria-label={`${fullID}-value-display`}
@@ -64,16 +42,4 @@ export function ValueDisplay({
       )}
     </Code>
   );
-
-  //   return (
-  //     <Code
-  //       inputMode='decimal'
-  //       color='gray'
-  //       variant='solid'
-  //       size='2'
-  //       className='ml-0.25 grow ellipsis'
-  //     >
-  //       {value}
-  //     </Code>
-  //   );
 }

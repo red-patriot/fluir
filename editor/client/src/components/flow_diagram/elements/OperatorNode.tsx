@@ -1,12 +1,13 @@
 import { Node, NodeProps } from '@xyflow/react';
 import { cyan } from '@radix-ui/colors';
 import { BinaryOp, UnaryOp } from '@/models/fluir_module';
-import { Flex, Code } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import {
   NodeInput,
   NodeOutput,
 } from '@/components/flow_diagram/common/NodeInOut';
+import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
 
 type BinaryOperatorNode = Node<{ operator: BinaryOp; fullID: string }>;
 
@@ -24,14 +25,10 @@ export function BinaryOperatorNode({
         fullID={fullID}
         count={2}
       />
-      <Code
-        color='gray'
-        variant='solid'
-        size='1'
-        className='grow text-center ml-0.25'
-      >
-        {operator.op}
-      </Code>
+      <ValueDisplay
+        fullID={fullID}
+        value={operator.op}
+      />
       <DragHandle />
       <NodeOutput
         fullID={fullID}
@@ -58,14 +55,10 @@ export function UnaryOperatorNode({
         fullID={fullID}
         count={1}
       />
-      <Code
-        color='gray'
-        variant='solid'
-        size='1'
-        className='grow text-center ml-0.25'
-      >
-        {operator.op}
-      </Code>
+      <ValueDisplay
+        fullID={fullID}
+        value={operator.op}
+      />
       <DragHandle />
       <NodeOutput
         fullID={fullID}

@@ -1,13 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-interface InputFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  id: string;
-  initialValue?: string;
-  onDone?: () => void;
+interface EditingFunctions {
   validate?: (text: string) => boolean;
   onValidateSucceed?: (text: string) => void;
   onValidateFail?: () => void;
   onCancel?: () => void;
+}
+
+interface InputFieldProps
+  extends React.InputHTMLAttributes<HTMLInputElement>,
+    EditingFunctions {
+  id: string;
+  initialValue?: string;
+  onDone?: () => void;
 }
 
 export default function InputField({
@@ -65,4 +70,25 @@ export default function InputField({
       {...props}
     />
   );
+}
+
+export function editWithInputField({
+  validate,
+  onValidateSucceed,
+  onValidateFail,
+  onCancel,
+}: EditingFunctions) {
+  return (id: string, current: string, onDone: () => void) => {
+    return (
+      <InputField
+        id={id}
+        initialValue={current}
+        onDone={onDone}
+        validate={validate}
+        onValidateSucceed={onValidateSucceed}
+        onValidateFail={onValidateFail}
+        onCancel={onCancel}
+      />
+    );
+  };
 }

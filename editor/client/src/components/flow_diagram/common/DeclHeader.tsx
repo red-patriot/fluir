@@ -1,6 +1,6 @@
 import React from 'react';
-
-import { Badge, Box, Code, Flex } from '@radix-ui/themes';
+import { amber } from '@radix-ui/colors';
+import { Badge, Code, Flex } from '@radix-ui/themes';
 
 interface DeclHeaderProps {
   name: string;
@@ -17,17 +17,20 @@ export default function DeclHeader({
       align='center'
     >
       <Badge
-        variant='outline'
+        variant='solid'
         className='grow'
+        style={{
+          background: amber.amber8,
+        }}
       >
         <Code
-          color='blue'
-          variant='soft'
+          color='gray'
+          variant='solid'
           size='1'
+          className='shrink overflow-ellipsis'
         >
           {name}
         </Code>
-        <Box className='grow' />
         {children}
       </Badge>
     </Flex>

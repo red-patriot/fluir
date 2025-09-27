@@ -6,6 +6,7 @@ import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
 import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { useMemo } from 'react';
+import { gray } from '@radix-ui/colors';
 
 type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -20,7 +21,7 @@ export default function FunctionDeclNode({
   const minWidth = useMemo(() => {
     const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
 
-    return Math.max(...rightExtents, 15) * ZOOM_SCALAR;
+    return Math.max(...rightExtents, 16) * ZOOM_SCALAR;
   }, [decl.nodes]);
 
   const minHeight = useMemo(() => {
@@ -28,7 +29,7 @@ export default function FunctionDeclNode({
       (n) => n.location.y + n.location.height,
     );
 
-    return Math.max(...bottomExtents, 15) * ZOOM_SCALAR;
+    return Math.max(...bottomExtents, 16) * ZOOM_SCALAR;
   }, [decl.nodes]);
 
   return (
@@ -36,6 +37,7 @@ export default function FunctionDeclNode({
       width='100%'
       height='100%'
       direction='column'
+      style={{ borderColor: gray.gray3, borderWidth: 1 }}
     >
       <Box>
         <DeclHeader
@@ -53,7 +55,8 @@ export default function FunctionDeclNode({
       </Box>
       <Badge
         className='grow'
-        variant='outline'
+        variant='soft'
+        color='gray'
       >
         <Flex className='grow ' />
       </Badge>

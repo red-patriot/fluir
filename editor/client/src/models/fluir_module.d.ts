@@ -17,7 +17,6 @@ export type Constant = {
 };
 
 export type Operator = ' ' | '+' | '-' | '*' | '/';
-export const VALID_OPERATORS = [' ', '+', '-', '*', '/'];
 
 export type BinaryOp = {
   discriminator: 'binary';

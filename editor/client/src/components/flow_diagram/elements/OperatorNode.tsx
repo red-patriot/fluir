@@ -1,6 +1,6 @@
 import { Node, NodeProps } from '@xyflow/react';
 import { cyan } from '@radix-ui/colors';
-import { BinaryOp, UnaryOp } from '@/models/fluir_module';
+import { BinaryOp, UnaryOp, Operator } from '@/models/fluir_module';
 import { Flex } from '@radix-ui/themes';
 import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import {
@@ -8,12 +8,22 @@ import {
   NodeOutput,
 } from '@/components/flow_diagram/common/NodeInOut';
 import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
+import editWithChoicePopover from '@/components/flow_diagram/common/ChoicePopover';
+import { updateOperator } from '@/components/flow_diagram/logic';
+import { useProgramActions } from '@/components/common/ProgramActionsContext';
 
 type BinaryOperatorNode = Node<{ operator: BinaryOp; fullID: string }>;
 
 export function BinaryOperatorNode({
   data: { operator, fullID },
 }: NodeProps<BinaryOperatorNode>) {
+  const { editProgram } = useProgramActions();
+
+  const updateOp = updateOperator(editProgram, fullID);
+  const onSelect = (op: string) => {
+    updateOp(op as Operator);
+  };
+
   return (
     <Flex
       direction='row'
@@ -28,6 +38,7 @@ export function BinaryOperatorNode({
       <ValueDisplay
         fullID={fullID}
         value={operator.op}
+        renderEdit={editWithChoicePopover(onSelect, ['+', '-', '*', '/'])}
       />
       <DragHandle />
       <NodeOutput
@@ -43,7 +54,13 @@ type UnaryOperatorNode = Node<{ operator: UnaryOp; fullID: string }>;
 export function UnaryOperatorNode({
   data: { operator, fullID },
 }: NodeProps<UnaryOperatorNode>) {
-  console.log(operator);
+  const { editProgram } = useProgramActions();
+
+  const updateOp = updateOperator(editProgram, fullID);
+  const onSelect = (op: string) => {
+    updateOp(op as Operator);
+  };
+
   return (
     <Flex
       direction='row'
@@ -58,6 +75,7 @@ export function UnaryOperatorNode({
       <ValueDisplay
         fullID={fullID}
         value={operator.op}
+        renderEdit={editWithChoicePopover(onSelect, ['+', '-'])}
       />
       <DragHandle />
       <NodeOutput

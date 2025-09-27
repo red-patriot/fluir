@@ -8,33 +8,40 @@ interface ChoicePopoverProps {
   current: string;
   choices: string[];
   onClick: (selection: string) => void;
+  onDone?: () => void;
 }
 
 export function ChoicePopover({
   current,
   choices,
   onClick,
+  onDone = () => {},
 }: ChoicePopoverProps) {
   const [selected, setSelected] = useState(current);
 
   return (
     <Popover.Root open>
       <Popover.Trigger asChild>
-        <span>{current}</span>
+        <span onClick={onDone}>{current}</span>
       </Popover.Trigger>
       <Popover.Content>
         <Flex
           direction='column'
-          style={{ background: slate.slate7 }}
+          p='1'
+          style={{ background: slate.slate7, borderRadius: 2 }}
         >
           {choices.map((op: string) => (
             <Code
               aria-label={`choice-${op}`}
               key={`choice-${op}`}
+              className='text-center'
               variant={op == selected ? 'outline' : 'ghost'}
               color={op == selected ? 'blue' : 'gray'}
               onMouseOver={() => setSelected(op)}
-              onClick={() => onClick(op)}
+              onClick={() => {
+                onClick(op);
+                onDone();
+              }}
             >
               {op}
             </Code>
@@ -56,10 +63,8 @@ export default function editWithChoicePopover(
         id={id}
         current={current}
         choices={choices}
-        onClick={(choice: string) => {
-          onClick(choice);
-          onDone();
-        }}
+        onClick={onClick}
+        onDone={onDone}
       />
     );
   };

@@ -350,7 +350,8 @@ class AddNode(BaseModel, TransactionBase):
                     elements.BinaryOperator(
                         id=new_id,
                         location=self.new_location,
-                        op=elements.Operator.UNKNOWN,
+                        # TODO: Accept the operator as an input?
+                        op=elements.Operator.PLUS,
                     )
                 )
             case "UnaryOperator":
@@ -358,7 +359,8 @@ class AddNode(BaseModel, TransactionBase):
                     elements.UnaryOperator(
                         id=new_id,
                         location=self.new_location,
-                        op=elements.Operator.UNKNOWN,
+                        # TODO: Accept the operator as an input?
+                        op=elements.Operator.PLUS,
                     )
                 )
         self._inserted = new_id

@@ -1,4 +1,4 @@
-import { type Node, type NodeProps } from '@xyflow/react';
+import { useReactFlow, type Node, type NodeProps } from '@xyflow/react';
 import { FunctionDecl } from '@/models/fluir_module';
 import { Box, Flex, Badge } from '@radix-ui/themes';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
@@ -7,8 +7,9 @@ import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
 import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { useMemo } from 'react';
 import { gray } from '@radix-ui/colors';
+import { useDialogContext } from '@/components/flow_diagram/dialog';
 
-type FunctionDeclNode = Node<
+export type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
   'function'
 >;
@@ -18,6 +19,8 @@ export const FUNC_HEADER_HEIGHT = 0;
 export default function FunctionDeclNode({
   data: { decl, fullID },
 }: NodeProps<FunctionDeclNode>) {
+  const { screenToFlowPosition } = useReactFlow();
+  const { openCreateNodeDialog } = useDialogContext();
   const minWidth = useMemo(() => {
     const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
 
@@ -31,6 +34,22 @@ export default function FunctionDeclNode({
 
     return Math.max(...bottomExtents, 16) * ZOOM_SCALAR;
   }, [decl.nodes]);
+
+  const onBodyContextMenu = (event: React.MouseEvent) => {
+    const clickCoord = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    clickCoord.x /= ZOOM_SCALAR;
+    clickCoord.y /= ZOOM_SCALAR;
+
+    openCreateNodeDialog({
+      clickedLocation: clickCoord,
+      parentID: fullID,
+      parentLocation: decl.location,
+      where: { x: event.clientX, y: event.clientY },
+    });
+  };
 
   return (
     <Flex
@@ -57,6 +76,7 @@ export default function FunctionDeclNode({
         className='grow'
         variant='soft'
         color='gray'
+        onContextMenu={onBodyContextMenu}
       >
         <Flex className='grow ' />
       </Badge>

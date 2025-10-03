@@ -10,7 +10,7 @@ import {
 import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
 import editWithChoicePopover from '@/components/flow_diagram/common/ChoicePopover';
 import { updateOperator } from '@/components/flow_diagram/logic';
-import { useProgramActions } from '@/components/common/ProgramActionsContext';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 
 type BinaryOperatorNode = Node<{ operator: BinaryOp; fullID: string }>;
 

@@ -17,7 +17,7 @@ import {
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
 import { useAppSelector } from '../../store';
-import { useProgramActions } from '../common/ProgramActionsContext';
+import { useProgramActions } from '../reusable/ProgramActionsContext';
 import {
   AddConduitEditRequest,
   RemoveItemEditRequest,

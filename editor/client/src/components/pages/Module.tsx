@@ -1,7 +1,7 @@
 import ViewWindow from '../layout/ViewWindow';
 import ToolHeader from '../layout/ToolHeader';
 import { actions, useAppDispatch } from '../../store';
-import { useProgramActions } from '../common/ProgramActionsContext';
+import { useProgramActions } from '../reusable/ProgramActionsContext';
 import { saveAsDialog } from '../../hooks/electronAPI';
 import { ReactFlowProvider } from '@xyflow/react';
 import { DialogProvider } from '@/components/flow_diagram/dialog';

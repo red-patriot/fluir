@@ -6,7 +6,7 @@ import {
 import { Dialog, VisuallyHidden } from 'radix-ui';
 import { slate } from '@radix-ui/colors';
 import { useState } from 'react';
-import { useProgramActions } from '@/components/common/ProgramActionsContext';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 import { AddNodeEditRequest, NodeOptions } from '@/models/edit_request';
 import { toApiID } from '@/utility/idHelpers';
 import { LIMITS } from '@/limits';

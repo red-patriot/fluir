@@ -2,7 +2,7 @@ import { useAppSelector } from './store';
 import Home from './components/pages/Home';
 import { openFileDialog } from './hooks/electronAPI';
 import ModulePage from './components/pages/Module';
-import { useProgramActions } from './components/common/ProgramActionsContext';
+import { useProgramActions } from './components/reusable/ProgramActionsContext';
 import { Theme } from '@radix-ui/themes';
 
 function App() {

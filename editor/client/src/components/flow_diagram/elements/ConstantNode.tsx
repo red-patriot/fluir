@@ -7,7 +7,7 @@ import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
 import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut';
 import { HorizontalResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
-import { useProgramActions } from '@/components/common/ProgramActionsContext';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 import { updateConstant } from '@/components/flow_diagram/logic/updateNode';
 import { validateF64 } from '@/components/flow_diagram/logic/validateEdit';
 import { editWithInputField } from '@/components/flow_diagram/common/InputField';

@@ -8,7 +8,7 @@ import {
 } from '@xyflow/react';
 import { slate } from '@radix-ui/colors';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
-import { useProgramActions } from '@/components/common/ProgramActionsContext';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 import { resize } from '@/components/flow_diagram/logic';
 import { WidthIcon, DimensionsIcon } from '@radix-ui/react-icons';
 

@@ -17,15 +17,15 @@ import {
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
 import { useAppSelector } from '../../store';
-import { useProgramActions } from '../common/ProgramActionsContext';
+import { useProgramActions } from '../reusable/ProgramActionsContext';
 import {
-  MoveEditRequest,
   AddConduitEditRequest,
   RemoveItemEditRequest,
 } from '../../models/edit_request';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { toApiID } from '../../utility/idHelpers';
 import { ContextMenu } from 'radix-ui';
+import { move } from '@/components/flow_diagram/logic';
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -91,13 +91,11 @@ export default function ViewWindow() {
 
   const onNodeDragStop = useCallback(
     (_: React.MouseEvent, node: any) => {
-      const request = {
-        discriminator: 'move',
-        target: toApiID(node.id as string),
-        x: Math.round(node.position.x / ZOOM_SCALAR),
-        y: Math.round(node.position.y / ZOOM_SCALAR),
-      } as MoveEditRequest;
-      editProgram(request);
+      const moveNode = move(editProgram, node.id);
+      moveNode(
+        Math.round(node.position.x / ZOOM_SCALAR),
+        Math.round(node.position.y / ZOOM_SCALAR),
+      );
     },
     [editProgram],
   );
@@ -165,9 +163,9 @@ export default function ViewWindow() {
           <Background
             id='bg-1'
             variant={BackgroundVariant.Dots}
-            gap={50}
-            size={1}
-            offset={[250, 250]}
+            gap={10}
+            size={0.5}
+            offset={[10, 10]}
           />
         </ReactFlow>
       </ContextMenu.Root>

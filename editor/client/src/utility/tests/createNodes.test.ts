@@ -8,6 +8,7 @@ import FluirModule, {
   Operator,
 } from '../../models/fluir_module';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
+import { FUNC_HEADER_HEIGHT } from '@/components/flow_diagram/elements/FunctionDeclNode';
 
 describe('createNodes', () => {
   describe('with empty module', () => {
@@ -50,18 +51,23 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(3); // function + constant
+      expect(result).toHaveLength(2); // function + constant
 
       // Check the constant node (second in array)
-      expect(result[2]).toEqual({
+      expect(result[1]).toEqual({
         type: 'constant',
         id: '1:1',
         parentId: '1',
-        extent: 'parent',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [200 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
+        ],
         position: {
           x: 100 * ZOOM_SCALAR,
           y: 200 * ZOOM_SCALAR,
         },
+        width: 80 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
           constant: constant,
           fullID: '1:1',
@@ -93,8 +99,8 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(3);
-      expect(result[2].data.constant).toEqual(constant);
+      expect(result).toHaveLength(2);
+      expect(result[1].data.constant).toEqual(constant);
     });
   });
 
@@ -122,18 +128,23 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(3);
-      expect(result[2]).toEqual({
+      expect(result).toHaveLength(2);
+      expect(result[1]).toEqual({
         type: 'binary',
         id: '1:3',
         parentId: '1',
-        extent: 'parent',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 300 * ZOOM_SCALAR],
+        ],
         position: {
           x: 75 * ZOOM_SCALAR,
           y: 125 * ZOOM_SCALAR,
         },
+        width: 100 * ZOOM_SCALAR,
+        height: 50 * ZOOM_SCALAR,
         data: {
-          binary: binary,
+          operator: binary,
           fullID: '1:3',
         },
         dragHandle: '.dragHandle__custom',
@@ -163,9 +174,9 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(6); // function + 5 binary nodes
+      expect(result).toHaveLength(5); // function + 5 binary nodes
       operators.forEach((op, index) => {
-        expect(result[index + 2].data.binary.op).toBe(op);
+        expect(result[index + 1].data.operator.op).toBe(op);
       });
     });
   });
@@ -194,18 +205,23 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(3);
-      expect(result[2]).toEqual({
+      expect(result).toHaveLength(2);
+      expect(result[1]).toEqual({
         type: 'unary',
         id: '1:4',
         parentId: '1',
-        extent: 'parent',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [500 * ZOOM_SCALAR, 500 * ZOOM_SCALAR],
+        ],
         position: {
           x: 300 * ZOOM_SCALAR,
           y: 400 * ZOOM_SCALAR,
         },
+        width: 60 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
-          unary: unary,
+          operator: unary,
           fullID: '1:4',
         },
         dragHandle: '.dragHandle__custom',
@@ -230,15 +246,15 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(2);
-      expect(result[1]).toEqual({
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
         type: 'function',
         id: '5',
-        parentId: '5__header',
-        extent: 'parent',
+        height: 150 * ZOOM_SCALAR,
+        width: 200 * ZOOM_SCALAR,
         position: {
-          x: 0 * ZOOM_SCALAR,
-          y: 4 * ZOOM_SCALAR,
+          x: 50 * ZOOM_SCALAR,
+          y: 75 * ZOOM_SCALAR,
         },
         data: {
           decl: func,
@@ -279,17 +295,17 @@ describe('createNodes', () => {
 
       const result = createNodes(module);
 
-      expect(result).toHaveLength(4); // function + 2 nested nodes
+      expect(result).toHaveLength(3); // function + 2 nested nodes
 
       // Check function node
-      expect(result[1]).toEqual({
+      expect(result[0]).toEqual({
         type: 'function',
         id: '5',
-        parentId: '5__header',
-        extent: 'parent',
+        width: 300 * ZOOM_SCALAR,
+        height: 200 * ZOOM_SCALAR,
         position: {
-          x: 0 * ZOOM_SCALAR,
-          y: 4 * ZOOM_SCALAR,
+          x: 50 * ZOOM_SCALAR,
+          y: 75 * ZOOM_SCALAR,
         },
         data: {
           decl: func,
@@ -299,15 +315,20 @@ describe('createNodes', () => {
       });
 
       // Check nested constant
-      expect(result[2]).toEqual({
+      expect(result[1]).toEqual({
         type: 'constant',
         id: '5:6',
         parentId: '5',
-        extent: 'parent',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
+        ],
         position: {
           x: 10 * ZOOM_SCALAR,
           y: 20 * ZOOM_SCALAR,
         },
+        width: 80 * ZOOM_SCALAR,
+        height: 40 * ZOOM_SCALAR,
         data: {
           constant: nestedConstant,
           fullID: '5:6',
@@ -316,17 +337,22 @@ describe('createNodes', () => {
       });
 
       // Check nested binary
-      expect(result[3]).toEqual({
+      expect(result[2]).toEqual({
         type: 'binary',
         id: '5:7',
         parentId: '5',
-        extent: 'parent',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [300 * ZOOM_SCALAR, 200 * ZOOM_SCALAR],
+        ],
         position: {
           x: 30 * ZOOM_SCALAR,
           y: 40 * ZOOM_SCALAR,
         },
+        width: 100 * ZOOM_SCALAR,
+        height: 50 * ZOOM_SCALAR,
         data: {
-          binary: nestedBinary,
+          operator: nestedBinary,
           fullID: '5:7',
         },
         dragHandle: '.dragHandle__custom',
@@ -372,19 +398,12 @@ describe('createNodes', () => {
 
         const result = createNodes(module);
 
-        expect(result).toHaveLength(5); // function + 3 nodes
-        expect(result[0].type).toBe('function__header');
-        expect(result[1].type).toBe('function');
-        expect(result[2].type).toBe('constant');
-        expect(result[3].type).toBe('binary');
-        expect(result[4].type).toBe('unary');
-        expect(result.map((n) => n.id)).toEqual([
-          '4__header',
-          '4',
-          '4:1',
-          '4:2',
-          '4:3',
-        ]);
+        expect(result).toHaveLength(4); // function + 3 nodes
+        expect(result[0].type).toBe('function');
+        expect(result[1].type).toBe('constant');
+        expect(result[2].type).toBe('binary');
+        expect(result[3].type).toBe('unary');
+        expect(result.map((n) => n.id)).toEqual(['4', '4:1', '4:2', '4:3']);
       });
 
       it('should handle multiple functions', () => {
@@ -412,13 +431,11 @@ describe('createNodes', () => {
 
         const result = createNodes(module);
 
-        expect(result).toHaveLength(4);
-        expect(result[0].id).toBe('1__header');
-        expect(result[1].id).toBe('1');
-        expect(result[2].id).toBe('2__header');
-        expect(result[3].id).toBe('2');
-        expect(result[1].data.decl.name).toBe('function1');
-        expect(result[2].data.decl.name).toBe('function2');
+        expect(result).toHaveLength(2);
+        expect(result[0].id).toBe('1');
+        expect(result[1].id).toBe('2');
+        expect(result[0].data.decl.name).toBe('function1');
+        expect(result[1].data.decl.name).toBe('function2');
       });
     });
 
@@ -447,8 +464,8 @@ describe('createNodes', () => {
         const result = createNodes(module);
 
         expect(result[1].position).toEqual({
-          x: 0 * ZOOM_SCALAR,
-          y: 4 * ZOOM_SCALAR,
+          x: 10 * ZOOM_SCALAR,
+          y: 20 * ZOOM_SCALAR,
         });
       });
 
@@ -505,8 +522,8 @@ describe('createNodes', () => {
         const result = createNodes(module);
 
         expect(result[1].position).toEqual({
-          x: 0 * ZOOM_SCALAR,
-          y: 4 * ZOOM_SCALAR,
+          x: -50 * ZOOM_SCALAR,
+          y: -100 * ZOOM_SCALAR,
         });
       });
     });
@@ -528,8 +545,8 @@ describe('createNodes', () => {
 
         const result = createNodes(module);
 
-        expect(result[1].id).toBe('2');
-        expect(result[1].data.fullID).toBe('2');
+        expect(result[0].id).toBe('2');
+        expect(result[0].data.fullID).toBe('2');
       });
 
       it('should generate correct ids for nested nodes', () => {
@@ -555,10 +572,10 @@ describe('createNodes', () => {
 
         const result = createNodes(module);
 
-        expect(result[1].id).toBe('123'); // function
-        expect(result[2].id).toBe('123:456'); // nested constant
-        expect(result[2].parentId).toBe('123');
-        expect(result[2].data.fullID).toBe('123:456');
+        expect(result[0].id).toBe('123'); // function
+        expect(result[1].id).toBe('123:456'); // nested constant
+        expect(result[1].parentId).toBe('123');
+        expect(result[1].data.fullID).toBe('123:456');
       });
     });
   });

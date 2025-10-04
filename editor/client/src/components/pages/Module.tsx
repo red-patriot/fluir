@@ -1,9 +1,10 @@
 import ViewWindow from '../layout/ViewWindow';
 import ToolHeader from '../layout/ToolHeader';
 import { actions, useAppDispatch } from '../../store';
-import { useProgramActions } from '../common/ProgramActionsContext';
+import { useProgramActions } from '../reusable/ProgramActionsContext';
 import { saveAsDialog } from '../../hooks/electronAPI';
 import { ReactFlowProvider } from '@xyflow/react';
+import { DialogProvider } from '@/components/flow_diagram/dialog';
 
 export default function ModulePage() {
   const dispatch = useAppDispatch();
@@ -31,16 +32,18 @@ export default function ModulePage() {
 
   return (
     <div className='flex flex-col h-lvh w-lvw'>
-      <ReactFlowProvider>
-        <ToolHeader
-          onSave={onSave}
-          onSaveAs={onSaveAs}
-          onCloseModule={closeModule}
-          onUndo={undoEdit}
-          onRedo={redoEdit}
-        />
-        <ViewWindow />
-      </ReactFlowProvider>
+      <DialogProvider>
+        <ReactFlowProvider>
+          <ToolHeader
+            onSave={onSave}
+            onSaveAs={onSaveAs}
+            onCloseModule={closeModule}
+            onUndo={undoEdit}
+            onRedo={redoEdit}
+          />
+          <ViewWindow />
+        </ReactFlowProvider>
+      </DialogProvider>
     </div>
   );
 }

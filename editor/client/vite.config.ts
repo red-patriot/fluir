@@ -29,9 +29,13 @@ export default defineConfig({
           : {},
     }),
   ],
+  resolve:{
+    alias: {'@': path.resolve(__dirname, "./src")}
+  },
   test: {
     environment: 'jsdom',
     testMatch: ['./**/*.test.tsx'],
     globals: true,
-  },
+    setupFiles: ["./setupTests.ts"]
+  }
 });

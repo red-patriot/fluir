@@ -43,3 +43,5 @@ repos:
         language: system
         types_or: [python, pyi]
         args: [--strict, --config-file, editor/server/pyproject.toml]
+        pass_filenames: false
+        entry: bash -c 'cd editor/server && mypy . --strict'

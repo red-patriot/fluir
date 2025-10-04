@@ -9,7 +9,6 @@ from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
     AddNode,
-    EditTransaction,
     MoveElement,
     RemoveItem,
     RenameDeclaration,
@@ -482,7 +481,7 @@ def test_add_conduit_removes_duplicate_targets(
             elements.BinaryOperator(
                 id=6,
                 location=elements.Location(15, 2, 1, 5, 5),
-                op=elements.Operator.UNKNOWN,
+                op=elements.Operator.PLUS,
             ),
             AddNode(
                 parent=[2],
@@ -494,7 +493,7 @@ def test_add_conduit_removes_duplicate_targets(
             elements.UnaryOperator(
                 id=6,
                 location=elements.Location(2, 7, 0, 7, 7),
-                op=elements.Operator.UNKNOWN,
+                op=elements.Operator.PLUS,
             ),
             AddNode(
                 parent=[2],

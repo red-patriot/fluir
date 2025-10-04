@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
+#include <functional>
 #include <iostream>
 
 #include "vm/exceptions.hpp"
@@ -222,7 +223,15 @@ namespace fluir {
           uintBinary<std::divides<uint64_t>>();
           break;
         case U64_NEG:
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable : 4146)  // unary minus operator applied to unsigned type, result still unsigned
+#endif
           uintUnary<std::negate<uint64_t>>();
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
           break;
         case F64_AFF:
         case I64_AFF:

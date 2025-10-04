@@ -1,6 +1,8 @@
 #ifndef FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
 #define FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
 
+#include <fmt/format.h>
+
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/utility/indent_formatter.hpp"
 

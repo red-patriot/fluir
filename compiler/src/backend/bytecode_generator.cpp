@@ -40,16 +40,16 @@ namespace fluir {
     // TODO: Handle other types here
     switch (node.op) {
       case Operator::PLUS:
-        emitByte(Instruction::FP_ADD);
+        emitByte(Instruction::F64_ADD);
         break;
       case Operator::MINUS:
-        emitByte(Instruction::FP_SUBTRACT);
+        emitByte(Instruction::F64_SUB);
         break;
       case Operator::STAR:
-        emitByte(Instruction::FP_MULTIPLY);
+        emitByte(Instruction::F64_MUL);
         break;
       case Operator::SLASH:
-        emitByte(Instruction::FP_DIVIDE);
+        emitByte(Instruction::F64_DIV);
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
@@ -63,10 +63,10 @@ namespace fluir {
     // TODO: Handle other types here
     switch (node.op) {
       case Operator::PLUS:
-        emitByte(Instruction::FP_AFFIRM);
+        emitByte(Instruction::F64_AFF);
         break;
       case Operator::MINUS:
-        emitByte(Instruction::FP_NEGATE);
+        emitByte(Instruction::F64_NEG);
         break;
       default:
         // TODO: Handle this better
@@ -76,27 +76,21 @@ namespace fluir {
   }
 
   void BytecodeGenerator::operator()(const asg::ConstantFP& node) {
-    const auto constant = addConstant(node.value);
+    const auto constant = addConstant(code::Value(node.value));
 
     // TODO: Handle more constants with special instruction
-    emitBytes(Instruction::PUSH_FP, static_cast<std::uint8_t>(constant));
+    emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
-  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) :
-      ctx_(ctx),
-      graph_(graph),
-      code_{} { }
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
-  void BytecodeGenerator::emitByte(std::uint8_t byte) {
-    current_.code.push_back(byte);
-  }
+  void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
     emitByte(byte2);
   }
   size_t BytecodeGenerator::addConstant(code::Value value) {
-    if (auto found = std::ranges::find(current_.constants, value);
-        found != current_.constants.end()) {
+    if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
       return found - current_.constants.begin();
     }
     current_.constants.emplace_back(std::move(value));

@@ -1,0 +1,104 @@
+#ifndef FLUIR_VALUE_H
+#define FLUIR_VALUE_H
+
+#include <cstdint>
+#include <stdexcept>
+
+namespace fluir::code {
+  // clang-format off
+#define FLUIR_CODE_VALUE_TYPES(code)  \
+  code(F64, double)                   \
+  code(I8, std::int8_t)               \
+  code(I16, std::int16_t)             \
+  code(I32, std::int32_t)             \
+  code(I64, std::int64_t)             \
+  code(U8, std::uint8_t)              \
+  code(U16, std::uint16_t)            \
+  code(U32, std::uint32_t)            \
+  code(U64, std::uint64_t)
+  // clang-format on
+
+#define enumerate(Type, ConcreteType) Type,
+  enum class ValueType { FLUIR_CODE_VALUE_TYPES(enumerate) };
+#undef enumerate
+
+  /* A generic Fluir value */
+  class Value {
+    friend bool operator==(const Value&, const Value&);
+
+   public:
+#define FLUIR_VALUE_CONSTRUCTOR(Type, Concrete) \
+  explicit Value(Concrete d) : type_{ValueType::Type}, data_(d) { }
+
+    FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_CONSTRUCTOR)
+
+#undef FLUIR_VALUE_CONSTRUCTOR
+
+    [[nodiscard]] ValueType type() const { return type_; };
+
+#define TEMP_CONCAT(a, b) a##b
+#define FLUIR_VALUE_ACCESSOR(Type, Concrete)                    \
+  [[nodiscard]] Concrete& TEMP_CONCAT(as, Type)() {             \
+    assertType(ValueType::Type);                                \
+    return data_.Type;                                          \
+  }                                                             \
+  [[nodiscard]] const Concrete& TEMP_CONCAT(as, Type)() const { \
+    assertType(ValueType::Type);                                \
+    return data_.Type;                                          \
+  }
+
+    FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_ACCESSOR)
+
+#undef FLUIR_VALUE_ACCESSOR
+
+   private:
+    ValueType type_;
+
+    union Data {
+#define FLUIR_VALUE_UNION_MEMBER(Type, Concrete) \
+  Concrete Type;                                 \
+  explicit(false) Data(Concrete d) : Type(d) { }
+
+      FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_UNION_MEMBER)
+#undef FLUIR_VALUE_UNION_MEMBER
+    } data_;
+
+    void assertType(ValueType type) const {
+      if (type_ != type) {
+        throw std::runtime_error("Actual value type does not match");
+      }
+    }
+  };
+
+  namespace value_literals {
+    inline Value operator""_f64(long double d) { return Value{static_cast<double>(d)}; }
+    inline Value operator""_i64(unsigned long long i) { return Value{static_cast<std::int64_t>(i)}; }
+    inline Value operator""_i32(unsigned long long i) { return Value{static_cast<std::int32_t>(i)}; }
+    inline Value operator""_i16(unsigned long long i) { return Value{static_cast<std::int16_t>(i)}; }
+    inline Value operator""_i8(unsigned long long i) { return Value{static_cast<std::int8_t>(i)}; }
+    inline Value operator""_u64(unsigned long long int u) { return Value{static_cast<std::uint64_t>(u)}; }
+    inline Value operator""_u32(unsigned long long int u) { return Value{static_cast<std::uint32_t>(u)}; }
+    inline Value operator""_u16(unsigned long long int u) { return Value{static_cast<std::uint16_t>(u)}; }
+    inline Value operator""_u8(unsigned long long int u) { return Value{static_cast<std::uint8_t>(u)}; }
+  }  // namespace value_literals
+
+  inline bool operator==(const Value& lhs, const Value& rhs) {
+    if (lhs.type() != rhs.type()) {
+      return false;
+    }
+
+    switch (lhs.type()) {
+#define FLUIR_VALUE_COMPARE(Type, Concrete) \
+  case ValueType::Type:                     \
+    return TEMP_CONCAT(lhs.as, Type)() == TEMP_CONCAT(rhs.as, Type)();
+
+      FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_COMPARE)
+
+#undef FLUIR_VALUE_COMPARE
+#undef TEMP_CONCAT
+    }
+    return false;
+  }
+}  // namespace fluir::code
+
+#endif  // FLUIR_VALUE_H

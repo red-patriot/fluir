@@ -41,13 +41,13 @@ def basic_program() -> Program:
                         id=2,
                         location=elements.Location(2, 2, 1, 5, 5),
                         value="3.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                     elements.Constant(
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -72,7 +72,7 @@ def basic_program() -> Program:
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -467,7 +467,7 @@ def test_add_conduit_removes_duplicate_targets(
                 id=6,
                 location=elements.Location(2, 2, 0, 5, 5),
                 value="0.0",
-                flType=FlType.FLOATING_POINT,
+                flType=FlType.F64,
             ),
             AddNode(
                 parent=[2],

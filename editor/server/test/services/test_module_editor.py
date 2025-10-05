@@ -76,7 +76,7 @@ def basic_program() -> Program:
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[

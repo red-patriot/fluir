@@ -163,8 +163,8 @@ class _XMLReader:
 
     def _type(self, element: Any) -> FlType | None:
         match element.tag:
-            case "float":
-                return FlType.FLOATING_POINT
+            case "f64":
+                return FlType.F64
 
         return None
 

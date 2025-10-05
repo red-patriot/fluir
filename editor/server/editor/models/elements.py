@@ -12,7 +12,7 @@ class IdentifierError(Exception):
 
 
 class FlType(StrEnum):
-    FLOATING_POINT = "FLOATING_POINT"
+    F64 = "F64"
 
 
 class Operator(StrEnum):

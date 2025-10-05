@@ -342,7 +342,7 @@ class AddNode(BaseModel, TransactionBase):
                         id=new_id,
                         location=self.new_location,
                         value="0.0",
-                        flType=elements.FlType.FLOATING_POINT,
+                        flType=elements.FlType.F64,
                     )
                 )
             case "BinaryOperator":

@@ -89,13 +89,13 @@ _TEST_DATA = [
                             id=2,
                             location=Location(2, 2, 1, 5, 5),
                             value="3.0",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         Constant(
                             id=3,
                             location=Location(2, 12, 1, 5, 5),
                             value="2.0",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                     ],
                     conduits=[
@@ -123,12 +123,12 @@ _TEST_DATA = [
                 <constant
                     id="2"
                     x="2" y="2" z="1" w="5" h="5">
-                    <float>3.0</float>
+                    <f64>3.0</f64>
                 </constant>
                 <constant
                     id="3"
                     x="2" y="12" z="1" w="5" h="5">
-                    <float>2.0</float>
+                    <f64>2.0</f64>
                 </constant>
                 <conduit id="4" input="2">
                     <output target="1"/>
@@ -158,7 +158,7 @@ _TEST_DATA = [
                             id=3,
                             location=Location(2, 2, 1, 5, 5),
                             value="3.5",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                     ],
                     conduits=[
@@ -185,7 +185,7 @@ _TEST_DATA = [
                 <constant
                     id="3"
                     x="2" y="2" z="1" w="5" h="5">
-                    <float>3.5</float>
+                    <f64>3.5</f64>
                 </constant>
                 <conduit id="5" input="3">
                     <output target="7" index="0"/>
@@ -212,13 +212,13 @@ _TEST_DATA = [
                             id=2,
                             location=Location(6, 34, 0, 12, 5),
                             value="1.2345",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         Constant(
                             id=1,
                             location=Location(6, 45, 0, 12, 5),
                             value="6.7890",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         BinaryOperator(
                             id=5,
@@ -229,7 +229,7 @@ _TEST_DATA = [
                             id=4,
                             location=Location(29, 18, 0, 12, 5),
                             value="7.6543",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         UnaryOperator(
                             id=6,
@@ -279,14 +279,14 @@ _TEST_DATA = [
     <body>
       <binary id="3" x="24" y="39" z="2" w="5" h="5" operator="/" />
       <constant id="2" x="6" y="34" z="0" w="12" h="5">
-        <float>1.2345</float>
+        <f64>1.2345</f64>
       </constant>
       <constant id="1" x="6" y="45" z="0" w="12" h="5">
-        <float>6.7890</float>
+        <f64>6.7890</f64>
       </constant>
       <binary id="5" x="54" y="23" z="2" w="5" h="5" operator="*" />
       <constant id="4" x="29" y="18" z="0" w="12" h="5">
-        <float>7.6543</float>
+        <f64>7.6543</f64>
       </constant>
       <unary id="6" x="35" y="28" z="0" w="5" h="5" operator="+" />
       <conduit id="7" input="2">

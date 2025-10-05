@@ -73,13 +73,13 @@ _TEST_DATA = [
                             id=2,
                             location=Location(2, 2, 1, 5, 5),
                             value="3.0",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         Constant(
                             id=3,
                             location=Location(2, 12, 1, 5, 5),
                             value="2.0",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                     ],
                 )
@@ -118,7 +118,7 @@ _TEST_DATA = [
                             id=3,
                             location=Location(2, 2, 1, 5, 5),
                             value="3.5",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                     ],
                 )
@@ -154,13 +154,13 @@ _TEST_DATA = [
                             id=2,
                             location=Location(6, 34, 0, 12, 5),
                             value="1.2345",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         Constant(
                             id=1,
                             location=Location(6, 45, 0, 12, 5),
                             value="6.7890",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         BinaryOperator(
                             id=5,
@@ -171,7 +171,7 @@ _TEST_DATA = [
                             id=4,
                             location=Location(29, 18, 0, 12, 5),
                             value="7.6543",
-                            flType=FlType.FLOATING_POINT,
+                            flType=FlType.F64,
                         ),
                         UnaryOperator(
                             id=6,

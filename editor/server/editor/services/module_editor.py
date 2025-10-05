@@ -83,15 +83,16 @@ class ModuleEditor:
             EditTransaction, Field(discriminator="discriminator")
         ],
     ) -> None:
+        """Edits the open module with the given transaction and clears the redo stack"""
+        self._apply(command)
+        self._redo_stack.clear()
+
+    def _apply(self, action: EditTransaction) -> None:
         """Applies an edit to the open program"""
         if self._module is None:
             raise BadEdit("Open a program to make edits")
-
-        self._module = command.do(self._module)
-        self._undo_stack.append(command)
-        if len(self._undo_stack) > self._stack_max:
-            self._undo_stack.pop(0)
-        self._redo_stack.clear()
+        self._module = action.do(self._module)
+        self._push_undo(action)
 
     def undo(self) -> None:
         if self._module is None:
@@ -101,15 +102,13 @@ class ModuleEditor:
             return
         action = self._undo_stack.pop()
         self._module = action.undo(self._module)
-        self._redo_stack.append(action)
-        if len(self._redo_stack) > self._stack_max:
-            self._redo_stack.pop(0)
+        self._push_redo(action)
 
     def redo(self) -> None:
         if not self.can_redo():
             return
         action = self._redo_stack.pop()
-        self.edit(action)
+        self._apply(action)
 
     def can_undo(self) -> bool:
         return len(self._undo_stack) > 0
@@ -124,3 +123,15 @@ class ModuleEditor:
         self._path = None
         self._undo_stack.clear()
         self._redo_stack.clear()
+
+    def _push_redo(self, action: EditTransaction) -> None:
+        """Pushes an action onto the redo stack"""
+        self._redo_stack.append(action)
+        if len(self._redo_stack) > self._stack_max:
+            self._redo_stack.pop(0)
+
+    def _push_undo(self, action: EditTransaction) -> None:
+        """Pushes an action onto the undo stack"""
+        self._undo_stack.append(action)
+        if len(self._undo_stack) > self._stack_max:
+            self._undo_stack.pop()

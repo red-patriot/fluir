@@ -335,6 +335,28 @@ def test_redo(basic_program: Program, action: EditTransaction) -> None:
     assert uut.can_undo()
 
 
+def test_undo_redo_stack(basic_program: Program) -> None:
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+
+    uut.edit(action)
+    uut.edit(action)
+    expected = copy.deepcopy(uut.get())
+    uut.undo()
+    uut.undo()
+
+    assert uut.can_redo()
+    uut.redo()
+    assert uut.can_redo()
+    uut.redo()
+    redone = uut.get()
+
+    assert expected == redone
+    assert not uut.can_redo()
+    assert uut.can_undo()
+
+
 def test_undo_max_size(basic_program: Program) -> None:
     uut = ModuleEditor(stack_max=10)
     uut.open_module(basic_program)

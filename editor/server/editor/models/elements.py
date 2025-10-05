@@ -12,7 +12,15 @@ class IdentifierError(Exception):
 
 
 class FlType(StrEnum):
-    FLOATING_POINT = "FLOATING_POINT"
+    F64 = "F64"
+    I8 = "I8"
+    I16 = "I16"
+    I32 = "I32"
+    I64 = "I64"
+    U8 = "U8"
+    U16 = "U16"
+    U32 = "U32"
+    U64 = "U64"
 
 
 class Operator(StrEnum):

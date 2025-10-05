@@ -76,7 +76,7 @@ def basic_program() -> Program:
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -326,6 +326,28 @@ def test_redo(basic_program: Program, action: EditTransaction) -> None:
     expected = copy.deepcopy(uut.get())
     uut.undo()
 
+    assert uut.can_redo()
+    uut.redo()
+    redone = uut.get()
+
+    assert expected == redone
+    assert not uut.can_redo()
+    assert uut.can_undo()
+
+
+def test_undo_redo_stack(basic_program: Program) -> None:
+    action = transaction.MoveElement(target=[3, 3], x=6, y=90)
+    uut = ModuleEditor()
+    uut.open_module(basic_program)
+
+    uut.edit(action)
+    uut.edit(action)
+    expected = copy.deepcopy(uut.get())
+    uut.undo()
+    uut.undo()
+
+    assert uut.can_redo()
+    uut.redo()
     assert uut.can_redo()
     uut.redo()
     redone = uut.get()

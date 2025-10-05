@@ -41,13 +41,13 @@ def basic_program() -> Program:
                         id=2,
                         location=elements.Location(2, 2, 1, 5, 5),
                         value="3.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                     elements.Constant(
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -72,7 +72,7 @@ def basic_program() -> Program:
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -467,15 +467,33 @@ def test_add_conduit_removes_duplicate_targets(
                 id=6,
                 location=elements.Location(2, 2, 0, 5, 5),
                 value="0.0",
-                flType=FlType.FLOATING_POINT,
+                flType=FlType.F64,
             ),
             AddNode(
                 parent=[2],
-                new_type="Constant",
+                new_type="F64",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),
             ),
+        ),
+        *(
+            (
+                elements.Constant(
+                    id=6,
+                    location=elements.Location(2, 2, 0, 5, 5),
+                    value="0",
+                    flType=FlType(elem),
+                ),
+                AddNode(
+                    parent=[2],
+                    new_type=elem,  # type: ignore
+                    new_location=elements.Location(
+                        x=2, y=2, z=0, width=5, height=5
+                    ),
+                ),
+            )
+            for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
         ),
         (
             elements.BinaryOperator(

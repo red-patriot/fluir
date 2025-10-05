@@ -163,8 +163,24 @@ class _XMLReader:
 
     def _type(self, element: Any) -> FlType | None:
         match element.tag:
-            case "float":
-                return FlType.FLOATING_POINT
+            case "f64":
+                return FlType.F64
+            case "i8":
+                return FlType.I8
+            case "i16":
+                return FlType.I16
+            case "i32":
+                return FlType.I32
+            case "i64":
+                return FlType.I64
+            case "u8":
+                return FlType.U8
+            case "u16":
+                return FlType.U16
+            case "u32":
+                return FlType.U32
+            case "u64":
+                return FlType.U64
 
         return None
 
@@ -270,11 +286,15 @@ class _XMLWriter:
                 "h": str(node.location.height),
             },
         )
-        float_element = etree.SubElement(
-            constant_element,
-            "float",
-        )
-        float_element.text = node.value
+        assert node.flType is not None
+        assert node.value is not None
+        self._literal(node.flType, node.value, constant_element)
+
+    def _literal(
+        self, type_: FlType, value: str, parent: etree._Element
+    ) -> None:
+        literal_element = etree.SubElement(parent, str(type_).lower())
+        literal_element.text = value
 
     def _conduit(self, conduit: Conduit, parent: etree._Element) -> None:
         conduit_element = etree.SubElement(

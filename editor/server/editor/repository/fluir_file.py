@@ -286,11 +286,15 @@ class _XMLWriter:
                 "h": str(node.location.height),
             },
         )
-        float_element = etree.SubElement(
-            constant_element,
-            "float",
-        )
-        float_element.text = node.value
+        assert node.flType is not None
+        assert node.value is not None
+        self._literal(node.flType, node.value, constant_element)
+
+    def _literal(
+        self, type_: FlType, value: str, parent: etree._Element
+    ) -> None:
+        literal_element = etree.SubElement(parent, str(type_).lower())
+        literal_element.text = value
 
     def _conduit(self, conduit: Conduit, parent: etree._Element) -> None:
         conduit_element = etree.SubElement(

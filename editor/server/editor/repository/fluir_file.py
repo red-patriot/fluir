@@ -165,6 +165,22 @@ class _XMLReader:
         match element.tag:
             case "f64":
                 return FlType.F64
+            case "i8":
+                return FlType.I8
+            case "i16":
+                return FlType.I16
+            case "i32":
+                return FlType.I32
+            case "i64":
+                return FlType.I64
+            case "u8":
+                return FlType.U8
+            case "u16":
+                return FlType.U16
+            case "u32":
+                return FlType.U32
+            case "u64":
+                return FlType.U64
 
         return None
 

@@ -308,6 +308,142 @@ _TEST_DATA = [
   </function>
 </fluir>""",
     ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    nodes=[
+                        Constant(
+                            id=1,
+                            location=Location(2, 20, 1, 5, 5),
+                            value="-5",
+                            flType=FlType.I8,
+                        ),
+                        Constant(
+                            id=2,
+                            location=Location(12, 21, 1, 5, 5),
+                            value="318",
+                            flType=FlType.I16,
+                        ),
+                        Constant(
+                            id=3,
+                            location=Location(22, 22, 1, 5, 5),
+                            value="324",
+                            flType=FlType.I32,
+                        ),
+                        Constant(
+                            id=4,
+                            location=Location(32, 23, 1, 5, 5),
+                            value="-12",
+                            flType=FlType.I64,
+                        ),
+                    ],
+                )
+            ]
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <function
+            name="main"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <constant
+                    id="1"
+                    x="2" y="20" z="1" w="5" h="5">
+                    <i8>-5</i8>
+                </constant>
+                <constant
+                    id="2"
+                    x="12" y="21" z="1" w="5" h="5">
+                    <i16>318</i16>
+                </constant>
+                <constant
+                    id="3"
+                    x="22" y="22" z="1" w="5" h="5">
+                    <i32>324</i32>
+                </constant>
+                <constant
+                    id="4"
+                    x="32" y="23" z="1" w="5" h="5">
+                    <i64>-12</i64>
+                </constant>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    nodes=[
+                        Constant(
+                            id=1,
+                            location=Location(2, 20, 1, 5, 5),
+                            value="5",
+                            flType=FlType.U8,
+                        ),
+                        Constant(
+                            id=2,
+                            location=Location(12, 21, 1, 5, 5),
+                            value="318",
+                            flType=FlType.U16,
+                        ),
+                        Constant(
+                            id=3,
+                            location=Location(22, 22, 1, 5, 5),
+                            value="324",
+                            flType=FlType.U32,
+                        ),
+                        Constant(
+                            id=4,
+                            location=Location(32, 23, 1, 5, 5),
+                            value="122",
+                            flType=FlType.U64,
+                        ),
+                    ],
+                )
+            ]
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <function
+            name="main"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <constant
+                    id="1"
+                    x="2" y="20" z="1" w="5" h="5">
+                    <u8>5</u8>
+                </constant>
+                <constant
+                    id="2"
+                    x="12" y="21" z="1" w="5" h="5">
+                    <u16>318</u16>
+                </constant>
+                <constant
+                    id="3"
+                    x="22" y="22" z="1" w="5" h="5">
+                    <u32>324</u32>
+                </constant>
+                <constant
+                    id="4"
+                    x="32" y="23" z="1" w="5" h="5">
+                    <u64>122</u64>
+                </constant>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
 ]
 
 
@@ -320,6 +456,8 @@ _TEST_DATA = [
         "simple_binary_expr",
         "simple_unary_expr",
         "branching_conduits",
+        "int_constants",
+        "uint_constants",
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:

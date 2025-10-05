@@ -471,7 +471,7 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="Constant",
+                new_type="F64",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),

@@ -10,11 +10,26 @@ from editor.services.transaction.base import TransactionBase
 from editor.services.transaction.remove import RemoveItem
 from editor.utility.next_id import next_id
 
+_AddOption = Literal[
+    "BinaryOperator",
+    "UnaryOperator",
+    "Constant",
+    "F64",
+    "I8",
+    "I16",
+    "I32",
+    "I64",
+    "U8",
+    "U16",
+    "U32",
+    "U64",
+]
+
 
 class AddNode(BaseModel, TransactionBase):
     discriminator: Literal["add_node"] = "add_node"
     parent: QualifiedID
-    new_type: Literal["Constant", "BinaryOperator", "UnaryOperator"]
+    new_type: _AddOption
     new_location: elements.Location
     _inserted: IDType | None = None
 
@@ -27,7 +42,7 @@ class AddNode(BaseModel, TransactionBase):
         new_id = next_id(decl)
 
         match self.new_type:
-            case "Constant":
+            case "F64":
                 decl.nodes.append(
                     elements.Constant(
                         id=new_id,

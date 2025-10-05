@@ -6,7 +6,8 @@ export type Location = {
   height: number;
 };
 
-export type FlType = 'FLOATING_POINT';
+// TODO: Other types
+export type FlType = 'F64';
 
 export type Constant = {
   discriminator: 'constant';

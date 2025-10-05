@@ -29,7 +29,7 @@ describe('createNodes', () => {
         discriminator: 'constant',
         id: 1,
         location: { x: 100, y: 200, z: 0, width: 80, height: 40 },
-        flType: 'FLOATING_POINT',
+        flType: 'F64',
         value: '42.5',
       };
 
@@ -269,7 +269,7 @@ describe('createNodes', () => {
         discriminator: 'constant',
         id: 6,
         location: { x: 10, y: 20, z: 0, width: 80, height: 40 },
-        flType: 'FLOATING_POINT',
+        flType: 'F64',
         value: '100.0',
       };
 
@@ -365,7 +365,7 @@ describe('createNodes', () => {
           discriminator: 'constant',
           id: 1,
           location: { x: 0, y: 0, z: 0, width: 80, height: 40 },
-          flType: 'FLOATING_POINT',
+          flType: 'F64',
           value: '42.0',
         };
 

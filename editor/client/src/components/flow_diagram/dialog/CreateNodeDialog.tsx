@@ -17,18 +17,22 @@ export default function CreateNodeDialog({
   clickedLocation,
   where,
 }: CreateNodeOptions) {
-  const options = ['Constant', 'BinaryOperator', 'UnaryOperator'];
+  const options = {
+    Constant: 'F64',
+    BinaryOperator: 'BinaryOperator',
+    UnaryOperator: 'UnaryOperator',
+  };
 
   const { closeDialog } = useDialogContext();
   const { editProgram } = useProgramActions();
 
   const [hovered, setHovered] = useState('');
 
-  const onClick = (selection: NodeOptions) => {
+  const onClick = (selection: string) => {
     const request: AddNodeEditRequest = {
       discriminator: 'add_node',
       parent: toApiID(parentID),
-      new_type: selection,
+      new_type: options[selection as keyof typeof options] as NodeOptions,
       new_location: {
         x: clickedLocation.x - parentLocation.x,
         y: clickedLocation.y - parentLocation.y,
@@ -72,14 +76,14 @@ export default function CreateNodeDialog({
             p='1'
             style={{ background: slate.slate7, borderRadius: 2 }}
           >
-            {options.map((opt) => (
+            {Object.keys(options).map((opt) => (
               <Code
                 aria-label={`add-option-${opt}`}
                 key={`add-option-${opt}`}
                 variant={hovered == opt ? 'outline' : 'ghost'}
                 color='blue'
                 onMouseOver={() => setHovered(opt)}
-                onClick={() => onClick(opt as NodeOptions)}
+                onClick={() => onClick(opt)}
                 className='cursor-pointer'
               >
                 {opt}

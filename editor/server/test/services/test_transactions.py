@@ -477,6 +477,24 @@ def test_add_conduit_removes_duplicate_targets(
                 ),
             ),
         ),
+        *(
+            (
+                elements.Constant(
+                    id=6,
+                    location=elements.Location(2, 2, 0, 5, 5),
+                    value="0",
+                    flType=FlType(elem),
+                ),
+                AddNode(
+                    parent=[2],
+                    new_type=elem,  # type: ignore
+                    new_location=elements.Location(
+                        x=2, y=2, z=0, width=5, height=5
+                    ),
+                ),
+            )
+            for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
+        ),
         (
             elements.BinaryOperator(
                 id=6,

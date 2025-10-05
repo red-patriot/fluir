@@ -13,7 +13,6 @@ from editor.utility.next_id import next_id
 _AddOption = Literal[
     "BinaryOperator",
     "UnaryOperator",
-    "Constant",
     "F64",
     "I8",
     "I16",
@@ -49,6 +48,15 @@ class AddNode(BaseModel, TransactionBase):
                         location=self.new_location,
                         value="0.0",
                         flType=elements.FlType.F64,
+                    )
+                )
+            case "I8" | "I16" | "I32" | "I64" | "U8" | "U16" | "U32" | "U64":
+                decl.nodes.append(
+                    elements.Constant(
+                        id=new_id,
+                        location=self.new_location,
+                        value="0",
+                        flType=elements.FlType(self.new_type),
                     )
                 )
             case "BinaryOperator":

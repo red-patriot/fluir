@@ -18,9 +18,17 @@ export default function CreateNodeDialog({
   where,
 }: CreateNodeOptions) {
   const options = {
-    Constant: 'F64',
-    BinaryOperator: 'BinaryOperator',
-    UnaryOperator: 'UnaryOperator',
+    Float64: 'F64',
+    Int8: 'I8',
+    Int16: 'I16',
+    Int32: 'I32',
+    Int64: 'I64',
+    'Unsigned Int8': 'I8',
+    'Unsigned Int16': 'I16',
+    'Unsigned Int32': 'I32',
+    'Unsigned Int64': 'I64',
+    'Binary operator': 'BinaryOperator',
+    'Unary operator': 'UnaryOperator',
   };
 
   const { closeDialog } = useDialogContext();
@@ -37,14 +45,12 @@ export default function CreateNodeDialog({
         x: clickedLocation.x - parentLocation.x,
         y: clickedLocation.y - parentLocation.y,
         z: parentLocation.z + 1,
-        width:
-          selection === 'Constant'
-            ? LIMITS.constant.width.min
-            : LIMITS.operator.width.min,
-        height:
-          selection === 'Constant'
-            ? LIMITS.constant.height.min
-            : LIMITS.operator.height.min,
+        width: selection.endsWith('operator')
+          ? LIMITS.operator.width.min
+          : LIMITS.constant.width.min,
+        height: selection.endsWith('operator')
+          ? LIMITS.operator.height.min
+          : LIMITS.constant.height.min,
       },
     };
     editProgram(request);

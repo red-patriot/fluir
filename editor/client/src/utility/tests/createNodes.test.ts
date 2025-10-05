@@ -24,7 +24,7 @@ describe('createNodes', () => {
   });
 
   describe('with constant nodes', () => {
-    it('should create constant node with correct properties', () => {
+    it('should create f64 node with correct properties', () => {
       const constant: Constant = {
         discriminator: 'constant',
         id: 1,

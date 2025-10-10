@@ -18,12 +18,12 @@
             <constant
                     id="2"
                     x="5" y="5" z="0" w="5" h="5">
-                <float>1.2345</float>
+                <f64>1.2345</f64>
             </constant>
             <constant
                     id="1"
                     x="5" y="12" z="0" w="5" h="5">
-                <float>6.7890</float>
+                <f64>6.7890</f64>
             </constant>
             <binary
                     id="5"
@@ -32,7 +32,7 @@
             <constant
                     id="4"
                     x="5" y="5" z="0" w="5" h="5">
-                <float>7.6543</float>
+                <f64>7.6543</f64>
             </constant>
             <unary
                     id="6"

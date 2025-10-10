@@ -24,7 +24,9 @@ set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/inspect_writer.cpp"
 )
 
-set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
+set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
+                                 "debug/parse_tree_printer.cpp"
+)
 
 target_sources(
     fluir.libcompiler

@@ -227,20 +227,20 @@ namespace fluir {
     // TODO: This could use a trie to be faster
     // TODO: Support other literal types
     std::string_view name = element->Name();
-    if (name == "float") {
-      return fl_float(element);
+    if (name == "f64") {
+      return f64(element);
     } else {
       // TODO: Error
       throw PanicMode{};
     }
   }
-  pt::Float Parser::fl_float(Element* element) {
+  pt::Float Parser::f64(Element* element) {
     double value = 0.0;
     auto error = element->QueryDoubleText(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
-            "float",
+            "f64",
             element->GetText());
     return value;
   }

@@ -9,23 +9,23 @@
             <constant id="1" x="9" y="5" z="0" w="12" h="5">
                 <f64>6.7891</f64>
             </constant>
+            <binary id="5" x="57" y="4" z="2" w="5" h="5" operator="*"/>
             <unary id="6" x="35" y="12" z="0" w="5" h="5" operator="-"/>
             <conduit id="7" input="1">
                 <output target="3" index="0"/>
             </conduit>
-            <conduit id="8" input="2">
+            <conduit id="8" input="2" index="0">
                 <output target="3" index="1"/>
             </conduit>
-            <conduit id="3" input="6">
+            <conduit id="10" input="6">
                 <output target="5" index="1"/>
             </conduit>
             <conduit id="11" input="2">
-                <output target="6" index="0"/>
+                <output target="6"/>
             </conduit>
             <conduit id="12" input="3">
                 <output target="5" index="0"/>
             </conduit>
-            <binary id="12" x="57" y="4" z="2" w="5" h="5" operator="*"/>
         </body>
     </function>
 </fluir>

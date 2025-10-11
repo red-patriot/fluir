@@ -229,12 +229,28 @@ namespace fluir {
     std::string_view name = element->Name();
     if (name == "f64") {
       return f64(element);
+    } else if (name == "i8") {
+      return i8(element);
+    } else if (name == "i16") {
+      return i16(element);
+    } else if (name == "i32") {
+      return i32(element);
+    } else if (name == "i64") {
+      return i64(element);
+    } else if (name == "u8") {
+      return u8(element);
+    } else if (name == "u16") {
+      return u16(element);
+    } else if (name == "u32") {
+      return u32(element);
+    } else if (name == "u64") {
+      return u64(element);
     } else {
       // TODO: Error
       throw PanicMode{};
     }
   }
-  pt::Float Parser::f64(Element* element) {
+  pt::F64 Parser::f64(Element* element) {
     double value = 0.0;
     auto error = element->QueryDoubleText(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
@@ -243,6 +259,92 @@ namespace fluir {
             "f64",
             element->GetText());
     return value;
+  }
+
+  pt::I8 Parser::i8(Element* element) {
+    int64_t value = 0;
+    auto error = element->QueryInt64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "i8",
+            element->GetText());
+    // TODO: CHECK RANGE
+    return static_cast<pt::I8>(value);
+  }
+  pt::I16 Parser::i16(Element* element) {
+    int64_t value = 0;
+    auto error = element->QueryInt64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "i16",
+            element->GetText());
+    // TODO: CHECK RANGE
+    return static_cast<pt::I16>(value);
+  }
+  pt::I32 Parser::i32(Element* element) {
+    int64_t value = 0;
+    auto error = element->QueryInt64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "i32",
+            element->GetText());
+    // TODO: CHECK RANGE
+    return static_cast<pt::I32>(value);
+  }
+  pt::I64 Parser::i64(Element* element) {
+    int64_t value = 0;
+    auto error = element->QueryInt64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "i64",
+            element->GetText());
+    // TODO: CHECK RANGE
+    return static_cast<pt::I64>(value);
+  }
+
+  pt::U8 Parser::u8(Element* element) {
+    uint64_t value = 0;
+    auto error = element->QueryUnsigned64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "u8",
+            element->GetText());
+    return static_cast<pt::U8>(value);
+  }
+  pt::U16 Parser::u16(Element* element) {
+    uint64_t value = 0;
+    auto error = element->QueryUnsigned64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "u8",
+            element->GetText());
+    return static_cast<pt::U16>(value);
+  }
+  pt::U32 Parser::u32(Element* element) {
+    uint64_t value = 0;
+    auto error = element->QueryUnsigned64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "u8",
+            element->GetText());
+    return static_cast<pt::U32>(value);
+  }
+  pt::U64 Parser::u64(Element* element) {
+    uint64_t value = 0;
+    auto error = element->QueryUnsigned64Text(&value);
+    panicIf(error != tinyxml2::XML_SUCCESS,
+            element,
+            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "u8",
+            element->GetText());
+    return static_cast<pt::U64>(value);
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {

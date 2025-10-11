@@ -17,7 +17,18 @@ namespace fluir::debug {
     void operator()(const pt::Binary& binary);
     void operator()(const pt::Unary& unary);
     void operator()(const pt::Constant& constant);
+
     void operator()(const pt::Conduit& conduit);
+
+    void operator()(const pt::F64& f64);
+    void operator()(const pt::I8& i8);
+    void operator()(const pt::I16& i16);
+    void operator()(const pt::I32& i32);
+    void operator()(const pt::I64& i64);
+    void operator()(const pt::U8& u8);
+    void operator()(const pt::U16& u16);
+    void operator()(const pt::U32& u32);
+    void operator()(const pt::U64& u64);
 
    private:
     std::ostream& out_;
@@ -26,4 +37,4 @@ namespace fluir::debug {
   };
 }  // namespace fluir::debug
 
-#endif  // FLUIR_PARSE_TREE_PRINTER_HPP
+#endif  // FLUIR_COMPILER_DEBUG_PARSE_TREE_PRINTER_HPP

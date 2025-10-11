@@ -87,7 +87,7 @@ namespace fluir {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
     // TODO: handle other literal types here
-    return std::make_unique<asg::ConstantFP>(pt.value, pt.id, pt.location);
+    return std::make_unique<asg::ConstantFP>(std::get<double>(pt.value), pt.id, pt.location);
   }
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {

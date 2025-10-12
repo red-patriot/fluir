@@ -245,10 +245,8 @@ namespace fluir {
       return u32(element);
     } else if (name == "u64") {
       return u64(element);
-    } else {
-      // TODO: Error
-      throw PanicMode{};
     }
+    panicAt(element, "Expected a literal element. Found <{}>, which is not a recognized literal type", element->Name());
   }
   pt::F64 Parser::f64(Element* element) {
     double value = 0.0;
@@ -266,10 +264,14 @@ namespace fluir {
     auto error = element->QueryInt64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i8",
             element->GetText());
-    // TODO: CHECK RANGE
+    panicIf(value < std::numeric_limits<pt::I8>::min() || value > std::numeric_limits<pt::I8>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i8");
     return static_cast<pt::I8>(value);
   }
   pt::I16 Parser::i16(Element* element) {
@@ -277,10 +279,14 @@ namespace fluir {
     auto error = element->QueryInt64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i16",
             element->GetText());
-    // TODO: CHECK RANGE
+    panicIf(value < std::numeric_limits<pt::I16>::min() || value > std::numeric_limits<pt::I16>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i16");
     return static_cast<pt::I16>(value);
   }
   pt::I32 Parser::i32(Element* element) {
@@ -288,10 +294,14 @@ namespace fluir {
     auto error = element->QueryInt64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i32",
             element->GetText());
-    // TODO: CHECK RANGE
+    panicIf(value < std::numeric_limits<pt::I32>::min() || value > std::numeric_limits<pt::I32>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i32");
     return static_cast<pt::I32>(value);
   }
   pt::I64 Parser::i64(Element* element) {
@@ -299,10 +309,9 @@ namespace fluir {
     auto error = element->QueryInt64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
             "i64",
             element->GetText());
-    // TODO: CHECK RANGE
     return static_cast<pt::I64>(value);
   }
 
@@ -311,9 +320,14 @@ namespace fluir {
     auto error = element->QueryUnsigned64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
             "u8",
             element->GetText());
+    panicIf(value > std::numeric_limits<pt::U8>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u8");
     return static_cast<pt::U8>(value);
   }
   pt::U16 Parser::u16(Element* element) {
@@ -321,9 +335,14 @@ namespace fluir {
     auto error = element->QueryUnsigned64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
             "u8",
             element->GetText());
+    panicIf(value > std::numeric_limits<pt::U16>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u16");
     return static_cast<pt::U16>(value);
   }
   pt::U32 Parser::u32(Element* element) {
@@ -331,9 +350,14 @@ namespace fluir {
     auto error = element->QueryUnsigned64Text(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
             "u8",
             element->GetText());
+    panicIf(value > std::numeric_limits<pt::U32>::max(),
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u132");
     return static_cast<pt::U32>(value);
   }
   pt::U64 Parser::u64(Element* element) {

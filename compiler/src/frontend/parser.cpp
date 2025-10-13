@@ -6,6 +6,8 @@
 
 #include <fmt/format.h>
 
+#include "compiler/frontend/text_parse.hpp"
+
 using namespace std::string_literals;
 
 namespace fluir {
@@ -246,7 +248,8 @@ namespace fluir {
     } else if (name == "u64") {
       return u64(element);
     }
-    panicAt(element, "Expected a literal element. Found <{}>, which is not a recognized literal type", element->Name());
+    panicAt(
+      element, "Expected a literal element. Found '<{}>', which is not a recognized literal type.", element->Name());
   }
   pt::F64 Parser::f64(Element* element) {
     double value = 0.0;
@@ -260,115 +263,141 @@ namespace fluir {
   }
 
   pt::I8 Parser::i8(Element* element) {
-    int64_t value = 0;
-    auto error = element->QueryInt64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::I8>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i8",
             element->GetText());
-    panicIf(value < std::numeric_limits<pt::I8>::min() || value > std::numeric_limits<pt::I8>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i8");
-    return static_cast<pt::I8>(value);
+    assert(false && "Control reached an impossible point");
   }
   pt::I16 Parser::i16(Element* element) {
-    int64_t value = 0;
-    auto error = element->QueryInt64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::I16>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i16",
             element->GetText());
-    panicIf(value < std::numeric_limits<pt::I16>::min() || value > std::numeric_limits<pt::I16>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i16");
-    return static_cast<pt::I16>(value);
+    assert(false && "Control reached an impossible point");
   }
   pt::I32 Parser::i32(Element* element) {
-    int64_t value = 0;
-    auto error = element->QueryInt64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::I32>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i32",
             element->GetText());
-    panicIf(value < std::numeric_limits<pt::I32>::min() || value > std::numeric_limits<pt::I32>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i32");
-    return static_cast<pt::I32>(value);
+    assert(false && "Control reached an impossible point");
   }
   pt::I64 Parser::i64(Element* element) {
-    int64_t value = 0;
-    auto error = element->QueryInt64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::I64>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
-            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
             "i64",
             element->GetText());
-    return static_cast<pt::I64>(value);
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i64");
+    assert(false && "Control reached an impossible point");
   }
 
   pt::U8 Parser::u8(Element* element) {
-    uint64_t value = 0;
-    auto error = element->QueryUnsigned64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::U8>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
             "u8",
             element->GetText());
-    panicIf(value > std::numeric_limits<pt::U8>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u8");
-    return static_cast<pt::U8>(value);
+    assert(false && "Control reached an impossible point");
   }
   pt::U16 Parser::u16(Element* element) {
-    uint64_t value = 0;
-    auto error = element->QueryUnsigned64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::U16>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
-            "u8",
+            "u16",
             element->GetText());
-    panicIf(value > std::numeric_limits<pt::U16>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u16");
-    return static_cast<pt::U16>(value);
+    assert(false && "Control reached an impossible point");
   }
   pt::U32 Parser::u32(Element* element) {
-    uint64_t value = 0;
-    auto error = element->QueryUnsigned64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::U32>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
             "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
-            "u8",
+            "u32",
             element->GetText());
-    panicIf(value > std::numeric_limits<pt::U32>::max(),
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
-            "u132");
-    return static_cast<pt::U32>(value);
+            "u32");
+    assert(false && "Control reached an impossible point");
   }
   pt::U64 Parser::u64(Element* element) {
-    uint64_t value = 0;
-    auto error = element->QueryUnsigned64Text(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
+    auto value = fe::parseNumber<pt::U64>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
             element,
-            "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
-            "u8",
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "u64",
             element->GetText());
-    return static_cast<pt::U64>(value);
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u64");
+    assert(false && "Control reached an impossible point");
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {

@@ -277,7 +277,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i8");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::I16 Parser::i16(Element* element) {
     auto value = fe::parseNumber<pt::I16>(element->GetText());
@@ -294,7 +295,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i16");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::I32 Parser::i32(Element* element) {
     auto value = fe::parseNumber<pt::I32>(element->GetText());
@@ -311,7 +313,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i32");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::I64 Parser::i64(Element* element) {
     auto value = fe::parseNumber<pt::I64>(element->GetText());
@@ -328,7 +331,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "i64");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
 
   pt::U8 Parser::u8(Element* element) {
@@ -346,7 +350,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u8");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::U16 Parser::u16(Element* element) {
     auto value = fe::parseNumber<pt::U16>(element->GetText());
@@ -363,7 +368,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u16");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::U32 Parser::u32(Element* element) {
     auto value = fe::parseNumber<pt::U32>(element->GetText());
@@ -380,7 +386,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u32");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
   pt::U64 Parser::u64(Element* element) {
     auto value = fe::parseNumber<pt::U64>(element->GetText());
@@ -397,7 +404,8 @@ namespace fluir {
             "The literal '{}' is outside the range of {}.",
             element->GetText(),
             "u64");
-    assert(false && "Control reached an impossible point");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {

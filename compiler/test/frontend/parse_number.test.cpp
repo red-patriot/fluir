@@ -1,3 +1,4 @@
+#include <functional>
 #include <string>
 #include <tuple>
 
@@ -6,6 +7,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/frontend/text_parse.hpp"
 
+using fluir::fe::NumberParseError;
 using fluir::pt::I16;
 using fluir::pt::I32;
 using fluir::pt::I64;
@@ -14,6 +16,7 @@ using fluir::pt::U16;
 using fluir::pt::U32;
 using fluir::pt::U64;
 using fluir::pt::U8;
+using enum fluir::fe::NumberParseError;
 using std::tuple;
 
 template <typename T>
@@ -78,6 +81,19 @@ INSTANTIATE_TEST_SUITE_P(TestParseI64,
                                            tuple{-10101, "-10101"},
                                            tuple{INT64_MIN, "-9223372036854775808"},  // -9'223'372'036'854'775808
                                            tuple{9'223'372'036'854'775'807LL, "9223372036854775807"}));
+// INSTANTIATE_TEST_SUITE_P(TestParseErrorsI64,
+//                          TestParseErrorsI64,
+//                          ::testing::Values(tuple{CANNOT_PARSE_NUMBER, "qwerty"},
+//                                            tuple{CANNOT_PARSE_NUMBER, "32j"},
+//                                            tuple{CANNOT_PARSE_NUMBER, "19e7"},
+//                                            tuple{CANNOT_PARSE_NUMBER, "8.11"},
+//                                            tuple{CANNOT_PARSE_NUMBER, ""},
+//                                            tuple{CANNOT_PARSE_NUMBER, " "},
+//                                            tuple{CANNOT_PARSE_NUMBER, "."},
+//                                            tuple{CANNOT_PARSE_NUMBER, "a43"},
+//                                            tuple{RESULT_OUT_OF_BOUNDS, "-557111111895432452354"},
+//                                            tuple{RESULT_OUT_OF_BOUNDS, "5435345245332544324349099"},
+//                                            tuple{RESULT_OUT_OF_BOUNDS, "9223372036854775808"}));
 
 INSTANTIATE_TEST_SUITE_P(TestParseU8,
                          TestParseU8,
@@ -98,3 +114,65 @@ INSTANTIATE_TEST_SUITE_P(TestParseU64,
                                            tuple{71118, "+71118"},
                                            tuple{5318131, "5318131"},
                                            tuple{18'446'744'073'709'551'615ULL, "18446744073709551615"}));
+
+class TestParseNumberErrors
+  : public ::testing::TestWithParam<tuple<NumberParseError, std::function<NumberParseError()>>> { };
+
+TEST_P(TestParseNumberErrors, Test) {
+  auto& [expected, action] = GetParam();
+  try {
+    auto actual = action();
+    EXPECT_EQ(expected, actual);
+  } catch (const std::exception& e) {
+    FAIL() << "FAILED WITH EXCEPTION: " << e.what();
+  }
+}
+
+template <typename T>
+const auto doParse = [](std::string_view text) {
+  return std::function([text]() {
+    auto result = fluir::fe::parseNumber<T>(text);
+    return result.error();
+  });
+};
+
+INSTANTIATE_TEST_SUITE_P(TestParseNumberErrors,
+                         TestParseNumberErrors,
+                         ::testing::Values(tuple{CANNOT_PARSE_NUMBER, doParse<I8>("asdf")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>("12b")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>("19e7")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>("8.11")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>("")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>(" ")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>(".")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<I8>("a43")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I8>("12345")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I8>("-490")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I8>("2345")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I8>("128")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I16>("32768")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I16>("43923498389247")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I16>("-43253")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I32>("2147483648")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I32>("994730274739242349")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I32>("-4233234233")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I64>("9223372036854775808")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I64>("82135181218008481048091508940")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<I64>("-43235335255434556440")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("asdf")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("12b")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("19e7")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("8.11")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("-432")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>(" ")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>(".")},
+                                           tuple{CANNOT_PARSE_NUMBER, doParse<U8>("a43")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U8>("18915")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U8>("256")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U16>("65536")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U16>("71681805181")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U32>("4294967296")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U32>("816841981871")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U64>("18446744073709551616")},
+                                           tuple{RESULT_OUT_OF_BOUNDS, doParse<U64>("971289402871054907809870")}));

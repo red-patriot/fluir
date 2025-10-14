@@ -182,7 +182,7 @@ namespace fluir {
         return checkInstruction();
         break;
       case 'V':
-        return checkValueType();
+        return checkPrimitiveType();
       case 'x':
         return TokenType::HEX_LITERAL;
     }
@@ -197,7 +197,7 @@ namespace fluir {
     return TokenType::IDENTIFIER;
   }
 
-  TokenType InspectDecoder::checkValueType() {
+  TokenType InspectDecoder::checkPrimitiveType() {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
         case 'F':
@@ -381,21 +381,21 @@ namespace fluir {
       case TokenType::TYPE_F64:
         return decodeFloatConstant();
       case TokenType::TYPE_I8:
-        return decodeIntConstant(code::ValueType::I8);
+        return decodeIntConstant(code::PrimitiveType::I8);
       case TokenType::TYPE_I16:
-        return decodeIntConstant(code::ValueType::I16);
+        return decodeIntConstant(code::PrimitiveType::I16);
       case TokenType::TYPE_I32:
-        return decodeIntConstant(code::ValueType::I32);
+        return decodeIntConstant(code::PrimitiveType::I32);
       case TokenType::TYPE_I64:
-        return decodeIntConstant(code::ValueType::I64);
+        return decodeIntConstant(code::PrimitiveType::I64);
       case TokenType::TYPE_U8:
-        return decodeIntConstant(code::ValueType::U8);
+        return decodeIntConstant(code::PrimitiveType::U8);
       case TokenType::TYPE_U16:
-        return decodeIntConstant(code::ValueType::U16);
+        return decodeIntConstant(code::PrimitiveType::U16);
       case TokenType::TYPE_U32:
-        return decodeIntConstant(code::ValueType::U32);
+        return decodeIntConstant(code::PrimitiveType::U32);
       case TokenType::TYPE_U64:
-        return decodeIntConstant(code::ValueType::U64);
+        return decodeIntConstant(code::PrimitiveType::U64);
       default:
         throw std::runtime_error{"Expected a type keyword."};
     }
@@ -412,7 +412,7 @@ namespace fluir {
     return code::Value{number};
   }
 
-  code::Value InspectDecoder::decodeIntConstant(code::ValueType type) {
+  code::Value InspectDecoder::decodeIntConstant(code::PrimitiveType type) {
     auto rawConstant = scanNext();
     if (rawConstant.type != TokenType::HEX_LITERAL) {
       throw std::runtime_error{"Expected a HEX literal."};
@@ -420,10 +420,10 @@ namespace fluir {
     auto number = toUnsignedInteger(rawConstant);
     switch (type) {
 #define FLUIR_RAW_TO_VALUE(Type, Concrete) \
-  case code::ValueType::Type:              \
+  case code::PrimitiveType::Type:          \
     return code::Value{static_cast<Concrete>(number)};
 
-      FLUIR_CODE_VALUE_TYPES(FLUIR_RAW_TO_VALUE)
+      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_RAW_TO_VALUE)
 #undef FLUIR_RAW_TO_VALUE
     }
     throw std::runtime_error{"Unrecognized value type."};

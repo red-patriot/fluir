@@ -1,26 +1,11 @@
 #ifndef FLUIR_VALUE_H
 #define FLUIR_VALUE_H
 
-#include <cstdint>
 #include <stdexcept>
 
-namespace fluir::code {
-  // clang-format off
-#define FLUIR_CODE_VALUE_TYPES(code)  \
-  code(F64, double)                   \
-  code(I8, std::int8_t)               \
-  code(I16, std::int16_t)             \
-  code(I32, std::int32_t)             \
-  code(I64, std::int64_t)             \
-  code(U8, std::uint8_t)              \
-  code(U16, std::uint16_t)            \
-  code(U32, std::uint32_t)            \
-  code(U64, std::uint64_t)
-  // clang-format on
+#include "primitives.hpp"
 
-#define enumerate(Type, ConcreteType) Type,
-  enum class ValueType { FLUIR_CODE_VALUE_TYPES(enumerate) };
-#undef enumerate
+namespace fluir::code {
 
   /* A generic Fluir value */
   class Value {
@@ -28,42 +13,42 @@ namespace fluir::code {
 
    public:
 #define FLUIR_VALUE_CONSTRUCTOR(Type, Concrete) \
-  explicit Value(Concrete d) : type_{ValueType::Type}, data_(d) { }
+  explicit Value(Concrete d) : type_{PrimitiveType::Type}, data_(d) { }
 
-    FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_CONSTRUCTOR)
+    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_CONSTRUCTOR)
 
 #undef FLUIR_VALUE_CONSTRUCTOR
 
-    [[nodiscard]] ValueType type() const { return type_; };
+    [[nodiscard]] PrimitiveType type() const { return type_; };
 
 #define TEMP_CONCAT(a, b) a##b
 #define FLUIR_VALUE_ACCESSOR(Type, Concrete)                    \
   [[nodiscard]] Concrete& TEMP_CONCAT(as, Type)() {             \
-    assertType(ValueType::Type);                                \
+    assertType(PrimitiveType::Type);                            \
     return data_.Type;                                          \
   }                                                             \
   [[nodiscard]] const Concrete& TEMP_CONCAT(as, Type)() const { \
-    assertType(ValueType::Type);                                \
+    assertType(PrimitiveType::Type);                            \
     return data_.Type;                                          \
   }
 
-    FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_ACCESSOR)
+    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_ACCESSOR)
 
 #undef FLUIR_VALUE_ACCESSOR
 
    private:
-    ValueType type_;
+    PrimitiveType type_;
 
     union Data {
 #define FLUIR_VALUE_UNION_MEMBER(Type, Concrete) \
   Concrete Type;                                 \
   explicit(false) Data(Concrete d) : Type(d) { }
 
-      FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_UNION_MEMBER)
+      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_UNION_MEMBER)
 #undef FLUIR_VALUE_UNION_MEMBER
     } data_;
 
-    void assertType(ValueType type) const {
+    void assertType(PrimitiveType type) const {
       if (type_ != type) {
         throw std::runtime_error("Actual value type does not match");
       }
@@ -89,10 +74,10 @@ namespace fluir::code {
 
     switch (lhs.type()) {
 #define FLUIR_VALUE_COMPARE(Type, Concrete) \
-  case ValueType::Type:                     \
+  case PrimitiveType::Type:                 \
     return TEMP_CONCAT(lhs.as, Type)() == TEMP_CONCAT(rhs.as, Type)();
 
-      FLUIR_CODE_VALUE_TYPES(FLUIR_VALUE_COMPARE)
+      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_COMPARE)
 
 #undef FLUIR_VALUE_COMPARE
 #undef TEMP_CONCAT

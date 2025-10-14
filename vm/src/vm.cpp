@@ -15,27 +15,27 @@ namespace fluir {
     std::ostream& operator<<(std::ostream& os, const code::Value& value) {
       switch (value.type()) {
 #define FLUIR_PRINT_VALUE(Type, Concrete)          \
-  case code::ValueType::Type:                      \
+  case code::PrimitiveType::Type:                  \
     os << '(' << #Type << ')' << value.as##Type(); \
     break;
 
-        FLUIR_CODE_VALUE_TYPES(FLUIR_PRINT_VALUE)
+        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_PRINT_VALUE)
 #undef FLUIR_PRINT_VALUE
       }
 
       return os;
     }
 
-    int64_t widenI(const code::Value& value, code::ValueType& type) {
+    int64_t widenI(const code::Value& value, code::PrimitiveType& type) {
       type = value.type();
       switch (value.type()) {
-        case code::ValueType::I8:
+        case code::PrimitiveType::I8:
           return static_cast<std::int64_t>(value.asI8());
-        case code::ValueType::I16:
+        case code::PrimitiveType::I16:
           return static_cast<std::int64_t>(value.asI16());
-        case code::ValueType::I32:
+        case code::PrimitiveType::I32:
           return static_cast<std::int64_t>(value.asI32());
-        case code::ValueType::I64:
+        case code::PrimitiveType::I64:
           return value.asI64();
         default:
           break;
@@ -43,15 +43,15 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED AN INT TYPE"};
     }
 
-    code::Value narrowI(std::int64_t val, const code::ValueType& type) {
+    code::Value narrowI(std::int64_t val, const code::PrimitiveType& type) {
       switch (type) {
-        case code::ValueType::I8:
+        case code::PrimitiveType::I8:
           return code::Value{static_cast<std::int8_t>(val)};
-        case code::ValueType::I16:
+        case code::PrimitiveType::I16:
           return code::Value{static_cast<std::int16_t>(val)};
-        case code::ValueType::I32:
+        case code::PrimitiveType::I32:
           return code::Value{static_cast<std::int32_t>(val)};
-        case code::ValueType::I64:
+        case code::PrimitiveType::I64:
           return code::Value{val};
         default:
           break;
@@ -59,16 +59,16 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED AN INT TYPE"};
     }
 
-    uint64_t widenU(const code::Value& value, code::ValueType& type) {
+    uint64_t widenU(const code::Value& value, code::PrimitiveType& type) {
       type = value.type();
       switch (value.type()) {
-        case code::ValueType::U8:
+        case code::PrimitiveType::U8:
           return static_cast<std::uint64_t>(value.asU8());
-        case code::ValueType::U16:
+        case code::PrimitiveType::U16:
           return static_cast<std::uint64_t>(value.asU16());
-        case code::ValueType::U32:
+        case code::PrimitiveType::U32:
           return static_cast<std::uint64_t>(value.asU32());
-        case code::ValueType::U64:
+        case code::PrimitiveType::U64:
           return value.asU64();
         default:
           break;
@@ -76,15 +76,15 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED A UINT TYPE"};
     }
 
-    code::Value narrowU(std::uint64_t val, const code::ValueType& type) {
+    code::Value narrowU(std::uint64_t val, const code::PrimitiveType& type) {
       switch (type) {
-        case code::ValueType::U8:
+        case code::PrimitiveType::U8:
           return code::Value{static_cast<std::uint8_t>(val)};
-        case code::ValueType::U16:
+        case code::PrimitiveType::U16:
           return code::Value{static_cast<std::uint16_t>(val)};
-        case code::ValueType::U32:
+        case code::PrimitiveType::U32:
           return code::Value{static_cast<std::uint32_t>(val)};
-        case code::ValueType::U64:
+        case code::PrimitiveType::U64:
           return code::Value{val};
         default:
           break;
@@ -109,7 +109,7 @@ namespace fluir {
   }
   template <typename Op>
   void VirtualMachine::intBinary() {
-    code::ValueType typeR, typeL;
+    code::PrimitiveType typeR, typeL;
     std::int64_t rhs = widenI(stack_.back(), typeR);
     stack_.pop_back();
     std::int64_t lhs = widenI(stack_.back(), typeL);
@@ -118,14 +118,14 @@ namespace fluir {
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
-    code::ValueType type;
+    code::PrimitiveType type;
     std::int64_t operand = widenI(stack_.back(), type);
     stack_.pop_back();
     stack_.emplace_back(narrowI(Op{}(operand), type));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
-    code::ValueType typeR, typeL;
+    code::PrimitiveType typeR, typeL;
     std::uint64_t rhs = widenU(stack_.back(), typeR);
     stack_.pop_back();
     std::uint64_t lhs = widenU(stack_.back(), typeL);
@@ -134,7 +134,7 @@ namespace fluir {
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
-    code::ValueType type;
+    code::PrimitiveType type;
     std::uint64_t operand = widenU(stack_.back(), type);
     stack_.pop_back();
     stack_.emplace_back(narrowU(Op{}(operand), type));

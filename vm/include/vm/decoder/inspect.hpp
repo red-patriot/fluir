@@ -14,7 +14,7 @@ namespace fluir {
     CHUNK, CODE, CONSTANTS,
     // Data Types
 #define FLUIR_TYPE_TOKEN(type, concrete) TYPE_## type,
-    FLUIR_CODE_VALUE_TYPES(FLUIR_TYPE_TOKEN)
+    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_TOKEN)
 #undef FLUIR_TYPE_TOKEN
     // Instructions
 #define FLUIR_INSTRUCTION_TOKEN(code) INST_## code,
@@ -58,7 +58,7 @@ namespace fluir {
 
     TokenType decodeIdentifierType();
     TokenType checkKeyword(std::string_view expected, TokenType type);
-    TokenType checkValueType();
+    TokenType checkPrimitiveType();
     TokenType checkInstruction();
     TokenType checkFPInstruction();
     TokenType checkIntInstruction();
@@ -69,7 +69,7 @@ namespace fluir {
     std::uint8_t decodeInstruction();
     code::Value decodeConstant();
     code::Value decodeFloatConstant();
-    code::Value decodeIntConstant(code::ValueType type);
+    code::Value decodeIntConstant(code::PrimitiveType type);
   };
 }  // namespace fluir
 

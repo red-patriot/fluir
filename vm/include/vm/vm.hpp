@@ -1,5 +1,5 @@
-#ifndef FLUIR_VM_CM_HPP
-#define FLUIR_VM_CM_HPP
+#ifndef FLUIR_VM_VM_HPP
+#define FLUIR_VM_VM_HPP
 
 #include <bytecode/byte_code.hpp>
 

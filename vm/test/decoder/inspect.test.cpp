@@ -111,12 +111,11 @@ TEST(TestInspectDecoder, ParsesUintInstructions) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
 CONSTANTS x00
-CODE x07
+CODE x06
 IU64_ADD
 IU64_SUB
 IU64_MUL
 IU64_DIV
-IU64_NEG
 IU64_AFF
 IEXIT
 )";
@@ -128,7 +127,6 @@ IEXIT
                                                                    U64_SUB,
                                                                    U64_MUL,
                                                                    U64_DIV,
-                                                                   U64_NEG,
                                                                    U64_AFF,
                                                                    EXIT,
                                                                  },

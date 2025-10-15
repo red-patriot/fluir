@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "vm/exceptions.hpp"
+#include "vm/utility/arithmetic.hpp"
 
 namespace fluir {
   namespace {
@@ -24,82 +25,6 @@ namespace fluir {
       }
 
       return os;
-    }
-
-    template <typename T>
-    struct checkedDivide {
-      T operator()(const T& lhs, const T& rhs) const {
-        if (rhs == 0) {
-          throw DivideByZeroError{"DIVISION BY ZERO"};
-        }
-        return lhs / rhs;
-      }
-    };
-
-    code::I64 widenI(const code::Value& value, code::PrimitiveType& type) {
-      type = value.type();
-      switch (value.type()) {
-        case code::PrimitiveType::I8:
-          return static_cast<code::I64>(value.asI8());
-        case code::PrimitiveType::I16:
-          return static_cast<code::I64>(value.asI16());
-        case code::PrimitiveType::I32:
-          return static_cast<code::I64>(value.asI32());
-        case code::PrimitiveType::I64:
-          return value.asI64();
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED AN INT TYPE"};
-    }
-
-    code::Value narrowI(code::I64 val, const code::PrimitiveType& type) {
-      switch (type) {
-        case code::PrimitiveType::I8:
-          return code::Value{static_cast<std::int8_t>(val)};
-        case code::PrimitiveType::I16:
-          return code::Value{static_cast<std::int16_t>(val)};
-        case code::PrimitiveType::I32:
-          return code::Value{static_cast<std::int32_t>(val)};
-        case code::PrimitiveType::I64:
-          return code::Value{val};
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED AN INT TYPE"};
-    }
-
-    code::U64 widenU(const code::Value& value, code::PrimitiveType& type) {
-      type = value.type();
-      switch (value.type()) {
-        case code::PrimitiveType::U8:
-          return static_cast<code::U64>(value.asU8());
-        case code::PrimitiveType::U16:
-          return static_cast<code::U64>(value.asU16());
-        case code::PrimitiveType::U32:
-          return static_cast<code::U64>(value.asU32());
-        case code::PrimitiveType::U64:
-          return value.asU64();
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
-    }
-
-    code::Value narrowU(code::U64 val, const code::PrimitiveType& type) {
-      switch (type) {
-        case code::PrimitiveType::U8:
-          return code::Value{static_cast<std::uint8_t>(val)};
-        case code::PrimitiveType::U16:
-          return code::Value{static_cast<std::uint16_t>(val)};
-        case code::PrimitiveType::U32:
-          return code::Value{static_cast<std::uint32_t>(val)};
-        case code::PrimitiveType::U64:
-          return code::Value{val};
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
     }
   }  // namespace
 
@@ -120,34 +45,34 @@ namespace fluir {
   template <typename Op>
   void VirtualMachine::intBinary() {
     code::PrimitiveType typeR, typeL;
-    code::I64 rhs = widenI(stack_.back(), typeR);
+    code::I64 rhs = utility::widenI(stack_.back(), typeR);
     stack_.pop_back();
-    code::I64 lhs = widenI(stack_.back(), typeL);
+    code::I64 lhs = utility::widenI(stack_.back(), typeL);
     stack_.pop_back();
-    stack_.emplace_back(narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    stack_.emplace_back(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
     code::PrimitiveType type;
-    code::I64 operand = widenI(stack_.back(), type);
+    code::I64 operand = utility::widenI(stack_.back(), type);
     stack_.pop_back();
-    stack_.emplace_back(narrowI(Op{}(operand), type));
+    stack_.emplace_back(utility::narrowI(Op{}(operand), type));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
     code::PrimitiveType typeR, typeL;
-    code::U64 rhs = widenU(stack_.back(), typeR);
+    code::U64 rhs = utility::widenU(stack_.back(), typeR);
     stack_.pop_back();
-    code::U64 lhs = widenU(stack_.back(), typeL);
+    code::U64 lhs = utility::widenU(stack_.back(), typeL);
     stack_.pop_back();
-    stack_.emplace_back(narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    stack_.emplace_back(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
     code::PrimitiveType type;
-    code::U64 operand = widenU(stack_.back(), type);
+    code::U64 operand = utility::widenU(stack_.back(), type);
     stack_.pop_back();
-    stack_.emplace_back(narrowU(Op{}(operand), type));
+    stack_.emplace_back(utility::narrowU(Op{}(operand), type));
   }
 
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
@@ -218,7 +143,7 @@ namespace fluir {
           intBinary<std::multiplies<code::I64>>();
           break;
         case I64_DIV:
-          intBinary<checkedDivide<code::I64>>();
+          intBinary<utility::checkedDivide<code::I64>>();
           break;
         case I64_NEG:
           intUnary<std::negate<code::I64>>();
@@ -233,18 +158,7 @@ namespace fluir {
           uintBinary<std::multiplies<code::U64>>();
           break;
         case U64_DIV:
-          uintBinary<checkedDivide<code::U64>>();
-          break;
-        case U64_NEG:
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4146)  // unary minus operator applied to unsigned type, result still unsigned
-#endif
-          uintUnary<std::negate<code::U64>>();
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
+          uintBinary<utility::checkedDivide<code::U64>>();
           break;
         case F64_AFF:
         case I64_AFF:

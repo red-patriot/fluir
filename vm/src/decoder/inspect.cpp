@@ -332,8 +332,6 @@ namespace fluir {
           return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
         case 'M':
           return checkKeyword("IU64_MUL", TokenType::INST_U64_MUL);
-        case 'N':
-          return checkKeyword("IU64_NEG", TokenType::INST_U64_NEG);
         case 'S':
           return checkKeyword("IU64_SUB", TokenType::INST_U64_SUB);
       }

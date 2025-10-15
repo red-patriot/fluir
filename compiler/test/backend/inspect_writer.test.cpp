@@ -183,12 +183,11 @@ TEST(TestInspectWriter, WriteUintInstructions) {
   std::string expected = R"(I0120030000000000000000
 CHUNK main
   CONSTANTS x0
-  CODE x7
+  CODE x6
     IU64_ADD
     IU64_SUB
     IU64_MUL
     IU64_DIV
-    IU64_NEG
     IU64_AFF
     IEXIT
 )";
@@ -200,7 +199,6 @@ CHUNK main
                                                                fc::U64_SUB,
                                                                fc::U64_MUL,
                                                                fc::U64_DIV,
-                                                               fc::U64_NEG,
                                                                fc::U64_AFF,
                                                                fc::EXIT,
                                                              },

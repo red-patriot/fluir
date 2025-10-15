@@ -391,16 +391,6 @@ TEST(TestVM, DivideU64) {
   EXPECT_EQ(expected, uut.viewStack().back().asU64());
 }
 
-TEST(TestVM, NegateU64) {
-  std::uint64_t expected = -5;
-  fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_NEG, EXIT}, .constants = {5_u64}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU64());
-}
-
 TEST(TestVM, AffirmU64) {
   std::uint64_t expected = 5;
   fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u64}}}};
@@ -452,16 +442,6 @@ TEST(TestVM, DivideU32) {
 
   fc::ByteCode code{.header = {},
                     .chunks = {fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u32, 4_u32}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU32());
-}
-
-TEST(TestVM, NegateU32) {
-  std::uint32_t expected = -5;
-  fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_NEG, EXIT}, .constants = {5_u32}}}};
 
   fluir::VirtualMachine uut;
 
@@ -527,16 +507,6 @@ TEST(TestVM, DivideU16) {
   EXPECT_EQ(expected, uut.viewStack().back().asU16());
 }
 
-TEST(TestVM, NegateU16) {
-  std::uint16_t expected = -5;
-  fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_NEG, EXIT}, .constants = {5_u16}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU16());
-}
-
 TEST(TestVM, AffirmU16) {
   std::uint16_t expected = 5;
   fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u16}}}};
@@ -588,16 +558,6 @@ TEST(TestVM, DivideU8) {
 
   fc::ByteCode code{.header = {},
                     .chunks = {fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u8, 4_u8}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU8());
-}
-
-TEST(TestVM, NegateU8) {
-  std::uint8_t expected = -5;
-  fc::ByteCode code{.header = {}, .chunks = {fc::Chunk{.code = {PUSH, 0, U64_NEG, EXIT}, .constants = {5_u8}}}};
 
   fluir::VirtualMachine uut;
 

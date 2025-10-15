@@ -25,7 +25,6 @@ namespace fluir::code {
   code(U64_SUB)                          \
   code(U64_MUL)                          \
   code(U64_DIV)                          \
-  code(U64_NEG)                          \
   code(U64_AFF)
 
   // clang-format on

@@ -315,3 +315,81 @@ INSTANTIATE_TEST_SUITE_P(
                     fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_DIV}, .constants = {NAN_FL_VALUE, NAN_FL_VALUE}},
                     fc::Chunk{.code = {PUSH, 0, F64_NEG}, .constants = {NAN_FL_VALUE}},
                     fc::Chunk{.code = {PUSH, 0, F64_AFF}, .constants = {NAN_FL_VALUE}}));
+
+class TestDivideByZeroCrashes : public ::testing::TestWithParam<fc::Chunk> { };
+TEST_P(TestDivideByZeroCrashes, Test) {
+  auto chunk = GetParam();
+  chunk.code.push_back(EXIT);
+  // With NANs, compare slightly differently
+  fc::ByteCode code{.header = {}, .chunks = {std::move(chunk)}};
+
+  fluir::VirtualMachine vm;
+  EXPECT_EQ(fluir::ExecResult::ERROR_DIVIDE_BY_ZERO, vm.execute(&code));
+}
+
+INSTANTIATE_TEST_SUITE_P(I8,
+                         TestDivideByZeroCrashes,
+                         ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {10_i8, 0_i8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                                                     .constants = {fc::Value{static_cast<int8_t>(-10)}, 0_i8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {0_i8, 0_i8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {127_i8, 0_i8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                                                     .constants = {fc::Value{static_cast<int8_t>(-128)}, 0_i8}}));
+INSTANTIATE_TEST_SUITE_P(
+  I16,
+  TestDivideByZeroCrashes,
+  ::testing::Values(
+    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {1000_i16, 0_i16}},
+    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {fc::Value{static_cast<int16_t>(-1000)}, 0_i16}},
+    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {0_i16, 0_i16}},
+    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {32767_i16, 0_i16}},
+    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {fc::Value{static_cast<int16_t>(-32768)}, 0_i16}}));
+INSTANTIATE_TEST_SUITE_P(
+  I32,
+  TestDivideByZeroCrashes,
+  ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {100000_i32, 0_i32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                              .constants = {fc::Value{static_cast<int32_t>(-100000)}, 0_i32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {0_i32, 0_i32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {2147483647_i32, 0_i32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                              .constants = {fc::Value{static_cast<int32_t>(-2147483648)}, 0_i32}}));
+INSTANTIATE_TEST_SUITE_P(
+  I64,
+  TestDivideByZeroCrashes,
+  ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {1000000000_i64, 0_i64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                              .constants = {fc::Value{static_cast<int64_t>(-1000000000)}, 0_i64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {0_i64, 0_i64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV}, .constants = {9223372036854775807_i64, 0_i64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, I64_DIV},
+                              .constants = {fc::Value{static_cast<int64_t>(-9223372036854775807LL - 1)}, 0_i64}}));
+INSTANTIATE_TEST_SUITE_P(U8,
+                         TestDivideByZeroCrashes,
+                         ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {10_u8, 0_u8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {0_u8, 0_u8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {255_u8, 0_u8}},
+                                           fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV},
+                                                     .constants = {128_u8, 0_u8}}));
+INSTANTIATE_TEST_SUITE_P(
+  U16,
+  TestDivideByZeroCrashes,
+  ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {1000_u16, 0_u16}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {0_u16, 0_u16}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {65535_u16, 0_u16}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {32768_u16, 0_u16}}));
+INSTANTIATE_TEST_SUITE_P(
+  U32,
+  TestDivideByZeroCrashes,
+  ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {100000_u32, 0_u32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {0_u32, 0_u32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {4294967295_u32, 0_u32}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {2147483648_u32, 0_u32}}));
+INSTANTIATE_TEST_SUITE_P(
+  U64,
+  TestDivideByZeroCrashes,
+  ::testing::Values(fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {1000000000_u64, 0_u64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {0_u64, 0_u64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {18446744073709551615_u64, 0_u64}},
+                    fc::Chunk{.code = {PUSH, 0, PUSH, 1, U64_DIV}, .constants = {9223372036854775808_u64, 0_u64}}));

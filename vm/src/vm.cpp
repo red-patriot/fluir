@@ -26,15 +26,25 @@ namespace fluir {
       return os;
     }
 
-    int64_t widenI(const code::Value& value, code::PrimitiveType& type) {
+    template <typename T>
+    struct checkedDivide {
+      T operator()(const T& lhs, const T& rhs) const {
+        if (rhs == 0) {
+          throw DivideByZeroError{"DIVISION BY ZERO"};
+        }
+        return lhs / rhs;
+      }
+    };
+
+    code::I64 widenI(const code::Value& value, code::PrimitiveType& type) {
       type = value.type();
       switch (value.type()) {
         case code::PrimitiveType::I8:
-          return static_cast<std::int64_t>(value.asI8());
+          return static_cast<code::I64>(value.asI8());
         case code::PrimitiveType::I16:
-          return static_cast<std::int64_t>(value.asI16());
+          return static_cast<code::I64>(value.asI16());
         case code::PrimitiveType::I32:
-          return static_cast<std::int64_t>(value.asI32());
+          return static_cast<code::I64>(value.asI32());
         case code::PrimitiveType::I64:
           return value.asI64();
         default:
@@ -43,7 +53,7 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED AN INT TYPE"};
     }
 
-    code::Value narrowI(std::int64_t val, const code::PrimitiveType& type) {
+    code::Value narrowI(code::I64 val, const code::PrimitiveType& type) {
       switch (type) {
         case code::PrimitiveType::I8:
           return code::Value{static_cast<std::int8_t>(val)};
@@ -59,15 +69,15 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED AN INT TYPE"};
     }
 
-    uint64_t widenU(const code::Value& value, code::PrimitiveType& type) {
+    code::U64 widenU(const code::Value& value, code::PrimitiveType& type) {
       type = value.type();
       switch (value.type()) {
         case code::PrimitiveType::U8:
-          return static_cast<std::uint64_t>(value.asU8());
+          return static_cast<code::U64>(value.asU8());
         case code::PrimitiveType::U16:
-          return static_cast<std::uint64_t>(value.asU16());
+          return static_cast<code::U64>(value.asU16());
         case code::PrimitiveType::U32:
-          return static_cast<std::uint64_t>(value.asU32());
+          return static_cast<code::U64>(value.asU32());
         case code::PrimitiveType::U64:
           return value.asU64();
         default:
@@ -76,7 +86,7 @@ namespace fluir {
       throw VirtualMachineError{"EXPECTED A UINT TYPE"};
     }
 
-    code::Value narrowU(std::uint64_t val, const code::PrimitiveType& type) {
+    code::Value narrowU(code::U64 val, const code::PrimitiveType& type) {
       switch (type) {
         case code::PrimitiveType::U8:
           return code::Value{static_cast<std::uint8_t>(val)};
@@ -110,32 +120,32 @@ namespace fluir {
   template <typename Op>
   void VirtualMachine::intBinary() {
     code::PrimitiveType typeR, typeL;
-    std::int64_t rhs = widenI(stack_.back(), typeR);
+    code::I64 rhs = widenI(stack_.back(), typeR);
     stack_.pop_back();
-    std::int64_t lhs = widenI(stack_.back(), typeL);
+    code::I64 lhs = widenI(stack_.back(), typeL);
     stack_.pop_back();
     stack_.emplace_back(narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
     code::PrimitiveType type;
-    std::int64_t operand = widenI(stack_.back(), type);
+    code::I64 operand = widenI(stack_.back(), type);
     stack_.pop_back();
     stack_.emplace_back(narrowI(Op{}(operand), type));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
     code::PrimitiveType typeR, typeL;
-    std::uint64_t rhs = widenU(stack_.back(), typeR);
+    code::U64 rhs = widenU(stack_.back(), typeR);
     stack_.pop_back();
-    std::uint64_t lhs = widenU(stack_.back(), typeL);
+    code::U64 lhs = widenU(stack_.back(), typeL);
     stack_.pop_back();
     stack_.emplace_back(narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
     code::PrimitiveType type;
-    std::uint64_t operand = widenU(stack_.back(), type);
+    code::U64 operand = widenU(stack_.back(), type);
     stack_.pop_back();
     stack_.emplace_back(narrowU(Op{}(operand), type));
   }
@@ -151,6 +161,9 @@ namespace fluir {
 
     try {
       return run();
+    } catch (const DivideByZeroError& e) {
+      std::cerr << e.what() << std::endl;
+      return ExecResult::ERROR_DIVIDE_BY_ZERO;
     } catch (const VirtualMachineError& e) {
       std::cerr << e.what() << std::endl;
       return ExecResult::ERROR;
@@ -181,53 +194,53 @@ namespace fluir {
             break;
           }
         case F64_ADD:
-          floatBinary<std::plus<double>>();
+          floatBinary<std::plus<code::F64>>();
           break;
         case F64_SUB:
-          floatBinary<std::minus<double>>();
+          floatBinary<std::minus<code::F64>>();
           break;
         case F64_MUL:
-          floatBinary<std::multiplies<double>>();
+          floatBinary<std::multiplies<code::F64>>();
           break;
         case F64_DIV:
-          floatBinary<std::divides<double>>();
+          floatBinary<std::divides<code::F64>>();
           break;
         case F64_NEG:
-          floatUnary<std::negate<double>>();
+          floatUnary<std::negate<code::F64>>();
           break;
         case I64_ADD:
-          intBinary<std::plus<int64_t>>();
+          intBinary<std::plus<code::I64>>();
           break;
         case I64_SUB:
-          intBinary<std::minus<int64_t>>();
+          intBinary<std::minus<code::I64>>();
           break;
         case I64_MUL:
-          intBinary<std::multiplies<int64_t>>();
+          intBinary<std::multiplies<code::I64>>();
           break;
         case I64_DIV:
-          intBinary<std::divides<int64_t>>();
+          intBinary<checkedDivide<code::I64>>();
           break;
         case I64_NEG:
-          intUnary<std::negate<int64_t>>();
+          intUnary<std::negate<code::I64>>();
           break;
         case U64_ADD:
-          uintBinary<std::plus<uint64_t>>();
+          uintBinary<std::plus<code::U64>>();
           break;
         case U64_SUB:
-          uintBinary<std::minus<uint64_t>>();
+          uintBinary<std::minus<code::U64>>();
           break;
         case U64_MUL:
-          uintBinary<std::multiplies<uint64_t>>();
+          uintBinary<std::multiplies<code::U64>>();
           break;
         case U64_DIV:
-          uintBinary<std::divides<uint64_t>>();
+          uintBinary<checkedDivide<code::U64>>();
           break;
         case U64_NEG:
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4146)  // unary minus operator applied to unsigned type, result still unsigned
 #endif
-          uintUnary<std::negate<uint64_t>>();
+          uintUnary<std::negate<code::U64>>();
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

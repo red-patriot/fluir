@@ -20,5 +20,9 @@ code(U64, std::uint64_t)
 #define enumerate(Type, ConcreteType) Type,
   enum class PrimitiveType { FLUIR_CODE_PRIMITIVE_TYPES(enumerate) };
 #undef enumerate
+
+#define FLUIR_ALIAS(Type, Concrete) using Type = Concrete;
+  FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_ALIAS)
+#undef FLUIR_ALIAS
 }  // namespace fluir::code
 #endif

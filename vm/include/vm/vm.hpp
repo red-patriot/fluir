@@ -4,7 +4,7 @@
 #include <bytecode/byte_code.hpp>
 
 namespace fluir {
-  enum class ExecResult { SUCCESS, ERROR };
+  enum class ExecResult { SUCCESS = 0, ERROR, ERROR_DIVIDE_BY_ZERO };
 
   class VirtualMachine {
    public:

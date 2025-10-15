@@ -25,7 +25,14 @@ namespace fluir::code {
   code(U64_SUB)                          \
   code(U64_MUL)                          \
   code(U64_DIV)                          \
-  code(U64_AFF)
+  code(U64_AFF)                          \
+  code(CAST_I2U)                         \
+  code(CAST_U2I)                         \
+  code(CAST_I2F)                         \
+  code(CAST_U2F)                         \
+  code(CAST_F2I)                         \
+  code(CAST_F2U)                         \
+  code(CAST_WIDTH)
 
   // clang-format on
 

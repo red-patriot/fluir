@@ -238,6 +238,8 @@ namespace fluir {
   TokenType InspectDecoder::checkInstruction() {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
+        case 'C':
+          return checkCastInstruction();
         case 'E':
           return checkKeyword("IEXIT", TokenType::INST_EXIT);
         case 'F':
@@ -256,6 +258,47 @@ namespace fluir {
           break;
         case 'U':
           return checkUintInstruction();
+      }
+    }
+    return TokenType::IDENTIFIER;
+  }
+
+  TokenType InspectDecoder::checkCastInstruction() {
+    std::string_view current{start_, current_};
+    if (current.starts_with("ICAST_") && current.size() > 6) {
+      switch (current[6]) {
+        case 'F':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'I':
+                return checkKeyword("ICAST_FI", TokenType::INST_CAST_FI);
+              case 'U':
+                return checkKeyword("ICAST_FU", TokenType::INST_CAST_FU);
+            }
+          }
+          break;
+        case 'I':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'F':
+                return checkKeyword("ICAST_IF", TokenType::INST_CAST_IF);
+              case 'U':
+                return checkKeyword("ICAST_IU", TokenType::INST_CAST_IU);
+            }
+          }
+          break;
+        case 'U':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'F':
+                return checkKeyword("ICAST_UF", TokenType::INST_CAST_UF);
+              case 'I':
+                return checkKeyword("ICAST_UI", TokenType::INST_CAST_UI);
+            }
+          }
+          break;
+        case 'W':
+          return checkKeyword("ICAST_WIDTH", TokenType::INST_CAST_WIDTH);
       }
     }
     return TokenType::IDENTIFIER;

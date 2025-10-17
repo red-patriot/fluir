@@ -60,6 +60,7 @@ namespace fluir {
     TokenType checkKeyword(std::string_view expected, TokenType type);
     TokenType checkPrimitiveType();
     TokenType checkInstruction();
+    TokenType checkCastInstruction();
     TokenType checkFPInstruction();
     TokenType checkIntInstruction();
     TokenType checkUintInstruction();

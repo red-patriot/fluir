@@ -26,12 +26,12 @@ namespace fluir::code {
   code(U64_MUL)                          \
   code(U64_DIV)                          \
   code(U64_AFF)                          \
-  code(CAST_I2U)                         \
-  code(CAST_U2I)                         \
-  code(CAST_I2F)                         \
-  code(CAST_U2F)                         \
-  code(CAST_F2I)                         \
-  code(CAST_F2U)                         \
+  code(CAST_IU)                          \
+  code(CAST_UI)                          \
+  code(CAST_IF)                          \
+  code(CAST_UF)                          \
+  code(CAST_FI)                          \
+  code(CAST_FU)                          \
   code(CAST_WIDTH)
 
   // clang-format on
@@ -40,6 +40,13 @@ namespace fluir::code {
 #define enumerate(inst) inst,
     FLUIR_CODE_INSTRUCTIONS(enumerate)
 #undef enumerate
+  };
+
+  enum CastWidthTarget : std::uint8_t {
+    WIDTH_8 = 0b0001,
+    WIDTH_16 = 0b0010,
+    WIDTH_32 = 0b0100,
+    WIDTH_64 = 0b1000,
   };
 }  // namespace fluir::code
 

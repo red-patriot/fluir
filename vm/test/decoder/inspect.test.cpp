@@ -8,6 +8,7 @@
 #include "bytecode_assertions.hpp"
 
 using enum fluir::code::Instruction;
+using enum fluir::code::CastWidthTarget;
 using namespace fluir::code::value_literals;
 
 TEST(TestInspectDecoder, ParsesSingleFunction) {
@@ -285,6 +286,58 @@ CHUNK foo
         1.234500000000_f64,
         6.789000000000_f64,
       }}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}
+
+TEST(TestInspectDecoder, DecodesCastingInstructionsCorrectly) {
+  std::string source = R"(I07220A000000000000001A
+CHUNK foo
+  CONSTANTS x3
+    VF64 7.654300000000
+    VF64 1.234500000000
+    VF64 6.789000000000
+  CODE xF
+    ICAST_IU
+    ICAST_UI
+    ICAST_IF
+    ICAST_UF
+    ICAST_FI
+    ICAST_FU
+    ICAST_WIDTH x1
+    ICAST_WIDTH x2
+    ICAST_WIDTH x4
+    ICAST_WIDTH x8
+    IEXIT
+)";
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+                                 .chunks = {fluir::code::Chunk{.name = "foo",
+                                                               .code = {CAST_IU,
+                                                                        CAST_UI,
+                                                                        CAST_IF,
+                                                                        CAST_UF,
+                                                                        CAST_FI,
+                                                                        CAST_FU,
+                                                                        CAST_WIDTH,
+                                                                        WIDTH_8,
+                                                                        CAST_WIDTH,
+                                                                        WIDTH_16,
+                                                                        CAST_WIDTH,
+                                                                        WIDTH_32,
+                                                                        CAST_WIDTH,
+                                                                        WIDTH_64,
+                                                                        EXIT},
+                                                               .constants = {
+                                                                 7.654300000000_f64,
+                                                                 1.234500000000_f64,
+                                                                 6.789000000000_f64,
+                                                               }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 

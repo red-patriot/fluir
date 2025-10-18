@@ -25,16 +25,23 @@ namespace fluir::code {
   code(U64_SUB)                          \
   code(U64_MUL)                          \
   code(U64_DIV)                          \
-  code(U64_NEG)                          \
-  code(U64_AFF)
+  code(U64_AFF)                          \
+  code(CAST_IU)                          \
+  code(CAST_UI)                          \
+  code(CAST_IF)                          \
+  code(CAST_UF)                          \
+  code(CAST_FI)                          \
+  code(CAST_FU)                          \
+  code(CAST_WIDTH)
 
-  // clang-format on
+  // clang-format
 
   enum Instruction : std::uint8_t {
 #define enumerate(inst) inst,
     FLUIR_CODE_INSTRUCTIONS(enumerate)
 #undef enumerate
   };
+
 }  // namespace fluir::code
 
 #endif

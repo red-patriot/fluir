@@ -36,7 +36,7 @@ namespace fluir {
   }
 
   void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
-    using enum code::ValueType;
+    using enum code::PrimitiveType;
     switch (constant.type()) {
       case I8:
         os << formatIndented("VI8  x{:X}\n", constant.asI8());

@@ -14,7 +14,7 @@ TEST(TestValue, InitializeFloat64) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::F64, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::F64, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asF64());
 }
 
@@ -23,7 +23,7 @@ TEST(TestValue, InitializeInt64) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::I64, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::I64, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asI64());
 }
 
@@ -32,7 +32,7 @@ TEST(TestValue, InitializeInt32) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::I32, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::I32, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asI32());
 }
 
@@ -41,7 +41,7 @@ TEST(TestValue, InitializeInt16) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::I16, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::I16, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asI16());
 }
 TEST(TestValue, InitializeInt8) {
@@ -49,7 +49,7 @@ TEST(TestValue, InitializeInt8) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::I8, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::I8, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asI8());
 }
 
@@ -58,7 +58,7 @@ TEST(TestValue, InitializeUint64) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::U64, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::U64, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asU64());
 }
 
@@ -67,7 +67,7 @@ TEST(TestValue, InitializeUint32) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::U32, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::U32, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asU32());
 }
 
@@ -76,7 +76,7 @@ TEST(TestValue, InitializeUint16) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::U16, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::U16, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asU16());
 }
 
@@ -85,7 +85,7 @@ TEST(TestValue, InitializeUint8) {
 
   fluir::code::Value value{expected};
 
-  ASSERT_EQ(fluir::code::ValueType::U8, value.type());
+  ASSERT_EQ(fluir::code::PrimitiveType::U8, value.type());
   EXPECT_DOUBLE_EQ(expected, value.asU8());
 }
 

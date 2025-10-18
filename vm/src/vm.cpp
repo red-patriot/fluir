@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include "vm/exceptions.hpp"
+#include "vm/utility/narrow_widen.hpp"
 
 namespace fluir {
   namespace {
@@ -15,81 +16,15 @@ namespace fluir {
     std::ostream& operator<<(std::ostream& os, const code::Value& value) {
       switch (value.type()) {
 #define FLUIR_PRINT_VALUE(Type, Concrete)          \
-  case code::ValueType::Type:                      \
+  case code::PrimitiveType::Type:                  \
     os << '(' << #Type << ')' << value.as##Type(); \
     break;
 
-        FLUIR_CODE_VALUE_TYPES(FLUIR_PRINT_VALUE)
+        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_PRINT_VALUE)
 #undef FLUIR_PRINT_VALUE
       }
 
       return os;
-    }
-
-    int64_t widenI(const code::Value& value, code::ValueType& type) {
-      type = value.type();
-      switch (value.type()) {
-        case code::ValueType::I8:
-          return static_cast<std::int64_t>(value.asI8());
-        case code::ValueType::I16:
-          return static_cast<std::int64_t>(value.asI16());
-        case code::ValueType::I32:
-          return static_cast<std::int64_t>(value.asI32());
-        case code::ValueType::I64:
-          return value.asI64();
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED AN INT TYPE"};
-    }
-
-    code::Value narrowI(std::int64_t val, const code::ValueType& type) {
-      switch (type) {
-        case code::ValueType::I8:
-          return code::Value{static_cast<std::int8_t>(val)};
-        case code::ValueType::I16:
-          return code::Value{static_cast<std::int16_t>(val)};
-        case code::ValueType::I32:
-          return code::Value{static_cast<std::int32_t>(val)};
-        case code::ValueType::I64:
-          return code::Value{val};
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED AN INT TYPE"};
-    }
-
-    uint64_t widenU(const code::Value& value, code::ValueType& type) {
-      type = value.type();
-      switch (value.type()) {
-        case code::ValueType::U8:
-          return static_cast<std::uint64_t>(value.asU8());
-        case code::ValueType::U16:
-          return static_cast<std::uint64_t>(value.asU16());
-        case code::ValueType::U32:
-          return static_cast<std::uint64_t>(value.asU32());
-        case code::ValueType::U64:
-          return value.asU64();
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
-    }
-
-    code::Value narrowU(std::uint64_t val, const code::ValueType& type) {
-      switch (type) {
-        case code::ValueType::U8:
-          return code::Value{static_cast<std::uint8_t>(val)};
-        case code::ValueType::U16:
-          return code::Value{static_cast<std::uint16_t>(val)};
-        case code::ValueType::U32:
-          return code::Value{static_cast<std::uint32_t>(val)};
-        case code::ValueType::U64:
-          return code::Value{val};
-        default:
-          break;
-      }
-      throw VirtualMachineError{"EXPECTED A UINT TYPE"};
     }
   }  // namespace
 
@@ -109,35 +44,35 @@ namespace fluir {
   }
   template <typename Op>
   void VirtualMachine::intBinary() {
-    code::ValueType typeR, typeL;
-    std::int64_t rhs = widenI(stack_.back(), typeR);
+    code::PrimitiveType typeR, typeL;
+    code::I64 rhs = utility::widenI(stack_.back(), typeR);
     stack_.pop_back();
-    std::int64_t lhs = widenI(stack_.back(), typeL);
+    code::I64 lhs = utility::widenI(stack_.back(), typeL);
     stack_.pop_back();
-    stack_.emplace_back(narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    stack_.emplace_back(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
-    code::ValueType type;
-    std::int64_t operand = widenI(stack_.back(), type);
+    code::PrimitiveType type;
+    code::I64 operand = utility::widenI(stack_.back(), type);
     stack_.pop_back();
-    stack_.emplace_back(narrowI(Op{}(operand), type));
+    stack_.emplace_back(utility::narrowI(Op{}(operand), type));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
-    code::ValueType typeR, typeL;
-    std::uint64_t rhs = widenU(stack_.back(), typeR);
+    code::PrimitiveType typeR, typeL;
+    code::U64 rhs = utility::widenU(stack_.back(), typeR);
     stack_.pop_back();
-    std::uint64_t lhs = widenU(stack_.back(), typeL);
+    code::U64 lhs = utility::widenU(stack_.back(), typeL);
     stack_.pop_back();
-    stack_.emplace_back(narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    stack_.emplace_back(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
-    code::ValueType type;
-    std::uint64_t operand = widenU(stack_.back(), type);
+    code::PrimitiveType type;
+    code::U64 operand = utility::widenU(stack_.back(), type);
     stack_.pop_back();
-    stack_.emplace_back(narrowU(Op{}(operand), type));
+    stack_.emplace_back(utility::narrowU(Op{}(operand), type));
   }
 
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
@@ -151,6 +86,9 @@ namespace fluir {
 
     try {
       return run();
+    } catch (const DivideByZeroError& e) {
+      std::cerr << e.what() << std::endl;
+      return ExecResult::ERROR_DIVIDE_BY_ZERO;
     } catch (const VirtualMachineError& e) {
       std::cerr << e.what() << std::endl;
       return ExecResult::ERROR;
@@ -181,62 +119,112 @@ namespace fluir {
             break;
           }
         case F64_ADD:
-          floatBinary<std::plus<double>>();
+          floatBinary<std::plus<code::F64>>();
           break;
         case F64_SUB:
-          floatBinary<std::minus<double>>();
+          floatBinary<std::minus<code::F64>>();
           break;
         case F64_MUL:
-          floatBinary<std::multiplies<double>>();
+          floatBinary<std::multiplies<code::F64>>();
           break;
         case F64_DIV:
-          floatBinary<std::divides<double>>();
+          floatBinary<std::divides<code::F64>>();
           break;
         case F64_NEG:
-          floatUnary<std::negate<double>>();
+          floatUnary<std::negate<code::F64>>();
           break;
         case I64_ADD:
-          intBinary<std::plus<int64_t>>();
+          intBinary<std::plus<code::I64>>();
           break;
         case I64_SUB:
-          intBinary<std::minus<int64_t>>();
+          intBinary<std::minus<code::I64>>();
           break;
         case I64_MUL:
-          intBinary<std::multiplies<int64_t>>();
+          intBinary<std::multiplies<code::I64>>();
           break;
         case I64_DIV:
-          intBinary<std::divides<int64_t>>();
+          intBinary<utility::checkedDivide<code::I64>>();
           break;
         case I64_NEG:
-          intUnary<std::negate<int64_t>>();
+          intUnary<std::negate<code::I64>>();
           break;
         case U64_ADD:
-          uintBinary<std::plus<uint64_t>>();
+          uintBinary<std::plus<code::U64>>();
           break;
         case U64_SUB:
-          uintBinary<std::minus<uint64_t>>();
+          uintBinary<std::minus<code::U64>>();
           break;
         case U64_MUL:
-          uintBinary<std::multiplies<uint64_t>>();
+          uintBinary<std::multiplies<code::U64>>();
           break;
         case U64_DIV:
-          uintBinary<std::divides<uint64_t>>();
-          break;
-        case U64_NEG:
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4146)  // unary minus operator applied to unsigned type, result still unsigned
-#endif
-          uintUnary<std::negate<uint64_t>>();
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-
+          uintBinary<utility::checkedDivide<code::U64>>();
           break;
         case F64_AFF:
         case I64_AFF:
         case U64_AFF:
           break;  // This is a No-Op
+        case CAST_IU:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::U64>(widened);
+
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+          }
+          break;
+        case CAST_UI:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::I64>(widened);
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+          }
+          break;
+        case CAST_IF:
+          {
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
+          }
+          break;
+        case CAST_FI:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            auto casted = static_cast<code::I64>(toCast.asF64());
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+          }
+          break;
+        case CAST_UF:
+          {
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
+          }
+          break;
+        case CAST_FU:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            auto casted = static_cast<code::U64>(toCast.asF64());
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+          }
+          break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the

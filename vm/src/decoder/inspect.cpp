@@ -182,7 +182,7 @@ namespace fluir {
         return checkInstruction();
         break;
       case 'V':
-        return checkValueType();
+        return checkPrimitiveType();
       case 'x':
         return TokenType::HEX_LITERAL;
     }
@@ -197,7 +197,7 @@ namespace fluir {
     return TokenType::IDENTIFIER;
   }
 
-  TokenType InspectDecoder::checkValueType() {
+  TokenType InspectDecoder::checkPrimitiveType() {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
         case 'F':
@@ -238,6 +238,8 @@ namespace fluir {
   TokenType InspectDecoder::checkInstruction() {
     if (current_ - start_ > 1) {
       switch (start_[1]) {
+        case 'C':
+          return checkCastInstruction();
         case 'E':
           return checkKeyword("IEXIT", TokenType::INST_EXIT);
         case 'F':
@@ -256,6 +258,47 @@ namespace fluir {
           break;
         case 'U':
           return checkUintInstruction();
+      }
+    }
+    return TokenType::IDENTIFIER;
+  }
+
+  TokenType InspectDecoder::checkCastInstruction() {
+    std::string_view current{start_, current_};
+    if (current.starts_with("ICAST_") && current.size() > 6) {
+      switch (current[6]) {
+        case 'F':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'I':
+                return checkKeyword("ICAST_FI", TokenType::INST_CAST_FI);
+              case 'U':
+                return checkKeyword("ICAST_FU", TokenType::INST_CAST_FU);
+            }
+          }
+          break;
+        case 'I':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'F':
+                return checkKeyword("ICAST_IF", TokenType::INST_CAST_IF);
+              case 'U':
+                return checkKeyword("ICAST_IU", TokenType::INST_CAST_IU);
+            }
+          }
+          break;
+        case 'U':
+          if (current.size() > 7) {
+            switch (current[7]) {
+              case 'F':
+                return checkKeyword("ICAST_UF", TokenType::INST_CAST_UF);
+              case 'I':
+                return checkKeyword("ICAST_UI", TokenType::INST_CAST_UI);
+            }
+          }
+          break;
+        case 'W':
+          return checkKeyword("ICAST_WIDTH", TokenType::INST_CAST_WIDTH);
       }
     }
     return TokenType::IDENTIFIER;
@@ -332,8 +375,6 @@ namespace fluir {
           return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
         case 'M':
           return checkKeyword("IU64_MUL", TokenType::INST_U64_MUL);
-        case 'N':
-          return checkKeyword("IU64_NEG", TokenType::INST_U64_NEG);
         case 'S':
           return checkKeyword("IU64_SUB", TokenType::INST_U64_SUB);
       }
@@ -381,21 +422,21 @@ namespace fluir {
       case TokenType::TYPE_F64:
         return decodeFloatConstant();
       case TokenType::TYPE_I8:
-        return decodeIntConstant(code::ValueType::I8);
+        return decodeIntConstant(code::PrimitiveType::I8);
       case TokenType::TYPE_I16:
-        return decodeIntConstant(code::ValueType::I16);
+        return decodeIntConstant(code::PrimitiveType::I16);
       case TokenType::TYPE_I32:
-        return decodeIntConstant(code::ValueType::I32);
+        return decodeIntConstant(code::PrimitiveType::I32);
       case TokenType::TYPE_I64:
-        return decodeIntConstant(code::ValueType::I64);
+        return decodeIntConstant(code::PrimitiveType::I64);
       case TokenType::TYPE_U8:
-        return decodeIntConstant(code::ValueType::U8);
+        return decodeIntConstant(code::PrimitiveType::U8);
       case TokenType::TYPE_U16:
-        return decodeIntConstant(code::ValueType::U16);
+        return decodeIntConstant(code::PrimitiveType::U16);
       case TokenType::TYPE_U32:
-        return decodeIntConstant(code::ValueType::U32);
+        return decodeIntConstant(code::PrimitiveType::U32);
       case TokenType::TYPE_U64:
-        return decodeIntConstant(code::ValueType::U64);
+        return decodeIntConstant(code::PrimitiveType::U64);
       default:
         throw std::runtime_error{"Expected a type keyword."};
     }
@@ -412,7 +453,7 @@ namespace fluir {
     return code::Value{number};
   }
 
-  code::Value InspectDecoder::decodeIntConstant(code::ValueType type) {
+  code::Value InspectDecoder::decodeIntConstant(code::PrimitiveType type) {
     auto rawConstant = scanNext();
     if (rawConstant.type != TokenType::HEX_LITERAL) {
       throw std::runtime_error{"Expected a HEX literal."};
@@ -420,10 +461,10 @@ namespace fluir {
     auto number = toUnsignedInteger(rawConstant);
     switch (type) {
 #define FLUIR_RAW_TO_VALUE(Type, Concrete) \
-  case code::ValueType::Type:              \
+  case code::PrimitiveType::Type:          \
     return code::Value{static_cast<Concrete>(number)};
 
-      FLUIR_CODE_VALUE_TYPES(FLUIR_RAW_TO_VALUE)
+      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_RAW_TO_VALUE)
 #undef FLUIR_RAW_TO_VALUE
     }
     throw std::runtime_error{"Unrecognized value type."};

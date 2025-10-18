@@ -1,10 +1,10 @@
-#ifndef FLUIR_VM_CM_HPP
-#define FLUIR_VM_CM_HPP
+#ifndef FLUIR_VM_VM_HPP
+#define FLUIR_VM_VM_HPP
 
 #include <bytecode/byte_code.hpp>
 
 namespace fluir {
-  enum class ExecResult { SUCCESS, ERROR };
+  enum class ExecResult { SUCCESS = 0, ERROR, ERROR_DIVIDE_BY_ZERO };
 
   class VirtualMachine {
    public:

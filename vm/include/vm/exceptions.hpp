@@ -7,6 +7,10 @@ namespace fluir {
   struct VirtualMachineError : std::runtime_error {
     using std::runtime_error::runtime_error;
   };
+
+  struct DivideByZeroError final : VirtualMachineError {
+    using VirtualMachineError::VirtualMachineError;
+  };
 }  // namespace fluir
 
-#endif  // FLUIR_EXCEPTIONS_HPP
+#endif  // FLUIR_VM_EXCEPTIONS_HPP

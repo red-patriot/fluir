@@ -6,7 +6,7 @@
 #include <iostream>
 
 #include "vm/exceptions.hpp"
-#include "vm/utility/arithmetic.hpp"
+#include "vm/utility/narrow_widen.hpp"
 
 namespace fluir {
   namespace {
@@ -164,6 +164,67 @@ namespace fluir {
         case I64_AFF:
         case U64_AFF:
           break;  // This is a No-Op
+        case CAST_IU:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::U64>(widened);
+
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+          }
+          break;
+        case CAST_UI:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::I64>(widened);
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+          }
+          break;
+        case CAST_IF:
+          {
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
+          }
+          break;
+        case CAST_FI:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            auto casted = static_cast<code::I64>(toCast.asF64());
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+          }
+          break;
+        case CAST_UF:
+          {
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
+          }
+          break;
+        case CAST_FU:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
+            stack_.pop_back();
+            auto casted = static_cast<code::U64>(toCast.asF64());
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+          }
+          break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the

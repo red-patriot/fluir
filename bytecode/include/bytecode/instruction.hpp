@@ -34,7 +34,7 @@ namespace fluir::code {
   code(CAST_FU)                          \
   code(CAST_WIDTH)
 
-  // clang-format on
+  // clang-format
 
   enum Instruction : std::uint8_t {
 #define enumerate(inst) inst,
@@ -42,12 +42,6 @@ namespace fluir::code {
 #undef enumerate
   };
 
-  enum CastWidthTarget : std::uint8_t {
-    WIDTH_8 = 0b0001,
-    WIDTH_16 = 0b0010,
-    WIDTH_32 = 0b0100,
-    WIDTH_64 = 0b1000,
-  };
 }  // namespace fluir::code
 
 #endif

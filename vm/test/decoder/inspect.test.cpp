@@ -8,7 +8,7 @@
 #include "bytecode_assertions.hpp"
 
 using enum fluir::code::Instruction;
-using enum fluir::code::CastWidthTarget;
+using enum fluir::code::NumericWidth;
 using namespace fluir::code::value_literals;
 
 TEST(TestInspectDecoder, ParsesSingleFunction) {

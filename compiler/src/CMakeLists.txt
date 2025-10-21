@@ -30,11 +30,14 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
                                  "debug/parse_tree_printer.cpp"
 )
 
+set(FLUIR_COMPILER_TYPES_SOURCES "types/type.cpp")
+
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
+            ${FLUIR_COMPILER_TYPES_SOURCES}
             "utility/diagnostics.cpp"
 )
 

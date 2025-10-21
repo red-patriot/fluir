@@ -22,12 +22,15 @@ set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
                                backend/inspect_writer.test.cpp
 )
 
+set(FLUIR_TYPES_TEST_SOURCES types/type.test.cpp)
+
 target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
             ${FLUIR_FRONTEND_TEST_SOURCES}
             ${FLUIR_ASG_TEST_SOURCES}
             ${FLUIR_BACKEND_TEST_SOURCES}
+            ${FLUIR_TYPES_TEST_SOURCES}
             scope_guard.test.cpp
 )
 target_include_directories(

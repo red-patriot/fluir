@@ -3,10 +3,10 @@
 #include <cstdint>
 
 namespace fluir::types {
-  Operator::Operator(::fluir::Operator op, Type* returnType, Type* parameter1, Type* parameter2) :
+  Operator::Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1, Type const* parameter2) :
     op_(op), returnType_(returnType), parameter1_(parameter1), parameter2_(parameter2) { }
 
-  Operator::Operator(::fluir::Operator op, Type* returnType, Type* parameter1) :
+  Operator::Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1) :
     Operator(op, returnType, parameter1, nullptr) { }
 
   std::array<Type const*, 2> Operator::getParameters() const { return {parameter1_, parameter2_}; }

@@ -79,3 +79,33 @@ TEST(TestSymbolTable, CannotAddDuplicateOperatorOverloads) {
 
   EXPECT_EQ(1, overloads.size());
 }
+
+TEST(TestSymbolTable, StoresConversions) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto B = uut.addType(fluir::types::Type{"B"});
+  const auto C = uut.addType(fluir::types::Type{"C"});
+  uut.addCast(A, B);
+  uut.addConversion(A, C);
+
+  EXPECT_TRUE(uut.canConvert(A, B));
+  EXPECT_TRUE(uut.canCast(A, B));
+
+  EXPECT_TRUE(uut.canConvert(A, C));
+  EXPECT_FALSE(uut.canCast(A, C));
+
+  EXPECT_FALSE(uut.canCast(B, C));
+  EXPECT_FALSE(uut.canCast(C, A));
+  EXPECT_FALSE(uut.canCast(B, A));
+}
+
+TEST(TestSymbolTable, SelfConversionsAreIgnored) {
+  fluir::types::SymbolTable uut;
+
+  uut.addType(fluir::types::Type{"A"});
+  uut.addCast(uut.getType("A"), uut.getType(("A")));
+
+  EXPECT_FALSE(uut.canConvert(uut.getType("A"), uut.getType("A")));
+  EXPECT_FALSE(uut.canCast(uut.getType("A"), uut.getType("A")));
+}

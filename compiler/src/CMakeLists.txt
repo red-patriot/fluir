@@ -31,6 +31,7 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
 )
 
 set(FLUIR_COMPILER_TYPES_SOURCES
+    "types/conversion.cpp"
     "types/operator.cpp"
     "types/symbol_table.cpp"
     "types/type.cpp"

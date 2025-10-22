@@ -11,8 +11,8 @@ namespace fluir::types {
   /** Represents the definition of an operator */
   class Operator {
    public:
-    Operator(::fluir::Operator op, Type* returnType, Type* parameter1, Type* parameter2);
-    Operator(::fluir::Operator op, Type* returnType, Type* parameter1);
+    Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1, Type const* parameter2);
+    Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1);
 
     ::fluir::Operator getOperator() const { return op_; }
 
@@ -22,10 +22,10 @@ namespace fluir::types {
     friend bool operator==(const Operator&, const Operator&) = default;
 
    private:
-    ::fluir::Operator op_; /**< The operator being applied */
-    Type* returnType_;     /**< The type of the return value */
-    Type* parameter1_;     /**< The type of the first parameter */
-    Type* parameter2_;     /**< The type of the second parameter */
+    ::fluir::Operator op_;   /**< The operator being applied */
+    Type const* returnType_; /**< The type of the return value */
+    Type const* parameter1_; /**< The type of the first parameter */
+    Type const* parameter2_; /**< The type of the second parameter */
   };
 }  // namespace fluir::types
 

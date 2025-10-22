@@ -30,7 +30,11 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
                                  "debug/parse_tree_printer.cpp"
 )
 
-set(FLUIR_COMPILER_TYPES_SOURCES "types/type.cpp")
+set(FLUIR_COMPILER_TYPES_SOURCES
+    "types/operator.cpp"
+    "types/symbol_table.cpp"
+    "types/type.cpp"
+)
 
 target_sources(
     fluir.libcompiler

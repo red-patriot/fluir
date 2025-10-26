@@ -8,7 +8,7 @@
 
 #include "compiler/models/operator.hpp"
 #include "compiler/types/conversion.hpp"
-#include "compiler/types/operator.hpp"
+#include "compiler/types/operator_def.hpp"
 #include "compiler/types/type.hpp"
 
 namespace fluir::types {
@@ -21,14 +21,18 @@ namespace fluir::types {
     Type const* getType(const std::string& name) const;
 
     /** Add an operator to the table */
-    Operator const* addOperator(Operator op);
+    OperatorDefinition const* addOperator(OperatorDefinition op);
     /** Get all known overloads of a given operator */
-    std::vector<Operator const*> getOperatorOverloads(::fluir::Operator op) const;
+    std::vector<OperatorDefinition const*> getOperatorOverloads(Operator op) const;
+    /** Perform operator overload resolution for the operator with the given operands */
+    OperatorDefinition const* selectOverload(Type const* lhs, Operator op, Type const* rhs);
+    /** Perform operator overload resolution for the operator with the given operands */
+    OperatorDefinition const* selectOverload(Operator op, Type const* operand);
 
     /** Adds an implicit conversion operation  */
-    void addCast(Type const* from, Type const* to);
+    void addImplicitConversion(Type const* from, Type const* to);
     /** Adds an explicit conversion operation */
-    void addConversion(Type const* from, Type const* to);
+    void addExplicitConversion(Type const* from, Type const* to);
     /** Tests if `from` can be implicitly converted to a `to`  */
     bool canCast(Type const* from, Type const* to);
     /** Tests if `from` can be explicitly converted to a `to` */
@@ -36,7 +40,7 @@ namespace fluir::types {
 
    private:
     std::unordered_map<std::string, Type> types_;
-    std::unordered_map<::fluir::Operator, std::unordered_set<Operator>> operators_;
+    std::unordered_map<::fluir::Operator, std::unordered_set<OperatorDefinition>> operators_;
     std::unordered_map<Type const*, std::unordered_set<Conversion>> conversions_;
   };
 }  // namespace fluir::types

@@ -15,24 +15,46 @@ namespace fluir::types {
     return nullptr;
   }
 
-  Operator const* SymbolTable::addOperator(Operator op) {
+  OperatorDefinition const* SymbolTable::addOperator(OperatorDefinition op) {
     auto [it, added] = operators_[op.getOperator()].insert(std::move(op));
     return &*it;
   }
-  std::vector<Operator const*> SymbolTable::getOperatorOverloads(::fluir::Operator op) const {
-    std::vector<Operator const*> result;
+  std::vector<OperatorDefinition const*> SymbolTable::getOperatorOverloads(::fluir::Operator op) const {
+    std::vector<OperatorDefinition const*> result;
     std::ranges::transform(operators_.at(op), std::back_inserter(result), [](auto const& elem) { return &elem; });
     return result;
   }
 
-  void SymbolTable::addCast(Type const* from, Type const* to) {
+  OperatorDefinition const* SymbolTable::selectOverload(Type const* lhs, Operator op, Type const* rhs) {
+    auto candidates = getOperatorOverloads(op);
+    auto end = std::ranges::find_if(candidates, [&](OperatorDefinition const* candidate) {
+      return candidate->getParameters()[0] == lhs && candidate->getParameters()[1] == rhs;
+    });
+    if (end != candidates.end()) {
+      return *end;
+    }
+    return nullptr;
+  }
+
+  OperatorDefinition const* SymbolTable::selectOverload(Operator op, Type const* operand) {
+    auto candidates = getOperatorOverloads(op);
+    auto end = std::ranges::find_if(candidates, [&](OperatorDefinition const* candidate) {
+      return candidate->getParameters()[0] == operand && candidate->getParameters()[1] == nullptr;
+    });
+    if (end != candidates.end()) {
+      return *end;
+    }
+    return nullptr;
+  }
+
+  void SymbolTable::addImplicitConversion(Type const* from, Type const* to) {
     if (from == to) {
       return;
     }
     Conversion c{.from = from, .to = to, .isImplicit = true};
     conversions_[from].insert(c);
   }
-  void SymbolTable::addConversion(Type const* from, Type const* to) {
+  void SymbolTable::addExplicitConversion(Type const* from, Type const* to) {
     if (from == to) {
       return;
     }

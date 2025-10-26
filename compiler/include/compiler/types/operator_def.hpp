@@ -9,17 +9,17 @@
 
 namespace fluir::types {
   /** Represents the definition of an operator */
-  class Operator {
+  class OperatorDefinition {
    public:
-    Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1, Type const* parameter2);
-    Operator(::fluir::Operator op, Type const* returnType, Type const* parameter1);
+    OperatorDefinition(Type const* parameter1, ::fluir::Operator op, Type const* parameter2, Type const* returnType);
+    OperatorDefinition(::fluir::Operator op, Type const* parameter1, Type const* returnType);
 
     ::fluir::Operator getOperator() const { return op_; }
 
     Type const* getReturn() const { return returnType_; }
     std::array<Type const*, 2> getParameters() const;
 
-    friend bool operator==(const Operator&, const Operator&) = default;
+    friend bool operator==(const OperatorDefinition&, const OperatorDefinition&) = default;
 
    private:
     ::fluir::Operator op_;   /**< The operator being applied */
@@ -31,8 +31,8 @@ namespace fluir::types {
 
 namespace std {
   template <>
-  struct hash<::fluir::types::Operator> {
-    size_t operator()(::fluir::types::Operator const& op) const noexcept;
+  struct hash<::fluir::types::OperatorDefinition> {
+    size_t operator()(::fluir::types::OperatorDefinition const& op) const noexcept;
   };
 }  // namespace std
 

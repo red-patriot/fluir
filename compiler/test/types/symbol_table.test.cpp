@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/types/operator.hpp"
+#include "compiler/types/operator_def.hpp"
 
 TEST(TestSymbolTable, AddGetType) {
   fluir::types::Type expected{"SimpleType1"};
@@ -28,7 +28,8 @@ TEST(TestSymbolTable, AddBinaryOperator) {
   uut.addType(fluir::types::Type{"Rhs"});
   uut.addType(fluir::types::Type{"Ret"});
 
-  fluir::types::Operator op{fluir::Operator::STAR, uut.getType("Ret"), uut.getType("Rhs"), uut.getType("Lhs")};
+  fluir::types::OperatorDefinition op{
+    uut.getType("Lhs"), fluir::Operator::STAR, uut.getType("Rhs"), uut.getType("Ret")};
 
   uut.addOperator(op);
   auto overloads = uut.getOperatorOverloads(fluir::Operator::STAR);
@@ -41,7 +42,7 @@ TEST(TestSymbolTable, AddUnaryOperator) {
   uut.addType(fluir::types::Type{"Lhs"});
   uut.addType(fluir::types::Type{"Ret"});
 
-  fluir::types::Operator op{fluir::Operator::STAR, uut.getType("Ret"), uut.getType("Lhs")};
+  fluir::types::OperatorDefinition op{fluir::Operator::STAR, uut.getType("Lhs"), uut.getType("Ret")};
 
   uut.addOperator(op);
   auto overloads = uut.getOperatorOverloads(fluir::Operator::STAR);
@@ -55,8 +56,9 @@ TEST(TestSymbolTable, UnaryAndBinaryDiffer) {
   uut.addType(fluir::types::Type{"Rhs"});
   uut.addType(fluir::types::Type{"Ret"});
 
-  fluir::types::Operator binary{fluir::Operator::MINUS, uut.getType("Ret"), uut.getType("Rhs"), uut.getType("Lhs")};
-  fluir::types::Operator unary{fluir::Operator::MINUS, uut.getType("Ret"), uut.getType("Lhs")};
+  fluir::types::OperatorDefinition binary{
+    uut.getType("Lhs"), fluir::Operator::MINUS, uut.getType("Rhs"), uut.getType("Ret")};
+  fluir::types::OperatorDefinition unary{fluir::Operator::MINUS, uut.getType("Ret"), uut.getType("Lhs")};
 
   uut.addOperator(binary);
   uut.addOperator(unary);
@@ -71,7 +73,8 @@ TEST(TestSymbolTable, CannotAddDuplicateOperatorOverloads) {
   uut.addType(fluir::types::Type{"Rhs"});
   uut.addType(fluir::types::Type{"Ret"});
 
-  fluir::types::Operator op{fluir::Operator::PLUS, uut.getType("Ret"), uut.getType("Rhs"), uut.getType("Lhs")};
+  fluir::types::OperatorDefinition op{
+    uut.getType("Lhs"), fluir::Operator::PLUS, uut.getType("Rhs"), uut.getType("Ret")};
 
   uut.addOperator(op);
   uut.addOperator(op);
@@ -86,8 +89,8 @@ TEST(TestSymbolTable, StoresConversions) {
   const auto A = uut.addType(fluir::types::Type{"A"});
   const auto B = uut.addType(fluir::types::Type{"B"});
   const auto C = uut.addType(fluir::types::Type{"C"});
-  uut.addCast(A, B);
-  uut.addConversion(A, C);
+  uut.addImplicitConversion(A, B);
+  uut.addExplicitConversion(A, C);
 
   EXPECT_TRUE(uut.canConvert(A, B));
   EXPECT_TRUE(uut.canCast(A, B));
@@ -104,7 +107,7 @@ TEST(TestSymbolTable, SelfConversionsAreIgnored) {
   fluir::types::SymbolTable uut;
 
   uut.addType(fluir::types::Type{"A"});
-  uut.addCast(uut.getType("A"), uut.getType(("A")));
+  uut.addImplicitConversion(uut.getType("A"), uut.getType(("A")));
 
   EXPECT_FALSE(uut.canConvert(uut.getType("A"), uut.getType("A")));
   EXPECT_FALSE(uut.canCast(uut.getType("A"), uut.getType("A")));

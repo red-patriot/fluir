@@ -22,7 +22,11 @@ set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
                                backend/inspect_writer.test.cpp
 )
 
-set(FLUIR_TYPES_TEST_SOURCES types/type.test.cpp types/symbol_table.test.cpp)
+set(FLUIR_TYPES_TEST_SOURCES
+    types/type.test.cpp
+    types/symbol_table.test.cpp
+    types/overload_resolution.test.cpp
+)
 
 target_sources(
     fluir.compiler.test

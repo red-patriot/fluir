@@ -34,9 +34,9 @@ namespace fluir::types {
     /** Adds an explicit conversion operation */
     void addExplicitConversion(Type const* from, Type const* to);
     /** Tests if `from` can be implicitly converted to a `to`  */
-    bool canCast(Type const* from, Type const* to);
+    bool canImplicitlyConvert(Type const* from, Type const* to);
     /** Tests if `from` can be explicitly converted to a `to` */
-    bool canConvert(Type const* from, Type const* to);
+    bool canExplicitlyConvert(Type const* from, Type const* to);
 
    private:
     std::unordered_map<std::string, Type> types_;

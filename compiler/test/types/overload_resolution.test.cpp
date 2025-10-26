@@ -36,6 +36,7 @@ class TestOverloadResolution : public ::testing::Test {
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::MINUS, F, G});  // F - F => G
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::STAR, F, G});   // F * F => G
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::SLASH, F, G});  // F / F => G
+    uut.addOperator(fluir::types::OperatorDefinition{Operator::MINUS, E, E});     // - F => G
 
     uut.addExplicitConversion(D, E);  // D (e)=> E
     uut.addImplicitConversion(A, B);  // A (i)=> B
@@ -81,6 +82,51 @@ TEST_F(TestOverloadResolution, ResolvesBinaryWithDifferentTypes) {
   const fluir::types::OperatorDefinition expected{A, Operator::SLASH, B, C};
 
   const auto actual = uut.selectOverload(A, Operator::SLASH, B);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvesBinaryWithRhsCast) {
+  const fluir::types::OperatorDefinition expected{A, Operator::SLASH, B, C};
+
+  const auto actual = uut.selectOverload(A, Operator::SLASH, A);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvesBinaryWithLhsCast) {
+  const fluir::types::OperatorDefinition expected{F, Operator::PLUS, F, G};
+
+  const auto actual = uut.selectOverload(E, Operator::PLUS, F);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvesUnaryWithSingleCast) {
+  const fluir::types::OperatorDefinition expected{Operator::MINUS, E, E};
+
+  const auto actual = uut.selectOverload(Operator::MINUS, G);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvesBinaryWithMultipleCastOptions) {
+  const fluir::types::OperatorDefinition expected{E, Operator::MINUS, E, E};
+
+  const auto actual = uut.selectOverload(E, Operator::MINUS, G);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvesUnaryWithConversion) {
+  const fluir::types::OperatorDefinition expected{Operator::MINUS, E, E};
+
+  const auto actual = uut.selectOverload(Operator::MINUS, G);
 
   ASSERT_TRUE(actual);
   EXPECT_EQ(expected, *actual);

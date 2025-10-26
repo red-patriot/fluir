@@ -92,15 +92,15 @@ TEST(TestSymbolTable, StoresConversions) {
   uut.addImplicitConversion(A, B);
   uut.addExplicitConversion(A, C);
 
-  EXPECT_TRUE(uut.canConvert(A, B));
-  EXPECT_TRUE(uut.canCast(A, B));
+  EXPECT_TRUE(uut.canExplicitlyConvert(A, B));
+  EXPECT_TRUE(uut.canImplicitlyConvert(A, B));
 
-  EXPECT_TRUE(uut.canConvert(A, C));
-  EXPECT_FALSE(uut.canCast(A, C));
+  EXPECT_TRUE(uut.canExplicitlyConvert(A, C));
+  EXPECT_FALSE(uut.canImplicitlyConvert(A, C));
 
-  EXPECT_FALSE(uut.canCast(B, C));
-  EXPECT_FALSE(uut.canCast(C, A));
-  EXPECT_FALSE(uut.canCast(B, A));
+  EXPECT_FALSE(uut.canImplicitlyConvert(B, C));
+  EXPECT_FALSE(uut.canImplicitlyConvert(C, A));
+  EXPECT_FALSE(uut.canImplicitlyConvert(B, A));
 }
 
 TEST(TestSymbolTable, SelfConversionsAreIgnored) {
@@ -109,6 +109,6 @@ TEST(TestSymbolTable, SelfConversionsAreIgnored) {
   uut.addType(fluir::types::Type{"A"});
   uut.addImplicitConversion(uut.getType("A"), uut.getType(("A")));
 
-  EXPECT_FALSE(uut.canConvert(uut.getType("A"), uut.getType("A")));
-  EXPECT_FALSE(uut.canCast(uut.getType("A"), uut.getType("A")));
+  EXPECT_FALSE(uut.canExplicitlyConvert(uut.getType("A"), uut.getType("A")));
+  EXPECT_FALSE(uut.canImplicitlyConvert(uut.getType("A"), uut.getType("A")));
 }

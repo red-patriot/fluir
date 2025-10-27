@@ -37,6 +37,11 @@ namespace fluir::types {
       return candidate->getParameters()[0] != lhs && candidate->getParameters()[1] != rhs;
     });
     candidates.erase(removed.begin(), removed.end());
+    if (candidates.empty()) {
+      // Fail if no viable candidates are identified
+      return nullptr;
+    }
+
     removed = std::ranges::remove_if(candidates, [&](OperatorDefinition const* candidate) {
       return lhs != candidate->getParameters()[0] && !canImplicitlyConvert(lhs, candidate->getParameters()[0]);
     });
@@ -46,26 +51,36 @@ namespace fluir::types {
     });
     candidates.erase(removed.begin(), removed.end());
 
+    if (candidates.size() != 1) {
+      // The call is ambiguous
+      return nullptr;
+    }
     return candidates.front();
   }
 
   OperatorDefinition const* SymbolTable::selectOverload(Operator op, Type const* operand) {
     /* 1. Get all candidates
-     * 2. Filter out all where at least one operand doesn't match
+     * 2. Filter out all binary operators
      * 3. Filter out all where there is no cast between given operand and operand
      */
 
     auto candidates = getOperatorOverloads(op);
-    auto removed = std::ranges::remove_if(candidates, [&](OperatorDefinition const* candidate) {
-      return candidate->getParameters()[0] != operand && candidate->getParameters()[1] != nullptr;
-    });
+    auto removed = std::ranges::remove_if(
+      candidates, [](OperatorDefinition const* candidate) { return candidate->getParameters()[1] != nullptr; });
     candidates.erase(removed.begin(), removed.end());
+    if (candidates.empty()) {
+      // Fail if no viable candidates are identified
+      return nullptr;
+    }
     removed = std::ranges::remove_if(candidates, [&](OperatorDefinition const* candidate) {
       return operand != candidate->getParameters()[0] && !canImplicitlyConvert(operand, candidate->getParameters()[0]);
     });
-
     candidates.erase(removed.begin(), removed.end());
 
+    if (candidates.size() != 1) {
+      // The call is ambiguous
+      return nullptr;
+    }
     return candidates.front();
   }
 

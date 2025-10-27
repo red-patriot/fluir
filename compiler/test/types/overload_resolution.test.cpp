@@ -32,11 +32,13 @@ class TestOverloadResolution : public ::testing::Test {
     uut.addOperator(fluir::types::OperatorDefinition{E, Operator::MINUS, E, E});  // E - E => E
     uut.addOperator(fluir::types::OperatorDefinition{E, Operator::STAR, E, E});   // E * E => E
     uut.addOperator(fluir::types::OperatorDefinition{E, Operator::SLASH, E, E});  // E / E => E
+    uut.addOperator(fluir::types::OperatorDefinition{Operator::MINUS, E, E});     // - E => E
+    uut.addOperator(fluir::types::OperatorDefinition{Operator::PLUS, E, E});      // + E => E
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::PLUS, F, G});   // F + F => G
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::MINUS, F, G});  // F - F => G
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::STAR, F, G});   // F * F => G
     uut.addOperator(fluir::types::OperatorDefinition{F, Operator::SLASH, F, G});  // F / F => G
-    uut.addOperator(fluir::types::OperatorDefinition{Operator::MINUS, E, E});     // - F => G
+    uut.addOperator(fluir::types::OperatorDefinition{Operator::PLUS, F, F});      // - F => G
 
     uut.addExplicitConversion(D, E);  // D (e)=> E
     uut.addImplicitConversion(A, B);  // A (i)=> B
@@ -130,4 +132,22 @@ TEST_F(TestOverloadResolution, ResolvesUnaryWithConversion) {
 
   ASSERT_TRUE(actual);
   EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, FailsBinaryWithNoViableCandidates) {
+  const auto actual = uut.selectOverload(H, Operator::PLUS, H);
+
+  ASSERT_FALSE(actual);
+}
+
+TEST_F(TestOverloadResolution, FailsBinaryWithAmbiguousCall) {
+  const auto actual = uut.selectOverload(H, Operator::PLUS, H);
+
+  ASSERT_FALSE(actual);
+}
+
+TEST_F(TestOverloadResolution, FailsUnaryWithAmbiguousCall) {
+  const auto actual = uut.selectOverload(Operator::PLUS, G);
+
+  ASSERT_FALSE(actual);
 }

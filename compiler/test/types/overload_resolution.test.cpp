@@ -161,3 +161,21 @@ TEST_F(TestOverloadResolution, ResolvingExplicitAndImplicitUnaryAcceptsOnlyImpli
   ASSERT_TRUE(actual);
   EXPECT_EQ(expected, *actual);
 }
+
+TEST_F(TestOverloadResolution, ResolvingCastAndNoCastBinaryAcceptsNoCast) {
+  const OperatorDefinition expected{A, Operator::SLASH, H, C};
+
+  const auto actual = uut.selectOverload(A, Operator::SLASH, H);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}
+
+TEST_F(TestOverloadResolution, ResolvingCastAndNoCastUnaryAcceptsNoCast) {
+  const OperatorDefinition expected{Operator::MINUS, H, H};
+
+  const auto actual = uut.selectOverload(Operator::MINUS, H);
+
+  ASSERT_TRUE(actual);
+  EXPECT_EQ(expected, *actual);
+}

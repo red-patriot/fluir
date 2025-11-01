@@ -52,6 +52,14 @@ namespace fluir::types {
     candidates.erase(removed.begin(), removed.end());
 
     if (candidates.size() != 1) {
+      // The call is potentially ambiguous with casts. Try to find an exact match and prefer that if it exists
+      auto exact = std::ranges::find_if(candidates, [&](OperatorDefinition const* candidate) {
+        return candidate->getParameters()[0] == lhs && candidate->getParameters()[1] == rhs;
+      });
+      if (exact != candidates.end()) {
+        return *exact;
+      }
+
       // The call is ambiguous
       return nullptr;
     }

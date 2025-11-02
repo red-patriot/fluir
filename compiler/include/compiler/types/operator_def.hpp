@@ -27,6 +27,10 @@ namespace fluir::types {
     Type const* parameter1_; /**< The type of the first parameter */
     Type const* parameter2_; /**< The type of the second parameter */
   };
+
+  struct CompareOperatorDefByParameters {
+    bool operator()(OperatorDefinition const& lhs, OperatorDefinition const& rhs) const;
+  };
 }  // namespace fluir::types
 
 namespace std {

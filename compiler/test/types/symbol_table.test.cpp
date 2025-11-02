@@ -83,6 +83,17 @@ TEST(TestSymbolTable, CannotAddDuplicateOperatorOverloads) {
   EXPECT_EQ(1, overloads.size());
 }
 
+TEST(TestSymbolTable, ErrorIfAddingOverloadsOnlyDistinguishedByReturnType) {
+  fluir::types::SymbolTable uut;
+  auto lhs = uut.addType(fluir::types::Type{"Lhs"});
+  auto rhs = uut.addType(fluir::types::Type{"Rhs"});
+  auto ret1 = uut.addType(fluir::types::Type{"Ret1"});
+  auto ret2 = uut.addType(fluir::types::Type{"Ret2"});
+
+  EXPECT_TRUE(uut.addOperator(fluir::types::OperatorDefinition{lhs, fluir::Operator::PLUS, rhs, ret1}));
+  EXPECT_FALSE(uut.addOperator(fluir::types::OperatorDefinition{lhs, fluir::Operator::PLUS, rhs, ret2}));
+}
+
 TEST(TestSymbolTable, StoresConversions) {
   fluir::types::SymbolTable uut;
 

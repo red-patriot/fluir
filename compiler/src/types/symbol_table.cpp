@@ -17,6 +17,9 @@ namespace fluir::types {
 
   OperatorDefinition const* SymbolTable::addOperator(OperatorDefinition op) {
     auto [it, added] = operators_[op.getOperator()].insert(std::move(op));
+    if (!added) {
+      return *it == op ? &*it : nullptr;
+    }
     return &*it;
   }
   std::vector<OperatorDefinition const*> SymbolTable::getOperatorOverloads(::fluir::Operator op) const {

@@ -39,8 +39,10 @@ namespace fluir::types {
     bool canExplicitlyConvert(Type const* from, Type const* to);
 
    private:
+    using OverloadSet =
+      std::unordered_set<OperatorDefinition, std::hash<OperatorDefinition>, CompareOperatorDefByParameters>;
     std::unordered_map<std::string, Type> types_;
-    std::unordered_map<::fluir::Operator, std::unordered_set<OperatorDefinition>> operators_;
+    std::unordered_map<::fluir::Operator, OverloadSet> operators_;
     std::unordered_map<Type const*, std::unordered_set<Conversion>> conversions_;
   };
 }  // namespace fluir::types

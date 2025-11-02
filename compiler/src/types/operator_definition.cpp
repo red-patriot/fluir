@@ -13,6 +13,11 @@ namespace fluir::types {
     OperatorDefinition(parameter1, op, nullptr, returnType) { }
 
   std::array<Type const*, 2> OperatorDefinition::getParameters() const { return {parameter1_, parameter2_}; }
+
+  bool CompareOperatorDefByParameters::operator()(OperatorDefinition const& lhs, OperatorDefinition const& rhs) const {
+    return lhs.getOperator() == rhs.getOperator() && lhs.getParameters() == rhs.getParameters();
+  }
+
 }  // namespace fluir::types
 
 namespace std {
@@ -20,7 +25,6 @@ namespace std {
     size_t seed = 0;
     seed ^= static_cast<uint8_t>(op.getOperator());
     constexpr hash<::fluir::types::Type const*> ptrHash{};
-    seed ^= ptrHash(op.getReturn());
     const auto params = op.getParameters();
     seed ^= ptrHash(params.front());
     if (params.back()) {

@@ -18,6 +18,7 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES
     "frontend/parser.cpp"
     "frontend/asg_builder.cpp"
     "frontend/text_parse.cpp"
+    "frontend/type_checker.cpp"
 )
 
 set(FLUIR_COMPILER_BACKEND_SOURCES

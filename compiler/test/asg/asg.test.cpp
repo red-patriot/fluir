@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-
 #include <variant>
+
+#include <gtest/gtest.h>
 
 #include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -56,8 +56,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
-  ASSERT_EQ(1, std::holds_alternative<fluir::asg::BinaryOp>(statement));
-  auto& binary = std::get<fluir::asg::BinaryOp>(statement);
+  ASSERT_TRUE(std::holds_alternative<fluir::asg::BinaryOp>(*statement));
+  auto& binary = std::get<fluir::asg::BinaryOp>(*statement);
 
   EXPECT_EQ(fluir::Operator::STAR, binary.op);
   EXPECT_DOUBLE_EQ(5.6, binary.lhs->as<fluir::asg::ConstantFP>().value);
@@ -92,8 +92,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
-  ASSERT_EQ(1, std::holds_alternative<fluir::asg::BinaryOp>(statement));
-  auto& binary = std::get<fluir::asg::BinaryOp>(statement);
+  ASSERT_EQ(1, std::holds_alternative<fluir::asg::BinaryOp>(*statement));
+  auto& binary = std::get<fluir::asg::BinaryOp>(*statement);
 
   EXPECT_EQ(fluir::Operator::STAR, binary.op);
   EXPECT_DOUBLE_EQ(5.6, binary.lhs->as<fluir::asg::ConstantFP>().value);
@@ -142,9 +142,9 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   ASSERT_FALSE(diagnostics.containsErrors());
   ASSERT_EQ(2, actual.size());
   auto statement = std::ranges::find_if(
-    actual, [](const auto& statement) { return std::holds_alternative<fluir::asg::BinaryOp>(statement); });
+    actual, [](const auto& statement) { return std::holds_alternative<fluir::asg::BinaryOp>(*statement); });
   ASSERT_NE(statement, actual.end());
-  auto& binary = std::get<fluir::asg::BinaryOp>(*statement);
+  auto& binary = std::get<fluir::asg::BinaryOp>(**statement);
 
   EXPECT_EQ(fluir::Operator::SLASH, binary.op);
   EXPECT_DOUBLE_EQ(5.6, binary.lhs->as<fluir::asg::ConstantFP>().value);
@@ -156,9 +156,9 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   EXPECT_EQ(binary.lhs, unary1.operand);
 
   auto statement2 = std::ranges::find_if(
-    actual, [](const auto& statement) { return std::holds_alternative<fluir::asg::UnaryOp>(statement); });
+    actual, [](const auto& statement) { return std::holds_alternative<fluir::asg::UnaryOp>(*statement); });
   ASSERT_NE(statement2, actual.end());
-  auto& unary2 = statement2->as<fluir::asg::UnaryOp>();
+  auto& unary2 = (*statement2)->as<fluir::asg::UnaryOp>();
 
   EXPECT_EQ(fluir::Operator::MINUS, unary2.op);
   EXPECT_EQ(binary.rhs, unary2.operand);

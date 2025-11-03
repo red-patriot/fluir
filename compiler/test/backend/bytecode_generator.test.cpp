@@ -10,12 +10,13 @@ namespace fc = fluir::code;
 using namespace fc::value_literals;
 
 TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
-  fa::ASG input{.declarations = {fa::FunctionDecl{.id = 3, .name = "main", .statements = {}}}};
+  fa::ASG input;
+  input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -25,14 +26,15 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
 }
 
 TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
-  fa::ASG input{.declarations = {fa::FunctionDecl{.id = 3, .name = "main", .statements = {}},
-                                 fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}}}};
+  fa::ASG input;
+  input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
+  input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
                                    fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -44,14 +46,17 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
 }
 
 TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
-  fa::ASG input{.declarations = {fa::FunctionDecl{
-                  .id = 3,
-                  .name = "foo",
-                  .statements = {fa::BinaryOp{1,
-                                              {},
-                                              fluir::Operator::STAR,
-                                              std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 1.5}),
-                                              std::make_shared<fa::Node>(fa::ConstantFP{2, {}, 2.5})}}}}};
+  fa::ASG input;
+  input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "foo", .statements = []() {
+                                                     fa::DataFlowGraph graph;
+                                                     graph.push_back(std::move(std::make_unique<fa::Node>(fa::BinaryOp{
+                                                       1,
+                                                       {},
+                                                       fluir::Operator::STAR,
+                                                       std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 1.5}),
+                                                       std::make_shared<fa::Node>(fa::ConstantFP{2, {}, 2.5})})));
+                                                     return graph;
+                                                   }()});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "foo",
@@ -67,7 +72,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                },
                                              .constants = {1.5_f64, 2.5_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -77,11 +82,14 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
 }
 
 TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
-  fa::ASG input{.declarations = {fa::FunctionDecl{
-                  .id = 3,
-                  .name = "bar",
-                  .statements = {fa::UnaryOp{
-                    1, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 3.456})}}}}};
+  fa::ASG input;
+  input.declarations.emplace_back(
+    fa::FunctionDecl{.id = 3, .name = "bar", .statements = []() {
+                       fa::DataFlowGraph graph;
+                       graph.push_back(std::make_unique<fa::Node>(fa::UnaryOp{
+                         1, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 3.456})}));
+                       return graph;
+                     }()});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "bar",
@@ -95,7 +103,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                },
                                              .constants = {3.456_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -112,13 +120,15 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                  std::make_shared<fa::Node>(
                    fa::UnaryOp{2, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{5, {}, 3.5})}),
                  std::make_shared<fa::Node>(fa::ConstantFP{6, {}, 4.4})});
-  fa::ASG input{
-    .declarations = {fa::FunctionDecl{
-      .id = 3,
-      .name = "bar",
-      .statements = {
-        fa::BinaryOp{1, {}, fluir::Operator::PLUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 100.0}), shared},
-        fa::UnaryOp{7, {}, fluir::Operator::MINUS, shared}}}}};
+  fa::ASG input;
+  input.declarations.emplace_back(fa::FunctionDecl{
+    .id = 3, .name = "bar", .statements = [&]() {
+      fa::DataFlowGraph graph;
+      graph.push_back(std::make_unique<fa::Node>(
+        fa::BinaryOp{1, {}, fluir::Operator::PLUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 100.0}), shared}));
+      graph.push_back(std::make_unique<fa::Node>(fa::UnaryOp{7, {}, fluir::Operator::MINUS, shared}));
+      return graph;
+    }()});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "bar",
@@ -146,7 +156,7 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                },
                                              .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, input) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 

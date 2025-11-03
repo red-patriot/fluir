@@ -18,6 +18,7 @@ namespace fluir::asg {
   struct Node;
 
   using SharedDependency = std::shared_ptr<Node>;
+  using UniqueNode = std::unique_ptr<Node>;
 
   struct ConstantFP : public NodeBase {
     double value;
@@ -57,7 +58,7 @@ namespace fluir::asg {
     }
   };
 
-  using DataFlowGraph = std::vector<Node>;
+  using DataFlowGraph = std::vector<UniqueNode>;
 
 }  // namespace fluir::asg
 

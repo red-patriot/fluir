@@ -1,7 +1,6 @@
 #include "compiler/frontend/asg_builder.hpp"
 
 #include <algorithm>
-
 #include <ranges>
 #include <unordered_set>
 #include <variant>
@@ -70,7 +69,7 @@ namespace fluir {
 
   FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block) : ctx_(ctx), block_(std::move(block)) { }
 
-  fluir::asg::Node FlowGraphBuilder::operator()(const pt::Binary& pt) {
+  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
     fluir::asg::BinaryOp asg{{pt.id, pt.location}, pt.op, nullptr, nullptr};
@@ -78,27 +77,27 @@ namespace fluir {
     asg.lhs = getDependency(pt.id, 0);
     asg.rhs = getDependency(pt.id, 1);
 
-    return asg;
+    return std::make_unique<asg::Node>(asg);
   }
 
-  asg::Node FlowGraphBuilder::operator()(const pt::Unary& pt) {
+  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     asg::UnaryOp asg{{pt.id, pt.location}, pt.op, nullptr};
     asg.operand = getDependency(pt.id, 0);
 
-    return asg;
+    return std::make_unique<asg::Node>(asg);
   }
 
-  asg::Node FlowGraphBuilder::operator()(const pt::Constant& pt) {
+  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     asg::ConstantFP asg{{pt.id, pt.location}, pt.value};
     // TODO: handle other literal types here
 
-    return asg;
+    return std::make_unique<asg::Node>(asg);
   }
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {
@@ -143,7 +142,7 @@ namespace fluir {
       return alreadyFound_.at(dependencyId);
     }
     auto& pt = block_.nodes.at(dependencyId);  // TODO: Handle missing ID
-    auto dependency = std::make_shared<fluir::asg::Node>(std::visit(*this, pt));
+    asg::SharedDependency dependency{std::visit(*this, pt)};
     alreadyFound_.insert({dependencyId, dependency});
     return dependency;
   }

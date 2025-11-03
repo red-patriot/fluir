@@ -25,7 +25,7 @@ namespace fluir {
     current_.name = func.name;
 
     for (const auto& node : func.statements) {
-      doTopLevel(node);
+      doTopLevel(*node);
     }
 
     // (FOR NOW) end all functions with the EXIT instruction

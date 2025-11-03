@@ -6,10 +6,7 @@
 #include <fmt/format.h>
 
 namespace fluir::debug {
-  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) :
-      out_(out),
-      inOrder_(inOrder) {
-  }
+  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
 
   void AsgPrinter::print(const asg::ASG& asg) {
     // TODO: Sort decls if needed
@@ -53,7 +50,7 @@ namespace fluir::debug {
 
   void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
     for (const auto& node : graph) {
-      std::visit(*this, node);
+      std::visit(*this, *node);
     }
   }
   void AsgPrinter::doInOrderPrint(const asg::DataFlowGraph& graph) {
@@ -61,17 +58,16 @@ namespace fluir::debug {
     std::vector<std::pair<ID, size_t>> idIndices;
     idIndices.reserve(graph.size());
     for (size_t i = 0; i != graph.size(); ++i) {
-      idIndices.emplace_back(std::pair{graph.at(i).id(), i});
+      idIndices.emplace_back(std::pair{graph.at(i)->id(), i});
     }
 
-    std::ranges::sort(idIndices,
-                      [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
-                        return lhs.first < rhs.first;
-                      });
+    std::ranges::sort(idIndices, [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
+      return lhs.first < rhs.first;
+    });
 
     for (const auto& [id, index] : idIndices) {
       auto& node = graph.at(index);
-      std::visit(*this, node);
+      std::visit(*this, *node);
     }
   }
 }  // namespace fluir::debug

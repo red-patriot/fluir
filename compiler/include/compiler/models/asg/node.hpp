@@ -2,7 +2,7 @@
 #define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
 
 #include <memory>
-#include <variant>
+#include <utility>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -10,52 +10,92 @@
 #include "compiler/models/operator.hpp"
 
 namespace fluir::asg {
-  struct NodeBase {
-    ID id;
-    FlowGraphLocation location;
+  enum class NodeKind {
+    Constant,
+    BinaryOperator,
+    UnaryOperator,
   };
 
-  struct Node;
+  class Node {
+   public:
+    virtual ~Node() = default;
+
+    template <typename Concrete>
+    [[nodiscard]] bool is() const {
+      return Concrete::classOf(*this);
+    }
+
+    template <typename Concrete>
+    Concrete* as() {
+      return is<Concrete>() ? dynamic_cast<Concrete*>(this) : nullptr;
+    }
+
+    template <typename Concrete>
+    Concrete const* as() const {
+      return is<Concrete>() ? dynamic_cast<Concrete const*>(this) : nullptr;
+    }
+
+    [[nodiscard]] ID id() const { return id_; }
+    [[nodiscard]] FlowGraphLocation location() const { return location_; }
+    [[nodiscard]] NodeKind kind() const { return kind_; }
+
+   protected:
+    Node(const NodeKind kind, const ID id, const FlowGraphLocation& location) :
+      kind_(kind), id_(id), location_(location) { }
+
+   private:
+    NodeKind kind_;
+    ID id_;
+    FlowGraphLocation location_;
+  };
 
   using SharedDependency = std::shared_ptr<Node>;
   using UniqueNode = std::unique_ptr<Node>;
 
-  struct ConstantFP : public NodeBase {
-    double value;
+  class ConstantFP : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Constant; }
+
+    ConstantFP(double value, ID id, const FlowGraphLocation& location) :
+      Node(NodeKind::Constant, id, location), value_(value) { }
+
+    [[nodiscard]] const double& value() const { return value_; }
+
+   private:
+    double value_;
   };
 
-  struct BinaryOp : public NodeBase {
-    Operator op;
-    SharedDependency lhs;
-    SharedDependency rhs;
+  class BinaryOp : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::BinaryOperator; }
+
+    BinaryOp(
+      const Operator op, SharedDependency lhs, SharedDependency rhs, const ID id, const FlowGraphLocation& location) :
+      Node(NodeKind::BinaryOperator, id, location), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
+
+    [[nodiscard]] const Operator& op() const { return op_; }
+    [[nodiscard]] const SharedDependency& lhs() const { return lhs_; }
+    [[nodiscard]] const SharedDependency& rhs() const { return rhs_; }
+
+   private:
+    Operator op_;
+    SharedDependency lhs_;
+    SharedDependency rhs_;
   };
 
-  struct UnaryOp : public NodeBase {
-    Operator op;
-    SharedDependency operand;
-  };
+  class UnaryOp : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::UnaryOperator; }
 
-  struct Node : public std::variant<ConstantFP, BinaryOp, UnaryOp> {
-    using variant::variant;
+    UnaryOp(const Operator op, SharedDependency operand, const ID id, const FlowGraphLocation& location) :
+      Node(NodeKind::UnaryOperator, id, location), op_(op), operand_(std::move(operand)) { }
 
-    template <typename Concrete>
-    bool is() const {
-      return std::holds_alternative<Concrete>(*this);
-    }
+    [[nodiscard]] const Operator& op() const { return op_; }
+    [[nodiscard]] const SharedDependency& operand() const { return operand_; }
 
-    template <typename Concrete>
-    Concrete& as() {
-      return std::get<Concrete>(*this);
-    }
-
-    template <typename Concrete>
-    const Concrete& as() const {
-      return std::get<Concrete>(*this);
-    }
-
-    ID id() const {
-      return std::visit([](const auto& n) { return n.id; }, *this);
-    }
+   private:
+    Operator op_;
+    SharedDependency operand_;
   };
 
   using DataFlowGraph = std::vector<UniqueNode>;

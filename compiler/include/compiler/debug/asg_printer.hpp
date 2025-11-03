@@ -25,6 +25,8 @@ namespace fluir::debug {
 
     void doOutOfOrderPrint(const asg::DataFlowGraph& graph);
     void doInOrderPrint(const asg::DataFlowGraph& graph);
+
+    void print(const asg::Node& node);
   };
 }  // namespace fluir::debug
 

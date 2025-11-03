@@ -25,7 +25,9 @@ namespace fluir {
     current_.name = func.name;
 
     for (const auto& node : func.statements) {
-      doTopLevel(*node);
+      recursivelyGenerate(*node);
+      // Each top level node will leave a value on the stack, so pop it off
+      emitByte(Instruction::POP);
     }
 
     // (FOR NOW) end all functions with the EXIT instruction
@@ -33,12 +35,12 @@ namespace fluir {
     code_.chunks.push_back(std::move(current_));
   }
 
-  void BytecodeGenerator::operator()(const asg::BinaryOp& node) {
-    std::visit(*this, *node.lhs);
-    std::visit(*this, *node.rhs);
+  void BytecodeGenerator::generate(const asg::BinaryOp& node) {
+    recursivelyGenerate(*node.lhs());
+    recursivelyGenerate(*node.rhs());
 
     // TODO: Handle other types here
-    switch (node.op) {
+    switch (node.op()) {
       case Operator::PLUS:
         emitByte(Instruction::F64_ADD);
         break;
@@ -58,10 +60,10 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::operator()(const asg::UnaryOp& node) {
-    std::visit(*this, *node.operand);
+  void BytecodeGenerator::generate(const asg::UnaryOp& node) {
+    recursivelyGenerate(*node.operand());
     // TODO: Handle other types here
-    switch (node.op) {
+    switch (node.op()) {
       case Operator::PLUS:
         emitByte(Instruction::F64_AFF);
         break;
@@ -75,8 +77,8 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::operator()(const asg::ConstantFP& node) {
-    const auto constant = addConstant(code::Value(node.value));
+  void BytecodeGenerator::generate(const asg::ConstantFP& node) {
+    const auto constant = addConstant(code::Value(node.value()));
 
     // TODO: Handle more constants with special instruction
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
@@ -112,10 +114,14 @@ namespace fluir {
     return std::move(code_);
   }
 
-  void BytecodeGenerator::doTopLevel(const asg::Node& node) {
-    std::visit(*this, node);
-
-    // Each top level node will leave a value on the stack, so pop it off
-    emitByte(Instruction::POP);
+  void BytecodeGenerator::recursivelyGenerate(const asg::Node& node) {
+    switch (node.kind()) {
+      case asg::NodeKind::BinaryOperator:
+        return generate(*node.as<asg::BinaryOp>());
+      case asg::NodeKind::UnaryOperator:
+        return generate(*node.as<asg::UnaryOp>());
+      case asg::NodeKind::Constant:
+        return generate(*node.as<asg::ConstantFP>());
+    }
   }
 }  // namespace fluir

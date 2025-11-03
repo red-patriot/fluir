@@ -30,27 +30,27 @@ namespace fluir::debug {
   }
 
   void AsgPrinter::operator()(const asg::BinaryOp& binary) {
-    out_ << formatIndented("BinaryOp({}): {}\n", binary.id, stringify(binary.op));
+    out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
     [[maybe_unused]] auto _ = indent();
-    std::visit(*this, *binary.lhs);
-    std::visit(*this, *binary.rhs);
+    print(*binary.lhs());
+    print(*binary.rhs());
   }
 
   void AsgPrinter::operator()(const asg::UnaryOp& unary) {
-    out_ << formatIndented("UnaryOp({}): {}\n", unary.id, stringify(unary.op));
+    out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
     [[maybe_unused]] auto _ = indent();
-    std::visit(*this, *unary.operand);
+    print(*unary.operand());
   }
 
   void AsgPrinter::operator()(const asg::ConstantFP& constant) {
-    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id, constant.value);
+    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id(), constant.value());
   }
 
   void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
     for (const auto& node : graph) {
-      std::visit(*this, *node);
+      print(*node);
     }
   }
   void AsgPrinter::doInOrderPrint(const asg::DataFlowGraph& graph) {
@@ -67,7 +67,19 @@ namespace fluir::debug {
 
     for (const auto& [id, index] : idIndices) {
       auto& node = graph.at(index);
-      std::visit(*this, *node);
+      print(*node);
     }
   }
+
+  void AsgPrinter::print(const asg::Node& node) {
+    switch (node.kind()) {
+      case asg::NodeKind::BinaryOperator:
+        return (*this)(*node.as<asg::BinaryOp>());
+      case asg::NodeKind::UnaryOperator:
+        return (*this)(*node.as<asg::UnaryOp>());
+      case asg::NodeKind::Constant:
+        return (*this)(*node.as<asg::ConstantFP>());
+    }
+  }
+
 }  // namespace fluir::debug

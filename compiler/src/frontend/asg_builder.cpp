@@ -72,32 +72,22 @@ namespace fluir {
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    fluir::asg::BinaryOp asg{{pt.id, pt.location}, pt.op, nullptr, nullptr};
 
-    asg.lhs = getDependency(pt.id, 0);
-    asg.rhs = getDependency(pt.id, 1);
-
-    return std::make_unique<asg::Node>(asg);
+    return std::make_unique<asg::BinaryOp>(pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), pt.id, pt.location);
   }
 
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
-    asg::UnaryOp asg{{pt.id, pt.location}, pt.op, nullptr};
-    asg.operand = getDependency(pt.id, 0);
-
-    return std::make_unique<asg::Node>(asg);
-  }
+    return std::make_unique<asg::UnaryOp>(pt.op, getDependency(pt.id, 0), pt.id, pt.location);
+  };
 
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-
-    asg::ConstantFP asg{{pt.id, pt.location}, pt.value};
     // TODO: handle other literal types here
-
-    return std::make_unique<asg::Node>(asg);
+    return std::make_unique<asg::ConstantFP>(pt.value, pt.id, pt.location);
   }
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {

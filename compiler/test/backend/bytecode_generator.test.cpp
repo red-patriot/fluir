@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "bytecode_assertions.hpp"
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/pass.hpp"
 
 namespace fa = fluir::asg;
@@ -47,16 +48,17 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
 
 TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
   fa::ASG input;
-  input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "foo", .statements = []() {
-                                                     fa::DataFlowGraph graph;
-                                                     graph.push_back(std::move(std::make_unique<fa::Node>(fa::BinaryOp{
-                                                       1,
-                                                       {},
-                                                       fluir::Operator::STAR,
-                                                       std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 1.5}),
-                                                       std::make_shared<fa::Node>(fa::ConstantFP{2, {}, 2.5})})));
-                                                     return graph;
-                                                   }()});
+  input.declarations.emplace_back(fa::FunctionDecl{
+    .id = 3, .name = "foo", .statements = []() {
+      fa::DataFlowGraph graph;
+      graph.push_back(
+        std::move(std::make_unique<fa::BinaryOp>(fluir::Operator::STAR,
+                                                 std::make_shared<fa::ConstantFP>(1.5, 3, fluir::FlowGraphLocation{}),
+                                                 std::make_shared<fa::ConstantFP>(2.5, 2, fluir::FlowGraphLocation{}),
+                                                 1,
+                                                 fluir::FlowGraphLocation{})));
+      return graph;
+    }()});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "foo",
@@ -86,8 +88,11 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
   input.declarations.emplace_back(
     fa::FunctionDecl{.id = 3, .name = "bar", .statements = []() {
                        fa::DataFlowGraph graph;
-                       graph.push_back(std::make_unique<fa::Node>(fa::UnaryOp{
-                         1, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 3.456})}));
+                       graph.push_back(std::make_unique<fa::UnaryOp>(
+                         fluir::Operator::MINUS,
+                         std::make_shared<fa::ConstantFP>(3.456, 3, fluir::FlowGraphLocation{}),
+                         1,
+                         fluir::FlowGraphLocation{}));
                        return graph;
                      }()});
 
@@ -113,20 +118,26 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
 }
 
 TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
-  auto shared = std::make_shared<fa::Node>(
-    fa::BinaryOp{4,
-                 {},
-                 fluir::Operator::SLASH,
-                 std::make_shared<fa::Node>(
-                   fa::UnaryOp{2, {}, fluir::Operator::MINUS, std::make_shared<fa::Node>(fa::ConstantFP{5, {}, 3.5})}),
-                 std::make_shared<fa::Node>(fa::ConstantFP{6, {}, 4.4})});
+  auto shared = std::make_shared<fa::BinaryOp>(
+    fluir::Operator::SLASH,
+    std::make_shared<fa::UnaryOp>(fluir::Operator::MINUS,
+                                  std::make_shared<fa::ConstantFP>(3.5, 5, fluir::FlowGraphLocation{}),
+                                  2,
+                                  fluir::FlowGraphLocation{}),
+    std::make_shared<fa::ConstantFP>(4.4, 6, fluir::FlowGraphLocation{}),
+    4,
+    fluir::FlowGraphLocation{});
   fa::ASG input;
   input.declarations.emplace_back(fa::FunctionDecl{
     .id = 3, .name = "bar", .statements = [&]() {
       fa::DataFlowGraph graph;
-      graph.push_back(std::make_unique<fa::Node>(
-        fa::BinaryOp{1, {}, fluir::Operator::PLUS, std::make_shared<fa::Node>(fa::ConstantFP{3, {}, 100.0}), shared}));
-      graph.push_back(std::make_unique<fa::Node>(fa::UnaryOp{7, {}, fluir::Operator::MINUS, shared}));
+      graph.push_back(
+        std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS,
+                                       std::make_shared<fa::ConstantFP>(100.0, 3, fluir::FlowGraphLocation{}),
+                                       shared,
+                                       1,
+                                       fluir::FlowGraphLocation{}));
+      graph.push_back(std::make_unique<fa::UnaryOp>(fluir::Operator::MINUS, shared, 7, fluir::FlowGraphLocation{}));
       return graph;
     }()});
 

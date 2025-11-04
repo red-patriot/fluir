@@ -2,10 +2,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "compiler/frontend/parser.hpp"
-#include "compiler/frontend/asg_builder.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
+#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/parser.hpp"
 #include "compiler/utility/context.hpp"
 #include "compiler/utility/pass.hpp"
 
@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto backendResults = frontendResults | fluir::generateCode;
+  auto backendResults = std::move(frontendResults) | fluir::generateCode;
   printDiagnostics(backendResults.ctx.diagnostics);
   if (backendResults.ctx.diagnostics.containsErrors()) {
     return 1;

@@ -77,8 +77,8 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::ConstantFP& node) {
-    const auto constant = addConstant(code::Value(node.value()));
+  void BytecodeGenerator::generate(const asg::Constant& node) {
+    const auto constant = addConstant(code::Value(node.f64()));
 
     // TODO: Handle more constants with special instruction
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
@@ -121,7 +121,7 @@ namespace fluir {
       case asg::NodeKind::UnaryOperator:
         return generate(*node.as<asg::UnaryOp>());
       case asg::NodeKind::Constant:
-        return generate(*node.as<asg::ConstantFP>());
+        return generate(*node.as<asg::Constant>());
     }
   }
 }  // namespace fluir

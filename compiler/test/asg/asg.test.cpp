@@ -59,8 +59,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
   auto binary = statement->as<fluir::asg::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::STAR, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::ConstantFP>()->value());
-  EXPECT_DOUBLE_EQ(-4.7, binary->rhs()->as<fluir::asg::ConstantFP>()->value());
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
+  EXPECT_DOUBLE_EQ(-4.7, binary->rhs()->as<fluir::asg::Constant>()->f64());
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
@@ -94,11 +94,11 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
   auto binary = statement->as<fluir::asg::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::STAR, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::ConstantFP>()->value());
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
   ASSERT_TRUE(binary->rhs()->is<fluir::asg::UnaryOp>());
   auto unary = binary->rhs()->as<fluir::asg::UnaryOp>();
   EXPECT_EQ(fluir::Operator::PLUS, unary->op());
-  EXPECT_DOUBLE_EQ(5.6, unary->operand()->as<fluir::asg::ConstantFP>()->value());
+  EXPECT_DOUBLE_EQ(5.6, unary->operand()->as<fluir::asg::Constant>()->f64());
 
   EXPECT_EQ(binary->lhs(), unary->operand());
 }
@@ -144,11 +144,11 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   auto binary = (*statement)->as<fluir::asg::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::SLASH, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::ConstantFP>()->value());
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
   ASSERT_TRUE(binary->rhs()->is<fluir::asg::UnaryOp>());
   auto unary1 = binary->rhs()->as<fluir::asg::UnaryOp>();
   EXPECT_EQ(fluir::Operator::PLUS, unary1->op());
-  EXPECT_DOUBLE_EQ(5.6, unary1->operand()->as<fluir::asg::ConstantFP>()->value());
+  EXPECT_DOUBLE_EQ(5.6, unary1->operand()->as<fluir::asg::Constant>()->f64());
 
   EXPECT_EQ(binary->lhs(), unary1->operand());
 

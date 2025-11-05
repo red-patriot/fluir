@@ -53,8 +53,8 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
       fa::DataFlowGraph graph;
       graph.push_back(
         std::move(std::make_unique<fa::BinaryOp>(fluir::Operator::STAR,
-                                                 std::make_shared<fa::ConstantFP>(1.5, 3, fluir::FlowGraphLocation{}),
-                                                 std::make_shared<fa::ConstantFP>(2.5, 2, fluir::FlowGraphLocation{}),
+                                                 std::make_shared<fa::Constant>(1.5, 3, fluir::FlowGraphLocation{}),
+                                                 std::make_shared<fa::Constant>(2.5, 2, fluir::FlowGraphLocation{}),
                                                  1,
                                                  fluir::FlowGraphLocation{})));
       return graph;
@@ -90,7 +90,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                        fa::DataFlowGraph graph;
                        graph.push_back(std::make_unique<fa::UnaryOp>(
                          fluir::Operator::MINUS,
-                         std::make_shared<fa::ConstantFP>(3.456, 3, fluir::FlowGraphLocation{}),
+                         std::make_shared<fa::Constant>(3.456, 3, fluir::FlowGraphLocation{}),
                          1,
                          fluir::FlowGraphLocation{}));
                        return graph;
@@ -121,10 +121,10 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   auto shared = std::make_shared<fa::BinaryOp>(
     fluir::Operator::SLASH,
     std::make_shared<fa::UnaryOp>(fluir::Operator::MINUS,
-                                  std::make_shared<fa::ConstantFP>(3.5, 5, fluir::FlowGraphLocation{}),
+                                  std::make_shared<fa::Constant>(3.5, 5, fluir::FlowGraphLocation{}),
                                   2,
                                   fluir::FlowGraphLocation{}),
-    std::make_shared<fa::ConstantFP>(4.4, 6, fluir::FlowGraphLocation{}),
+    std::make_shared<fa::Constant>(4.4, 6, fluir::FlowGraphLocation{}),
     4,
     fluir::FlowGraphLocation{});
   fa::ASG input;
@@ -133,7 +133,7 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
       fa::DataFlowGraph graph;
       graph.push_back(
         std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS,
-                                       std::make_shared<fa::ConstantFP>(100.0, 3, fluir::FlowGraphLocation{}),
+                                       std::make_shared<fa::Constant>(100.0, 3, fluir::FlowGraphLocation{}),
                                        shared,
                                        1,
                                        fluir::FlowGraphLocation{}));

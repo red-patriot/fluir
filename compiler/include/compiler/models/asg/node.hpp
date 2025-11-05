@@ -3,9 +3,11 @@
 
 #include <memory>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "compiler/models/id.hpp"
+#include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
@@ -52,17 +54,22 @@ namespace fluir::asg {
   using SharedDependency = std::shared_ptr<Node>;
   using UniqueNode = std::unique_ptr<Node>;
 
-  class ConstantFP : public Node {
+  class Constant : public Node {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Constant; }
 
-    ConstantFP(double value, ID id, const FlowGraphLocation& location) :
+    Constant(literals_types::Literal value, ID id, const FlowGraphLocation& location) :
       Node(NodeKind::Constant, id, location), value_(value) { }
 
-    [[nodiscard]] const double& value() const { return value_; }
+    [[nodiscard]] const literals_types::Literal& value() const { return value_; }
+    [[nodiscard]] const literals_types::F64& f64() const { return std::get<literals_types::F64>(value_); }
+    [[nodiscard]] const literals_types::I8& i8() const { return std::get<literals_types::I8>(value_); }
+    [[nodiscard]] const literals_types::I16& i16() const { return std::get<literals_types::I16>(value_); }
+    [[nodiscard]] const literals_types::I32& i32() const { return std::get<literals_types::I32>(value_); }
+    [[nodiscard]] const literals_types::I64& i64() const { return std::get<literals_types::I64>(value_); }
 
    private:
-    double value_;
+    literals_types::Literal value_;
   };
 
   class BinaryOp : public Node {

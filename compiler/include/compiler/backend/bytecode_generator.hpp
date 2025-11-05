@@ -18,7 +18,7 @@ namespace fluir {
 
     void generate(const asg::BinaryOp& binary);
     void generate(const asg::UnaryOp& unary);
-    void generate(const asg::ConstantFP& constant);
+    void generate(const asg::Constant& constant);
 
    private:
     Context& ctx_;

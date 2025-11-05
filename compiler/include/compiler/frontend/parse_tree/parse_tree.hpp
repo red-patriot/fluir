@@ -8,20 +8,12 @@
 #include <vector>
 
 #include "compiler/models/id.hpp"
+#include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
 namespace fluir::pt {
-  using F64 = double;
-  using I8 = int8_t;
-  using I16 = int16_t;
-  using I32 = int32_t;
-  using I64 = int64_t;
-  using U8 = uint8_t;
-  using U16 = uint16_t;
-  using U32 = uint32_t;
-  using U64 = uint64_t;
-  using Literal = std::variant<F64, I8, I16, I32, I64, U8, U16, U32, U64>;  // TODO: Support other literal types
+  using namespace literals_types;
 
   struct Constant {
     ID id;

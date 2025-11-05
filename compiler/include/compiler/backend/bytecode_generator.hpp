@@ -15,9 +15,10 @@ namespace fluir {
     static Results<code::ByteCode> generate(Context& ctx, const asg::ASG& graph);
 
     void operator()(const asg::FunctionDecl& func);
-    void operator()(const asg::BinaryOp& binary);
-    void operator()(const asg::UnaryOp& unary);
-    void operator()(const asg::ConstantFP& constant);
+
+    void generate(const asg::BinaryOp& binary);
+    void generate(const asg::UnaryOp& unary);
+    void generate(const asg::ConstantFP& constant);
 
    private:
     Context& ctx_;
@@ -32,7 +33,7 @@ namespace fluir {
     size_t addConstant(code::Value value);
 
     Results<code::ByteCode> run();
-    void doTopLevel(const asg::Node& node);
+    void recursivelyGenerate(const asg::Node& node);
   };
 }  // namespace fluir
 

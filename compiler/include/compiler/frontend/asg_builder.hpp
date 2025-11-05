@@ -33,9 +33,9 @@ namespace fluir {
    public:
     static Results<asg::DataFlowGraph> buildFrom(Context& ctx, pt::Block block);
 
-    asg::Node operator()(const pt::Binary& pt);
-    asg::Node operator()(const pt::Unary& pt);
-    asg::Node operator()(const pt::Constant& pt);
+    asg::UniqueNode operator()(const pt::Binary& pt);
+    asg::UniqueNode operator()(const pt::Unary& pt);
+    asg::UniqueNode operator()(const pt::Constant& pt);
 
    private:
     Context& ctx_;

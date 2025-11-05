@@ -6,10 +6,7 @@
 #include <fmt/format.h>
 
 namespace fluir::debug {
-  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) :
-      out_(out),
-      inOrder_(inOrder) {
-  }
+  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
 
   void AsgPrinter::print(const asg::ASG& asg) {
     // TODO: Sort decls if needed
@@ -33,27 +30,27 @@ namespace fluir::debug {
   }
 
   void AsgPrinter::operator()(const asg::BinaryOp& binary) {
-    out_ << formatIndented("BinaryOp({}): {}\n", binary.id, stringify(binary.op));
+    out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
     [[maybe_unused]] auto _ = indent();
-    std::visit(*this, *binary.lhs);
-    std::visit(*this, *binary.rhs);
+    print(*binary.lhs());
+    print(*binary.rhs());
   }
 
   void AsgPrinter::operator()(const asg::UnaryOp& unary) {
-    out_ << formatIndented("UnaryOp({}): {}\n", unary.id, stringify(unary.op));
+    out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
     [[maybe_unused]] auto _ = indent();
-    std::visit(*this, *unary.operand);
+    print(*unary.operand());
   }
 
   void AsgPrinter::operator()(const asg::ConstantFP& constant) {
-    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id, constant.value);
+    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id(), constant.value());
   }
 
   void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
     for (const auto& node : graph) {
-      std::visit(*this, node);
+      print(*node);
     }
   }
   void AsgPrinter::doInOrderPrint(const asg::DataFlowGraph& graph) {
@@ -61,17 +58,28 @@ namespace fluir::debug {
     std::vector<std::pair<ID, size_t>> idIndices;
     idIndices.reserve(graph.size());
     for (size_t i = 0; i != graph.size(); ++i) {
-      idIndices.emplace_back(std::pair{graph.at(i).id(), i});
+      idIndices.emplace_back(std::pair{graph.at(i)->id(), i});
     }
 
-    std::ranges::sort(idIndices,
-                      [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
-                        return lhs.first < rhs.first;
-                      });
+    std::ranges::sort(idIndices, [](const std::pair<ID, size_t>& lhs, const std::pair<ID, size_t>& rhs) {
+      return lhs.first < rhs.first;
+    });
 
     for (const auto& [id, index] : idIndices) {
       auto& node = graph.at(index);
-      std::visit(*this, node);
+      print(*node);
     }
   }
+
+  void AsgPrinter::print(const asg::Node& node) {
+    switch (node.kind()) {
+      case asg::NodeKind::BinaryOperator:
+        return (*this)(*node.as<asg::BinaryOp>());
+      case asg::NodeKind::UnaryOperator:
+        return (*this)(*node.as<asg::UnaryOp>());
+      case asg::NodeKind::Constant:
+        return (*this)(*node.as<asg::ConstantFP>());
+    }
+  }
+
 }  // namespace fluir::debug

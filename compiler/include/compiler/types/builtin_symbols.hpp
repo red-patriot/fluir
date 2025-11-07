@@ -5,6 +5,7 @@
 
 namespace fluir::types {
   void instantiateBuiltinTypes(SymbolTable& table);
-}
+  void instantiateBuiltinOperators(SymbolTable& table);
+}  // namespace fluir::types
 
 #endif

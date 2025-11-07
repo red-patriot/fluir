@@ -119,3 +119,51 @@ INSTANTIATE_TEST_SUITE_P(,
                                            tuple{"U64", fluir::Operator::STAR, "U64", "U64"},
                                            tuple{"U64", fluir::Operator::SLASH, "U64", "U64"},
                                            tuple{"U64", fluir::Operator::PLUS, "", "U64"}));
+
+class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, std::string, std::string>> {
+ public:
+  fluir::types::SymbolTable uut;
+
+  void SetUp() override {
+    fluir::types::instantiateBuiltinTypes(uut);
+    fluir::types::instantiateBuiltinCasts(uut);
+  }
+};
+
+TEST_P(TestBuiltinCasts, Test) {
+  auto& [isImplicit, sourceName, targetName] = GetParam();
+
+  auto source = uut.getType(sourceName);
+  auto target = uut.getType(targetName);
+
+  if (isImplicit) {
+    EXPECT_TRUE(uut.canExplicitlyConvert(source, target));
+    EXPECT_TRUE(uut.canImplicitlyConvert(source, target));
+  } else {
+    EXPECT_TRUE(uut.canExplicitlyConvert(source, target));
+    EXPECT_FALSE(uut.canImplicitlyConvert(source, target));
+  }
+}
+
+INSTANTIATE_TEST_SUITE_P(,
+                         TestBuiltinCasts,
+                         ::testing::Values(tuple{true, "I8", "I16"},
+                                           tuple{true, "I8", "I32"},
+                                           tuple{true, "I8", "I64"},
+                                           tuple{true, "I8", "F64"},
+                                           tuple{true, "I16", "I32"},
+                                           tuple{true, "I16", "I64"},
+                                           tuple{true, "I16", "F64"},
+                                           tuple{true, "I32", "I64"},
+                                           tuple{true, "I32", "F64"},
+                                           tuple{true, "I64", "F64"},
+                                           tuple{true, "U8", "U16"},
+                                           tuple{true, "U8", "U32"},
+                                           tuple{true, "U8", "U64"},
+                                           tuple{true, "U8", "F64"},
+                                           tuple{true, "U16", "U32"},
+                                           tuple{true, "U16", "U64"},
+                                           tuple{true, "U16", "F64"},
+                                           tuple{true, "U32", "U64"},
+                                           tuple{true, "U32", "F64"},
+                                           tuple{true, "U64", "F64"}));

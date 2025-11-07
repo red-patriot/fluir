@@ -44,4 +44,31 @@ namespace fluir::types {
     }
   }
 
+  void instantiateBuiltinCasts(SymbolTable& table) {
+    // TODO: Add builtin explicit casts
+    static const std::array<std::string, 5> intCoercionChain{"I8", "I16", "I32", "I64", "F64"};
+
+    for (auto i = intCoercionChain.begin();
+         // use prev to not create coercions for F64
+         i != std::prev(intCoercionChain.end());
+         ++i) {
+      auto source = table.getType(*i);
+      for (auto j = std::next(i); j != intCoercionChain.end(); ++j) {
+        auto target = table.getType(*j);
+        table.addImplicitConversion(source, target);
+      }
+    }
+
+    static const std::array<std::string, 5> uintCoercionChain{"U8", "U16", "U32", "U64", "F64"};
+    for (auto i = uintCoercionChain.begin();
+         // use prev to not create coercions for F64
+         i != std::prev(uintCoercionChain.end());
+         ++i) {
+      auto source = table.getType(*i);
+      for (auto j = std::next(i); j != uintCoercionChain.end(); ++j) {
+        auto target = table.getType(*j);
+        table.addImplicitConversion(source, target);
+      }
+    }
+  }
 }  // namespace fluir::types

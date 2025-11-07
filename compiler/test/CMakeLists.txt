@@ -26,6 +26,7 @@ set(FLUIR_TYPES_TEST_SOURCES
     types/type.test.cpp
     types/symbol_table.test.cpp
     types/overload_resolution.test.cpp
+    types/builtin_symbols.test.cpp
 )
 
 target_sources(

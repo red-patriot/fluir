@@ -10,6 +10,7 @@
 #include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
+#include "compiler/types/type.hpp"
 
 namespace fluir::asg {
   enum class NodeKind {
@@ -40,6 +41,9 @@ namespace fluir::asg {
     [[nodiscard]] ID id() const { return id_; }
     [[nodiscard]] FlowGraphLocation location() const { return location_; }
     [[nodiscard]] NodeKind kind() const { return kind_; }
+    [[nodiscard]] types::Type const* type() const { return type_; }
+
+    void setType(types::Type const* type) { type_ = type; }
 
    protected:
     Node(const NodeKind kind, const ID id, const FlowGraphLocation& location) :
@@ -49,6 +53,7 @@ namespace fluir::asg {
     NodeKind kind_;
     ID id_;
     FlowGraphLocation location_;
+    types::Type const* type_ = nullptr;
   };
 
   using SharedDependency = std::shared_ptr<Node>;

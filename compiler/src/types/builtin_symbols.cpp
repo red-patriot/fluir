@@ -4,6 +4,14 @@
 #include <string>
 
 namespace fluir::types {
+  SymbolTable buildSymbolTable() {
+    SymbolTable table;
+    instantiateBuiltinTypes(table);
+    instantiateBuiltinOperators(table);
+    instantiateBuiltinCasts(table);
+    return table;
+  }
+
   void instantiateBuiltinTypes(SymbolTable& table) {
     table.addType(Type("F64"));
     table.addType(Type("I8"));

@@ -10,6 +10,7 @@ set(FLUIR_FRONTEND_TEST_SOURCES
     detect_syntax_errors.test.cpp
     parser.test.cpp
     frontend/parse_number.test.cpp
+    frontend/type_checker.test.cpp
 )
 
 set(FLUIR_ASG_TEST_SOURCES

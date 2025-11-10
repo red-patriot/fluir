@@ -4,6 +4,8 @@
 #include "compiler/types/symbol_table.hpp"
 
 namespace fluir::types {
+  SymbolTable buildSymbolTable();
+
   void instantiateBuiltinTypes(SymbolTable& table);
   void instantiateBuiltinOperators(SymbolTable& table);
   void instantiateBuiltinCasts(SymbolTable& table);

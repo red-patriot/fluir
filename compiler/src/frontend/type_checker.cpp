@@ -77,7 +77,7 @@ namespace fluir {
       const auto rhs = binary->rhs()->type();
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
-      binary->setType(selectedOverload->getReturn());
+      binary->setDefinition(selectedOverload);
     }
 
     void checkType(Context& ctx, asg::UnaryOp* unary) {
@@ -87,7 +87,7 @@ namespace fluir {
 
       const auto operand = unary->operand()->type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
-      unary->setType(selectedOverload->getReturn());
+      unary->setDefinition(selectedOverload);
     }
   }  // namespace
 }  // namespace fluir

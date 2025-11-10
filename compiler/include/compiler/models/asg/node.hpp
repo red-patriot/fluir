@@ -10,6 +10,7 @@
 #include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
+#include "compiler/types/operator_def.hpp"
 #include "compiler/types/type.hpp"
 
 namespace fluir::asg {
@@ -88,11 +89,17 @@ namespace fluir::asg {
     [[nodiscard]] const Operator& op() const { return op_; }
     [[nodiscard]] const SharedDependency& lhs() const { return lhs_; }
     [[nodiscard]] const SharedDependency& rhs() const { return rhs_; }
+    [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
+    void setDefinition(types::OperatorDefinition const* def) {
+      def_ = def;
+      setType(def->getReturn());
+    }
 
    private:
     Operator op_;
     SharedDependency lhs_;
     SharedDependency rhs_;
+    types::OperatorDefinition const* def_ = nullptr;
   };
 
   class UnaryOp : public Node {
@@ -104,10 +111,16 @@ namespace fluir::asg {
 
     [[nodiscard]] const Operator& op() const { return op_; }
     [[nodiscard]] const SharedDependency& operand() const { return operand_; }
+    [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
+    void setDefinition(types::OperatorDefinition const* def) {
+      def_ = def;
+      setType(def->getReturn());
+    }
 
    private:
     Operator op_;
     SharedDependency operand_;
+    types::OperatorDefinition const* def_ = nullptr;
   };
 
   using DataFlowGraph = std::vector<UniqueNode>;

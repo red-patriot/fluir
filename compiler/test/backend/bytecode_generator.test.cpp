@@ -4,11 +4,14 @@
 
 #include "bytecode_assertions.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/frontend/type_checker.hpp"
+#include "compiler/types/builtin_symbols.hpp"
 #include "compiler/utility/pass.hpp"
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;
 using namespace fc::value_literals;
+using namespace fluir::literals_types;
 
 TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fa::ASG input;
@@ -174,4 +177,96 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+}
+
+TEST(TestBytecodeGenerator, GeneratesIntConstants) {
+  fa::ASG input;
+  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<I8>(8), 1, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<I16>(16), 2, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<I32>(32), 3, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<I64>(64), 4, fluir::FlowGraphLocation{})));
+
+    return fluir::checkTypes(ctx, std::move(decl)).value();
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "ints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x02,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x03,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
+
+  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST(TestBytecodeGenerator, GeneratesUintConstants) {
+  fa::ASG input;
+  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<U8>(8), 1, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<U16>(16), 2, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<U32>(32), 3, fluir::FlowGraphLocation{})));
+    decl.statements.push_back(
+      std::move(std::make_unique<fa::Constant>(static_cast<U64>(64), 4, fluir::FlowGraphLocation{})));
+
+    return fluir::checkTypes(ctx, std::move(decl)).value();
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "ints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x02,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x03,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
+
+  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }

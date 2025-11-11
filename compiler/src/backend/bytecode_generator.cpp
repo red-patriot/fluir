@@ -78,9 +78,31 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const asg::Constant& node) {
-    const auto constant = addConstant(code::Value(node.f64()));
-
-    // TODO: Handle more constants with special instruction
+    auto type = node.type();
+    size_t constant;
+    if (type == ctx_.symbolTable.getType("F64")) {
+      constant = addConstant(code::Value(node.f64()));
+    } else if (type == ctx_.symbolTable.getType("I8")) {
+      constant = addConstant(code::Value(node.i8()));
+    } else if (type == ctx_.symbolTable.getType("I16")) {
+      constant = addConstant(code::Value(node.i16()));
+    } else if (type == ctx_.symbolTable.getType("I32")) {
+      constant = addConstant(code::Value(node.i32()));
+    } else if (type == ctx_.symbolTable.getType("I64")) {
+      constant = addConstant(code::Value(node.i64()));
+    } else if (type == ctx_.symbolTable.getType("U8")) {
+      constant = addConstant(code::Value(node.u8()));
+    } else if (type == ctx_.symbolTable.getType("U16")) {
+      constant = addConstant(code::Value(node.u16()));
+    } else if (type == ctx_.symbolTable.getType("U32")) {
+      constant = addConstant(code::Value(node.u32()));
+    } else if (type == ctx_.symbolTable.getType("U64")) {
+      constant = addConstant(code::Value(node.u64()));
+    } else {
+      ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");
+      return;
+    }
+    // TODO: Handle too large
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 

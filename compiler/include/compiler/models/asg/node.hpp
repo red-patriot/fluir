@@ -73,6 +73,10 @@ namespace fluir::asg {
     [[nodiscard]] const literals_types::I16& i16() const { return std::get<literals_types::I16>(value_); }
     [[nodiscard]] const literals_types::I32& i32() const { return std::get<literals_types::I32>(value_); }
     [[nodiscard]] const literals_types::I64& i64() const { return std::get<literals_types::I64>(value_); }
+    [[nodiscard]] const literals_types::U8& u8() const { return std::get<literals_types::U8>(value_); }
+    [[nodiscard]] const literals_types::U16& u16() const { return std::get<literals_types::U16>(value_); }
+    [[nodiscard]] const literals_types::U32& u32() const { return std::get<literals_types::U32>(value_); }
+    [[nodiscard]] const literals_types::U64& u64() const { return std::get<literals_types::U64>(value_); }
 
    private:
     literals_types::Literal value_;

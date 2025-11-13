@@ -34,6 +34,10 @@ namespace fluir {
 
     Results<code::ByteCode> run();
     void recursivelyGenerate(const asg::Node& node);
+
+    void emitFloatOperator(const Operator op);
+    void emitIntOperator(const Operator op);
+    void emitUintOperator(const Operator op);
   };
 }  // namespace fluir
 

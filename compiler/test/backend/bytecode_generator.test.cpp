@@ -270,3 +270,115 @@ TEST(TestBytecodeGenerator, GeneratesUintConstants) {
   EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }
+
+TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
+  fa::ASG input;
+  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::PLUS,
+      std::make_shared<fa::Constant>(static_cast<I32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<I32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::MINUS,
+      std::make_shared<fa::Constant>(static_cast<I32>(28), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<I32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::STAR,
+      std::make_shared<fa::Constant>(static_cast<I32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<I32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::SLASH,
+      std::make_shared<fa::Constant>(static_cast<I32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<I32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+
+    return fluir::checkTypes(ctx, std::move(decl)).value();
+  }());
+
+  fc::ByteCode expected{
+    .header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+    .chunks = {fc::Chunk{
+      .name = "ints",
+      .code =
+        {
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
+          fc::Instruction::EXIT,
+        },
+      .constants = {8_i32, 16_i32, 28_i32}}}};
+
+  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
+  fa::ASG input;
+  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::PLUS,
+      std::make_shared<fa::Constant>(static_cast<U32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<U32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::MINUS,
+      std::make_shared<fa::Constant>(static_cast<U32>(28), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<U32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::STAR,
+      std::make_shared<fa::Constant>(static_cast<U32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<U32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::SLASH,
+      std::make_shared<fa::Constant>(static_cast<U32>(8), 1, fluir::FlowGraphLocation{}),
+      std::make_shared<fa::Constant>(static_cast<U32>(16), 2, fluir::FlowGraphLocation{}),
+      3,
+      fluir::FlowGraphLocation{})));
+
+    return fluir::checkTypes(ctx, std::move(decl)).value();
+  }());
+
+  fc::ByteCode expected{
+    .header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+    .chunks = {fc::Chunk{
+      .name = "ints",
+      .code =
+        {
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
+          fc::Instruction::EXIT,
+        },
+      .constants = {8_u32, 16_u32, 28_u32}}}};
+
+  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}

@@ -5,8 +5,8 @@
 #include "compiler/utility/context.hpp"
 
 namespace fluir {
-  Results<asg::ASG> checkTypes(Context& ctx, asg::ASG graph);
-  Results<asg::Declaration> checkTypes(Context& ctx, asg::Declaration decl);
+  Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph);
+  Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl);
 }  // namespace fluir
 
 #endif

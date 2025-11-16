@@ -22,9 +22,9 @@ namespace fluir {
     }
   }  // namespace
 
-  Results<asg::ASG> checkTypes(Context& ctx, asg::ASG graph) {
+  Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph) {
     for (auto i = graph.declarations.begin(); i != graph.declarations.end(); ++i) {
-      auto result = checkTypes(ctx, std::move(*i));
+      auto result = checkDeclType(ctx, std::move(*i));
       if (!result.has_value()) {
         return NoResult;
       }
@@ -33,7 +33,7 @@ namespace fluir {
     return graph;
   }
 
-  Results<asg::Declaration> checkTypes(Context& ctx, asg::Declaration decl) {
+  Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl) {
     for (auto& node : decl.statements) {
       checkType(ctx, node.get());
     }

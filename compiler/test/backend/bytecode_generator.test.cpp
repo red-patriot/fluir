@@ -193,7 +193,7 @@ TEST(TestBytecodeGenerator, GeneratesIntConstants) {
     decl.statements.push_back(
       std::move(std::make_unique<fa::Constant>(static_cast<I64>(64), 4, fluir::FlowGraphLocation{})));
 
-    return fluir::checkTypes(ctx, std::move(decl)).value();
+    return fluir::checkDeclType(ctx, std::move(decl)).value();
   }());
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
@@ -239,7 +239,7 @@ TEST(TestBytecodeGenerator, GeneratesUintConstants) {
     decl.statements.push_back(
       std::move(std::make_unique<fa::Constant>(static_cast<U64>(64), 4, fluir::FlowGraphLocation{})));
 
-    return fluir::checkTypes(ctx, std::move(decl)).value();
+    return fluir::checkDeclType(ctx, std::move(decl)).value();
   }());
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
@@ -301,7 +301,7 @@ TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
       3,
       fluir::FlowGraphLocation{})));
 
-    return fluir::checkTypes(ctx, std::move(decl)).value();
+    return fluir::checkDeclType(ctx, std::move(decl)).value();
   }());
 
   fc::ByteCode expected{
@@ -357,7 +357,7 @@ TEST(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
       3,
       fluir::FlowGraphLocation{})));
 
-    return fluir::checkTypes(ctx, std::move(decl)).value();
+    return fluir::checkDeclType(ctx, std::move(decl)).value();
   }());
 
   fc::ByteCode expected{

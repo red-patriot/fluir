@@ -14,7 +14,7 @@ TEST(TestDeclaractionTypeChecker, HandlesSingleConstant) {
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = ctx.symbolTable.getType("F64");
 
-  const auto result = fluir::checkTypes(ctx, std::move(decl));
+  const auto result = fluir::checkDeclType(ctx, std::move(decl));
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -31,7 +31,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = ctx.symbolTable.getType("F64");
 
-  const auto result = fluir::checkTypes(ctx, std::move(decl));
+  const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
@@ -54,7 +54,7 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = ctx.symbolTable.getType("U8");
 
-  const auto result = fluir::checkTypes(ctx, std::move(decl));
+  const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
@@ -78,7 +78,7 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = ctx.symbolTable.getType("U8");
 
-  const auto result = fluir::checkTypes(ctx, std::move(asg));
+  const auto result = fluir::typeCheck(ctx, std::move(asg));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->declarations.front().statements.front();

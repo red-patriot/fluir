@@ -65,3 +65,27 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
   EXPECT_EQ(expected, concrete->operand()->type());
 }
+
+TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
+  fa::ASG asg{.declarations = {}};
+  asg.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
+  auto& decl = asg.declarations.front();
+  auto operand =
+    std::make_shared<fa::Constant>(static_cast<fluir::literals_types::U8>(7), 1, fluir::FlowGraphLocation{});
+  decl.statements.emplace_back(
+    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, 3, fluir::FlowGraphLocation{}));
+
+  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  const auto expected = ctx.symbolTable.getType("U8");
+
+  const auto result = fluir::checkTypes(ctx, std::move(asg));
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  ASSERT_TRUE(result.has_value());
+  const auto& actual = result->declarations.front().statements.front();
+
+  EXPECT_EQ(expected, actual->type());
+
+  const auto& concrete = actual->as<fa::UnaryOp>();
+  ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
+  EXPECT_EQ(expected, concrete->operand()->type());
+}

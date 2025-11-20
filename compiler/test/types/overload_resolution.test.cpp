@@ -47,14 +47,14 @@ class TestOverloadResolution : public ::testing::Test {
 
   fluir::types::SymbolTable uut;
 
-  fluir::types::Type const* A;
-  fluir::types::Type const* B;
-  fluir::types::Type const* C;
-  fluir::types::Type const* D;
-  fluir::types::Type const* E;
-  fluir::types::Type const* F;
-  fluir::types::Type const* G;
-  fluir::types::Type const* H;
+  fluir::types::TypeID A{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID B{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID C{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID D{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID E{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID F{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID G{fluir::types::TypeID::ID_INVALID};
+  fluir::types::TypeID H{fluir::types::TypeID::ID_INVALID};
 };
 
 TEST_F(TestOverloadResolution, ResolvesBinaryNoCast) {

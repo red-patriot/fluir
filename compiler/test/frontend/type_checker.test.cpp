@@ -12,7 +12,7 @@ TEST(TestDeclaractionTypeChecker, HandlesSingleConstant) {
   decl.statements.emplace_back(std::make_unique<fa::Constant>(1., 1, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
-  const auto expected = ctx.symbolTable.getType("F64");
+  const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   ASSERT_TRUE(result.has_value());
@@ -29,7 +29,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
-  const auto expected = ctx.symbolTable.getType("F64");
+  const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
@@ -52,7 +52,7 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, 3, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
-  const auto expected = ctx.symbolTable.getType("U8");
+  const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
@@ -76,7 +76,7 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, 3, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
-  const auto expected = ctx.symbolTable.getType("U8");
+  const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::typeCheck(ctx, std::move(asg));
   EXPECT_FALSE(ctx.diagnostics.containsErrors());

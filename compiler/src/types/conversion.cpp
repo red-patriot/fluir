@@ -5,9 +5,9 @@
 namespace std {
   size_t hash<fluir::types::Conversion>::operator()(fluir::types::Conversion const& conversion) const noexcept {
     size_t seed = 0;
-    constexpr hash<::fluir::types::Type const*> ptrHash{};
-    seed ^= ptrHash(conversion.from);
-    seed ^= ptrHash(conversion.to);
+    constexpr hash<::fluir::types::TypeID> enumHash{};
+    seed ^= enumHash(conversion.from);
+    seed ^= enumHash(conversion.to);
     seed ^= std::hash<bool>{}(conversion.isImplicit);
 
     return seed;

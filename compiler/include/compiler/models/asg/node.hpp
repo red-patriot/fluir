@@ -11,7 +11,7 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "compiler/types/operator_def.hpp"
-#include "compiler/types/type.hpp"
+#include "compiler/types/typeid.hpp"
 
 namespace fluir::asg {
   enum class NodeKind {
@@ -42,9 +42,9 @@ namespace fluir::asg {
     [[nodiscard]] ID id() const { return id_; }
     [[nodiscard]] FlowGraphLocation location() const { return location_; }
     [[nodiscard]] NodeKind kind() const { return kind_; }
-    [[nodiscard]] types::Type const* type() const { return type_; }
+    [[nodiscard]] types::TypeID type() const { return type_; }
 
-    void setType(types::Type const* type) { type_ = type; }
+    void setType(types::TypeID type) { type_ = type; }
 
    protected:
     Node(const NodeKind kind, const ID id, const FlowGraphLocation& location) :
@@ -54,7 +54,7 @@ namespace fluir::asg {
     NodeKind kind_;
     ID id_;
     FlowGraphLocation location_;
-    types::Type const* type_ = nullptr;
+    types::TypeID type_ = types::ID_INVALID;
   };
 
   using SharedDependency = std::shared_ptr<Node>;
@@ -65,7 +65,9 @@ namespace fluir::asg {
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Constant; }
 
     Constant(literals_types::Literal value, ID id, const FlowGraphLocation& location) :
-      Node(NodeKind::Constant, id, location), value_(value) { }
+      Node(NodeKind::Constant, id, location), value_(value) {
+      setType(determineType(value_));
+    }
 
     [[nodiscard]] const literals_types::Literal& value() const { return value_; }
     [[nodiscard]] const literals_types::F64& f64() const { return std::get<literals_types::F64>(value_); }
@@ -80,6 +82,31 @@ namespace fluir::asg {
 
    private:
     literals_types::Literal value_;
+
+    static types::TypeID determineType(literals_types::Literal value) {
+      switch (value.index()) {
+        case 0:
+          return types::ID_F64;
+        case 1:
+          return types::ID_I8;
+        case 2:
+          return types::ID_I16;
+        case 3:
+          return types::ID_I32;
+        case 4:
+          return types::ID_I64;
+        case 5:
+          return types::ID_U8;
+        case 6:
+          return types::ID_U16;
+        case 7:
+          return types::ID_U32;
+        case 8:
+          return types::ID_U64;
+        default:
+          return types::ID_INVALID;
+      }
+    }
   };
 
   class BinaryOp : public Node {

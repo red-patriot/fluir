@@ -45,13 +45,11 @@ namespace fluir {
       return;
     }
 
-    if (const auto type = node.lhs()->type(); type == ctx_.symbolTable.getType("F64")) {
+    if (const auto type = node.lhs()->type(); type == types::ID_F64) {
       emitFloatOperator(node.op());
-    } else if (type == ctx_.symbolTable.getType("I64") || type == ctx_.symbolTable.getType("I32") ||
-               type == ctx_.symbolTable.getType("I16") || type == ctx_.symbolTable.getType("I8")) {
+    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
       emitIntOperator(node.op());
-    } else if (type == ctx_.symbolTable.getType("U64") || type == ctx_.symbolTable.getType("U32") ||
-               type == ctx_.symbolTable.getType("U16") || type == ctx_.symbolTable.getType("U8")) {
+    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
       emitUintOperator(node.op());
     } else {
       // TODO: Handle this case better
@@ -79,23 +77,23 @@ namespace fluir {
   void BytecodeGenerator::generate(const asg::Constant& node) {
     auto type = node.type();
     size_t constant;
-    if (type == ctx_.symbolTable.getType("F64")) {
+    if (type == types::ID_F64) {
       constant = addConstant(code::Value(node.f64()));
-    } else if (type == ctx_.symbolTable.getType("I8")) {
+    } else if (type == types::ID_I8) {
       constant = addConstant(code::Value(node.i8()));
-    } else if (type == ctx_.symbolTable.getType("I16")) {
+    } else if (type == types::ID_I16) {
       constant = addConstant(code::Value(node.i16()));
-    } else if (type == ctx_.symbolTable.getType("I32")) {
+    } else if (type == types::ID_I32) {
       constant = addConstant(code::Value(node.i32()));
-    } else if (type == ctx_.symbolTable.getType("I64")) {
+    } else if (type == types::ID_I64) {
       constant = addConstant(code::Value(node.i64()));
-    } else if (type == ctx_.symbolTable.getType("U8")) {
+    } else if (type == types::ID_U8) {
       constant = addConstant(code::Value(node.u8()));
-    } else if (type == ctx_.symbolTable.getType("U16")) {
+    } else if (type == types::ID_U16) {
       constant = addConstant(code::Value(node.u16()));
-    } else if (type == ctx_.symbolTable.getType("U32")) {
+    } else if (type == types::ID_U32) {
       constant = addConstant(code::Value(node.u32()));
-    } else if (type == ctx_.symbolTable.getType("U64")) {
+    } else if (type == types::ID_U64) {
       constant = addConstant(code::Value(node.u64()));
     } else {
       ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");

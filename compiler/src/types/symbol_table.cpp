@@ -3,14 +3,26 @@
 #include <algorithm>
 
 namespace fluir::types {
-  Type const* SymbolTable::addType(Type t) {
-    auto [it, added] = types_.try_emplace(t.name(), std::move(t));
-    return &it->second;
+  SymbolTable::SymbolTable() : types_({{ID_INVALID, Type{""}}}), typeNames_({{"", ID_INVALID}}) { }
+
+  TypeID SymbolTable::addType(Type t) {
+    auto [id, added] = typeNames_.try_emplace(t.name(), static_cast<TypeID>(typeNames_.size()));
+    if (added) {
+      types_.insert({id->second, std::move(t)});
+    }
+    return id->second;
   }
 
-  Type const* SymbolTable::getType(const std::string& name) const {
-    if (types_.contains(name)) {
-      return &types_.at(name);
+  TypeID SymbolTable::getTypeID(const std::string& name) const {
+    if (!name.empty() && typeNames_.contains(name)) {
+      return typeNames_.at(name);
+    }
+    return TypeID::ID_INVALID;
+  }
+
+  Type const* SymbolTable::getType(TypeID id) const {
+    if (id != ID_INVALID && types_.contains(id)) {
+      return &types_.at(id);
     }
     return nullptr;
   }
@@ -28,7 +40,7 @@ namespace fluir::types {
     return result;
   }
 
-  OperatorDefinition const* SymbolTable::selectOverload(Type const* lhs, Operator op, Type const* rhs) {
+  OperatorDefinition const* SymbolTable::selectOverload(TypeID lhs, Operator op, TypeID rhs) {
     /* 1. Get all candidates
      * 2. Filter out all where at least one operand doesn't match
      * 3. Filter out all where there is no cast between given LHS and LHS
@@ -69,15 +81,16 @@ namespace fluir::types {
     return candidates.front();
   }
 
-  OperatorDefinition const* SymbolTable::selectOverload(Operator op, Type const* operand) {
+  OperatorDefinition const* SymbolTable::selectOverload(Operator op, TypeID operand) {
     /* 1. Get all candidates
      * 2. Filter out all binary operators
      * 3. Filter out all where there is no cast between given operand and operand
      */
 
     auto candidates = getOperatorOverloads(op);
-    auto removed = std::ranges::remove_if(
-      candidates, [](OperatorDefinition const* candidate) { return candidate->getParameters()[1] != nullptr; });
+    auto removed = std::ranges::remove_if(candidates, [](OperatorDefinition const* candidate) {
+      return candidate->getParameters()[1] != TypeID::ID_INVALID;
+    });
     candidates.erase(removed.begin(), removed.end());
     if (candidates.empty()) {
       // Fail if no viable candidates are identified
@@ -102,21 +115,21 @@ namespace fluir::types {
     return candidates.front();
   }
 
-  void SymbolTable::addImplicitConversion(Type const* from, Type const* to) {
+  void SymbolTable::addImplicitConversion(TypeID from, TypeID to) {
     if (from == to) {
       return;
     }
     Conversion c{.from = from, .to = to, .isImplicit = true};
     conversions_[from].insert(c);
   }
-  void SymbolTable::addExplicitConversion(Type const* from, Type const* to) {
+  void SymbolTable::addExplicitConversion(TypeID from, TypeID to) {
     if (from == to) {
       return;
     }
 
     conversions_[from].insert(Conversion{.from = from, .to = to, .isImplicit = false});
   }
-  bool SymbolTable::canImplicitlyConvert(Type const* from, Type const* to) {
+  bool SymbolTable::canImplicitlyConvert(TypeID from, TypeID to) {
     if (!conversions_.contains(from)) {
       return false;
     }
@@ -127,7 +140,7 @@ namespace fluir::types {
              return candidate.isImplicit && candidate.to == to;
            }) != options.end();
   }
-  bool SymbolTable::canExplicitlyConvert(Type const* from, Type const* to) {
+  bool SymbolTable::canExplicitlyConvert(TypeID from, TypeID to) {
     if (!conversions_.contains(from)) {
       return false;
     }

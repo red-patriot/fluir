@@ -46,31 +46,31 @@ namespace fluir {
       // This is dependent on the order of the types in Literal
       switch (constant->value().index()) {
         case 0:  // F64
-          constant->setType(ctx.symbolTable.getType("F64"));
+          constant->setType(types::ID_F64);
           break;
         case 1:  // I8
-          constant->setType(ctx.symbolTable.getType("I8"));
+          constant->setType(types::ID_I8);
           break;
         case 2:  // I16
-          constant->setType(ctx.symbolTable.getType("I16"));
+          constant->setType(types::ID_I16);
           break;
         case 3:  // I32
-          constant->setType(ctx.symbolTable.getType("I32"));
+          constant->setType(types::ID_I32);
           break;
         case 4:  // I64
-          constant->setType(ctx.symbolTable.getType("I64"));
+          constant->setType(types::ID_I64);
           break;
         case 5:  // U8
-          constant->setType(ctx.symbolTable.getType("U8"));
+          constant->setType(types::ID_U8);
           break;
         case 6:  // U16
-          constant->setType(ctx.symbolTable.getType("U16"));
+          constant->setType(types::ID_U16);
           break;
         case 7:  // U32
-          constant->setType(ctx.symbolTable.getType("U32"));
+          constant->setType(types::ID_U32);
           break;
         case 8:  // U64
-          constant->setType(ctx.symbolTable.getType("U64"));
+          constant->setType(types::ID_U64);
           break;
         default:
           ctx.diagnostics.emitInternalError("Entered an impossible case");

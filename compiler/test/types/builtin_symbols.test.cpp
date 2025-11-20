@@ -3,6 +3,7 @@
 #include <string>
 #include <tuple>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "compiler/types/symbol_table.hpp"
@@ -21,7 +22,7 @@ class TestBuiltinTypes : public ::testing::TestWithParam<fluir::types::Type> {
 TEST_P(TestBuiltinTypes, Test) {
   auto& expected = GetParam();
 
-  auto actual = uut.getType(expected.name());
+  auto actual = uut.getType(uut.getTypeID(expected.name()));
 
   ASSERT_TRUE(actual);
   EXPECT_EQ(expected, *actual);
@@ -55,13 +56,19 @@ TEST_P(TestBuiltinOperators, Test) {
 
   auto expected = [&]() {
     if (rhs.empty()) {
-      return fluir::types::OperatorDefinition{op, uut.getType(lhs), uut.getType(ret)};
+      return fluir::types::OperatorDefinition{op, uut.getTypeID(lhs), uut.getTypeID(ret)};
     } else {
-      return fluir::types::OperatorDefinition{uut.getType(lhs), op, uut.getType(rhs), uut.getType(ret)};
+      return fluir::types::OperatorDefinition{uut.getTypeID(lhs), op, uut.getTypeID(rhs), uut.getTypeID(ret)};
     }
   }();
 
-  auto actual = uut.selectOverload(uut.getType(lhs), op, uut.getType(rhs));
+  auto actual = [&]() {
+    if (rhs.empty()) {
+      return uut.selectOverload(op, uut.getTypeID(lhs));
+    } else {
+      return uut.selectOverload(uut.getTypeID(lhs), op, uut.getTypeID(rhs));
+    }
+  }();
 
   ASSERT_TRUE(actual);
   EXPECT_EQ(expected, *actual);
@@ -133,8 +140,8 @@ class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, std::s
 TEST_P(TestBuiltinCasts, Test) {
   auto& [isImplicit, sourceName, targetName] = GetParam();
 
-  auto source = uut.getType(sourceName);
-  auto target = uut.getType(targetName);
+  auto source = uut.getTypeID(sourceName);
+  auto target = uut.getTypeID(targetName);
 
   if (isImplicit) {
     EXPECT_TRUE(uut.canExplicitlyConvert(source, target));

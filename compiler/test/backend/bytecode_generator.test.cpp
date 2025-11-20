@@ -13,7 +13,12 @@ namespace fc = fluir::code;
 using namespace fc::value_literals;
 using namespace fluir::literals_types;
 
-TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
+class TestBytecodeGenerator : public ::testing::Test {
+ public:
+  fluir::Context ctx_{.symbolTable = fluir::types::buildSymbolTable()};
+};
+
+TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fa::ASG input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
@@ -29,7 +34,7 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunction) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
+TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   fa::ASG input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
@@ -38,7 +43,7 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
                                    fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -49,7 +54,7 @@ TEST(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   }
 }
 
-TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
+TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
   fa::ASG input;
   input.declarations.emplace_back(fa::FunctionDecl{
     .id = 3, .name = "foo", .statements = []() {
@@ -77,7 +82,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                },
                                              .constants = {1.5_f64, 2.5_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -86,7 +91,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
+TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
   fa::ASG input;
   input.declarations.emplace_back(
     fa::FunctionDecl{.id = 3, .name = "bar", .statements = []() {
@@ -111,7 +116,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                },
                                              .constants = {3.456_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -120,7 +125,7 @@ TEST(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
+TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   auto shared = std::make_shared<fa::BinaryOp>(
     fluir::Operator::SLASH,
     std::make_shared<fa::UnaryOp>(fluir::Operator::MINUS,
@@ -170,7 +175,7 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                },
                                              .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -179,9 +184,8 @@ TEST(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesIntConstants) {
+TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   fa::ASG input;
-  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
@@ -192,8 +196,7 @@ TEST(TestBytecodeGenerator, GeneratesIntConstants) {
       std::move(std::make_unique<fa::Constant>(static_cast<I32>(32), 3, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
       std::move(std::make_unique<fa::Constant>(static_cast<I64>(64), 4, fluir::FlowGraphLocation{})));
-
-    return fluir::checkDeclType(ctx, std::move(decl)).value();
+    return decl;
   }());
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
@@ -216,7 +219,7 @@ TEST(TestBytecodeGenerator, GeneratesIntConstants) {
                                                },
                                              .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 
   EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
 
@@ -225,9 +228,8 @@ TEST(TestBytecodeGenerator, GeneratesIntConstants) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesUintConstants) {
+TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
   fa::ASG input;
-  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
@@ -239,7 +241,7 @@ TEST(TestBytecodeGenerator, GeneratesUintConstants) {
     decl.statements.push_back(
       std::move(std::make_unique<fa::Constant>(static_cast<U64>(64), 4, fluir::FlowGraphLocation{})));
 
-    return fluir::checkDeclType(ctx, std::move(decl)).value();
+    return decl;
   }());
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
@@ -262,7 +264,7 @@ TEST(TestBytecodeGenerator, GeneratesUintConstants) {
                                                },
                                              .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 
   EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
 
@@ -271,9 +273,8 @@ TEST(TestBytecodeGenerator, GeneratesUintConstants) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
+TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   fa::ASG input;
-  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
@@ -301,7 +302,7 @@ TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
       3,
       fluir::FlowGraphLocation{})));
 
-    return fluir::checkDeclType(ctx, std::move(decl)).value();
+    return decl;
   }());
 
   fc::ByteCode expected{
@@ -318,7 +319,7 @@ TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
         },
       .constants = {8_i32, 16_i32, 28_i32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 
   EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
 
@@ -327,9 +328,8 @@ TEST(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }
 
-TEST(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
+TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
   fa::ASG input;
-  fluir::Context ctx{.symbolTable = fluir::types::buildSymbolTable()};
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
@@ -357,7 +357,7 @@ TEST(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
       3,
       fluir::FlowGraphLocation{})));
 
-    return fluir::checkDeclType(ctx, std::move(decl)).value();
+    return decl;
   }());
 
   fc::ByteCode expected{
@@ -374,7 +374,7 @@ TEST(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
         },
       .constants = {8_u32, 16_u32, 28_u32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 
   EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
 

@@ -5,7 +5,7 @@ function (configure_cpack)
     set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
     set(CPACK_PACKAGE_CONTACT "bltanner105+fluir@gmail.com")
     set(CPACK_PACKAGE_DESCRIPTION ${PROJECT_DESCRIPTION})
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libfmt-dev")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libfmt9, libtinyxml2-10")
 
     include(CPack)
 endfunction ()

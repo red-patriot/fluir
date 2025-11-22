@@ -1,8 +1,0 @@
-#!/bin/bash
-set -e
-
-echo "INSTALLING FLUIR"
-
-#DEBHELPER#
-
-exit 0

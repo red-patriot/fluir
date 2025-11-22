@@ -33,6 +33,11 @@ function (setup_fluir_install)
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/fluir
     )
 
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/packaging/debian/postinst.in"
+        "${CMAKE_SOURCE_DIR}/packaging/debian/postinst"
+        @ONLY
+    )
     set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
         "${CMAKE_SOURCE_DIR}/packaging/debian/postinst"
     )

@@ -39,24 +39,21 @@ namespace fluir {
     recursivelyGenerate(*node.lhs());
     recursivelyGenerate(*node.rhs());
 
-    // TODO: Handle other types here
-    switch (node.op()) {
-      case Operator::PLUS:
-        emitByte(Instruction::F64_ADD);
-        break;
-      case Operator::MINUS:
-        emitByte(Instruction::F64_SUB);
-        break;
-      case Operator::STAR:
-        emitByte(Instruction::F64_MUL);
-        break;
-      case Operator::SLASH:
-        emitByte(Instruction::F64_DIV);
-        break;
-      case Operator::UNKNOWN:
-        // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
-        break;
+    // TODO: Handle user-defined ops here
+    if (node.lhs()->type() != node.rhs()->type()) {
+      ctx_.diagnostics.emitInternalError("Unexpected type mismatch");
+      return;
+    }
+
+    if (const auto type = node.lhs()->type(); type == types::ID_F64) {
+      emitFloatOperator(node.op());
+    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
+      emitIntOperator(node.op());
+    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
+      emitUintOperator(node.op());
+    } else {
+      // TODO: Handle this case better
+      ctx_.diagnostics.emitInternalError("Unknown type encountered");
     }
   }
 
@@ -77,10 +74,32 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::ConstantFP& node) {
-    const auto constant = addConstant(code::Value(node.value()));
-
-    // TODO: Handle more constants with special instruction
+  void BytecodeGenerator::generate(const asg::Constant& node) {
+    auto type = node.type();
+    size_t constant;
+    if (type == types::ID_F64) {
+      constant = addConstant(code::Value(node.f64()));
+    } else if (type == types::ID_I8) {
+      constant = addConstant(code::Value(node.i8()));
+    } else if (type == types::ID_I16) {
+      constant = addConstant(code::Value(node.i16()));
+    } else if (type == types::ID_I32) {
+      constant = addConstant(code::Value(node.i32()));
+    } else if (type == types::ID_I64) {
+      constant = addConstant(code::Value(node.i64()));
+    } else if (type == types::ID_U8) {
+      constant = addConstant(code::Value(node.u8()));
+    } else if (type == types::ID_U16) {
+      constant = addConstant(code::Value(node.u16()));
+    } else if (type == types::ID_U32) {
+      constant = addConstant(code::Value(node.u32()));
+    } else if (type == types::ID_U64) {
+      constant = addConstant(code::Value(node.u64()));
+    } else {
+      ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");
+      return;
+    }
+    // TODO: Handle too large
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
@@ -121,7 +140,68 @@ namespace fluir {
       case asg::NodeKind::UnaryOperator:
         return generate(*node.as<asg::UnaryOp>());
       case asg::NodeKind::Constant:
-        return generate(*node.as<asg::ConstantFP>());
+        return generate(*node.as<asg::Constant>());
+    }
+  }
+
+  void BytecodeGenerator::emitFloatOperator(const Operator op) {
+    switch (op) {
+      case Operator::PLUS:
+        emitByte(Instruction::F64_ADD);
+        break;
+      case Operator::MINUS:
+        emitByte(Instruction::F64_SUB);
+        break;
+      case Operator::STAR:
+        emitByte(Instruction::F64_MUL);
+        break;
+      case Operator::SLASH:
+        emitByte(Instruction::F64_DIV);
+        break;
+      case Operator::UNKNOWN:
+        // TODO: Handle this better
+        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        break;
+    }
+  }
+  void BytecodeGenerator::emitIntOperator(const Operator op) {
+    switch (op) {
+      case Operator::PLUS:
+        emitByte(Instruction::I64_ADD);
+        break;
+      case Operator::MINUS:
+        emitByte(Instruction::I64_SUB);
+        break;
+      case Operator::STAR:
+        emitByte(Instruction::I64_MUL);
+        break;
+      case Operator::SLASH:
+        emitByte(Instruction::I64_DIV);
+        break;
+      case Operator::UNKNOWN:
+        // TODO: Handle this better
+        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        break;
+    }
+  }
+  void BytecodeGenerator::emitUintOperator(const Operator op) {
+    switch (op) {
+      case Operator::PLUS:
+        emitByte(Instruction::U64_ADD);
+        break;
+      case Operator::MINUS:
+        emitByte(Instruction::U64_SUB);
+        break;
+      case Operator::STAR:
+        emitByte(Instruction::U64_MUL);
+        break;
+      case Operator::SLASH:
+        emitByte(Instruction::U64_DIV);
+        break;
+      case Operator::UNKNOWN:
+        // TODO: Handle this better
+        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        break;
     }
   }
 }  // namespace fluir

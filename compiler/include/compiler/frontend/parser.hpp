@@ -8,8 +8,8 @@
 #include <tinyxml2.h>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
-#include "compiler/utility/results.hpp"
 #include "compiler/utility/context.hpp"
+#include "compiler/utility/results.hpp"
 
 namespace fluir {
   Results<pt::ParseTree> parseString(Context& ctx, const std::string_view source);
@@ -44,7 +44,15 @@ namespace fluir {
     pt::Conduit::Output conduitOutput(Element* element);
 
     pt::Literal literal(Element* element);
-    pt::Float fl_float(Element* element);
+    pt::F64 f64(Element* element);
+    pt::I8 i8(Element* element);
+    pt::I16 i16(Element* element);
+    pt::I32 i32(Element* element);
+    pt::I64 i64(Element* element);
+    pt::U8 u8(Element* element);
+    pt::U16 u16(Element* element);
+    pt::U32 u32(Element* element);
+    pt::U64 u64(Element* element);
 
     std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,

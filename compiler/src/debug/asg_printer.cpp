@@ -44,8 +44,31 @@ namespace fluir::debug {
     print(*unary.operand());
   }
 
-  void AsgPrinter::operator()(const asg::ConstantFP& constant) {
-    out_ << formatIndented("ConstantFP({}): {:.4f}\n", constant.id(), constant.value());
+  void AsgPrinter::operator()(const asg::Constant& constant) {
+    using namespace literals_types;
+    // TODO: Use type information instead of hardcoding this here
+    auto printer = [this, &constant]<typename T>(const T& val) {
+      if constexpr (std::is_same_v<T, F64>) {
+        out_ << formatIndented("ConstantF64({}): {:.4f}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, I8>) {
+        out_ << formatIndented("ConstantI8({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, I16>) {
+        out_ << formatIndented("ConstantI16({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, I32>) {
+        out_ << formatIndented("ConstantI32({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, I64>) {
+        out_ << formatIndented("ConstantI64({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, U8>) {
+        out_ << formatIndented("ConstantU8({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, U16>) {
+        out_ << formatIndented("ConstantU16({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, U32>) {
+        out_ << formatIndented("ConstantU32({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, U64>) {
+        out_ << formatIndented("ConstantU64({}): {}\n", constant.id(), val);
+      }
+    };
+    std::visit(printer, constant.value());
   }
 
   void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
@@ -78,7 +101,7 @@ namespace fluir::debug {
       case asg::NodeKind::UnaryOperator:
         return (*this)(*node.as<asg::UnaryOp>());
       case asg::NodeKind::Constant:
-        return (*this)(*node.as<asg::ConstantFP>());
+        return (*this)(*node.as<asg::Constant>());
     }
   }
 

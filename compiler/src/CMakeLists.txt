@@ -14,8 +14,11 @@ add_library(
     fluir.libcompiler
 )
 
-set(FLUIR_COMPILER_FRONTEND_SOURCES "frontend/parser.cpp"
-                                    "frontend/asg_builder.cpp"
+set(FLUIR_COMPILER_FRONTEND_SOURCES
+    "frontend/parser.cpp"
+    "frontend/asg_builder.cpp"
+    "frontend/text_parse.cpp"
+    "frontend/type_checker.cpp"
 )
 
 set(FLUIR_COMPILER_BACKEND_SOURCES
@@ -24,13 +27,24 @@ set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/inspect_writer.cpp"
 )
 
-set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp")
+set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
+                                 "debug/parse_tree_printer.cpp"
+)
+
+set(FLUIR_COMPILER_TYPES_SOURCES
+    "types/builtin_symbols.cpp"
+    "types/conversion.cpp"
+    "types/operator_definition.cpp"
+    "types/symbol_table.cpp"
+    "types/type.cpp"
+)
 
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
+            ${FLUIR_COMPILER_TYPES_SOURCES}
             "utility/diagnostics.cpp"
 )
 

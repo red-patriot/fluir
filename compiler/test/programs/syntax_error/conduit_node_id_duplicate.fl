@@ -4,10 +4,10 @@
         <body>
             <binary id="3" x="35" y="3" z="2" w="5" h="5" operator="/"/>
             <constant id="2" x="9" y="12" z="10" w="12" h="5">
-                <float>1.2345</float>
+                <f64>1.2345</f64>
             </constant>
             <constant id="1" x="9" y="5" z="0" w="12" h="5">
-                <float>6.7891</float>
+                <f64>6.7891</f64>
             </constant>
             <unary id="6" x="35" y="12" z="0" w="5" h="5" operator="-"/>
             <conduit id="7" input="1">

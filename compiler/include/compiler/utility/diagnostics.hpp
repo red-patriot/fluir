@@ -2,6 +2,7 @@
 #define FLUIR_COMPILER_UTILITY_DIAGNOSTICS_HPP
 
 #include <memory>
+#include <source_location>
 #include <string>
 #include <vector>
 
@@ -10,12 +11,7 @@
 namespace fluir {
   /** A diagnostic emitted by the compiler */
   struct Diagnostic {
-    enum class Level {
-      NOTE = 0,
-      WARNING = 1,
-      ERROR = 2,
-      INTERNAL_ERROR = 3
-    };
+    enum class Level { NOTE = 0, WARNING = 1, ERROR = 2, INTERNAL_ERROR = 3 };
     using enum Level;
 
     class Location {
@@ -37,6 +33,16 @@ namespace fluir {
 
   std::string toString(const Diagnostic& diagnostic);
 
+  class SourceLocation : public Diagnostic::Location {
+   public:
+    explicit SourceLocation(std::source_location source = std::source_location::current());
+
+    std::string str() const override;
+
+   private:
+    std::source_location source_;
+  };
+
   class Diagnostics : public std::vector<Diagnostic> {
    public:
     using vector::vector;
@@ -44,7 +50,8 @@ namespace fluir {
     void emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
     void emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
     void emitError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
-    void emitInternalError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+    void emitInternalError(std::string message,
+                           std::shared_ptr<Diagnostic::Location> where = std::make_unique<SourceLocation>());
 
     bool containsErrors() const;
   };
@@ -54,8 +61,7 @@ template <>
 struct fmt::formatter<fluir::Diagnostic::Level> : formatter<fmt::string_view> {
   // parse is inherited from formatter<string_view>.
 
-  auto format(fluir::Diagnostic::Level l, format_context& ctx) const
-      -> fmt::format_context::iterator;
+  auto format(fluir::Diagnostic::Level l, format_context& ctx) const -> fmt::format_context::iterator;
 };
 
 #endif

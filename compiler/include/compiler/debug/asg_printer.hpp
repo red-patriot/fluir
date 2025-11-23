@@ -17,7 +17,7 @@ namespace fluir::debug {
     void operator()(const asg::FunctionDecl& func);
     void operator()(const asg::BinaryOp& binary);
     void operator()(const asg::UnaryOp& unary);
-    void operator()(const asg::ConstantFP& constant);
+    void operator()(const asg::Constant& constant);
 
    private:
     std::ostream& out_;

@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+    <function name="main" id="1" x="0" y="0" z="0" w="24" h="42">
+        <body>
+            <constant id="1" x="10" y="12" z="1" w="12" h="5">
+                <i8>asdf</i8>
+            </constant>
+            <constant id="2" x="10" y="18" z="1" w="12" h="5">
+                <i16>432a</i16>
+            </constant>
+            <constant id="3" x="10" y="24" z="1" w="12" h="5">
+                <bad>-32</bad>
+            </constant>
+            <constant id="4" x="10" y="30" z="1" w="12" h="5">
+                <i16>-65536</i16>
+            </constant>
+            <constant id="5" x="0" y="10" z="1" w="12" h="5">
+                <u8>-80</u8>
+            </constant>
+            <constant id="12" x="0" y="24" z="1" w="12" h="5">
+                <u32>999999999999999999999999999999</u32>
+            </constant>
+            <constant id="9" x="0" y="17" z="1" w="12" h="5">
+                <u16>4k3j2</u16>
+            </constant>
+            <constant id="6" x="0" y="31" z="1" w="12" h="5">
+                <u64>640</u64>
+            </constant>
+        </body>
+    </function>
+</fluir>

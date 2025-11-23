@@ -1,0 +1,14 @@
+#!/bin/bash
+set -e
+
+# The permissions don't always get set quite right, so make the
+# program files executable here
+chmod +x "/usr/@CMAKE_INSTALL_BINDIR@/fluir"
+chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/fluir.compiler"
+chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/fluir.vm"
+chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/fluir-editor-be"
+chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/editor-fe/fluir-editor-fe"
+
+#DEBHELPER#
+
+exit 0

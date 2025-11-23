@@ -83,10 +83,14 @@ app.whenReady().then(() => {
 
   ipcMain.handle('dialog:saveAs', async () => {
     const window = win as BrowserWindow;
-    const { canceled, filePath } = await dialog.showSaveDialog(window, {
+    let { canceled, filePath } = await dialog.showSaveDialog(window, {
       filters: FILE_FILTER,
     });
     if (canceled) return null;
+    if (!filePath.endsWith('.fl')) {
+      // Ensure the file has the correct extension
+      filePath += '.fl';
+    }
     return filePath;
   });
 

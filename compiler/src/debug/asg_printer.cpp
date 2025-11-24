@@ -1,6 +1,7 @@
 #include "compiler/debug/asg_printer.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <utility>
 
 #include <fmt/format.h>
@@ -102,6 +103,8 @@ namespace fluir::debug {
         return (*this)(*node.as<asg::UnaryOp>());
       case asg::NodeKind::Constant:
         return (*this)(*node.as<asg::Constant>());
+      case asg::NodeKind::Cast:
+        assert(false && "TODO");
     }
   }
 

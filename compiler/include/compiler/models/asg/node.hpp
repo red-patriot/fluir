@@ -18,6 +18,7 @@ namespace fluir::asg {
     Constant,
     BinaryOperator,
     UnaryOperator,
+    Cast,
   };
 
   class Node {
@@ -118,7 +119,9 @@ namespace fluir::asg {
       Node(NodeKind::BinaryOperator, id, location), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
 
     [[nodiscard]] const Operator& op() const { return op_; }
+    [[nodiscard]] SharedDependency& lhs() { return lhs_; }
     [[nodiscard]] const SharedDependency& lhs() const { return lhs_; }
+    [[nodiscard]] SharedDependency& rhs() { return rhs_; }
     [[nodiscard]] const SharedDependency& rhs() const { return rhs_; }
     [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
     void setDefinition(types::OperatorDefinition const* def) {
@@ -142,6 +145,7 @@ namespace fluir::asg {
 
     [[nodiscard]] const Operator& op() const { return op_; }
     [[nodiscard]] const SharedDependency& operand() const { return operand_; }
+    [[nodiscard]] SharedDependency& operand() { return operand_; }
     [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
     void setDefinition(types::OperatorDefinition const* def) {
       def_ = def;
@@ -152,6 +156,23 @@ namespace fluir::asg {
     Operator op_;
     SharedDependency operand_;
     types::OperatorDefinition const* def_ = nullptr;
+  };
+
+  class Cast : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Cast; }
+
+    Cast(types::TypeID to, SharedDependency operand, const ID id, const FlowGraphLocation& location) :
+      Node(NodeKind::Cast, id, location), operand_(std::move(operand)) {
+      setType(to);
+    }
+
+    [[nodiscard]] types::TypeID to() const { return type(); }
+    [[nodiscard]] types::TypeID from() const { return operand_->type(); }
+    [[nodiscard]] const SharedDependency& operand() const { return operand_; }
+
+   private:
+    SharedDependency operand_;
   };
 
   using DataFlowGraph = std::vector<UniqueNode>;

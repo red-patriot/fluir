@@ -1,5 +1,6 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
+#include <cassert>
 #include <cstdint>
 
 #include <fmt/format.h>
@@ -141,6 +142,8 @@ namespace fluir {
         return generate(*node.as<asg::UnaryOp>());
       case asg::NodeKind::Constant:
         return generate(*node.as<asg::Constant>());
+      case asg::NodeKind::Cast:
+        assert(false && "TODO");
     }
   }
 

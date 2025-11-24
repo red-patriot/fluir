@@ -89,6 +89,15 @@ namespace fluir {
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
       binary->setDefinition(selectedOverload);
+      auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
+      if (overloadLHS != lhs) {
+        auto castOp = std::make_shared<asg::Cast>(overloadLHS, binary->lhs(), binary->id(), binary->location());
+        binary->lhs() = std::move(castOp);
+      }
+      if (overloadRHS != rhs) {
+        auto castOp = std::make_shared<asg::Cast>(overloadRHS, binary->rhs(), binary->id(), binary->location());
+        binary->rhs() = std::move(castOp);
+      }
     }
 
     void checkType(Context& ctx, asg::UnaryOp* unary) {
@@ -99,6 +108,11 @@ namespace fluir {
       const auto operand = unary->operand()->type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
       unary->setDefinition(selectedOverload);
+      auto [overloadOp, _] = selectedOverload->getParameters();
+      if (overloadOp != operand) {
+        auto castOp = std::make_shared<asg::Cast>(overloadOp, unary->operand(), unary->id(), unary->location());
+        unary->operand() = std::move(castOp);
+      }
     }
   }  // namespace
 }  // namespace fluir

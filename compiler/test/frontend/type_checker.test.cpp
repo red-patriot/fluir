@@ -44,6 +44,54 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
   EXPECT_EQ(expected, concrete->rhs()->type());
 }
 
+TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
+  fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
+  auto lhs = std::make_shared<fa::Constant>((fluir::literals_types::I16)13, 1, fluir::FlowGraphLocation{});
+  auto rhs = std::make_shared<fa::Constant>(2.0, 2, fluir::FlowGraphLocation{});
+  decl.statements.emplace_back(
+    std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
+
+  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  const auto expected = fluir::types::ID_F64;
+
+  const auto result = fluir::checkDeclType(ctx, std::move(decl));
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  ASSERT_TRUE(result.has_value());
+  const auto& actual = result->statements.front();
+
+  EXPECT_EQ(expected, actual->type());
+
+  const auto& concrete = actual->as<fa::BinaryOp>();
+  ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
+  EXPECT_EQ(expected, concrete->lhs()->type());
+  EXPECT_EQ(expected, concrete->rhs()->type());
+  EXPECT_TRUE(concrete->lhs()->is<fa::Cast>());
+}
+
+TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
+  fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
+  auto lhs = std::make_shared<fa::Constant>(1.0, 1, fluir::FlowGraphLocation{});
+  auto rhs = std::make_shared<fa::Constant>((fluir::literals_types::I32)12, 2, fluir::FlowGraphLocation{});
+  decl.statements.emplace_back(
+    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
+
+  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  const auto expected = fluir::types::ID_F64;
+
+  const auto result = fluir::checkDeclType(ctx, std::move(decl));
+  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  ASSERT_TRUE(result.has_value());
+  const auto& actual = result->statements.front();
+
+  EXPECT_EQ(expected, actual->type());
+
+  const auto& concrete = actual->as<fa::BinaryOp>();
+  ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
+  EXPECT_EQ(expected, concrete->lhs()->type());
+  EXPECT_EQ(expected, concrete->rhs()->type());
+  EXPECT_TRUE(concrete->rhs()->is<fa::Cast>());
+}
+
 TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
   auto operand =

@@ -9,6 +9,10 @@ namespace fluir {
     void checkType(Context& ctx, asg::UnaryOp* unary);
 
     void checkType(Context& ctx, asg::Node* node) {
+      if (node->type() != types::ID_INVALID) {
+        // This node has already been type-checked
+        return;
+      }
       switch (node->kind()) {
         case asg::NodeKind::Constant:
           return checkType(ctx, node->as<asg::Constant>());
@@ -23,12 +27,12 @@ namespace fluir {
   }  // namespace
 
   Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph) {
-    for (auto i = graph.declarations.begin(); i != graph.declarations.end(); ++i) {
-      auto result = checkDeclType(ctx, std::move(*i));
+    for (auto& declaration : graph.declarations) {
+      auto result = checkDeclType(ctx, std::move(declaration));
       if (!result.has_value()) {
         return NoResult;
       }
-      *i = std::move(result.value());
+      declaration = std::move(result.value());
     }
     return graph;
   }
@@ -79,8 +83,6 @@ namespace fluir {
     }
 
     void checkType(Context& ctx, asg::BinaryOp* binary) {
-      // TODO: CHECK FOR NULLS
-      // TODO: CHECK FOR SHARING
       checkType(ctx, binary->lhs().get());
       checkType(ctx, binary->rhs().get());
 
@@ -101,8 +103,6 @@ namespace fluir {
     }
 
     void checkType(Context& ctx, asg::UnaryOp* unary) {
-      // TODO: CHECK FOR NULLS
-      // TODO: CHECK FOR SHARING
       checkType(ctx, unary->operand().get());
 
       const auto operand = unary->operand()->type();

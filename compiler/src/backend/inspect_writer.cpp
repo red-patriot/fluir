@@ -73,12 +73,21 @@ namespace fluir {
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH:
-          os << formatIndented("{} x{:X}\n", instructionNames[*i], *(i + 1));
+        case code::Instruction::CAST_WIDTH:
+          emitInstructionWithArg(os, *i, *(i + 1));
           ++i;
           break;
         default:
-          os << formatIndented("{}\n", instructionNames[*i]);
+          emitInstruction(os, *i);
+          break;
       }
     }
+  }
+
+  void InspectWriter::emitInstruction(std::ostream& os, uint8_t instruction) {
+    os << formatIndented("{}\n", instructionNames[instruction]);
+  }
+  void InspectWriter::emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg) {
+    os << formatIndented("{} x{:X}\n", instructionNames[instruction], arg);
   }
 }  // namespace fluir

@@ -268,3 +268,48 @@ CHUNK main
 
   EXPECT_EQ(expected, actual);
 }
+
+TEST(TestInspectWriter, WriteCastInstructions) {
+  std::string expected = R"(I0120030000000000000000
+CHUNK main
+  CONSTANTS x0
+  CODE xF
+    ICAST_IU
+    ICAST_UI
+    ICAST_IF
+    ICAST_UF
+    ICAST_FU
+    ICAST_FI
+    ICAST_WIDTH x1
+    ICAST_WIDTH x2
+    ICAST_WIDTH x4
+    ICAST_WIDTH x8
+    IEXIT
+)";
+  fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                             .chunks = {fluir::code::Chunk{.name = "main",
+                                                           .code = {fc::CAST_IU,
+                                                                    fc::CAST_UI,
+                                                                    fc::CAST_IF,
+                                                                    fc::CAST_UF,
+                                                                    fc::CAST_FU,
+                                                                    fc::CAST_FI,
+                                                                    fc::CAST_WIDTH,
+                                                                    0x01,
+                                                                    fc::CAST_WIDTH,
+                                                                    0x02,
+                                                                    fc::CAST_WIDTH,
+                                                                    0x04,
+                                                                    fc::CAST_WIDTH,
+                                                                    0x08,
+                                                                    fc::EXIT},
+                                                           .constants = {}}}};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{};
+  fluir::writeCode(code, uut, ss);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}

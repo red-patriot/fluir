@@ -7,6 +7,7 @@ namespace fluir {
     void checkType(Context& ctx, asg::Constant* constant);
     void checkType(Context& ctx, asg::BinaryOp* binary);
     void checkType(Context& ctx, asg::UnaryOp* unary);
+    void checkType(Context& ctx, asg::Cast* cast);
 
     void checkType(Context& ctx, asg::Node* node) {
       if (node->type() != types::ID_INVALID) {
@@ -20,6 +21,8 @@ namespace fluir {
           return checkType(ctx, node->as<asg::BinaryOp>());
         case asg::NodeKind::UnaryOperator:
           return checkType(ctx, node->as<asg::UnaryOp>());
+        case asg::NodeKind::Cast:
+          return checkType(ctx, node->as<asg::Cast>());
         default:
           ctx.diagnostics.emitInternalError("Unknown node kind encountered");
       }
@@ -113,6 +116,12 @@ namespace fluir {
         auto castOp = std::make_shared<asg::Cast>(overloadOp, unary->operand(), unary->id(), unary->location());
         unary->operand() = std::move(castOp);
       }
+    }
+
+    void checkType(Context& ctx, asg::Cast* cast) {
+      checkType(ctx, cast->operand().get());
+
+      // TODO: Handle user-defined casts here
     }
   }  // namespace
 }  // namespace fluir

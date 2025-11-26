@@ -19,6 +19,7 @@ namespace fluir {
     void generate(const asg::BinaryOp& binary);
     void generate(const asg::UnaryOp& unary);
     void generate(const asg::Constant& constant);
+    void generate(const asg::Cast& cast);
 
    private:
     Context& ctx_;
@@ -38,6 +39,7 @@ namespace fluir {
     void emitFloatOperator(const Operator op);
     void emitIntOperator(const Operator op);
     void emitUintOperator(const Operator op);
+    void emitWidthCast(types::TypeID sourceType, types::TypeID targetType);
   };
 }  // namespace fluir
 

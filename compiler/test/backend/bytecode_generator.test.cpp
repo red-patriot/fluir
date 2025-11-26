@@ -10,6 +10,7 @@
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;
+namespace ft = fluir::types;
 using namespace fc::value_literals;
 using namespace fluir::literals_types;
 
@@ -373,6 +374,183 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
           fc::Instruction::EXIT,
         },
       .constants = {8_u32, 16_u32, 28_u32}}}};
+
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
+  fa::ASG input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+
+    auto integer = std::make_shared<fa::Constant>(static_cast<I32>(8), 1, fluir::FlowGraphLocation{});
+    auto floatPoint = std::make_shared<fa::Constant>(12.4, 3, fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_F64, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I64, floatPoint, 3, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_U64, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I8, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I16, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I64, integer, 2, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "ints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_IF,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x01,
+                                                 fc::Instruction::CAST_FI,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_IU,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_8,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_16,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_64,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_i32, 12.4_f64}}}};
+
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
+  fa::ASG input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
+
+    auto integer = std::make_shared<fa::Constant>(static_cast<I32>(8), 1, fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_U32, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_U16, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_U8, integer, 2, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "ints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_IU,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_32, fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_IU,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_16, fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_IU,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_8,  fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_i32}}}};
+
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
+  fa::ASG input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
+
+    auto integer = std::make_shared<fa::Constant>(static_cast<U32>(8), 1, fluir::FlowGraphLocation{});
+    auto floatPoint = std::make_shared<fa::Constant>(12.4, 3, fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_F64, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_U64, floatPoint, 3, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "uints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,
+                                                 0x00,
+                                                 fc::Instruction::CAST_UF,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,
+                                                 0x01,
+                                                 fc::Instruction::CAST_FU,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_u32, 12.4_f64}}}};
+
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
+  fa::ASG input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
+
+    auto integer = std::make_shared<fa::Constant>(static_cast<U32>(8), 1, fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I32, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I16, integer, 2, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(ft::ID_I8, integer, 2, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "uints",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_UI,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_32, fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_UI,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_16, fc::Instruction::POP,
+                                                 fc::Instruction::PUSH,      0x00,
+                                                 fc::Instruction::CAST_UI,   fc::Instruction::CAST_WIDTH,
+                                                 fc::NumericWidth::WIDTH_8,  fc::Instruction::POP,
+                                                 fc::Instruction::EXIT,
+                                               },
+                                             .constants = {8_u32}}}};
 
   auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
 

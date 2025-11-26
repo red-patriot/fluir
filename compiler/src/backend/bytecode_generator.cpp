@@ -5,6 +5,8 @@
 
 #include <fmt/format.h>
 
+#include "compiler/types/traits.hpp"
+
 using fluir::code::Instruction;
 
 namespace fluir {
@@ -104,6 +106,49 @@ namespace fluir {
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
+  void BytecodeGenerator::generate(const asg::Cast& cast) {
+    recursivelyGenerate(*cast.operand());
+
+    // TODO: Handle user-defined casts here
+    auto operandType = cast.operand()->type();
+    auto targetType = cast.type();
+    if (types::isIntegral(targetType)) {
+      if (types::isSigned(targetType)) {
+        if (types::isIntegral(operandType)) {
+          if (types::isSigned(operandType)) {
+            emitWidthCast(operandType, targetType);
+          } else {
+            emitByte(Instruction::CAST_UI);
+            emitWidthCast(types::ID_I64, targetType);
+          }
+        } else {
+          emitByte(Instruction::CAST_FI);
+        }
+      } else {
+        if (types::isIntegral(operandType)) {
+          if (types::isSigned(operandType)) {
+            emitByte(Instruction::CAST_IU);
+            emitWidthCast(types::ID_U64, targetType);
+          } else {
+            emitWidthCast(operandType, targetType);
+          }
+        } else {
+          emitByte(Instruction::CAST_FU);
+        }
+      }
+    } else {
+      if (types::isIntegral(operandType)) {
+        if (types::isSigned(operandType)) {
+          emitByte(Instruction::CAST_IF);
+        } else {
+          emitByte(Instruction::CAST_UF);
+        }
+      } else {
+        // No-op F64->F64
+      }
+    }
+  }
+
   BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
@@ -143,7 +188,7 @@ namespace fluir {
       case asg::NodeKind::Constant:
         return generate(*node.as<asg::Constant>());
       case asg::NodeKind::Cast:
-        assert(false && "TODO");
+        return generate(*node.as<asg::Cast>());
     }
   }
 
@@ -206,5 +251,12 @@ namespace fluir {
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
+  }
+
+  void BytecodeGenerator::emitWidthCast(types::TypeID sourceType, types::TypeID targetType) {
+    if (types::widthOf(sourceType) == types::widthOf(targetType)) {
+      return;
+    }
+    emitBytes(Instruction::CAST_WIDTH, types::widthOf(targetType));
   }
 }  // namespace fluir

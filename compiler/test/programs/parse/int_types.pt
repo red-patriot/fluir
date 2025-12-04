@@ -1,0 +1,21 @@
+1:
+    FunctionDecl(main)
+    at(x0, y0, z0, w36, h38)
+    body
+        1:
+            Constant
+            at(x10, y12, z1, w12, h5)
+            I8 -8
+        2:
+            Constant
+            at(x10, y18, z1, w12, h5)
+            I16 16
+        3:
+            Constant
+            at(x10, y24, z1, w12, h5)
+            I32 -32
+        4:
+            Constant
+            at(x10, y30, z1, w12, h5)
+            I64 64
+    conduits

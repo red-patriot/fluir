@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
+#include "../include/compiler/utility/scope_guard.hpp"
 
-#include "compiler/scope_guard.hpp"
+#include <gtest/gtest.h>
 
 class ScopeGuardTest : public ::testing::Test {
  protected:

@@ -1,0 +1,14 @@
+1:
+    FunctionDecl(main)
+    at(x10, y10, z3, w100, h100)
+    body
+        2:
+            Constant
+            at(x5, y12, z0, w5, h5)
+            F64 12.4
+        3:
+            Unary
+            at(x0, y20, z2, w7, h7)
+            +
+            lhs2
+    conduits

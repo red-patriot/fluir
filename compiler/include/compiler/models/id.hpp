@@ -2,9 +2,11 @@
 #define FLUIR_COMPILER_MODELS_ID_HPP
 
 #include <cstdint>
+#include <vector>
 
 namespace fluir {
   using ID = std::uint64_t;
+  using FullID = std::vector<ID>;
   constexpr ID INVALID_ID = 0;
 }  // namespace fluir
 

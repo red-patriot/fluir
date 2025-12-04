@@ -26,7 +26,7 @@
                 z="2"
                 w="5"
                 h="5">
-                <float>I AM A STRING</float>
+                <f64>I AM A STRING</f64>
             </constant>
             <constant
                 id="3"
@@ -34,7 +34,7 @@
                 y="10"
                 z="3"
                 h="5">
-                <float>THIS SHOULDN'T CAUSE AN ERROR</float>
+                <f64>THIS SHOULDN'T CAUSE AN ERROR</f64>
             </constant>
         </body>
     </function>

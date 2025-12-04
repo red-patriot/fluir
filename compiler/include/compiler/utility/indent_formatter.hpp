@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "compiler/utility/macros.hpp"
 #include "fmt/format.h"
 
 namespace fluir {
@@ -10,8 +11,7 @@ namespace fluir {
   class IndentFormatter {
     class IndentLevel {
       friend IndentFormatter;
-      explicit IndentLevel(IndentFormatter* formatter) :
-          formatter_(formatter) { }
+      explicit IndentLevel(IndentFormatter* formatter) : formatter_(formatter) { }
       IndentLevel(const IndentLevel&) = delete;
       IndentLevel& operator=(const IndentLevel&) = delete;
       IndentLevel(IndentLevel&&) = delete;
@@ -20,20 +20,19 @@ namespace fluir {
       IndentFormatter* formatter_;
 
      public:
-      ~IndentLevel() { formatter_->level_ -= 2; }
+      ~IndentLevel() { formatter_->level_ -= Level; }
     };
 
    public:
     template <typename... FmtArgs>
-    std::string
-    formatIndented(fmt::format_string<FmtArgs...> format, FmtArgs&&... args) {
+    std::string formatIndented(fmt::format_string<FmtArgs...> format, FmtArgs&&... args) {
       return fmt::format("{}", indentation()) + fmt::format(format, std::forward<FmtArgs>(args)...);
     }
 
     std::string_view indentation() const { return std::string_view{indent_.c_str(), level_}; }
 
     [[nodiscard]] IndentLevel indent() {
-      level_ += 2;
+      level_ += Level;
       if (indent_.size() < level_) {
         indent_ = std::string(level_, ' ');
       }
@@ -45,5 +44,7 @@ namespace fluir {
     std::string indent_ = std::string(8, ' ');
   };
 }  // namespace fluir
+
+#define FLUIR_SCOPED_INDENT [[maybe_unused]] auto FLUIR_ANONYMOUS_VARIABLE(indentGuard) = indent()
 
 #endif

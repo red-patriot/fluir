@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <function
+            name="main"
+            id="1"
+            x="10"
+            y="10"
+            z="3"
+            w="100"
+            h="100">
+        <body></body>
+    </function>
+</fluir>

@@ -1,0 +1,7 @@
+[ERROR] on line 6 of 'invalid_int.fl': Expected an integer value in element '<i8>'. 'asdf' cannot be parsed as an integer.
+[ERROR] on line 9 of 'invalid_int.fl': Expected an integer value in element '<i16>'. '432a' cannot be parsed as an integer.
+[ERROR] on line 12 of 'invalid_int.fl': Expected a literal element. Found '<bad>', which is not a recognized literal type.
+[ERROR] on line 15 of 'invalid_int.fl': The literal '-65536' is outside the range of i16.
+[ERROR] on line 18 of 'invalid_int.fl': Expected an unsigned integer value in element '<u8>'. '-80' cannot be parsed as an unsigned integer.
+[ERROR] on line 21 of 'invalid_int.fl': The literal '999999999999999999999999999999' is outside the range of u32.
+[ERROR] on line 24 of 'invalid_int.fl': Expected an unsigned integer value in element '<u16>'. '4k3j2' cannot be parsed as an unsigned integer.

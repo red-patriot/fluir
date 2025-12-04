@@ -1,11 +1,12 @@
-#include <gtest/gtest.h>
+#include "compiler/utility/pass.hpp"
 
 #include <algorithm>
 #include <optional>
 #include <vector>
 
+#include <gtest/gtest.h>
+
 #include "compiler/utility/context.hpp"
-#include "compiler/utility/pass.hpp"
 
 namespace {
   class MockPass1 {
@@ -40,7 +41,7 @@ TEST(TestCompilerPass, PackageDataAndContextTogether) {
   fluir::Context ctx;
   int a = 1;
 
-  auto results = fluir::addContext(ctx, a);
+  auto results = fluir::addContext(std::move(ctx), a);
 
   EXPECT_EQ(1, results.data);
   EXPECT_TRUE(results.ctx.diagnostics.empty());
@@ -50,7 +51,7 @@ TEST(TestCompilerPass, PipeDataThroughOnePass) {
   fluir::Context ctx;
   int a = 1;
 
-  auto results = fluir::addContext(ctx, a) | MockPass1::run;
+  auto results = fluir::addContext(std::move(ctx), a) | MockPass1::run;
 
   EXPECT_EQ(2, results.data);
   EXPECT_TRUE(results.ctx.diagnostics.empty());
@@ -61,7 +62,7 @@ TEST(TestCompilerPass, PipeDataThroughMultiplePasses) {
   int a = 1;
   std::vector<double> expected{2.0, 3.0, 4.0};
 
-  auto results = fluir::addContext(ctx, a) | MockPass1::run | MockPass3::run | MockPass2::run;
+  auto results = fluir::addContext(std::move(ctx), a) | MockPass1::run | MockPass3::run | MockPass2::run;
 
   EXPECT_EQ(expected, results.data);
   EXPECT_TRUE(results.ctx.diagnostics.empty());
@@ -71,7 +72,8 @@ TEST(TestCompilerPass, StopsEarlyOnError) {
   fluir::Context ctx;
   int a = 1;
 
-  auto results = fluir::addContext(ctx, a) | MockPass1::run | ReportsErrors::run | MockPass3::run | MockPass2::run;
+  auto results =
+    fluir::addContext(std::move(ctx), a) | MockPass1::run | ReportsErrors::run | MockPass3::run | MockPass2::run;
 
   EXPECT_FALSE(results.data.has_value());
   EXPECT_FALSE(results.ctx.diagnostics.empty());

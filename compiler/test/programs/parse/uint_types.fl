@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <function name="main" id="1" x="0" y="0" z="0" w="24" h="42">
+    <body>
+      <constant id="1" x="0" y="10" z="1" w="12" h="5">
+        <u8>80</u8>
+      </constant>
+      <constant id="2" x="0" y="17" z="1" w="12" h="5">
+        <u16>160</u16>
+      </constant>
+      <constant id="3" x="0" y="24" z="1" w="12" h="5">
+        <u32>320</u32>
+      </constant>
+      <constant id="4" x="0" y="31" z="1" w="12" h="5">
+        <u64>640</u64>
+      </constant>
+    </body>
+  </function>
+</fluir>

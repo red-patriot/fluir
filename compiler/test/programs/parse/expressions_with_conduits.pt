@@ -1,0 +1,55 @@
+1:
+    FunctionDecl(main)
+    at(x1, y5, z3, w100, h100)
+    body
+        1:
+            Constant
+            at(x9, y5, z0, w12, h5)
+            F64 6.7891
+        2:
+            Constant
+            at(x9, y12, z10, w12, h5)
+            F64 1.2345
+        3:
+            Binary
+            at(x35, y3, z2, w5, h5)
+            /
+            lhs0
+            rhs0
+        5:
+            Binary
+            at(x57, y4, z2, w5, h5)
+            *
+            lhs0
+            rhs0
+        6:
+            Unary
+            at(x35, y12, z0, w5, h5)
+            -
+            lhs0
+    conduits
+        7:
+            Conduit
+            in1.0
+            children
+                out3.0
+        8:
+            Conduit
+            in2.0
+            children
+                out3.1
+        10:
+            Conduit
+            in6.0
+            children
+                out5.1
+        11:
+            Conduit
+            in2.0
+            children
+                out6.0
+        12:
+            Conduit
+            in3.0
+            children
+                out5.0

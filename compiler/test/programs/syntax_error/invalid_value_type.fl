@@ -16,7 +16,7 @@
                 z="3"
                 w="5"
                 h="5">
-                <float>0.0</float>
+                <f64>0.0</f64>
             </not-a-constant>
         </body>
     </function>

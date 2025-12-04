@@ -11,7 +11,7 @@
 namespace fluir {
   Results<asg::ASG> buildGraph(Context& ctx, const pt::ParseTree& tree);
 
-  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block);
+  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block, std::vector<ID> parents = {});
 
   class ASGBuilder {
    public:
@@ -31,7 +31,7 @@ namespace fluir {
 
   class FlowGraphBuilder {
    public:
-    static Results<asg::DataFlowGraph> buildFrom(Context& ctx, pt::Block block);
+    static Results<asg::DataFlowGraph> buildFrom(Context& ctx, pt::Block block, std::vector<ID> parents);
 
     asg::UniqueNode operator()(const pt::Binary& pt);
     asg::UniqueNode operator()(const pt::Unary& pt);
@@ -43,8 +43,9 @@ namespace fluir {
     pt::Block block_;
     std::unordered_map<ID, asg::SharedDependency> alreadyFound_;
     std::vector<ID> inProgressNodes_;
+    std::vector<ID> parents_;
 
-    explicit FlowGraphBuilder(Context& ctx, pt::Block block);
+    explicit FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents);
 
     Results<asg::DataFlowGraph> run();
 

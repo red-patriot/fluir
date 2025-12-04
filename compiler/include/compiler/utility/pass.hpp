@@ -1,10 +1,9 @@
 #ifndef FLUIR_COMPILER_UTILITY_PASS_HPP
 #define FLUIR_COMPILER_UTILITY_PASS_HPP
 
-#include <optional>
-
 #include <concepts>
 #include <functional>
+#include <optional>
 #include <type_traits>
 
 #include "compiler/utility/context.hpp"
@@ -41,7 +40,7 @@ namespace fluir {
       return ReturnType{std::move(data.ctx), std::nullopt};
     }
 
-    auto result = f(data.ctx, data.data.value());
+    auto result = f(data.ctx, std::move(data.data.value()));
     return ReturnType{std::move(data.ctx), std::move(result)};
   }
 

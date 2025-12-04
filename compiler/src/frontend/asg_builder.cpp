@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <variant>
 
-#include "compiler/scope_guard.hpp"
+#include "../../include/compiler/utility/scope_guard.hpp"
 
 namespace {
   /** Returns the set of Nodes that are not dependencies of other Nodes */
@@ -37,7 +37,7 @@ namespace fluir {
   fluir::asg::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
     fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
 
-    auto bodyResults = buildDataFlowGraph(ctx_, func.body);
+    auto bodyResults = buildDataFlowGraph(ctx_, func.body, {func.id});
 
     if (!ctx_.diagnostics.containsErrors()) {
       decl.statements = std::move(bodyResults.value());
@@ -57,37 +57,44 @@ namespace fluir {
     return std::move(graph_);
   }
 
-  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block) {
-    return FlowGraphBuilder::buildFrom(ctx, std::move(block));
+  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block, std::vector<ID> parents) {
+    return FlowGraphBuilder::buildFrom(ctx, std::move(block), std::move(parents));
   }
 
-  Results<asg::DataFlowGraph> FlowGraphBuilder::buildFrom(Context& ctx, pt::Block block) {
-    FlowGraphBuilder builder{ctx, std::move(block)};
+  Results<asg::DataFlowGraph> FlowGraphBuilder::buildFrom(Context& ctx, pt::Block block, std::vector<ID> parents) {
+    FlowGraphBuilder builder{ctx, std::move(block), std::move(parents)};
 
     return builder.run();
   }
 
-  FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block) : ctx_(ctx), block_(std::move(block)) { }
+  FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents) :
+    ctx_(ctx), block_(std::move(block)), parents_(std::move(parents)) { }
 
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
-    return std::make_unique<asg::BinaryOp>(pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), pt.id, pt.location);
+    parents_.push_back(pt.id);
+    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
+    return std::make_unique<asg::BinaryOp>(
+      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), parents_, pt.location);
   }
 
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
+    parents_.push_back(pt.id);
+    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
 
-    return std::make_unique<asg::UnaryOp>(pt.op, getDependency(pt.id, 0), pt.id, pt.location);
+    return std::make_unique<asg::UnaryOp>(pt.op, getDependency(pt.id, 0), parents_, pt.location);
   };
 
   asg::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    // TODO: handle other literal types here
-    return std::make_unique<asg::ConstantFP>(pt.value, pt.id, pt.location);
+    parents_.push_back(pt.id);
+    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
+    return std::make_unique<asg::Constant>(pt.value, parents_, pt.location);
   }
 
   Results<asg::DataFlowGraph> FlowGraphBuilder::run() {

@@ -4,6 +4,7 @@
 #include <string>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/models/asg/node.hpp"
 #include "compiler/utility/diagnostics.hpp"

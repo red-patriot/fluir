@@ -1,6 +1,7 @@
 #include "compiler/types/symbol_table.hpp"
 
 #include <algorithm>
+#include <iterator>
 
 namespace fluir::types {
   SymbolTable::SymbolTable() : types_({{ID_INVALID, Type{""}}}), typeNames_({{"", ID_INVALID}}) { }

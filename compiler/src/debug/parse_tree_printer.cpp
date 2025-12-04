@@ -28,13 +28,13 @@ namespace fluir::debug {
 
   void ParseTreePrinter::operator()(const pt::FunctionDecl& func) {
     out_ << formatIndented("{}:\n", func.id);
-    [[maybe_unused]] auto _ = indent();
+    [[maybe_unused]] auto indent1 = indent();
     out_ << formatIndented("FunctionDecl({})\n", func.name) << doPrint(func.location);
 
     {
       out_ << formatIndented("body\n");
       auto orderedNodes = keyOrder(func.body.nodes);
-      [[maybe_unused]] auto _ = indent();
+      [[maybe_unused]] auto indent2 = indent();
       for (const auto& node : orderedNodes) {
         std::visit(*this, func.body.nodes.at(node));
       }
@@ -43,7 +43,7 @@ namespace fluir::debug {
     {
       out_ << formatIndented("conduits\n");
       auto orderedConduits = keyOrder(func.body.conduits);
-      [[maybe_unused]] auto _ = indent();
+      [[maybe_unused]] auto indent2 = indent();
       for (const auto& conduit : orderedConduits) {
         (*this)(func.body.conduits.at(conduit));
       }

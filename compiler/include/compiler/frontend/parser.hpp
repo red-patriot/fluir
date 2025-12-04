@@ -24,7 +24,6 @@ namespace fluir {
 
    private:
     Context& ctx_;
-    std::string filename_;
     tinyxml2::XMLDocument doc_;
     pt::ParseTree tree_;
 

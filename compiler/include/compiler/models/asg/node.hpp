@@ -1,9 +1,9 @@
 #ifndef FLUIR_COMPILER_MODELS_ASG_NODE_HPP
 #define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
 
+#include <cassert>
 #include <memory>
 #include <utility>
-#include <variant>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -40,7 +40,8 @@ namespace fluir::asg {
       return is<Concrete>() ? dynamic_cast<Concrete const*>(this) : nullptr;
     }
 
-    [[nodiscard]] ID id() const { return id_; }
+    [[nodiscard]] const FullID& fullId() const { return id_; }
+    [[nodiscard]] ID id() const { return id_.back(); }
     [[nodiscard]] FlowGraphLocation location() const { return location_; }
     [[nodiscard]] NodeKind kind() const { return kind_; }
     [[nodiscard]] types::TypeID type() const { return type_; }
@@ -48,12 +49,14 @@ namespace fluir::asg {
     void setType(types::TypeID type) { type_ = type; }
 
    protected:
-    Node(const NodeKind kind, const ID id, const FlowGraphLocation& location) :
-      kind_(kind), id_(id), location_(location) { }
+    Node(const NodeKind kind, FullID id, const FlowGraphLocation& location) :
+      kind_(kind), id_(std::move(id)), location_(location) {
+      assert(!id_.empty() && "Full ID of a node must have at least one element");
+    }
 
    private:
     NodeKind kind_;
-    ID id_;
+    FullID id_;
     FlowGraphLocation location_;
     types::TypeID type_ = types::ID_INVALID;
   };
@@ -65,8 +68,8 @@ namespace fluir::asg {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Constant; }
 
-    Constant(literals_types::Literal value, ID id, const FlowGraphLocation& location) :
-      Node(NodeKind::Constant, id, location), value_(value) {
+    Constant(literals_types::Literal value, FullID id, const FlowGraphLocation& location) :
+      Node(NodeKind::Constant, std::move(id), location), value_(value) {
       setType(determineType(value_));
     }
 
@@ -115,8 +118,8 @@ namespace fluir::asg {
     static bool classOf(const Node& node) { return node.kind() == NodeKind::BinaryOperator; }
 
     BinaryOp(
-      const Operator op, SharedDependency lhs, SharedDependency rhs, const ID id, const FlowGraphLocation& location) :
-      Node(NodeKind::BinaryOperator, id, location), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
+      const Operator op, SharedDependency lhs, SharedDependency rhs, FullID id, const FlowGraphLocation& location) :
+      Node(NodeKind::BinaryOperator, std::move(id), location), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
 
     [[nodiscard]] const Operator& op() const { return op_; }
     [[nodiscard]] SharedDependency& lhs() { return lhs_; }
@@ -140,8 +143,8 @@ namespace fluir::asg {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::UnaryOperator; }
 
-    UnaryOp(const Operator op, SharedDependency operand, const ID id, const FlowGraphLocation& location) :
-      Node(NodeKind::UnaryOperator, id, location), op_(op), operand_(std::move(operand)) { }
+    UnaryOp(const Operator op, SharedDependency operand, FullID id, const FlowGraphLocation& location) :
+      Node(NodeKind::UnaryOperator, std::move(id), location), op_(op), operand_(std::move(operand)) { }
 
     [[nodiscard]] const Operator& op() const { return op_; }
     [[nodiscard]] const SharedDependency& operand() const { return operand_; }
@@ -162,8 +165,8 @@ namespace fluir::asg {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Cast; }
 
-    Cast(types::TypeID to, SharedDependency operand, const ID id, const FlowGraphLocation& location) :
-      Node(NodeKind::Cast, id, location), operand_(std::move(operand)) {
+    Cast(types::TypeID to, SharedDependency operand, FullID id, const FlowGraphLocation& location) :
+      Node(NodeKind::Cast, std::move(id), location), operand_(std::move(operand)) {
       setType(to);
     }
 

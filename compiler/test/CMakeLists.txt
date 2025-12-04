@@ -11,6 +11,7 @@ set(FLUIR_FRONTEND_TEST_SOURCES
     parser.test.cpp
     frontend/parse_number.test.cpp
     frontend/type_checker.test.cpp
+    frontend/type_errors.test.cpp
 )
 
 set(FLUIR_ASG_TEST_SOURCES

@@ -9,7 +9,7 @@ namespace ft = fluir::types;
 
 TEST(TestDeclaractionTypeChecker, HandlesSingleConstant) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  decl.statements.emplace_back(std::make_unique<fa::Constant>(1., 1, fluir::FlowGraphLocation{}));
+  decl.statements.emplace_back(std::make_unique<fa::Constant>(1., fluir::FullID{1, 1}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
@@ -23,10 +23,10 @@ TEST(TestDeclaractionTypeChecker, HandlesSingleConstant) {
 
 TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  auto lhs = std::make_shared<fa::Constant>(1.0, 1, fluir::FlowGraphLocation{});
-  auto rhs = std::make_shared<fa::Constant>(2.0, 2, fluir::FlowGraphLocation{});
+  auto lhs = std::make_shared<fa::Constant>(1.0, fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
+  auto rhs = std::make_shared<fa::Constant>(2.0, fluir::FullID{1, 2}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
@@ -46,10 +46,11 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
 
 TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  auto lhs = std::make_shared<fa::Constant>((fluir::literals_types::I16)13, 1, fluir::FlowGraphLocation{});
-  auto rhs = std::make_shared<fa::Constant>(2.0, 2, fluir::FlowGraphLocation{});
+  auto lhs =
+    std::make_shared<fa::Constant>((fluir::literals_types::I16)13, fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
+  auto rhs = std::make_shared<fa::Constant>(2.0, fluir::FullID{1, 2}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
@@ -70,10 +71,11 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) 
 
 TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  auto lhs = std::make_shared<fa::Constant>(1.0, 1, fluir::FlowGraphLocation{});
-  auto rhs = std::make_shared<fa::Constant>((fluir::literals_types::I32)12, 2, fluir::FlowGraphLocation{});
+  auto lhs = std::make_shared<fa::Constant>(1.0, fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
+  auto rhs =
+    std::make_shared<fa::Constant>((fluir::literals_types::I32)12, fluir::FullID{1, 2}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, 3, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
@@ -94,11 +96,13 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) 
 
 TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  auto n1 = std::make_shared<fa::Constant>(1.0, 1, fluir::FlowGraphLocation{});
-  auto n2 = std::make_shared<fa::Constant>(static_cast<fluir::literals_types::U32>(2), 2, fluir::FlowGraphLocation{});
-  auto n3 = std::make_shared<fa::BinaryOp>(fluir::Operator::MINUS, n1, n2, 3, fluir::FlowGraphLocation{});
+  auto n1 = std::make_shared<fa::Constant>(1.0, fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
+  auto n2 = std::make_shared<fa::Constant>(
+    static_cast<fluir::literals_types::U32>(2), fluir::FullID{1, 2}, fluir::FlowGraphLocation{});
+  auto n3 =
+    std::make_shared<fa::BinaryOp>(fluir::Operator::MINUS, n1, n2, fluir::FullID{1, 3}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, n3, n2, 4, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, n3, n2, fluir::FullID{1, 4}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
@@ -124,10 +128,10 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
 
 TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   fa::Declaration decl{.id = 1, .name = "test", .statements = {}};
-  auto operand =
-    std::make_shared<fa::Constant>(static_cast<fluir::literals_types::U8>(7), 1, fluir::FlowGraphLocation{});
+  auto operand = std::make_shared<fa::Constant>(
+    static_cast<fluir::literals_types::U8>(7), fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, 3, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
@@ -148,10 +152,10 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
   fa::ASG asg{.declarations = {}};
   asg.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
   auto& decl = asg.declarations.front();
-  auto operand =
-    std::make_shared<fa::Constant>(static_cast<fluir::literals_types::U8>(7), 1, fluir::FlowGraphLocation{});
+  auto operand = std::make_shared<fa::Constant>(
+    static_cast<fluir::literals_types::U8>(7), fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, 3, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;

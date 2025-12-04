@@ -19,8 +19,9 @@ namespace fluir {
   }
   template <typename... FmtArgs>
   [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs... args) {
-    ctx_.diagnostics.emitError(fmt::vformat(format, fmt::make_format_args(args...)),
-                               std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
+    ctx_.diagnostics.emitError(
+      fmt::vformat(format, fmt::make_format_args(args...)),
+      std::make_shared<SourceLocation>(element->GetLineNum(), ctx_.currentFile.filename().string()));
     throw PanicMode{};
   }
 
@@ -37,7 +38,7 @@ namespace fluir {
   Parser::Parser(Context& ctx) : ctx_(ctx) { }
 
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
-    filename_ = file.filename().string();
+    ctx_.currentFile = file;
     doc_.Clear();
     std::ifstream fin(file);
     std::stringstream ss;
@@ -55,7 +56,7 @@ namespace fluir {
   }
 
   Results<pt::ParseTree> Parser::parseString(const std::string_view source) {
-    filename_ = "<FROM STRING>";
+    ctx_.currentFile = "<FROM STRING>";
     doc_.Clear();
     doc_.Parse(source.data());
 

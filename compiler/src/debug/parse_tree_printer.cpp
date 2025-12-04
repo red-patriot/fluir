@@ -28,13 +28,13 @@ namespace fluir::debug {
 
   void ParseTreePrinter::operator()(const pt::FunctionDecl& func) {
     out_ << formatIndented("{}:\n", func.id);
-    [[maybe_unused]] auto indent1 = indent();
+    FLUIR_SCOPED_INDENT;
     out_ << formatIndented("FunctionDecl({})\n", func.name) << doPrint(func.location);
 
     {
       out_ << formatIndented("body\n");
       auto orderedNodes = keyOrder(func.body.nodes);
-      [[maybe_unused]] auto indent2 = indent();
+      FLUIR_SCOPED_INDENT;
       for (const auto& node : orderedNodes) {
         std::visit(*this, func.body.nodes.at(node));
       }
@@ -43,7 +43,7 @@ namespace fluir::debug {
     {
       out_ << formatIndented("conduits\n");
       auto orderedConduits = keyOrder(func.body.conduits);
-      [[maybe_unused]] auto indent2 = indent();
+      FLUIR_SCOPED_INDENT;
       for (const auto& conduit : orderedConduits) {
         (*this)(func.body.conduits.at(conduit));
       }
@@ -52,30 +52,30 @@ namespace fluir::debug {
 
   void ParseTreePrinter::operator()(const pt::Binary& binary) {
     out_ << formatIndented("{}:\n", binary.id);
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Binary\n") << doPrint(binary.location) << formatIndented("{}\n", stringify(binary.op))
          << formatIndented("lhs{}\n", binary.lhs) << formatIndented("rhs{}\n", binary.rhs);
   }
   void ParseTreePrinter::operator()(const pt::Unary& unary) {
     out_ << formatIndented("{}:\n", unary.id);
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Unary\n") << doPrint(unary.location) << formatIndented("{}\n", stringify(unary.op))
          << formatIndented("lhs{}\n", unary.lhs);
   }
   void ParseTreePrinter::operator()(const pt::Constant& constant) {
     out_ << formatIndented("{}:\n", constant.id);
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Constant\n") << doPrint(constant.location);
     std::visit(*this, constant.value);
   }
 
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
     out_ << formatIndented("{}:\n", conduit.id);
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Conduit\n") << formatIndented("in{}.{}\n", conduit.input, conduit.index)
          << formatIndented("children\n");
     {
-      [[maybe_unused]] auto _ = indent();
+      FLUIR_SCOPED_INDENT;
       for (const auto& child : conduit.children) {
         out_ << formatIndented("out{}.{}\n", child.target, child.index);
       }

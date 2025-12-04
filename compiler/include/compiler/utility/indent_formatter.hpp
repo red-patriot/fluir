@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include "compiler/utility/macros.hpp"
 #include "fmt/format.h"
 
 namespace fluir {
@@ -43,5 +44,7 @@ namespace fluir {
     std::string indent_ = std::string(8, ' ');
   };
 }  // namespace fluir
+
+#define FLUIR_SCOPED_INDENT [[maybe_unused]] auto FLUIR_ANONYMOUS_VARIABLE(indentGuard) = indent()
 
 #endif

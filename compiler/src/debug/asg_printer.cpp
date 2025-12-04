@@ -26,14 +26,14 @@ namespace fluir::debug {
 
   void AsgPrinter::operator()(const asg::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     print(func.statements);
   }
 
   void AsgPrinter::operator()(const asg::BinaryOp& binary) {
     out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     print(*binary.lhs());
     print(*binary.rhs());
   }
@@ -41,7 +41,7 @@ namespace fluir::debug {
   void AsgPrinter::operator()(const asg::UnaryOp& unary) {
     out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
-    [[maybe_unused]] auto _ = indent();
+    FLUIR_SCOPED_INDENT;
     print(*unary.operand());
   }
 

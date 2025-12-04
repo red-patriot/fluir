@@ -5,7 +5,7 @@
 #include <unordered_set>
 #include <variant>
 
-#include "compiler/scope_guard.hpp"
+#include "../../include/compiler/utility/scope_guard.hpp"
 
 namespace {
   /** Returns the set of Nodes that are not dependencies of other Nodes */

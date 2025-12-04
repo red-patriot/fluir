@@ -1,8 +1,10 @@
-#ifndef FLUIR_COMPILER_SCOPE_GUARD_HPP
-#define FLUIR_COMPILER_SCOPE_GUARD_HPP
+#ifndef FLUIR_COMPILER_UTILITY_SCOPE_GUARD_HPP
+#define FLUIR_COMPILER_UTILITY_SCOPE_GUARD_HPP
 
-#include <utility>
 #include <exception>
+#include <utility>
+
+#include "compiler/utility/macros.hpp"
 
 namespace fluir::scope_guard::detail {
   template <typename Func, bool OnSuccess, bool OnException>
@@ -39,10 +41,6 @@ namespace fluir::scope_guard::detail {
   using ScopeSuccess = ScopeGuardBuilder<true, false>;
   using ScopeFailure = ScopeGuardBuilder<false, true>;
 }  // namespace fluir::scope_guard::detail
-
-#define FLUIR_CONCAT_IMPL(a, b) a##b
-#define FLUIR_CONCAT(a, b) FLUIR_CONCAT_IMPL(a, b)
-#define FLUIR_ANONYMOUS_VARIABLE(BaseName) FLUIR_CONCAT(BaseName, __LINE__)
 
 #define FLUIR_SCOPE_EXIT \
   auto FLUIR_ANONYMOUS_VARIABLE(scopeExitGuard) = ::fluir::scope_guard::detail::ScopeExit{} + [&]() noexcept

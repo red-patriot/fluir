@@ -5,6 +5,7 @@ from typing import Literal, Never, Sequence, cast
 from pydantic.dataclasses import dataclass
 
 from editor.models.id import INVALID_ID, IDType, QualifiedID
+from editor.models.version import FLUIR_CURRENT_VERSION, Version
 
 
 class IdentifierError(Exception):
@@ -107,8 +108,14 @@ Declarations = list[Declaration]
 
 
 @dataclass
+class Header:
+    version: Version = field(default_factory=lambda: FLUIR_CURRENT_VERSION)
+
+
+@dataclass
 class Program:
     declarations: Declarations = field(default_factory=list)
+    header: Header = field(default_factory=Header)
 
 
 Element = Declaration | Node

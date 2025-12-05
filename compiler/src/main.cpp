@@ -2,6 +2,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "bytecode/version.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
 #include "compiler/frontend/asg_builder.hpp"
@@ -27,7 +28,7 @@ int main(int argc, char** argv) {
   }
 
   fs::path source = fs::canonical(fs::path{argv[1]});
-  fluir::Context ctx;
+  fluir::Context ctx{.version = fluir::CURRENT_VERSION};
   ctx.symbolTable = fluir::types::buildSymbolTable();
 
   auto frontendResults =

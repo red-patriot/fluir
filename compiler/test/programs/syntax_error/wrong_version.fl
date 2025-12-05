@@ -1,19 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<fluir >
+<fluir>
     <header>
         <version>
             <major>0</major>
             <minor>1</minor>
-            <patch>3</patch>
+            <patch>1</patch>
         </version>
     </header>
     <function
-        name="foo"
-        id="1"
-        x="10"
-        y="10"
-        z="3"
-        w="100"
-        h="100">
+            name="main"
+            id="1"
+            x="10"
+            y="10"
+            z="3"
+            w="100"
+            h="100">
+        <body/>
     </function>
 </fluir>

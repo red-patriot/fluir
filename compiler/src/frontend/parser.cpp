@@ -21,7 +21,8 @@ namespace fluir {
   [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs... args) {
     ctx_.diagnostics.emitError(
       fmt::vformat(format, fmt::make_format_args(args...)),
-      std::make_shared<SourceLocation>(element->GetLineNum(), ctx_.currentFile.filename().string()));
+      element ? std::make_shared<SourceLocation>(element->GetLineNum(), ctx_.currentFile.filename().string()) :
+                nullptr);
     throw PanicMode{};
   }
 
@@ -79,17 +80,19 @@ namespace fluir {
               "Expected root element to be '{}', found '{}'.",
               expectedRoot,
               root->Name());
-      // TODO: Check metadata
-
+      bool headerFound = false;
       for (auto child = root->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
         std::string_view name = child->Name();
         if (name == "header") {
+          panicIf(headerFound, child, "Multiple program headers detected.");
           header(child);
+          headerFound = true;
           continue;
         }
 
         declaration(child);
       }
+      panicIf(!headerFound, doc_.RootElement(), "Program header not found.");
     } catch (const PanicMode&) {
       // If something goes wrong at this level, there isn't really anything to
       // do except bail
@@ -99,12 +102,24 @@ namespace fluir {
 
   void Parser::header(Element* element) {
     constexpr std::string_view version_tag = "version";
+    bool versionFound = false;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       std::string_view name = child->Name();
       if (name == version_tag) {
         tree_.header.version = version(child);
+        panicIf(tree_.header.version != ctx_.version,
+                nullptr,
+                "Program '{}' uses version {}.{}.{}, which cannot be compiled by this version of the compiler.",
+                ctx_.currentFile.filename().string(),
+                tree_.header.version.major,
+                tree_.header.version.minor,
+                tree_.header.version.patch);
+        versionFound = true;
+      } else {
+        panicAt(child, "Unexpected element '{}' in program header.", name);
       }
     }
+    panicIf(!versionFound, element, "Program header is missing version element.");
   }
 
   Version Parser::version(Element* element) {

@@ -82,6 +82,12 @@ namespace fluir {
       // TODO: Check metadata
 
       for (auto child = root->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+        std::string_view name = child->Name();
+        if (name == "header") {
+          header(child);
+          continue;
+        }
+
         declaration(child);
       }
     } catch (const PanicMode&) {
@@ -89,6 +95,32 @@ namespace fluir {
       // do except bail
       return;
     }
+  }
+
+  void Parser::header(Element* element) {
+    constexpr std::string_view version_tag = "version";
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view name = child->Name();
+      if (name == version_tag) {
+        tree_.header.version = version(child);
+      }
+    }
+  }
+
+  Version Parser::version(Element* element) {
+    Version version{0, 0, 0};
+
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      if (const std::string_view name = child->Name(); name == "major") {
+        version.major = fe::parseInteger(child->GetText()).value_or(0);
+      } else if (name == "minor") {
+        version.minor = fe::parseInteger(child->GetText()).value_or(0);
+      } else if (name == "patch") {
+        version.patch = fe::parseInteger(child->GetText()).value_or(0);
+      }
+    }
+
+    return version;
   }
 
   void Parser::declaration(Element* element) {

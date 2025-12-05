@@ -1,5 +1,12 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
   <function name="main" id="1" x="0" y="0" z="0" w="36" h="38">
     <body>
       <constant id="1" x="10" y="12" z="1" w="12" h="5">

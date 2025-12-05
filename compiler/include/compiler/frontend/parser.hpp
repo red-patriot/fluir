@@ -30,6 +30,10 @@ namespace fluir {
     using Element = tinyxml2::XMLElement;
 
     void flowGraph();
+
+    void header(Element* element);
+    Version version(Element* element);
+
     void declaration(Element* element);
     void functionDecl(Element* element);
 

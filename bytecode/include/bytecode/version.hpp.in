@@ -10,6 +10,8 @@ namespace fluir {
         std::uint8_t major;
         std::uint8_t minor;
         std::uint8_t patch;
+
+        friend bool operator==(const Version&, const Version&) = default;
     };
 
     constexpr Version CURRENT_VERSION{

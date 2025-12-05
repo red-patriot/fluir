@@ -26,6 +26,7 @@ TEST_P(TestParser, Test) {
 
   std::stringstream ss;
   fluir::debug::ParseTreePrinter printer{ss};
+  ASSERT_TRUE(results.has_value());
   printer.print(results.value());
 
   auto actual = ss.str();

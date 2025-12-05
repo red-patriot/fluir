@@ -38,7 +38,7 @@ This document describes the complete set of bytecode instructions understood by 
 | `CAST_FU`    | width    | Cast an F64 to an unsigned int of the given width, widening or narrowing if necessary.                                |
 | `CAST_WIDTH` | width    | Widens or narrows the int or unsigned int on the top of the stack to the desired width.                               |
 
-## Width
+### Width
 
 | Width    | Description        |
 |----------|--------------------|

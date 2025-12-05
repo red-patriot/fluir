@@ -172,9 +172,10 @@ namespace fluir {
       (*this)(declaration);
     }
 
-    // For now, zero out header
-    // TODO: Put the language version in the header here
     code_.header = code::Header{};
+    code_.header.major = ctx_.version.major;
+    code_.header.minor = ctx_.version.minor;
+    code_.header.patch = ctx_.version.patch;
 
     return std::move(code_);
   }

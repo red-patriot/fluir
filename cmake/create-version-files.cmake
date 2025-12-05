@@ -12,8 +12,12 @@ function (create_version_files)
         USE_SOURCE_PERMISSIONS
     )
 
-    # TODO: Create compiler version file
-
-    # TODO: Create VM version file
+    # Create language version file
+    set(BYTECODE_DIRECTORY ${CMAKE_SOURCE_DIR}/bytecode)
+    configure_file(
+        "${BYTECODE_DIRECTORY}/include/bytecode/version.hpp.in"
+        "${BYTECODE_DIRECTORY}/include/bytecode/version.hpp"
+        USE_SOURCE_PERMISSIONS
+    )
 
 endfunction ()

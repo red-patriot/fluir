@@ -2,26 +2,40 @@ from pathlib import Path
 
 import pytest
 
-from editor.models.elements import (
+from editor.models import (
     BinaryOperator,
     Conduit,
     Constant,
     FlType,
     Function,
+    Header,
     Location,
     Operator,
     Program,
     UnaryOperator,
+    Version,
 )
 from editor.repository.fluir_file import XMLFileManager
 
 _TEST_DATA = [
     (
         Program(
-            [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)]
+            [
+                Function(
+                    name="foo", location=Location(10, 10, 3, 100, 100), id=1
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="foo"
             id="1"
@@ -44,10 +58,18 @@ _TEST_DATA = [
                 Function(
                     name="bar", location=Location(210, 10, 3, 50, 70), id=2
                 ),
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="foo"
             id="1"
@@ -107,10 +129,18 @@ _TEST_DATA = [
                         ),
                     ],
                 )
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="foo"
             id="1"
@@ -169,10 +199,18 @@ _TEST_DATA = [
                         ),
                     ],
                 )
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="main"
             id="1"
@@ -271,10 +309,18 @@ _TEST_DATA = [
                         ),
                     ],
                 )
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version='1.0' encoding='UTF-8'?>
 <fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
   <function name="someFuncName" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
       <binary id="3" x="24" y="39" z="2" w="5" h="5" operator="/" />
@@ -342,10 +388,18 @@ _TEST_DATA = [
                         ),
                     ],
                 )
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="main"
             id="1"
@@ -410,10 +464,18 @@ _TEST_DATA = [
                         ),
                     ],
                 )
-            ]
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
         b"""<?xml version="1.0" encoding="UTF-8"?>
     <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
         <function
             name="main"
             id="1"
@@ -472,6 +534,13 @@ def test_repository_opens_file(tmp_path: Path) -> None:
     with open(filename, "w") as file:
         file.write("""<?xml version="1.0" encoding="UTF-8"?>
         <fluir>
+            <header>
+                <version>
+                    <major>0</major>
+                    <minor>1</minor>
+                    <patch>3</patch>
+                </version>
+            </header>
             <function
                 name="foo"
                 id="1"
@@ -483,7 +552,8 @@ def test_repository_opens_file(tmp_path: Path) -> None:
         """)
 
     expected = Program(
-        [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)]
+        [Function(name="foo", location=Location(10, 10, 3, 100, 100), id=1)],
+        Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
     )
 
     uut = XMLFileManager()

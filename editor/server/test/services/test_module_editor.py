@@ -11,10 +11,11 @@ from editor.models.edit_errors import BadEdit, EditorError
 from editor.models.elements import (
     FlType,
     Function,
+    Header,
     Location,
     Program,
-    find_element,
 )
+from editor.models.version import Version
 from editor.services import transaction
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import EditTransaction, TransactionBase
@@ -26,6 +27,13 @@ def test_file1(tmp_path: Path) -> Iterator[Path]:
     with open(filename, "w") as file:
         file.write("""<?xml version="1.0" encoding="UTF-8"?>
         <fluir>
+            <header>
+              <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>9</patch>
+              </version>
+            </header>
             <function
                 name="bar"
                 id="174"
@@ -45,6 +53,13 @@ def test_file2(tmp_path: Path) -> Iterator[Path]:
     with open(filename, "w") as file:
         file.write("""<?xml version="1.0" encoding="UTF-8"?>
         <fluir>
+            <header>
+              <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>9</patch>
+              </version>
+            </header>
             <function
                 name="foo"
                 id="2"
@@ -87,7 +102,8 @@ def basic_program() -> Program:
                     )
                 ],
             ),
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
 
 
@@ -99,7 +115,8 @@ def test_module_editor_can_open_files(test_file1: Path) -> None:
                 location=Location(10, 10, 3, 100, 100),
                 id=174,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
     expected_name = "test.fl"
 
@@ -137,7 +154,8 @@ def test_module_editor_can_close_automatically_on_open_files(
                 location=Location(10, 10, 3, 12, 100),
                 id=2,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
 
     uut = ModuleEditor()
@@ -158,7 +176,8 @@ def test_module_editor_accepts_edit_transactions() -> None:
                 location=Location(10, 10, 3, 12, 100),
                 id=2,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
     fake_command = create_autospec(TransactionBase, instance=True)
     fake_command.do.return_value = data
@@ -183,6 +202,13 @@ def test_module_editor_edit_requires_an_open_program() -> None:
 def test_module_editor_can_save_files(tmp_path: Path) -> None:
     expected = """<?xml version='1.0' encoding='UTF-8'?>
 <fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>9</patch>
+    </version>
+  </header>
   <function name="bar" id="174" x="10" y="10" z="3" w="100" h="100">
     <body/>
   </function>
@@ -195,7 +221,8 @@ def test_module_editor_can_save_files(tmp_path: Path) -> None:
                 location=Location(10, 10, 3, 100, 100),
                 id=174,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
     expected_path = tmp_path / "module.fl"
 
@@ -224,7 +251,8 @@ def test_module_editor_raises_if_no_file_path() -> None:
                 location=Location(10, 10, 3, 100, 100),
                 id=1,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
     uut = ModuleEditor()
     uut.open_module(data, None)
@@ -236,6 +264,13 @@ def test_module_editor_raises_if_no_file_path() -> None:
 def test_module_editor_accepts_explicit_file_path(tmp_path: Path) -> None:
     expected = """<?xml version='1.0' encoding='UTF-8'?>
 <fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>9</patch>
+    </version>
+  </header>
   <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
     <body/>
   </function>
@@ -248,7 +283,8 @@ def test_module_editor_accepts_explicit_file_path(tmp_path: Path) -> None:
                 location=Location(10, 10, 3, 100, 100),
                 id=1,
             )
-        ]
+        ],
+        header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=9)),
     )
     expected_path = tmp_path / "explicitly_specified.fl"
 

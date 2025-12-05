@@ -5,6 +5,7 @@ from editor.models.elements import (
     Declaration,
     FlType,
     Function,
+    Header,
     Location,
     Node,
     Nodes,
@@ -13,6 +14,7 @@ from editor.models.elements import (
     UnaryOperator,
 )
 from editor.models.id import INVALID_ID, IDType, QualifiedID
+from editor.models.version import Version
 
 __all__ = [
     "INVALID_ID",
@@ -30,4 +32,6 @@ __all__ = [
     "Program",
     "QualifiedID",
     "UnaryOperator",
+    "Header",
+    "Version",
 ]

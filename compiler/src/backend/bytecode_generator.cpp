@@ -205,8 +205,13 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::F64_DIV);
         break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::F64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::F64_DEC);
+        break;
       case Operator::UNKNOWN:
-      default:
         // TODO: Handle this better
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
@@ -226,8 +231,13 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::I64_DIV);
         break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::I64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::I64_DEC);
+        break;
       case Operator::UNKNOWN:
-      default:
         // TODO: Handle this better
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
@@ -247,8 +257,13 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::U64_DIV);
         break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::U64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::U64_DEC);
+        break;
       case Operator::UNKNOWN:
-      default:
         // TODO: Handle this better
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;

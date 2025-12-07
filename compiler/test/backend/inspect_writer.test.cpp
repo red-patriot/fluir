@@ -143,17 +143,59 @@ CHUNK bar
   EXPECT_EQ(expected, actual);
 }
 
+TEST(TestInspectWriter, WriteFloatInstructions) {
+  std::string expected = R"(I0120030000000000000000
+CHUNK main
+  CONSTANTS x0
+  CODE x9
+    IF64_ADD
+    IF64_SUB
+    IF64_MUL
+    IF64_DIV
+    IF64_NEG
+    IF64_AFF
+    IF64_INC
+    IF64_DEC
+    IEXIT
+)";
+  fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                             .chunks = {fluir::code::Chunk{.name = "main",
+                                                           .code =
+                                                             {
+                                                               fc::F64_ADD,
+                                                               fc::F64_SUB,
+                                                               fc::F64_MUL,
+                                                               fc::F64_DIV,
+                                                               fc::F64_NEG,
+                                                               fc::F64_AFF,
+                                                               fc::F64_INC,
+                                                               fc::F64_DEC,
+                                                               fc::EXIT,
+                                                             },
+                                                           .constants = {}}}};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{};
+  fluir::writeCode(code, uut, ss);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}
+
 TEST(TestInspectWriter, WriteIntInstructions) {
   std::string expected = R"(I0120030000000000000000
 CHUNK main
   CONSTANTS x0
-  CODE x7
+  CODE x9
     II64_ADD
     II64_SUB
     II64_MUL
     II64_DIV
     II64_NEG
     II64_AFF
+    II64_INC
+    II64_DEC
     IEXIT
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -166,6 +208,8 @@ CHUNK main
                                                                fc::I64_DIV,
                                                                fc::I64_NEG,
                                                                fc::I64_AFF,
+                                                               fc::I64_INC,
+                                                               fc::I64_DEC,
                                                                fc::EXIT,
                                                              },
                                                            .constants = {}}}};
@@ -183,12 +227,14 @@ TEST(TestInspectWriter, WriteUintInstructions) {
   std::string expected = R"(I0120030000000000000000
 CHUNK main
   CONSTANTS x0
-  CODE x6
+  CODE x8
     IU64_ADD
     IU64_SUB
     IU64_MUL
     IU64_DIV
     IU64_AFF
+    IU64_INC
+    IU64_DEC
     IEXIT
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -200,6 +246,8 @@ CHUNK main
                                                                fc::U64_MUL,
                                                                fc::U64_DIV,
                                                                fc::U64_AFF,
+                                                               fc::U64_INC,
+                                                               fc::U64_DEC,
                                                                fc::EXIT,
                                                              },
                                                            .constants = {}}}};

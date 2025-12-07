@@ -127,11 +127,17 @@ namespace fluir {
 
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       if (const std::string_view name = child->Name(); name == "major") {
-        version.major = fe::parseInteger(child->GetText()).value_or(0);
+        auto major = fe::parseInteger(child->GetText());
+        panicIf(!major.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.major = static_cast<uint8_t>(major.value());
       } else if (name == "minor") {
-        version.minor = fe::parseInteger(child->GetText()).value_or(0);
+        auto major = fe::parseInteger(child->GetText());
+        panicIf(!major.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.minor = static_cast<uint8_t>(major.value());
       } else if (name == "patch") {
-        version.patch = fe::parseInteger(child->GetText()).value_or(0);
+        auto patch = fe::parseInteger(child->GetText());
+        panicIf(!patch.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.patch = static_cast<uint8_t>(patch.value());
       }
     }
 

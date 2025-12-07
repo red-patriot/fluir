@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <header>
+        <version>
+            <major>junk</major>
+            <minor>1</minor>
+            <patch>1</patch>
+        </version>
+    </header>
+    <function
+            name="main"
+            id="1"
+            x="10"
+            y="10"
+            z="3"
+            w="100"
+            h="100">
+        <body/>
+    </function>
+</fluir>

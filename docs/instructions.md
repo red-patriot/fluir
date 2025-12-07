@@ -17,18 +17,24 @@ This document describes the complete set of bytecode instructions understood by 
 | `F64_SUB`    |          | Subtracts (binary-) the two F64 values on the top of the stack and pushes the result.                                 |
 | `F64_MUL`    |          | Multiplies (binary*) the two F64 values on the top of the stack and pushes the result.                                |
 | `F64_DIV`    |          | Divides (binary/) the two F64 values on the top of the stack and pushes the result.                                   |
+| `F64_INC`    |          | Increments (unary++) the F64 value on the top of the stack and pushes the result.                                     |
+| `F64_DEC`    |          | Decrements (unary--) the F64 value on the top of the stack and pushes the result.                                     |
 | `F64_NEG`    |          | Negates (unary-) the F64 value on the top of the stack and pushes the result.                                         |
 | `F64_AFF`    |          | Affirms (unary+) the F64 value on the top of the stack and pushes the result. This is a no op.                        |
 | `I64_ADD`    |          | Adds (binary+) the two int values on the top of the stack and pushes the result.                                      |
 | `I64_SUB`    |          | Subtracts (binary-) the two int values on the top of the stack and pushes the result.                                 |
 | `I64_MUL`    |          | Multiplies (binary*) the two int values on the top of the stack and pushes the result.                                |
 | `I64_DIV`    |          | Divides (binary/) the two int values on the top of the stack and pushes the result.                                   |
+| `I64_INC`    |          | Increments (unary++) the int value on the top of the stack and pushes the result.                                     |
+| `I64_DEC`    |          | Decrements (unary--) the int value on the top of the stack and pushes the result.                                     |
 | `I64_NEG`    |          | Negates (unary-) the int value on the top of the stack and pushes the result.                                         |
 | `I64_AFF`    |          | Affirms (unary+) the int value on the top of the stack and pushes the result. This is a no op.                        |
 | `U64_ADD`    |          | Adds (binary+) the two uint values on the top of the stack and pushes the result.                                     |
 | `U64_SUB`    |          | Subtracts (binary-) the two uint values on the top of the stack and pushes the result.                                |
 | `U64_MUL`    |          | Multiplies (binary*) the two uint values on the top of the stack and pushes the result.                               |
 | `U64_DIV`    |          | Divides (binary/) the two uint values on the top of the stack and pushes the result.                                  |
+| `U64_INC`    |          | Increments (unary++) the uint value on the top of the stack and pushes the result.                                    |
+| `U64_DEC`    |          | Decrements (unary--) the uint value on the top of the stack and pushes the result.                                    |
 | `U64_AFF`    |          | Affirms (unary+) the uint value on the top of the stack and pushes the result.   This is a no op.                     |
 | `CAST_IU`    | width    | Cast an int to an unsigned int of the given width, widening or narrowing if necessary.                                |
 | `CAST_UI`    | width    | Cast an unsigned int to an int of the given width, widening or narrowing if necessary.                                |

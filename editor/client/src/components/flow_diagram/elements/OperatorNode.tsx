@@ -38,7 +38,7 @@ export function BinaryOperatorNode({
       <ValueDisplay
         fullID={fullID}
         value={operator.op}
-        renderEdit={editWithChoicePopover(onSelect, ['+', '-', '*', '/'])}
+        renderEdit={editWithChoicePopover(onSelect, ['+', '-', '*', '/', '++', '--'])}
       />
       <DragHandle />
       <NodeOutput
@@ -75,7 +75,7 @@ export function UnaryOperatorNode({
       <ValueDisplay
         fullID={fullID}
         value={operator.op}
-        renderEdit={editWithChoicePopover(onSelect, ['+', '-'])}
+        renderEdit={editWithChoicePopover(onSelect, ['+', '-', '++', '--'])}
       />
       <DragHandle />
       <NodeOutput

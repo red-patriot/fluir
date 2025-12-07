@@ -28,8 +28,8 @@ namespace fluir::types {
     constexpr std::array signedTypes{types::ID_F64, types::ID_I8, types::ID_I16, types::ID_I32, types::ID_I64};
     constexpr std::array unsignedTypes{types::ID_U8, types::ID_U16, types::ID_U32, types::ID_U64};
     constexpr std::array binaryOps{Operator::PLUS, Operator::MINUS, Operator::STAR, Operator::SLASH};
-    constexpr std::array unsignedUnaryOps{Operator::PLUS};
-    constexpr std::array signedUnaryOps{Operator::MINUS, Operator::PLUS};
+    constexpr std::array unsignedUnaryOps{Operator::PLUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS};
+    constexpr std::array signedUnaryOps{Operator::MINUS, Operator::PLUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS};
 
     for (const auto& type : signedTypes) {
       for (const auto& op : binaryOps) {

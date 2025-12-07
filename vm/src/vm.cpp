@@ -7,6 +7,7 @@
 
 #include "vm/exceptions.hpp"
 #include "vm/utility/narrow_widen.hpp"
+#include "vm/utility/operations.hpp"
 
 namespace fluir {
   namespace {
@@ -133,6 +134,12 @@ namespace fluir {
         case F64_NEG:
           floatUnary<std::negate<code::F64>>();
           break;
+        case F64_INC:
+          floatUnary<utility::increment<code::F64>>();
+          break;
+        case F64_DEC:
+          floatUnary<utility::decrement<code::F64>>();
+          break;
         case I64_ADD:
           intBinary<std::plus<code::I64>>();
           break;
@@ -144,6 +151,12 @@ namespace fluir {
           break;
         case I64_DIV:
           intBinary<utility::checkedDivide<code::I64>>();
+          break;
+        case I64_INC:
+          intUnary<utility::increment<code::I64>>();
+          break;
+        case I64_DEC:
+          intUnary<utility::decrement<code::I64>>();
           break;
         case I64_NEG:
           intUnary<std::negate<code::I64>>();
@@ -159,6 +172,12 @@ namespace fluir {
           break;
         case U64_DIV:
           uintBinary<utility::checkedDivide<code::U64>>();
+          break;
+        case U64_INC:
+          uintUnary<utility::increment<code::U64>>();
+          break;
+        case U64_DEC:
+          uintUnary<utility::decrement<code::U64>>();
           break;
         case F64_AFF:
         case I64_AFF:

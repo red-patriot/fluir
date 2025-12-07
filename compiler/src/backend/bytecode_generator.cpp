@@ -61,19 +61,18 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const asg::UnaryOp& node) {
+    constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
-    // TODO: Handle other types here
-    switch (node.op()) {
-      case Operator::PLUS:
-        emitByte(Instruction::F64_AFF);
-        break;
-      case Operator::MINUS:
-        emitByte(Instruction::F64_NEG);
-        break;
-      default:
-        // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -");
-        break;
+
+    if (const auto type = node.operand()->type(); type == types::ID_F64) {
+      emitFloatOperator(node.op(), IS_UNARY);
+    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
+      emitIntOperator(node.op(), IS_UNARY);
+    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
+      emitUintOperator(node.op(), IS_UNARY);
+    } else {
+      // TODO: Handle this case better
+      ctx_.diagnostics.emitInternalError("Unknown type encountered");
     }
   }
 
@@ -191,13 +190,21 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::emitFloatOperator(const Operator op) {
+  void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {
     switch (op) {
       case Operator::PLUS:
-        emitByte(Instruction::F64_ADD);
+        if (unary) {
+          emitByte(Instruction::F64_AFF);
+        } else {
+          emitByte(Instruction::F64_ADD);
+        }
         break;
       case Operator::MINUS:
-        emitByte(Instruction::F64_SUB);
+        if (unary) {
+          emitByte(Instruction::F64_NEG);
+        } else {
+          emitByte(Instruction::F64_SUB);
+        }
         break;
       case Operator::STAR:
         emitByte(Instruction::F64_MUL);
@@ -205,18 +212,32 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::F64_DIV);
         break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::F64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::F64_DEC);
+        break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
-  void BytecodeGenerator::emitIntOperator(const Operator op) {
+  void BytecodeGenerator::emitIntOperator(const Operator op, bool unary) {
     switch (op) {
       case Operator::PLUS:
-        emitByte(Instruction::I64_ADD);
+        if (unary) {
+          emitByte(Instruction::I64_AFF);
+        } else {
+          emitByte(Instruction::I64_ADD);
+        }
         break;
       case Operator::MINUS:
+        if (unary) {
+          emitByte(Instruction::I64_NEG);
+          break;
+        }
         emitByte(Instruction::I64_SUB);
         break;
       case Operator::STAR:
@@ -225,15 +246,25 @@ namespace fluir {
       case Operator::SLASH:
         emitByte(Instruction::I64_DIV);
         break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::I64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::I64_DEC);
+        break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
         ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
-  void BytecodeGenerator::emitUintOperator(const Operator op) {
+  void BytecodeGenerator::emitUintOperator(const Operator op, bool unary) {
     switch (op) {
       case Operator::PLUS:
+        if (unary) {
+          emitByte(Instruction::U64_AFF);
+          break;
+        }
         emitByte(Instruction::U64_ADD);
         break;
       case Operator::MINUS:
@@ -244,6 +275,12 @@ namespace fluir {
         break;
       case Operator::SLASH:
         emitByte(Instruction::U64_DIV);
+        break;
+      case Operator::PLUS_PLUS:
+        emitByte(Instruction::U64_INC);
+        break;
+      case Operator::MINUS_MINUS:
+        emitByte(Instruction::U64_DEC);
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better

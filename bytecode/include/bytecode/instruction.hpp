@@ -13,18 +13,24 @@ namespace fluir::code {
   code(F64_SUB)                          \
   code(F64_MUL)                          \
   code(F64_DIV)                          \
+  code(F64_INC)                          \
+  code(F64_DEC)                          \
   code(F64_NEG)                          \
   code(F64_AFF)                          \
   code(I64_ADD)                          \
   code(I64_SUB)                          \
   code(I64_MUL)                          \
   code(I64_DIV)                          \
+  code(I64_INC)                          \
+  code(I64_DEC)                          \
   code(I64_NEG)                          \
   code(I64_AFF)                          \
   code(U64_ADD)                          \
   code(U64_SUB)                          \
   code(U64_MUL)                          \
   code(U64_DIV)                          \
+  code(U64_INC)                          \
+  code(U64_DEC)                          \
   code(U64_AFF)                          \
   code(CAST_IU)                          \
   code(CAST_UI)                          \

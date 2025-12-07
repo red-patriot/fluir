@@ -319,7 +319,17 @@ namespace fluir {
           }
           break;
         case 'D':
-          return checkKeyword("IF64_DIV", TokenType::INST_F64_DIV);
+          if (current.size() > 6) {
+            switch (current[6]) {
+              case 'E':
+                return checkKeyword("IF64_DEC", TokenType::INST_F64_DEC);
+              case 'I':
+                return checkKeyword("IF64_DIV", TokenType::INST_F64_DIV);
+            }
+          }
+          break;
+        case 'I':
+          return checkKeyword("IF64_INC", TokenType::INST_F64_INC);
         case 'M':
           return checkKeyword("IF64_MUL", TokenType::INST_F64_MUL);
         case 'N':
@@ -346,7 +356,17 @@ namespace fluir {
           }
           break;
         case 'D':
-          return checkKeyword("II64_DIV", TokenType::INST_I64_DIV);
+          if (current.size() > 6) {
+            switch (current[6]) {
+              case 'E':
+                return checkKeyword("II64_DEC", TokenType::INST_I64_DEC);
+              case 'I':
+                return checkKeyword("II64_DIV", TokenType::INST_I64_DIV);
+            }
+          }
+          break;
+        case 'I':
+          return checkKeyword("II64_INC", TokenType::INST_I64_INC);
         case 'M':
           return checkKeyword("II64_MUL", TokenType::INST_I64_MUL);
         case 'N':
@@ -372,7 +392,17 @@ namespace fluir {
           }
           break;
         case 'D':
-          return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
+          if (current.size() > 6) {
+            switch (current[6]) {
+              case 'E':
+                return checkKeyword("IU64_DEC", TokenType::INST_U64_DEC);
+              case 'I':
+                return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
+            }
+          }
+          break;
+        case 'I':
+          return checkKeyword("IU64_INC", TokenType::INST_U64_INC);
         case 'M':
           return checkKeyword("IU64_MUL", TokenType::INST_U64_MUL);
         case 'S':

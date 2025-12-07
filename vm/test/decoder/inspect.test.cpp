@@ -75,15 +75,54 @@ IEXIT
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
 
+TEST(TestInspectDecoder, ParsesFloatInstructions) {
+  std::string source = R"(I0120030000000000000000
+CHUNK main
+CONSTANTS x00
+CODE x09
+IF64_ADD
+IF64_SUB
+IF64_MUL
+IF64_DIV
+IF64_INC
+IF64_DEC
+IF64_NEG
+IF64_AFF
+IEXIT
+)";
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .chunks = {fluir::code::Chunk{.name = "main",
+                                                               .code =
+                                                                 {
+                                                                   F64_ADD,
+                                                                   F64_SUB,
+                                                                   F64_MUL,
+                                                                   F64_DIV,
+                                                                   F64_INC,
+                                                                   F64_DEC,
+                                                                   F64_NEG,
+                                                                   F64_AFF,
+                                                                   EXIT,
+                                                                 },
+                                                               .constants = {}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
 TEST(TestInspectDecoder, ParsesIntInstructions) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
 CONSTANTS x00
-CODE x07
+CODE x09
 II64_ADD
 II64_SUB
 II64_MUL
 II64_DIV
+II64_INC
+II64_DEC
 II64_NEG
 II64_AFF
 IEXIT
@@ -96,6 +135,8 @@ IEXIT
                                                                    I64_SUB,
                                                                    I64_MUL,
                                                                    I64_DIV,
+                                                                   I64_INC,
+                                                                   I64_DEC,
                                                                    I64_NEG,
                                                                    I64_AFF,
                                                                    EXIT,
@@ -112,11 +153,13 @@ TEST(TestInspectDecoder, ParsesUintInstructions) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
 CONSTANTS x00
-CODE x06
+CODE x08
 IU64_ADD
 IU64_SUB
 IU64_MUL
 IU64_DIV
+IU64_INC
+IU64_DEC
 IU64_AFF
 IEXIT
 )";
@@ -128,6 +171,8 @@ IEXIT
                                                                    U64_SUB,
                                                                    U64_MUL,
                                                                    U64_DIV,
+                                                                   U64_INC,
+                                                                   U64_DEC,
                                                                    U64_AFF,
                                                                    EXIT,
                                                                  },

@@ -118,22 +118,20 @@ namespace fluir {
           if (types::isSigned(operandType)) {
             emitWidthCast(operandType, targetType);
           } else {
-            emitByte(Instruction::CAST_UI);
-            emitWidthCast(types::ID_I64, targetType);
+            emitBytes(Instruction::CAST_UI, types::widthOf(targetType));
           }
         } else {
-          emitByte(Instruction::CAST_FI);
+          emitBytes(Instruction::CAST_FI, types::widthOf(targetType));
         }
       } else {
         if (types::isIntegral(operandType)) {
           if (types::isSigned(operandType)) {
-            emitByte(Instruction::CAST_IU);
-            emitWidthCast(types::ID_U64, targetType);
+            emitBytes(Instruction::CAST_IU, types::widthOf(targetType));
           } else {
             emitWidthCast(operandType, targetType);
           }
         } else {
-          emitByte(Instruction::CAST_FU);
+          emitBytes(Instruction::CAST_FU, types::widthOf(targetType));
         }
       }
     } else {

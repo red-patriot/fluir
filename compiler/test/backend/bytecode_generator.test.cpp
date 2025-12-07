@@ -591,3 +591,50 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
   EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
 }
+
+TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
+  fa::ASG input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "inc_dec", .statements = {}};
+
+    auto integer = std::make_shared<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto floatingPt = std::make_shared<fa::Constant>(12.45, fluir::FullID{3, 2}, fluir::FlowGraphLocation{});
+    auto unsignedInt =
+      std::make_shared<fa::Constant>(static_cast<U64>(8), fluir::FullID{3, 3}, fluir::FlowGraphLocation{});
+
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::PLUS_PLUS, integer, fluir::FullID{3, 4}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::MINUS_MINUS, integer, fluir::FullID{3, 5}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::PLUS_PLUS, floatingPt, fluir::FullID{3, 6}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::MINUS_MINUS, floatingPt, fluir::FullID{3, 7}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::PLUS_PLUS, unsignedInt, fluir::FullID{3, 8}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::UnaryOp>(
+      fluir::Operator::MINUS_MINUS, unsignedInt, fluir::FullID{3, 9}, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{
+    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+    .chunks = {fc::Chunk{
+      .name = "inc_dec",
+      .code =
+        {
+          fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
+          0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
+          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::EXIT,
+        },
+      .constants = {8_i32, 12.45_f64, 8_u64}}}};
+
+  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+
+  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+}

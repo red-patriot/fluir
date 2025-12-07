@@ -14,7 +14,7 @@ export const LIMITS = {
     height: { min: 5, max: 5 } as Limit,
   } as SizeLimit,
   operator: {
-    width: { min: 6, max: 6 },
+    width: { min: 8, max: 8 },
     height: { min: 5, max: 5 },
   } as SizeLimit,
 };

@@ -30,6 +30,8 @@ class Operator(StrEnum):
     MINUS = "-"
     STAR = "*"
     SLASH = "/"
+    PLUS_PLUS = "++"
+    MINUS_MINUS = "--"
 
 
 @dataclass

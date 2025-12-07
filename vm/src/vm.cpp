@@ -152,6 +152,12 @@ namespace fluir {
         case I64_DIV:
           intBinary<utility::checkedDivide<code::I64>>();
           break;
+        case I64_INC:
+          intUnary<utility::increment<code::I64>>();
+          break;
+        case I64_DEC:
+          intUnary<utility::decrement<code::I64>>();
+          break;
         case I64_NEG:
           intUnary<std::negate<code::I64>>();
           break;

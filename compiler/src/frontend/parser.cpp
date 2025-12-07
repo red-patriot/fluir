@@ -518,6 +518,10 @@ namespace fluir {
       return Operator::STAR;
     } else if (opText == "/") {
       return Operator::SLASH;
+    } else if (opText == "++") {
+      return Operator::PLUS_PLUS;
+    } else if (opText == "--") {
+      return Operator::MINUS_MINUS;
     } else {
       panicAt(element, "Unrecognized operator '{}' in element '<{}>'.", opText, type);
     }

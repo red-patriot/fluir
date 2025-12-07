@@ -20,6 +20,8 @@ from editor.models import (
     Program,
     UnaryOperator,
 )
+from editor.models.elements import Header
+from editor.models.version import Version
 from editor.repository.interface.file_manager import FileManager
 
 type _NodePair = tuple[IDType, Node]
@@ -54,14 +56,36 @@ class _XMLReader:
     """Reads an XML file into a Program"""
 
     def program(self, root: ObjectifiedElement) -> Program:
+        header: Header | None = None
         declarations: list[Declaration] = []
         for element in root.iterchildren():
-            id, decl = self._declaration(element)
-            if id == INVALID_ID:
-                continue
-            declarations.append(decl)
+            if element.tag == "header":
+                header = self._header(element)
+            elif element.tag == "function":
+                id, decl = self._declaration(element)
+                if id == INVALID_ID:
+                    continue
+                declarations.append(decl)
 
-        return Program(declarations)
+        assert header is not None
+        return Program(declarations, header)
+
+    def _header(self, element: Any) -> Header:
+        version_element = element.find("version")
+        assert version_element is not None
+        major = version_element.find("major")
+        minor = version_element.find("minor")
+        patch = version_element.find("patch")
+        assert major is not None
+        assert minor is not None
+        assert patch is not None
+
+        version = Version(
+            MAJOR=int(major.text or "0"),
+            MINOR=int(minor.text or "0"),
+            PATCH=int(patch.text or "0"),
+        )
+        return Header(version=version)
 
     def _declaration(self, element: Any) -> _DeclarationPair:
         nodes: Nodes = []
@@ -204,6 +228,7 @@ class _XMLWriter:
         self.root = etree.Element("fluir")
 
     def write(self, program: Program) -> bytes:
+        self._header(program.header)
         for decl in program.declarations:
             self._decl(decl)
 
@@ -213,6 +238,22 @@ class _XMLWriter:
             xml_declaration=True,
             encoding="UTF-8",
         )
+
+    def _header(self, header: Header) -> None:
+        header_element = etree.SubElement(self.root, "header")
+        self._version(header_element, header.version)
+
+    def _version(self, parent: etree._Element, version: Version) -> None:
+        version_element = etree.SubElement(parent, "version")
+
+        major_element = etree.SubElement(version_element, "major")
+        major_element.text = str(version.MAJOR)
+
+        minor_element = etree.SubElement(version_element, "minor")
+        minor_element.text = str(version.MINOR)
+
+        patch_element = etree.SubElement(version_element, "patch")
+        patch_element.text = str(version.PATCH)
 
     def _decl(self, declaration: Declaration) -> None:
         decl_element = etree.SubElement(

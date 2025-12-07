@@ -7,6 +7,13 @@
             <patch>3</patch>
         </version>
     </header>
+    <header>
+        <version>
+            <major>0</major>
+            <minor>1</minor>
+            <patch>3</patch>
+        </version>
+    </header>
     <function
             name="main"
             id="1"
@@ -15,6 +22,6 @@
             z="3"
             w="100"
             h="100">
-        <body></body>
+        <body/>
     </function>
 </fluir>

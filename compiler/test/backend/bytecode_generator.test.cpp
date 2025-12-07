@@ -16,17 +16,18 @@ using namespace fluir::literals_types;
 
 class TestBytecodeGenerator : public ::testing::Test {
  public:
-  fluir::Context ctx_{.symbolTable = fluir::types::buildSymbolTable()};
+  fluir::Context ctx_{.symbolTable = fluir::types::buildSymbolTable(),
+                      .version = fluir::Version{.major = 0, .minor = 1, .patch = 3}};
 };
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fa::ASG input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(fluir::Context{}, std::move(input)) | fluir::generateCode;
+  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
 
   EXPECT_FALSE(ctx.diagnostics.containsErrors());
 
@@ -40,7 +41,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
                                    fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
@@ -69,7 +70,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                        return graph;
                      }()});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "foo",
                                              .code =
                                                {
@@ -105,7 +106,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                        return graph;
                      }()});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "bar",
                                              .code =
                                                {
@@ -151,7 +152,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                        return graph;
                      }()});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "bar",
                                              .code =
                                                {
@@ -201,7 +202,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "ints",
                                              .code =
                                                {
@@ -246,7 +247,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "ints",
                                              .code =
                                                {
@@ -308,7 +309,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   }());
 
   fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
     .chunks = {fc::Chunk{
       .name = "ints",
       .code =
@@ -363,7 +364,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
   }());
 
   fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
     .chunks = {fc::Chunk{
       .name = "ints",
       .code =
@@ -408,7 +409,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "ints",
                                              .code =
                                                {
@@ -468,7 +469,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "ints",
                                              .code =
                                                {
@@ -509,7 +510,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "uints",
                                              .code =
                                                {
@@ -550,7 +551,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 0, .patch = 0, .entryOffset = 0},
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "uints",
                                              .code =
                                                {

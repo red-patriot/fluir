@@ -7,7 +7,9 @@ from fastapi.testclient import TestClient
 
 from editor.controllers.module_controller import ModuleController
 from editor.models import Program
+from editor.models.elements import Header
 from editor.models.module_requests import OpenRequest
+from editor.models.version import FLUIR_CURRENT_VERSION as VERS
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import MoveElement, UpdateConstant
 
@@ -15,7 +17,7 @@ from editor.services.transaction import MoveElement, UpdateConstant
 @pytest.fixture
 def mock_editor() -> MagicMock:
     fake = MagicMock(spec=ModuleEditor)
-    fake.get.return_value = Program()
+    fake.get.return_value = Program(declarations=[])
     fake.can_undo.return_value = True
     fake.can_redo.return_value = True
 
@@ -34,7 +36,7 @@ def test_forwards_open_request(mock_editor: MagicMock) -> None:
 
 def test_forwards_open_request_on_post(mock_editor: MagicMock) -> None:
     expectedPath = "/fake/path/to/module.fl"
-    expectedData = '{"declarations":[]}'
+    expectedData = f'{{"declarations":[],"header":{{"version":{{"MAJOR":{VERS.MAJOR},"MINOR":{VERS.MINOR},"PATCH":{VERS.PATCH}}}}}}}'
 
     app = FastAPI()
 

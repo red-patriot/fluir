@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fluir>
     <header>
-        <version>
-            <major>0</major>
-            <minor>1</minor>
-            <patch>3</patch>
-        </version>
     </header>
     <function
             name="main"
@@ -15,6 +10,6 @@
             z="3"
             w="100"
             h="100">
-        <body></body>
+        <body/>
     </function>
 </fluir>

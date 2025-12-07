@@ -20,12 +20,13 @@ TEST_P(TestParser, Test) {
   const auto outputFile = fs::path{programFile}.replace_extension(".pt");
   const auto expected = fluir::test::readContents(outputFile);
 
-  fluir::Context ctx;
+  fluir::Context ctx{.version = fluir::Version{0, 1, 3}};
 
   auto results = fluir::parseFile(ctx, programFile);
 
   std::stringstream ss;
   fluir::debug::ParseTreePrinter printer{ss};
+  ASSERT_TRUE(results.has_value());
   printer.print(results.value());
 
   auto actual = ss.str();

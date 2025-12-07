@@ -11,6 +11,7 @@ project(
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(disallow-in-source-builds)
+include(create-version-files)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -27,6 +28,8 @@ option(
     "Create a compile_commands.json when building. Default: ${PROJECT_IS_TOP_LEVEL}. Values: { ON, OFF }."
     ${PROJECT_IS_TOP_LEVEL}
 )
+
+create_version_files()
 
 add_subdirectory(bytecode)
 add_subdirectory(compiler)

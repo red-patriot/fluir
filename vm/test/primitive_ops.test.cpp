@@ -39,6 +39,9 @@ INSTANTIATE_TEST_SUITE_P(
     tuple{1.25_f64, fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_SUB}, .constants = {1.5_f64, 0.25_f64}}},
     tuple{12.0_f64, fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_MUL}, .constants = {1.5_f64, 8.0_f64}}},
     tuple{0.75_f64, fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_DIV}, .constants = {3.0_f64, 4.0_f64}}},
+    tuple{4.0_f64, fc::Chunk{.code = {PUSH, 0, F64_INC}, .constants = {3.0_f64}}},
+    tuple{2.0_f64, fc::Chunk{.code = {PUSH, 0, F64_DEC}, .constants = {3.0_f64}}},
+
     // F64 edge cases
     tuple{fc::Value{INFINITY}, fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_MUL}, .constants = {1.0e200_f64, 2.0e200_f64}}},
     tuple{fc::Value{INFINITY}, fc::Chunk{.code = {PUSH, 0, PUSH, 1, F64_DIV}, .constants = {3.0_f64, 0.0_f64}}},

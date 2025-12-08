@@ -26,8 +26,13 @@ int main(int argc, char** argv) {
     std::cerr << "Usage: fluir.compiler file.fl\n";
     return 1;
   }
-
-  fs::path source = fs::canonical(fs::path{argv[1]});
+  fs::path source;
+  try {
+    source = fs::canonical(fs::path{argv[1]});
+  } catch (const std::filesystem::filesystem_error& e) {
+    std::cerr << e.what() << '\n';
+    return 1;
+  }
   fluir::Context ctx{.version = fluir::CURRENT_VERSION};
   ctx.symbolTable = fluir::types::buildSymbolTable();
 

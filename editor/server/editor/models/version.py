@@ -14,6 +14,6 @@ class Version:
 
 FLUIR_CURRENT_VERSION: Final = Version(
     MAJOR=0,
-    MINOR=1,
-    PATCH=1,
+    MINOR=2,
+    PATCH=0,
 )

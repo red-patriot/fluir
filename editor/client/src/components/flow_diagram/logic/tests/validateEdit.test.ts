@@ -6,13 +6,14 @@ import {
 } from '@/components/flow_diagram/logic/validateEdit';
 
 describe('validateF64', () => {
+  // TODO: Reenable leading +- when supported in the VM parser
   it.each`
     input         | expected
     ${'123'}      | ${true}
-    ${'-123.456'} | ${true}
+    ${'-123.456'} | ${false}
     ${'0.001'}    | ${true}
     ${'0.5'}      | ${true}
-    ${'-0.5'}     | ${true}
+    ${'-0.5'}     | ${false}
     ${'abc'}      | ${false}
     ${'12a3'}     | ${false}
     ${''}         | ${false}
@@ -26,8 +27,8 @@ describe('validateF64', () => {
     ${'++123'}    | ${false}
     ${'12.34.56'} | ${false}
     ${'1.23e3'}   | ${true}
-    ${'-1.23e-3'} | ${true}
-    ${'+1.23E+3'} | ${true}
+    ${'-1.23e-3'} | ${false}
+    ${'+1.23E+3'} | ${false}
     ${'1e10'}     | ${true}
     ${'1E-10'}    | ${true}
     ${'1.2e'}     | ${false}
@@ -39,13 +40,14 @@ describe('validateF64', () => {
 });
 
 describe('validateInt', () => {
+  // TODO: Reenable leading +- when supported in the VM parser
   it.each`
     input      | expected
     ${'123'}   | ${true}
-    ${'-123'}  | ${true}
+    ${'-123'}  | ${false}
     ${'1'}     | ${true}
     ${'0'}     | ${true}
-    ${'+4355'} | ${true}
+    ${'+4355'} | ${false}
     ${''}      | ${false}
     ${' '}     | ${false}
     ${'1.3'}   | ${false}

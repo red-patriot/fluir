@@ -39,6 +39,11 @@ namespace fluir {
   Parser::Parser(Context& ctx) : ctx_(ctx) { }
 
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
+    if (!std::filesystem::exists(file)) {
+      ctx_.diagnostics.emitError(fmt::format("File '{}' does not exist.", file.string()), nullptr);
+      return NoResult;
+    }
+
     ctx_.currentFile = file;
     doc_.Clear();
     std::ifstream fin(file);

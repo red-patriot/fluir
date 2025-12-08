@@ -1,9 +1,11 @@
-import BinaryNode from '../components/custom/BinaryNode';
-import ConstantNode from '../components/custom/ConstantNode';
 import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
-} from '../components/custom/FunctionDeclNode';
-import UnaryNode from '../components/custom/UnaryNode';
+} from '@/components/flow_diagram/elements/FunctionDeclNode';
+import ConstantNode from '@/components/flow_diagram/elements/ConstantNode';
+import {
+  BinaryOperatorNode,
+  UnaryOperatorNode,
+} from '@/components/flow_diagram/elements/OperatorNode';
 import FluirModule, {
   BinaryOp,
   Constant,
@@ -11,7 +13,7 @@ import FluirModule, {
   FunctionDecl,
   Node,
   UnaryOp,
-} from '../models/fluir_module';
+} from '@/models/fluir_module';
 import { ZOOM_SCALAR } from '../hooks/useSizeStyle';
 import { Edge, Node as FlowNode, CoordinateExtent } from '@xyflow/react';
 
@@ -42,10 +44,8 @@ function addNodes(
           x: decl.location.x * ZOOM_SCALAR,
           y: decl.location.y * ZOOM_SCALAR,
         },
-        measured: {
-          width: decl.location.width * ZOOM_SCALAR,
-          height: decl.location.height * ZOOM_SCALAR,
-        },
+        width: decl.location.width * ZOOM_SCALAR,
+        height: decl.location.height * ZOOM_SCALAR,
         data: {
           decl: decl,
           fullID: id,
@@ -66,6 +66,8 @@ function addNodes(
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
         },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
         data: {
           constant: item as Constant,
           fullID: fullId(parentId, item.id),
@@ -83,8 +85,10 @@ function addNodes(
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
         },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
         data: {
-          binary: item as BinaryOp,
+          operator: item as BinaryOp,
           fullID: fullId(parentId, item.id),
         },
         dragHandle: '.dragHandle__custom',
@@ -100,8 +104,10 @@ function addNodes(
           x: item.location.x * ZOOM_SCALAR,
           y: item.location.y * ZOOM_SCALAR,
         },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
         data: {
-          unary: item as UnaryOp,
+          operator: item as UnaryOp,
           fullID: fullId(parentId, item.id),
         },
         dragHandle: '.dragHandle__custom',
@@ -153,6 +159,6 @@ export function createEdges(module: FluirModule) {
 export const nodeTypes = {
   function: FunctionDeclNode,
   constant: ConstantNode,
-  binary: BinaryNode,
-  unary: UnaryNode,
+  binary: BinaryOperatorNode,
+  unary: UnaryOperatorNode,
 };

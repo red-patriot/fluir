@@ -1,18 +1,18 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface UiState {
-  page: "home" | "module";
+  page: 'home' | 'module';
 }
 
 const initialState: UiState = {
-  page: "home",
+  page: 'home',
 };
 
 export const uiSlice = createSlice({
-  name: "ui",
+  name: 'ui',
   initialState,
   reducers: {
-    goToPage: (state, action: PayloadAction<"home" | "module">) => {
+    goToPage: (state, action: PayloadAction<'home' | 'module'>) => {
       state.page = action.payload;
     },
   },

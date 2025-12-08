@@ -6,6 +6,8 @@
 
 #include <fmt/format.h>
 
+#include "compiler/frontend/text_parse.hpp"
+
 using namespace std::string_literals;
 
 namespace fluir {
@@ -17,8 +19,10 @@ namespace fluir {
   }
   template <typename... FmtArgs>
   [[noreturn]] void Parser::panicAt(Element* element, std::string_view format, FmtArgs... args) {
-    ctx_.diagnostics.emitError(fmt::vformat(format, fmt::make_format_args(args...)),
-                               std::make_shared<SourceLocation>(element->GetLineNum(), filename_));
+    ctx_.diagnostics.emitError(
+      fmt::vformat(format, fmt::make_format_args(args...)),
+      element ? std::make_shared<SourceLocation>(element->GetLineNum(), ctx_.currentFile.filename().string()) :
+                nullptr);
     throw PanicMode{};
   }
 
@@ -35,7 +39,12 @@ namespace fluir {
   Parser::Parser(Context& ctx) : ctx_(ctx) { }
 
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
-    filename_ = file.filename().string();
+    if (!std::filesystem::exists(file)) {
+      ctx_.diagnostics.emitError(fmt::format("File '{}' does not exist.", file.string()), nullptr);
+      return NoResult;
+    }
+
+    ctx_.currentFile = file;
     doc_.Clear();
     std::ifstream fin(file);
     std::stringstream ss;
@@ -53,7 +62,7 @@ namespace fluir {
   }
 
   Results<pt::ParseTree> Parser::parseString(const std::string_view source) {
-    filename_ = "<FROM STRING>";
+    ctx_.currentFile = "<FROM STRING>";
     doc_.Clear();
     doc_.Parse(source.data());
 
@@ -76,16 +85,68 @@ namespace fluir {
               "Expected root element to be '{}', found '{}'.",
               expectedRoot,
               root->Name());
-      // TODO: Check metadata
-
+      bool headerFound = false;
       for (auto child = root->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+        std::string_view name = child->Name();
+        if (name == "header") {
+          panicIf(headerFound, child, "Multiple program headers detected.");
+          header(child);
+          headerFound = true;
+          continue;
+        }
+
         declaration(child);
       }
+      panicIf(!headerFound, doc_.RootElement(), "Program header not found.");
     } catch (const PanicMode&) {
       // If something goes wrong at this level, there isn't really anything to
       // do except bail
       return;
     }
+  }
+
+  void Parser::header(Element* element) {
+    constexpr std::string_view version_tag = "version";
+    bool versionFound = false;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view name = child->Name();
+      if (name == version_tag) {
+        tree_.header.version = version(child);
+        panicIf(tree_.header.version != ctx_.version,
+                nullptr,
+                "Program '{}' uses version {}.{}.{}, which cannot be compiled by this version of the compiler.",
+                ctx_.currentFile.filename().string(),
+                tree_.header.version.major,
+                tree_.header.version.minor,
+                tree_.header.version.patch);
+        versionFound = true;
+      } else {
+        panicAt(child, "Unexpected element '{}' in program header.", name);
+      }
+    }
+    panicIf(!versionFound, element, "Program header is missing version element.");
+  }
+
+  Version Parser::version(Element* element) {
+    Version version{0, 0, 0};
+
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      if (const std::string_view name = child->Name(); name == "major") {
+        auto major = fe::parseInteger(child->GetText());
+        panicIf(!major.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.major = static_cast<uint8_t>(major.value());
+      } else if (name == "minor") {
+        auto major = fe::parseInteger(child->GetText());
+        panicIf(!major.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.minor = static_cast<uint8_t>(major.value());
+      } else if (name == "patch") {
+        auto patch = fe::parseInteger(child->GetText());
+        panicIf(!patch.has_value(), child, "Expected a version number, got '{}'.", child->GetText());
+        version.patch = static_cast<uint8_t>(patch.value());
+      }
+    }
+
+    return version;
   }
 
   void Parser::declaration(Element* element) {
@@ -227,22 +288,183 @@ namespace fluir {
     // TODO: This could use a trie to be faster
     // TODO: Support other literal types
     std::string_view name = element->Name();
-    if (name == "float") {
-      return fl_float(element);
-    } else {
-      // TODO: Error
-      throw PanicMode{};
+    if (name == "f64") {
+      return f64(element);
+    } else if (name == "i8") {
+      return i8(element);
+    } else if (name == "i16") {
+      return i16(element);
+    } else if (name == "i32") {
+      return i32(element);
+    } else if (name == "i64") {
+      return i64(element);
+    } else if (name == "u8") {
+      return u8(element);
+    } else if (name == "u16") {
+      return u16(element);
+    } else if (name == "u32") {
+      return u32(element);
+    } else if (name == "u64") {
+      return u64(element);
     }
+    panicAt(
+      element, "Expected a literal element. Found '<{}>', which is not a recognized literal type.", element->Name());
   }
-  pt::Float Parser::fl_float(Element* element) {
+  pt::F64 Parser::f64(Element* element) {
     double value = 0.0;
     auto error = element->QueryDoubleText(&value);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             "Expected a numeric value in element '<{}>'. '{}' cannot be parsed as a number.",
-            "float",
+            "f64",
             element->GetText());
     return value;
+  }
+
+  pt::I8 Parser::i8(Element* element) {
+    auto value = fe::parseNumber<pt::I8>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
+            "i8",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i8");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::I16 Parser::i16(Element* element) {
+    auto value = fe::parseNumber<pt::I16>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
+            "i16",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i16");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::I32 Parser::i32(Element* element) {
+    auto value = fe::parseNumber<pt::I32>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
+            "i32",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i32");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::I64 Parser::i64(Element* element) {
+    auto value = fe::parseNumber<pt::I64>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an integer value in element '<{}>'. '{}' cannot be parsed as an integer.",
+            "i64",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "i64");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+
+  pt::U8 Parser::u8(Element* element) {
+    auto value = fe::parseNumber<pt::U8>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "u8",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u8");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::U16 Parser::u16(Element* element) {
+    auto value = fe::parseNumber<pt::U16>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "u16",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u16");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::U32 Parser::u32(Element* element) {
+    auto value = fe::parseNumber<pt::U32>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "u32",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u32");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
+  }
+  pt::U64 Parser::u64(Element* element) {
+    auto value = fe::parseNumber<pt::U64>(element->GetText());
+    if (value.has_value()) {
+      return *value;
+    }
+    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            "Expected an unsigned integer value in element '<{}>'. '{}' cannot be parsed as an unsigned integer.",
+            "u64",
+            element->GetText());
+    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            "The literal '{}' is outside the range of {}.",
+            element->GetText(),
+            "u64");
+    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    return {};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
@@ -301,6 +523,10 @@ namespace fluir {
       return Operator::STAR;
     } else if (opText == "/") {
       return Operator::SLASH;
+    } else if (opText == "++") {
+      return Operator::PLUS_PLUS;
+    } else if (opText == "--") {
+      return Operator::MINUS_MINUS;
     } else {
       panicAt(element, "Unrecognized operator '{}' in element '<{}>'.", opText, type);
     }

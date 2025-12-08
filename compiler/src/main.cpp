@@ -2,10 +2,13 @@
 #include <fstream>
 #include <iostream>
 
-#include "compiler/frontend/parser.hpp"
-#include "compiler/frontend/asg_builder.hpp"
+#include "bytecode/version.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
+#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/parser.hpp"
+#include "compiler/frontend/type_checker.hpp"
+#include "compiler/types/builtin_symbols.hpp"
 #include "compiler/utility/context.hpp"
 #include "compiler/utility/pass.hpp"
 
@@ -23,15 +26,24 @@ int main(int argc, char** argv) {
     std::cerr << "Usage: fluir.compiler file.fl\n";
     return 1;
   }
+  fs::path source;
+  try {
+    source = fs::canonical(fs::path{argv[1]});
+  } catch (const std::filesystem::filesystem_error& e) {
+    std::cerr << e.what() << '\n';
+    return 1;
+  }
+  fluir::Context ctx{.version = fluir::CURRENT_VERSION};
+  ctx.symbolTable = fluir::types::buildSymbolTable();
 
-  fs::path source = fs::canonical(fs::path{argv[1]});
-  auto frontendResults = fluir::addContext(fluir::Context{}, source) | fluir::parseFile | fluir::buildGraph;
+  auto frontendResults =
+    fluir::addContext(std::move(ctx), source) | fluir::parseFile | fluir::buildGraph | fluir::typeCheck;
   printDiagnostics(frontendResults.ctx.diagnostics);
   if (frontendResults.ctx.diagnostics.containsErrors()) {
     return 1;
   }
 
-  auto backendResults = frontendResults | fluir::generateCode;
+  auto backendResults = std::move(frontendResults) | fluir::generateCode;
   printDiagnostics(backendResults.ctx.diagnostics);
   if (backendResults.ctx.diagnostics.containsErrors()) {
     return 1;

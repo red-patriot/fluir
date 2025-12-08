@@ -1,0 +1,5 @@
+Function(1): 'main'
+  ConstantU8(1): 80
+  ConstantU16(2): 160
+  ConstantU32(3): 320
+  ConstantU64(4): 640

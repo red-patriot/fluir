@@ -1,13 +1,10 @@
-#ifndef FLUIR_VM_CM_HPP
-#define FLUIR_VM_CM_HPP
+#ifndef FLUIR_VM_VM_HPP
+#define FLUIR_VM_VM_HPP
 
 #include <bytecode/byte_code.hpp>
 
 namespace fluir {
-  enum class ExecResult {
-    SUCCESS,
-    ERROR
-  };
+  enum class ExecResult { SUCCESS = 0, ERROR, ERROR_DIVIDE_BY_ZERO };
 
   class VirtualMachine {
    public:
@@ -31,6 +28,19 @@ namespace fluir {
     Stack stack_;
 
     ExecResult run();
+
+    template <typename Op>
+    void floatBinary();
+    template <typename Op>
+    void floatUnary();
+    template <typename Op>
+    void intBinary();
+    template <typename Op>
+    void intUnary();
+    template <typename Op>
+    void uintBinary();
+    template <typename Op>
+    void uintUnary();
   };
 }  // namespace fluir
 

@@ -1,6 +1,8 @@
 #ifndef FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
 #define FLUIR_COMPILER_BACKEND_INSPECT_WRITER_HPP
 
+#include <fmt/format.h>
+
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/utility/indent_formatter.hpp"
 
@@ -13,6 +15,9 @@ namespace fluir {
     void writeConstants(const std::vector<code::Value>&, std::ostream&);
     void writeConstant(const code::Value&, std::ostream&);
     void writeCode(const code::Bytes&, std::ostream&);
+
+    void emitInstruction(std::ostream& os, uint8_t instruction);
+    void emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg);
   };
 }  // namespace fluir
 

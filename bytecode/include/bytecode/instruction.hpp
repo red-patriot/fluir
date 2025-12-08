@@ -7,22 +7,47 @@ namespace fluir::code {
   // clang-format off
   #define FLUIR_CODE_INSTRUCTIONS(code)  \
   code(EXIT)                             \
-  code(PUSH_FP)                          \
+  code(PUSH)                             \
   code(POP)                              \
-  code(FP_ADD)                           \
-  code(FP_SUBTRACT)                      \
-  code(FP_MULTIPLY)                      \
-  code(FP_DIVIDE)                        \
-  code(FP_NEGATE)                        \
-  code(FP_AFFIRM)
+  code(F64_ADD)                          \
+  code(F64_SUB)                          \
+  code(F64_MUL)                          \
+  code(F64_DIV)                          \
+  code(F64_INC)                          \
+  code(F64_DEC)                          \
+  code(F64_NEG)                          \
+  code(F64_AFF)                          \
+  code(I64_ADD)                          \
+  code(I64_SUB)                          \
+  code(I64_MUL)                          \
+  code(I64_DIV)                          \
+  code(I64_INC)                          \
+  code(I64_DEC)                          \
+  code(I64_NEG)                          \
+  code(I64_AFF)                          \
+  code(U64_ADD)                          \
+  code(U64_SUB)                          \
+  code(U64_MUL)                          \
+  code(U64_DIV)                          \
+  code(U64_INC)                          \
+  code(U64_DEC)                          \
+  code(U64_AFF)                          \
+  code(CAST_IU)                          \
+  code(CAST_UI)                          \
+  code(CAST_IF)                          \
+  code(CAST_UF)                          \
+  code(CAST_FI)                          \
+  code(CAST_FU)                          \
+  code(CAST_WIDTH)
 
-  // clang-format on
+  // clang-format
 
   enum Instruction : std::uint8_t {
 #define enumerate(inst) inst,
     FLUIR_CODE_INSTRUCTIONS(enumerate)
 #undef enumerate
   };
+
 }  // namespace fluir::code
 
 #endif

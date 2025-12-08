@@ -9,7 +9,6 @@ from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
     AddNode,
-    EditTransaction,
     MoveElement,
     RemoveItem,
     RenameDeclaration,
@@ -42,13 +41,13 @@ def basic_program() -> Program:
                         id=2,
                         location=elements.Location(2, 2, 1, 5, 5),
                         value="3.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                     elements.Constant(
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -73,7 +72,7 @@ def basic_program() -> Program:
                         id=3,
                         location=elements.Location(2, 12, 1, 5, 5),
                         value="2.0",
-                        flType=FlType.FLOATING_POINT,
+                        flType=FlType.F64,
                     ),
                 ],
                 conduits=[
@@ -205,6 +204,81 @@ def test_resize_element(
 
     uut = ResizeElement(
         target=target, width=input["width"], height=input["height"]
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected_program == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+@pytest.mark.parametrize(
+    "name, target, input, expected",
+    [
+        (
+            "resize_node",
+            [3, 3],
+            {"width": 16, "height": 5, "x": 5, "y": 10},
+            {"width": 16, "height": 5, "x": 5, "y": 10},
+        ),
+        (
+            "resize_function_decl",
+            [1],
+            {"width": 160, "height": 150, "x": 20, "y": 30},
+            {"width": 160, "height": 150, "x": 20, "y": 30},
+        ),
+        (
+            "resize_function_decl_stays_larger_than_children",
+            [2],
+            {"width": 12, "height": 15, "x": 15, "y": 17},
+            {"width": 20, "height": 17, "x": 15, "y": 17},
+        ),
+        (
+            "resize_node_clamps_to_x_limits",
+            [3, 3],
+            {"width": 100, "height": 5, "x": 2, "y": 12},
+            {"width": 98, "height": 5, "x": 2, "y": 12},
+        ),
+        (
+            "resize_node_clamps_to_y_limits",
+            [3, 3],
+            {"width": 14, "height": 150, "x": 14, "y": 20},
+            {"width": 14, "height": 98, "x": 14, "y": 20},
+        ),
+        (
+            "resize_node_clamps_to_min_limits",
+            [3, 3],
+            {"width": 3, "height": -6, "x": 4, "y": 4},
+            {"width": 4, "height": 4, "x": 4, "y": 4},
+        ),
+    ],
+    ids=lambda x: x if isinstance(x, str) else "",
+)
+def test_resize_element_with_location(
+    basic_program: Program,
+    editor: ModuleEditor,
+    target: QualifiedID,
+    input: dict[str, int],
+    expected: dict[str, int],
+    name: str,
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected_program = copy.deepcopy(basic_program)
+    e = find_element(target, expected_program)
+    e.location.width = expected["width"]
+    e.location.height = expected["height"]
+    e.location.x = expected["x"]
+    e.location.y = expected["y"]
+
+    uut = ResizeElement(
+        target=target,
+        width=input["width"],
+        height=input["height"],
+        x=input["x"],
+        y=input["y"],
     )
 
     editor.edit(uut)
@@ -393,21 +467,39 @@ def test_add_conduit_removes_duplicate_targets(
                 id=6,
                 location=elements.Location(2, 2, 0, 5, 5),
                 value="0.0",
-                flType=FlType.FLOATING_POINT,
+                flType=FlType.F64,
             ),
             AddNode(
                 parent=[2],
-                new_type="Constant",
+                new_type="F64",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),
             ),
         ),
+        *(
+            (
+                elements.Constant(
+                    id=6,
+                    location=elements.Location(2, 2, 0, 5, 5),
+                    value="0",
+                    flType=FlType(elem),
+                ),
+                AddNode(
+                    parent=[2],
+                    new_type=elem,  # type: ignore
+                    new_location=elements.Location(
+                        x=2, y=2, z=0, width=5, height=5
+                    ),
+                ),
+            )
+            for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
+        ),
         (
             elements.BinaryOperator(
                 id=6,
                 location=elements.Location(15, 2, 1, 5, 5),
-                op=elements.Operator.UNKNOWN,
+                op=elements.Operator.PLUS,
             ),
             AddNode(
                 parent=[2],
@@ -419,7 +511,7 @@ def test_add_conduit_removes_duplicate_targets(
             elements.UnaryOperator(
                 id=6,
                 location=elements.Location(2, 7, 0, 7, 7),
-                op=elements.Operator.UNKNOWN,
+                op=elements.Operator.PLUS,
             ),
             AddNode(
                 parent=[2],

@@ -1,4 +1,4 @@
-import { ProgramActions } from '../components/common/ProgramActionsContext';
+import { ProgramActions } from '../components/reusable/ProgramActionsContext';
 import { vi } from 'vitest';
 
 export const mockActions: ProgramActions = {

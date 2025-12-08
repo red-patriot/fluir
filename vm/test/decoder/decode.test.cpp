@@ -8,42 +8,49 @@
 #include "bytecode_assertions.hpp"
 
 using enum fluir::code::Instruction;
+using namespace fluir::code::value_literals;
 
 TEST(TestDecoder, SelectsInspectAndDecodesCorrectly) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
 CONSTANTS x0D
-VFP 0.0 VFP 1.0 VFP 2.0 VFP 3.0
-VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
-VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
-VFP 12.0
+VF64 0.0 VF64 1.0 VF64 2.0 VF64 3.0
+VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
+VF64 8.0 VF64 9.0 VF64 10.0 VF64 11.0
+VF64 12.0
 CODE x0A
-IPUSH_FP x00 IPUSH_FP x02
-IFP_ADD IPUSH_FP x0D IFP_DIVIDE
+IPUSH x00 IPUSH x02
+IF64_ADD IPUSH x0D IF64_DIV
 IPOP IEXIT
 )";
-  fluir::code::ByteCode expected{
-      .header = {.filetype = 'I',
-                 .major = 1,
-                 .minor = 32,
-                 .patch = 3,
-                 .entryOffset = 0},
-      .chunks = {
-          fluir::code::Chunk{
-              .name = "main",
-              .code = {
-                  PUSH_FP,
-                  0x00,
-                  PUSH_FP,
-                  0x02,
-                  FP_ADD,
-                  PUSH_FP,
-                  0x0D,
-                  FP_DIVIDE,
-                  POP,
-                  EXIT,
-              },
-              .constants = {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0}}}};
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .chunks = {fluir::code::Chunk{.name = "main",
+                                                               .code =
+                                                                 {
+                                                                   PUSH,
+                                                                   0x00,
+                                                                   PUSH,
+                                                                   0x02,
+                                                                   F64_ADD,
+                                                                   PUSH,
+                                                                   0x0D,
+                                                                   F64_DIV,
+                                                                   POP,
+                                                                   EXIT,
+                                                                 },
+                                                               .constants = {0.0_f64,
+                                                                             1.0_f64,
+                                                                             2.0_f64,
+                                                                             3.0_f64,
+                                                                             4.0_f64,
+                                                                             5.0_f64,
+                                                                             6.0_f64,
+                                                                             7.0_f64,
+                                                                             8.0_f64,
+                                                                             9.0_f64,
+                                                                             10.0_f64,
+                                                                             11.0_f64,
+                                                                             12.0_f64}}}};
 
   auto actual = fluir::decode(source);
 
@@ -55,13 +62,13 @@ TEST(TestDecoder, DetectsInvalidFileType) {
   std::string source = R"(C0120030000000000000000
 CHUNK main
 CONSTANTS x0D
-VFP 0.0 VFP 1.0 VFP 2.0 VFP 3.0
-VFP 4.0 VFP 5.0 VFP 6.0 VFP 7.0
-VFP 8.0 VFP 9.0 VFP 10.0 VFP 11.0
-VFP 12.0
+VF64 0.0 VF64 1.0 VF64 2.0 VF64 3.0
+VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
+VF64 8.0 VF64 9.0 VF64 10.0 VF64 11.0
+VF64 12.0
 CODE x0A
-IPUSH_FP x00 IPUSH_FP x02
-IFP_ADD IPUSH_FP x0D IFP_DIVIDE
+IPUSH x00 IPUSH x02
+IF64_ADD IPUSH x0D IF64_DIV
 IPOP IEXIT
 )";
 

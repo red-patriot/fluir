@@ -1,0 +1,5 @@
+Function(1): 'main'
+  ConstantI8(1): -8
+  ConstantI16(2): 16
+  ConstantI32(3): -32
+  ConstantI64(4): 64

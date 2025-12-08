@@ -1,18 +1,20 @@
 #ifndef FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 #define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
 
+#include "bytecode/version.hpp"
 #include "compiler/models/id.hpp"
+#include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 
 namespace fluir::pt {
-  using Float = double;
-  using Literal = Float;  // TODO: Support other literal types
+  using namespace literals_types;
 
   struct Constant {
     ID id;
@@ -82,7 +84,14 @@ namespace fluir::pt {
 
   using Declaration = std::variant<FunctionDecl>;  // TODO: Support other top-level declarations here
 
+  struct Header {
+    Version version{.major = 0, .minor = 0, .patch = 0};
+
+    friend bool operator==(const Header&, const Header&) = default;
+  };
+
   struct ParseTree {
+    Header header{};
     std::unordered_map<ID, Declaration> declarations;
 
     friend bool operator==(const ParseTree&, const ParseTree&) = default;

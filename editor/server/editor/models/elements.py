@@ -5,6 +5,7 @@ from typing import Literal, Never, Sequence, cast
 from pydantic.dataclasses import dataclass
 
 from editor.models.id import INVALID_ID, IDType, QualifiedID
+from editor.models.version import FLUIR_CURRENT_VERSION, Version
 
 
 class IdentifierError(Exception):
@@ -12,7 +13,15 @@ class IdentifierError(Exception):
 
 
 class FlType(StrEnum):
-    FLOATING_POINT = "FLOATING_POINT"
+    F64 = "F64"
+    I8 = "I8"
+    I16 = "I16"
+    I32 = "I32"
+    I64 = "I64"
+    U8 = "U8"
+    U16 = "U16"
+    U32 = "U32"
+    U64 = "U64"
 
 
 class Operator(StrEnum):
@@ -21,6 +30,8 @@ class Operator(StrEnum):
     MINUS = "-"
     STAR = "*"
     SLASH = "/"
+    PLUS_PLUS = "++"
+    MINUS_MINUS = "--"
 
 
 @dataclass
@@ -99,8 +110,14 @@ Declarations = list[Declaration]
 
 
 @dataclass
+class Header:
+    version: Version = field(default_factory=lambda: FLUIR_CURRENT_VERSION)
+
+
+@dataclass
 class Program:
     declarations: Declarations = field(default_factory=list)
+    header: Header = field(default_factory=Header)
 
 
 Element = Declaration | Node

@@ -6,13 +6,14 @@ project(
     fluir
     DESCRIPTION "The Fluir data-flow programming language."
     LANGUAGES CXX
-    VERSION 0.1.1
+    VERSION 0.2.0
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(disallow-in-source-builds)
+include(create-version-files)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -27,6 +28,8 @@ option(
     "Create a compile_commands.json when building. Default: ${PROJECT_IS_TOP_LEVEL}. Values: { ON, OFF }."
     ${PROJECT_IS_TOP_LEVEL}
 )
+
+create_version_files()
 
 add_subdirectory(bytecode)
 add_subdirectory(compiler)

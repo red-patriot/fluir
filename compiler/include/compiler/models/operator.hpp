@@ -5,11 +5,13 @@
 
 namespace fluir {
   enum class Operator {
-    UNKNOWN,  //
-    PLUS,     // +
-    MINUS,    // -
-    STAR,     // *
-    SLASH     // /
+    UNKNOWN,      //
+    PLUS,         // +
+    MINUS,        // -
+    STAR,         // *
+    SLASH,        // /
+    PLUS_PLUS,    // ++
+    MINUS_MINUS,  // --
   };
 
   inline std::string_view stringify(Operator op) {
@@ -22,6 +24,10 @@ namespace fluir {
         return "*";
       case Operator::SLASH:
         return "/";
+      case Operator::PLUS_PLUS:
+        return "++";
+      case Operator::MINUS_MINUS:
+        return "--";
       default:
         return "<UNKNOWN>";
     }

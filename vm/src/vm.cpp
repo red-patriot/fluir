@@ -1,8 +1,81 @@
 #include "vm/vm.hpp"
 
+#include <algorithm>
+#include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
+#include <functional>
 #include <iostream>
 
+#include "vm/exceptions.hpp"
+#include "vm/utility/narrow_widen.hpp"
+#include "vm/utility/operations.hpp"
+
 namespace fluir {
+  namespace {
+    // TODO: Remove this later
+    // This code is just for debugging purposes until the rest of the
+    // language is implemented
+    std::ostream& operator<<(std::ostream& os, const code::Value& value) {
+      switch (value.type()) {
+#define FLUIR_PRINT_VALUE(Type, Concrete)          \
+  case code::PrimitiveType::Type:                  \
+    os << '(' << #Type << ')' << value.as##Type(); \
+    break;
+
+        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_PRINT_VALUE)
+#undef FLUIR_PRINT_VALUE
+      }
+
+      return os;
+    }
+  }  // namespace
+
+  template <typename Op>
+  void VirtualMachine::floatBinary() {
+    double rhs = stack_.back().asF64();
+    stack_.pop_back();
+    double lhs = stack_.back().asF64();
+    stack_.pop_back();
+    stack_.emplace_back(code::Value{Op{}(lhs, rhs)});
+  }
+  template <typename Op>
+  void VirtualMachine::floatUnary() {
+    double operand = stack_.back().asF64();
+    stack_.pop_back();
+    stack_.emplace_back(Op{}(operand));
+  }
+  template <typename Op>
+  void VirtualMachine::intBinary() {
+    code::PrimitiveType typeR, typeL;
+    code::I64 rhs = utility::widenI(stack_.back(), typeR);
+    stack_.pop_back();
+    code::I64 lhs = utility::widenI(stack_.back(), typeL);
+    stack_.pop_back();
+    stack_.emplace_back(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+  }
+  template <typename Op>
+  void VirtualMachine::intUnary() {
+    code::PrimitiveType type;
+    code::I64 operand = utility::widenI(stack_.back(), type);
+    stack_.pop_back();
+    stack_.emplace_back(utility::narrowI(Op{}(operand), type));
+  }
+  template <typename Op>
+  void VirtualMachine::uintBinary() {
+    code::PrimitiveType typeR, typeL;
+    code::U64 rhs = utility::widenU(stack_.back(), typeR);
+    stack_.pop_back();
+    code::U64 lhs = utility::widenU(stack_.back(), typeL);
+    stack_.pop_back();
+    stack_.emplace_back(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+  }
+  template <typename Op>
+  void VirtualMachine::uintUnary() {
+    code::PrimitiveType type;
+    code::U64 operand = utility::widenU(stack_.back(), type);
+    stack_.pop_back();
+    stack_.emplace_back(utility::narrowU(Op{}(operand), type));
+  }
+
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
     stack_.clear();
@@ -12,7 +85,21 @@ namespace fluir {
     current_ = &code_->chunks.at(0);
     ip_ = current_->code.data();  // TODO: Be smarter about loading the entry point
 
-    return run();
+    try {
+      return run();
+    } catch (const DivideByZeroError& e) {
+      std::cerr << e.what() << std::endl;
+      return ExecResult::ERROR_DIVIDE_BY_ZERO;
+    } catch (const VirtualMachineError& e) {
+      std::cerr << e.what() << std::endl;
+      return ExecResult::ERROR;
+    } catch (const std::exception& e) {
+      std::cerr << "An unexpected error occurred: \n" << e.what() << std::endl;
+      return ExecResult::ERROR;
+    } catch (...) {
+      std::cerr << "VM PANIC" << std::endl;
+      return ExecResult::ERROR;
+    }
   }
 
   ExecResult VirtualMachine::run() {
@@ -22,66 +109,141 @@ namespace fluir {
     for (;;) {
       std::uint8_t instruction = EXIT;
       switch (instruction = FLUIR_READ_BYTE()) {
-        case PUSH_FP:
+        case PUSH:
           {
             uint8_t index = FLUIR_READ_BYTE();
             const code::Value& val = current_->constants[index];
             if (!(stack_.size() < 256)) {
               return ExecResult::ERROR;
             }
-            stack_.push_back(val);
+            stack_.emplace_back(val);
             break;
           }
-        case FP_ADD:
+        case F64_ADD:
+          floatBinary<std::plus<code::F64>>();
+          break;
+        case F64_SUB:
+          floatBinary<std::minus<code::F64>>();
+          break;
+        case F64_MUL:
+          floatBinary<std::multiplies<code::F64>>();
+          break;
+        case F64_DIV:
+          floatBinary<std::divides<code::F64>>();
+          break;
+        case F64_NEG:
+          floatUnary<std::negate<code::F64>>();
+          break;
+        case F64_INC:
+          floatUnary<utility::increment<code::F64>>();
+          break;
+        case F64_DEC:
+          floatUnary<utility::decrement<code::F64>>();
+          break;
+        case I64_ADD:
+          intBinary<std::plus<code::I64>>();
+          break;
+        case I64_SUB:
+          intBinary<std::minus<code::I64>>();
+          break;
+        case I64_MUL:
+          intBinary<std::multiplies<code::I64>>();
+          break;
+        case I64_DIV:
+          intBinary<utility::checkedDivide<code::I64>>();
+          break;
+        case I64_INC:
+          intUnary<utility::increment<code::I64>>();
+          break;
+        case I64_DEC:
+          intUnary<utility::decrement<code::I64>>();
+          break;
+        case I64_NEG:
+          intUnary<std::negate<code::I64>>();
+          break;
+        case U64_ADD:
+          uintBinary<std::plus<code::U64>>();
+          break;
+        case U64_SUB:
+          uintBinary<std::minus<code::U64>>();
+          break;
+        case U64_MUL:
+          uintBinary<std::multiplies<code::U64>>();
+          break;
+        case U64_DIV:
+          uintBinary<utility::checkedDivide<code::U64>>();
+          break;
+        case U64_INC:
+          uintUnary<utility::increment<code::U64>>();
+          break;
+        case U64_DEC:
+          uintUnary<utility::decrement<code::U64>>();
+          break;
+        case F64_AFF:
+        case I64_AFF:
+        case U64_AFF:
+          break;  // This is a No-Op
+        case CAST_IU:
           {
-            double rhs = stack_.back();
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
             stack_.pop_back();
-            double lhs = stack_.back();
-            stack_.pop_back();
-            stack_.push_back(lhs + rhs);
-            break;
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::U64>(widened);
+
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
-        case FP_SUBTRACT:
+          break;
+        case CAST_UI:
           {
-            double rhs = stack_.back();
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
             stack_.pop_back();
-            double lhs = stack_.back();
-            stack_.pop_back();
-            stack_.push_back(lhs - rhs);
-            break;
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::I64>(widened);
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
           }
-        case FP_MULTIPLY:
+          break;
+        case CAST_IF:
           {
-            double rhs = stack_.back();
+            auto toCast = stack_.back();
             stack_.pop_back();
-            double lhs = stack_.back();
-            stack_.pop_back();
-            stack_.push_back(lhs * rhs);
-            break;
+            code::PrimitiveType _;
+            auto widened = utility::widenI(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
           }
-        case FP_DIVIDE:
+          break;
+        case CAST_FI:
           {
-            double rhs = stack_.back();
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
             stack_.pop_back();
-            double lhs = stack_.back();
-            stack_.pop_back();
-            stack_.push_back(lhs / rhs);
-            break;
+            auto casted = static_cast<code::I64>(toCast.asF64());
+            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
           }
-        case FP_AFFIRM:
+          break;
+        case CAST_UF:
           {
-            double operand = stack_.back();
+            auto toCast = stack_.back();
             stack_.pop_back();
-            stack_.push_back(+operand);
-            break;
+            code::PrimitiveType _;
+            auto widened = utility::widenU(toCast, _);
+            auto casted = static_cast<code::F64>(widened);
+            stack_.emplace_back(casted);
           }
-        case FP_NEGATE:
+          break;
+        case CAST_FU:
           {
-            double operand = stack_.back();
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stack_.back();
             stack_.pop_back();
-            stack_.push_back(-operand);
-            break;
+            auto casted = static_cast<code::U64>(toCast.asF64());
+            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
+          break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
@@ -98,7 +260,5 @@ namespace fluir {
     }
   afterLoop:
     return ExecResult::SUCCESS;
-
-#undef FLUIR_READ_BYTE
   }
 }  // namespace fluir

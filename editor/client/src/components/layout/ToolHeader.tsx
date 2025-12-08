@@ -1,13 +1,13 @@
 import { useState } from 'react';
 
-import IconButton from '../common/IconButton';
+import IconButton from '@/components/reusable/IconButton';
 import {
-  faSave,
-  faFilePen,
-  faArrowUpRightFromSquare,
-  faRotateLeft,
-  faRotateRight,
-} from '@fortawesome/free-solid-svg-icons';
+  FileIcon,
+  Pencil2Icon,
+  ResetIcon,
+  ExitIcon,
+} from '@radix-ui/react-icons';
+import { Box, Flex, Code } from '@radix-ui/themes';
 import { useAppSelector } from '../../store';
 
 interface ToolHeaderProps {
@@ -33,47 +33,62 @@ export default function ToolHeader({
     modulePath?.split('/')[modulePath?.split('/').length - 1] || '<unnamed>';
 
   const [hovered, setIsHovered] = useState(false);
+  // <div className='flex items-center justify-between p-1 bg-slate-600 text-white'>
 
   return (
-    <div className='flex items-center justify-between p-1 bg-slate-600 text-white'>
+    <Flex
+      align='center'
+      justify='between'
+      gap='1'
+      className='p-1'
+    >
       <IconButton
-        iconProps={{ icon: faSave }}
+        aria-label='module-save'
+        variant='solid'
+        icon={<FileIcon />}
         onClick={onSave}
         disabled={!modulePath}
       />
       <IconButton
-        iconProps={{ icon: faFilePen }}
+        aria-label='module-save-as'
+        variant='solid'
+        icon={<Pencil2Icon />}
         onClick={onSaveAs}
       />
       <IconButton
-        iconProps={{ icon: faRotateLeft }}
+        aria-label='module-undo'
+        variant='solid'
+        icon={<ResetIcon />}
         onClick={onUndo}
         disabled={!canUndo}
       />
       <IconButton
-        iconProps={{ icon: faRotateRight }}
+        aria-label='module-redo'
+        variant='solid'
+        icon={<ResetIcon className='-scale-x-100' />}
         onClick={onRedo}
         disabled={!canRedo}
       />
-      <span className='grow' />
-      <div
-        className='w-1/2 h-full flex items-center justify-around overflow-hidden
-          rounded-lg cursor-default
-          bg-[#1a1a1a] text-white font-code
-          hover:bg-[#2a2a2a] transition-colors'
+      <Box flexGrow='1' />
+      <Code
+        size='7'
+        truncate
+        variant='outline'
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        className='cursor-default w-1/2 text-center'
       >
-        <div className='overflow-hidden truncate'>
-          {hovered ? modulePath : moduleName}
-          {saved ? '' : '*'}
-        </div>
-      </div>
-      <span className='grow' />
+        {hovered ? modulePath : moduleName}
+        {saved ? '' : '*'}
+      </Code>
+      <Box flexGrow='1' />
       <IconButton
-        iconProps={{ icon: faArrowUpRightFromSquare, color: 'red' }}
+        aria-label='module-close'
+        variant='solid'
+        icon={<ExitIcon />}
+        color='red'
         onClick={onCloseModule}
       />
-    </div>
+    </Flex>
   );
 }

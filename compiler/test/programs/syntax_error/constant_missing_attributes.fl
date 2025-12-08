@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <fluir >
+    <header>
+        <version>
+            <major>0</major>
+            <minor>1</minor>
+            <patch>3</patch>
+        </version>
+    </header>
     <function
         name="main"
         id="1"
@@ -15,7 +22,7 @@
             z="3"
             w="5"
             h="5">
-          <float>6.7</float>
+          <f64>6.7</f64>
         </constant>
       </body>
     </function>

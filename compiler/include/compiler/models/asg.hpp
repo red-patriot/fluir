@@ -7,7 +7,7 @@
 
 namespace fluir::asg {
   struct AbstractSyntaxGraph {
-    std::vector<Declaration> declarations;
+    std::vector<Declaration> declarations{};
   };
 
   using ASG = AbstractSyntaxGraph;

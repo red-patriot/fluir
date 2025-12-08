@@ -6,7 +6,16 @@ export type Location = {
   height: number;
 };
 
-export type FlType = 'FLOATING_POINT';
+export type FlType =
+  | 'F64'
+  | 'I8'
+  | 'I16'
+  | 'I32'
+  | 'I64'
+  | 'U8'
+  | 'U16'
+  | 'U32'
+  | 'U64';
 
 export type Constant = {
   discriminator: 'constant';
@@ -16,8 +25,7 @@ export type Constant = {
   value?: string;
 };
 
-export type Operator = ' ' | '+' | '-' | '*' | '/';
-export const VALID_OPERATORS = [' ', '+', '-', '*', '/'];
+export type Operator = ' ' | '+' | '-' | '*' | '/' | '++' | '--';
 
 export type BinaryOp = {
   discriminator: 'binary';

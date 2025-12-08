@@ -12,6 +12,8 @@ export type ResizeEditRequest = {
   target: number[];
   width: number;
   height: number;
+  x?: number;
+  y?: number;
 };
 
 export type RenameDeclarationEditRequest = {
@@ -38,7 +40,7 @@ export type AddConduitEditRequest = {
   target: string; // "output-QualifiedID-index"
 };
 
-export type NodeOptions = 'Constant' | 'BinaryOperator' | 'UnaryOperator';
+export type NodeOptions = 'F64' | 'BinaryOperator' | 'UnaryOperator';
 
 export type AddNodeEditRequest = {
   discriminator: 'add_node';

@@ -2,7 +2,8 @@ import { useAppSelector } from './store';
 import Home from './components/pages/Home';
 import { openFileDialog } from './hooks/electronAPI';
 import ModulePage from './components/pages/Module';
-import { useProgramActions } from './components/common/ProgramActionsContext';
+import { useProgramActions } from './components/reusable/ProgramActionsContext';
+import { Theme } from '@radix-ui/themes';
 
 function App() {
   // global state
@@ -20,10 +21,10 @@ function App() {
   };
 
   return (
-    <>
+    <Theme accentColor='blue' grayColor='gray' panelBackground='solid' radius='none' appearance='dark'>
       {page == 'home' && <Home onNewFile={newProgram} onOpenFile={onOpenFile} />}
       {page == 'module' && <ModulePage />}
-    </>
+    </Theme>
   );
 }
 

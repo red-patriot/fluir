@@ -9,59 +9,61 @@
 #include <fmt/format.h>
 
 namespace fluir {
-  /** A diagnostic emitted by the compiler */
-  struct Diagnostic {
-    enum class Level { NOTE = 0, WARNING = 1, ERROR = 2, INTERNAL_ERROR = 3 };
-    using enum Level;
+  inline namespace v1 {
+    /** A diagnostic emitted by the compiler */
+    struct Diagnostic {
+      enum class Level { NOTE = 0, WARNING = 1, ERROR = 2, INTERNAL_ERROR = 3 };
+      using enum Level;
 
-    class Location {
-     public:
-      virtual ~Location() = default;
-      virtual std::string str() const = 0;
+      class Location {
+       public:
+        virtual ~Location() = default;
+        virtual std::string str() const = 0;
+      };
+
+      Level level;                              /**< The level of diagnostic */
+      std::string message;                      /**< The user-facing message to help fix the issue */
+      std::shared_ptr<Location> where{nullptr}; /**< Where the issue originated from */
+
+      friend bool operator==(const Diagnostic& lhs, const Diagnostic& rhs) {
+        return lhs.level == rhs.level && lhs.message == rhs.message;
+      }
     };
 
-    Level level;                              /**< The level of diagnostic */
-    std::string message;                      /**< The user-facing message to help fix the issue */
-    std::shared_ptr<Location> where{nullptr}; /**< Where the issue originated from */
+    bool isError(const Diagnostic& diagnostic);
 
-    friend bool operator==(const Diagnostic& lhs, const Diagnostic& rhs) {
-      return lhs.level == rhs.level && lhs.message == rhs.message;
-    }
-  };
+    std::string toString(const Diagnostic& diagnostic);
 
-  bool isError(const Diagnostic& diagnostic);
+    class SourceLocation : public Diagnostic::Location {
+     public:
+      explicit SourceLocation(std::source_location source = std::source_location::current());
 
-  std::string toString(const Diagnostic& diagnostic);
+      std::string str() const override;
 
-  class SourceLocation : public Diagnostic::Location {
-   public:
-    explicit SourceLocation(std::source_location source = std::source_location::current());
+     private:
+      std::source_location source_;
+    };
 
-    std::string str() const override;
+    class Diagnostics : public std::vector<Diagnostic> {
+     public:
+      using vector::vector;
 
-   private:
-    std::source_location source_;
-  };
+      void emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+      void emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+      void emitError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
+      void emitInternalError(std::string message,
+                             std::shared_ptr<Diagnostic::Location> where = std::make_unique<SourceLocation>());
 
-  class Diagnostics : public std::vector<Diagnostic> {
-   public:
-    using vector::vector;
-
-    void emitNote(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
-    void emitWarning(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
-    void emitError(std::string message, std::shared_ptr<Diagnostic::Location> where = nullptr);
-    void emitInternalError(std::string message,
-                           std::shared_ptr<Diagnostic::Location> where = std::make_unique<SourceLocation>());
-
-    bool containsErrors() const;
-  };
+      bool containsErrors() const;
+    };
+  }  // namespace v1
 }  // namespace fluir
 
 template <>
-struct fmt::formatter<fluir::Diagnostic::Level> : formatter<fmt::string_view> {
+struct fmt::formatter<fluir::v1::Diagnostic::Level> : formatter<fmt::string_view> {
   // parse is inherited from formatter<string_view>.
 
-  auto format(fluir::Diagnostic::Level l, format_context& ctx) const -> fmt::format_context::iterator;
+  auto format(fluir::v1::Diagnostic::Level l, format_context& ctx) const -> fmt::format_context::iterator;
 };
 
 #endif

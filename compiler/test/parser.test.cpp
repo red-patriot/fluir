@@ -13,14 +13,24 @@
 using std::tuple;
 namespace fs = std::filesystem;
 
-class TestParser : public ::testing::TestWithParam<fs::path> { };
+class TestParser : public ::testing::TestWithParam<fs::path> {
+ public:
+  fluir::Context ctx{.version = fluir::Version{0, 1, 3}};
+};
+
+TEST_F(TestParser, TestNonexistentFile) {
+  const fs::path programFile = TEST_FOLDER / "nonexistent.fl";
+
+  auto results = fluir::parseFile(ctx, programFile);
+
+  EXPECT_TRUE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(results.has_value());
+}
 
 TEST_P(TestParser, Test) {
   const fs::path programFile = GetParam();
   const auto outputFile = fs::path{programFile}.replace_extension(".pt");
   const auto expected = fluir::test::readContents(outputFile);
-
-  fluir::Context ctx{.version = fluir::Version{0, 1, 3}};
 
   auto results = fluir::parseFile(ctx, programFile);
 

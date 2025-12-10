@@ -1,6 +1,8 @@
 #ifndef FLUIR_COMPILER_UTILITY_DIAGNOSTICS_HPP
 #define FLUIR_COMPILER_UTILITY_DIAGNOSTICS_HPP
 
+#include <concepts>
+#include <cstdint>
 #include <memory>
 #include <source_location>
 #include <string>

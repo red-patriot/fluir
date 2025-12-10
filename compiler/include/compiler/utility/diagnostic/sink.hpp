@@ -1,6 +1,7 @@
 #ifndef FLUIR_COMPILER_UTILITY_DIAGNOSTIC_SINK_HPP
 #define FLUIR_COMPILER_UTILITY_DIAGNOSTIC_SINK_HPP
 
+#include <stacktrace>
 #include <string_view>
 
 #include "compiler/utility/diagnostic/code.hpp"

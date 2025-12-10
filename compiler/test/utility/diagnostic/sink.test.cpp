@@ -4,6 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "compiler/utility/diagnostic/internal_error.hpp"
+
 namespace fd = fluir::diagnostic;
 
 namespace {
@@ -62,4 +64,10 @@ TEST(TestDiagnosticSink, ReportsDiagnosticsFirst) {
   FLUIR_SYNCHRONIZE_PANIC(uut) { uut.emit(fd::Code::GENERIC_ERROR, Dummy{}); };
 
   EXPECT_EQ(1, uut.reported.size());
+}
+
+TEST(TestDiagnosticSink, ThrowsOnInternalError) {
+  LoggingTestSink uut;
+  EXPECT_TRUE((std::derived_from<fd::InternalError, std::exception>));
+  EXPECT_THROW(fd::emitInternalError("msg"), fd::InternalError);
 }

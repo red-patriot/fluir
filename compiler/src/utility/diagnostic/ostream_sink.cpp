@@ -20,7 +20,6 @@ namespace fluir::diagnostic {
     }
   }  // namespace
 
-  OstreamSink::OstreamSink() : OstreamSink(std::cout) { }
   OstreamSink::OstreamSink(std::ostream& os) : os_(os) { }
 
   void OstreamSink::operator()(const int& lineNo) { os_ << fmt::format("at line {}", lineNo); }
@@ -40,5 +39,7 @@ namespace fluir::diagnostic {
   }
 
   void OstreamSink::printLocation(const Sink::ErrorLocation& location) { std::visit(*this, location); }
+
+  OstreamSink COUT_SINK{std::cout};
 
 }  // namespace fluir::diagnostic

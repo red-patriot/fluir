@@ -9,8 +9,6 @@ namespace fluir::diagnostic {
   /** Prints error messages as strings to a std::ostream*/
   class OstreamSink : public Sink {
    public:
-    /** Initializes an ostream sink to write to std::cout */
-    OstreamSink();
     explicit OstreamSink(std::ostream& os);
     OstreamSink(OstreamSink const&) = delete;
     OstreamSink& operator=(OstreamSink const&) = delete;
@@ -31,6 +29,8 @@ namespace fluir::diagnostic {
 
     void printLocation(const Sink::ErrorLocation& location);
   };
+
+  extern OstreamSink COUT_SINK;
 }  // namespace fluir::diagnostic
 
 #endif

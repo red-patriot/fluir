@@ -10,6 +10,11 @@
 
 #include <fmt/format.h>
 
+#include "compiler/utility/diagnostic/code.hpp"
+#include "compiler/utility/diagnostic/internal_error.hpp"
+#include "compiler/utility/diagnostic/panic.hpp"
+#include "compiler/utility/diagnostic/sink.hpp"
+
 namespace fluir {
   inline namespace v1 {
     /** A diagnostic emitted by the compiler */

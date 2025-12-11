@@ -1,73 +1,79 @@
 #include "compiler/utility/diagnostic/sink.hpp"
 
-#include <vector>
-
 #include <gtest/gtest.h>
 
 #include "compiler/utility/diagnostic/internal_error.hpp"
+#include "compiler/utility/diagnostic/sink.hpp"
 
 namespace fd = fluir::diagnostic;
 
 namespace {
-  struct Dummy { };
-
-  class LoggingTestSink : public fd::Sink<Dummy> {
+  class TestSink : public fd::Sink {
    public:
-    struct Data {
-      fd::Code code;
-      std::string_view msg;
-    };
-    std::vector<Data> reported;
+    size_t reportedCount{0};
+    std::string lastExtraMessage{};
 
    private:
-    void report(fd::Code code, std::string_view msg, const Dummy&) override { reported.push_back({code, msg}); }
+    void report(fd::Code, const fluir::Coordinate&, fd::AtWhat, std::string_view msg) override {
+      ++reportedCount;
+      lastExtraMessage = msg;
+    }
   };
 }  // namespace
 
 TEST(TestDiagnosticSink, ThrowOnErrorEmit) {
-  LoggingTestSink uut;
-  EXPECT_THROW(uut.emit(fd::Code::GENERIC_ERROR, Dummy{}), fd::PanicMode);
+  TestSink uut;
+  EXPECT_THROW(uut.emit(fd::Code::GENERIC_ERROR, {0, 1, 2}, fd::AtWhat::LINE), fd::PanicMode);
 }
 
 TEST(TestDiagnosticSink, NoThrowOnWarningEmit) {
-  LoggingTestSink uut;
-  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_WARNING, Dummy{}));
+  TestSink uut;
+  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_WARNING, {0, 1, 2}, fd::AtWhat::LINE));
 }
 
 TEST(TestDiagnosticSink, NoThrowOnNoteEmit) {
-  LoggingTestSink uut;
-  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_NOTE, Dummy{}));
+  TestSink uut;
+  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_NOTE, {0, 1, 2}, fd::AtWhat::LINE));
 }
 
 TEST(TestDiagnosticSink, ThrowOnErrorEmitWithExtraMsg) {
-  LoggingTestSink uut;
-  EXPECT_THROW(uut.emit(fd::Code::GENERIC_ERROR, "msg", Dummy{}), fd::PanicMode);
+  TestSink uut;
+  EXPECT_THROW(uut.emit(fd::Code::GENERIC_ERROR, {1, 4, 5}, fd::AtWhat::NODE, "msg"), fd::PanicMode);
 }
 
 TEST(TestDiagnosticSink, NoThrowOnWarningEmitWithExtraMsg) {
-  LoggingTestSink uut;
-  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_WARNING, "msg", Dummy{}));
+  TestSink uut;
+  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_WARNING, {1, 4, 5}, fd::AtWhat::NODE, "msg"));
 }
 
 TEST(TestDiagnosticSink, NoThrowOnNoteEmitWithExtraMsg) {
-  LoggingTestSink uut;
-  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_NOTE, "msg", Dummy{}));
+  TestSink uut;
+  EXPECT_NO_THROW(uut.emit(fd::Code::GENERIC_NOTE, {1, 4, 5}, fd::AtWhat::NODE, "msg"));
 }
 
 TEST(TestDiagnosticSink, SynchronizeStopsPanic) {
-  LoggingTestSink uut;
-  FLUIR_SYNCHRONIZE_PANIC(uut) { uut.emit(fd::Code::GENERIC_ERROR, Dummy{}); };
+  TestSink uut;
+  FLUIR_SYNCHRONIZE_PANIC(uut) { uut.emit(fd::Code::GENERIC_ERROR, {1, 4, 5}, fd::AtWhat::NODE); };
 }
 
 TEST(TestDiagnosticSink, ReportsDiagnosticsFirst) {
-  LoggingTestSink uut;
-  FLUIR_SYNCHRONIZE_PANIC(uut) { uut.emit(fd::Code::GENERIC_ERROR, Dummy{}); };
+  TestSink uut;
+  FLUIR_SYNCHRONIZE_PANIC(uut) { uut.emit(fd::Code::GENERIC_ERROR, {1, 4, 5}, fd::AtWhat::NODE); };
 
-  EXPECT_EQ(1, uut.reported.size());
+  EXPECT_EQ(1, uut.reportedCount);
 }
 
 TEST(TestDiagnosticSink, ThrowsOnInternalError) {
-  LoggingTestSink uut;
+  TestSink uut;
   EXPECT_TRUE((std::derived_from<fd::InternalError, std::exception>));
   EXPECT_THROW(fd::emitInternalError("msg"), fd::InternalError);
+}
+
+TEST(TestDiagnosticSink, SendsFormattedMsg) {
+  TestSink uut;
+  std::string expected = "Error No. 12, and hello there.";
+
+  uut.emit(fd::Code::GENERIC_WARNING, {1, 4, 5}, fd::AtWhat::NODE, "Error No. {}, and {}.", 12, "hello there");
+
+  EXPECT_EQ(expected, uut.lastExtraMessage);
 }

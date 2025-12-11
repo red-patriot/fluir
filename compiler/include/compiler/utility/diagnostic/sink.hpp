@@ -1,7 +1,7 @@
 #ifndef FLUIR_COMPILER_UTILITY_DIAGNOSTIC_SINK_HPP
 #define FLUIR_COMPILER_UTILITY_DIAGNOSTIC_SINK_HPP
 
-#include <stacktrace>
+#include <filesystem>
 #include <string_view>
 #include <variant>
 
@@ -22,8 +22,12 @@ namespace fluir::diagnostic {
      * Use the FLUIR_SYNCHRONIZE_PANIC macro to synchronize after a panic
      */
     template <typename... FmtArgs>
-    void emitAtLine(Code code, int lineNo, fmt::format_string<FmtArgs...> extraMsg = "", FmtArgs&&... args) {
-      report(code, lineNo, fmt::format(extraMsg, std::forward<FmtArgs>(args)...));
+    void emitAtLine(Code code,
+                    const std::filesystem::path& file,
+                    int lineNo,
+                    fmt::format_string<FmtArgs...> extraMsg = "",
+                    FmtArgs&&... args) {
+      report(code, file, lineNo, fmt::format(extraMsg, std::forward<FmtArgs>(args)...));
       if (code >= Code::GENERIC_ERROR) {
         startPanic();
       }
@@ -34,8 +38,12 @@ namespace fluir::diagnostic {
      * Use the FLUIR_SYNCHRONIZE_PANIC macro to synchronize after a panic
      */
     template <typename... FmtArgs>
-    void emitAtElement(Code code, const FullID& id, fmt::format_string<FmtArgs...> extraMsg = "", FmtArgs&&... args) {
-      report(code, id, fmt::format(extraMsg, std::forward<FmtArgs>(args)...));
+    void emitAtElement(Code code,
+                       const std::filesystem::path& file,
+                       const FullID& id,
+                       fmt::format_string<FmtArgs...> extraMsg = "",
+                       FmtArgs&&... args) {
+      report(code, file, id, fmt::format(extraMsg, std::forward<FmtArgs>(args)...));
       if (code >= Code::GENERIC_ERROR) {
         startPanic();
       }
@@ -46,7 +54,10 @@ namespace fluir::diagnostic {
     using ErrorLocation = std::variant<int, FullID>;
 
     /** Report the given error to the sink location */
-    virtual void report(Code diagnostic, const ErrorLocation&, std::string_view extraMsg) = 0;
+    virtual void report(Code diagnostic,
+                        const std::filesystem::path& file,
+                        const ErrorLocation&,
+                        std::string_view extraMsg) = 0;
   };
 }  // namespace fluir::diagnostic
 

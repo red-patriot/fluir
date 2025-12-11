@@ -9,13 +9,15 @@
 #include "compiler/debug/parse_tree_printer.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "file_utility.hpp"
+#include "test_diagnostic_sink.hpp"
 
 using std::tuple;
 namespace fs = std::filesystem;
 
 class TestParser : public ::testing::TestWithParam<fs::path> {
  public:
-  fluir::Context ctx{.version = fluir::Version{0, 1, 3}};
+  fluir::test::TestDiagnosticSink sink_;
+  fluir::Context ctx{.diag = sink_, .version = fluir::Version{0, 1, 3}};
 };
 
 TEST_F(TestParser, TestNonexistentFile) {
@@ -23,7 +25,7 @@ TEST_F(TestParser, TestNonexistentFile) {
 
   auto results = fluir::parseFile(ctx, programFile);
 
-  EXPECT_TRUE(ctx.diagnostics.containsErrors());
+  EXPECT_TRUE(sink_.containsErrors());
   EXPECT_FALSE(results.has_value());
 }
 

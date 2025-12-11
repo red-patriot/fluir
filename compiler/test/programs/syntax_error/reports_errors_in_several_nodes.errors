@@ -1,3 +1,3 @@
-[ERROR] on line 19 of 'reports_errors_in_several_nodes.fl': Unrecognized operator '@' in element '<binary>'.
-[ERROR] on line 36 of 'reports_errors_in_several_nodes.fl': Expected a numeric value in element '<f64>'. 'I AM A STRING' cannot be parsed as a number.
-[ERROR] on line 38 of 'reports_errors_in_several_nodes.fl': constant element is missing attribute 'w'.
+ERROR_UNRECOGNIZED_OPERATOR
+ERROR_CANNOT_PARSE_ELEMENT_TEXT
+ERROR_MISSING_ATTRIBUTE

@@ -26,10 +26,11 @@ namespace fluir {
     Context& ctx_;
     tinyxml2::XMLDocument doc_;
     pt::ParseTree tree_;
+    bool failed{false};
 
     using Element = tinyxml2::XMLElement;
 
-    void flowGraph();
+    bool flowGraph();
 
     void header(Element* element);
     Version version(Element* element);
@@ -68,11 +69,10 @@ namespace fluir {
     Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
 
     template <typename... FmtArgs>
-    void panicIf(bool condition, Element* element, std::string_view format, FmtArgs... args);
+    void panicAt(Element*, diagnostic::Code code, fmt::format_string<FmtArgs...> format = "", FmtArgs&&... args);
     template <typename... FmtArgs>
-    [[noreturn]] void panicAt(Element* element, std::string_view format, FmtArgs... args);
-    /** Indicates the parser is in a panic */
-    class PanicMode { };
+    void panicIf(
+      bool condition, Element*, diagnostic::Code code, fmt::format_string<FmtArgs...> format = "", FmtArgs&&... args);
 
     /** Line and file information for a Diagnostic.
      * Used to indicate a file's syntax is not correct in some way.

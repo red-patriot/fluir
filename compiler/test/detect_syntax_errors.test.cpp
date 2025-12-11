@@ -7,26 +7,29 @@
 #include "compiler/frontend/parser.hpp"
 #include "compiler/utility/context.hpp"
 #include "file_utility.hpp"
+#include "test_diagnostic_sink.hpp"
+
+namespace fd = fluir::diagnostic;
 namespace fs = std::filesystem;
 
-class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> { };
+class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
+ public:
+  fluir::test::TestDiagnosticSink sink_;
+  fluir::Context ctx{.diag = sink_, .version = fluir::Version{0, 1, 3}};
+};
 
 TEST_P(TestDetectSyntaxError, Test) {
-  fluir::Context ctx{.version = fluir::Version{0, 1, 3}};
   const auto programFile = GetParam();
   const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
-  const auto errors = fluir::test::readContents(errorsFile);
+  const auto errors = fluir::test::getErrors(errorsFile);
 
   fluir::Parser uut{ctx};
 
   auto results = uut.parseFile(programFile);
 
-  std::stringstream ss;
-  for (const auto& diagnostic : ctx.diagnostics) {
-    ss << fluir::toString(diagnostic) << '\n';
-  }
+  std::vector<fd::Code> actual(sink_.emitted().size());
 
-  auto actual = ss.str();
+  std::ranges::transform(sink_.emitted(), actual.begin(), [](const auto& e) { return e.code; });
 
   EXPECT_FALSE(results.has_value());
   EXPECT_EQ(errors, actual);

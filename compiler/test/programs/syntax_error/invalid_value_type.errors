@@ -1,1 +1,1 @@
-[ERROR] on line 19 of 'invalid_value_type.fl': Unexpected element 'not-a-constant'. Expected a node.
+ERROR_UNEXPECTED_ELEMENT

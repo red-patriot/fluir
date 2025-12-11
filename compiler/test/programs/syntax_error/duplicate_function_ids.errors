@@ -1,1 +1,1 @@
-[ERROR] on line 21 of 'duplicate_function_ids.fl': Duplicate declaration IDs. Function 'second' has id 1, but that ID is already in use.
+ERROR_DUPLICATE_IDS_FOUND

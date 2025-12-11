@@ -39,8 +39,10 @@ set(FLUIR_COMPILER_TYPES_SOURCES
     "types/type.cpp"
 )
 
-set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostic/pretty_msg.cpp"
-                                   "utility/diagnostics.cpp"
+set(FLUIR_COMPILER_UTILITY_SOURCES
+    "utility/diagnostic/pretty_msg.cpp"
+    "utility/diagnostic/ostream_sink.cpp"
+    "utility/diagnostics.cpp"
 )
 
 target_sources(

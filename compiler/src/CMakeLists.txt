@@ -39,13 +39,17 @@ set(FLUIR_COMPILER_TYPES_SOURCES
     "types/type.cpp"
 )
 
+set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostic/pretty_msg.cpp"
+                                   "utility/diagnostics.cpp"
+)
+
 target_sources(
     fluir.libcompiler
     PRIVATE ${FLUIR_COMPILER_FRONTEND_SOURCES}
             ${FLUIR_COMPILER_BACKEND_SOURCES}
             ${FLUIR_COMPILER_DEBUG_SOURCES}
             ${FLUIR_COMPILER_TYPES_SOURCES}
-            "utility/diagnostics.cpp"
+            ${FLUIR_COMPILER_UTILITY_SOURCES}
 )
 
 turn_up_warnings_on(fluir.libcompiler)

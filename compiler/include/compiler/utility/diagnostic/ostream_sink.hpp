@@ -30,7 +30,7 @@ namespace fluir::diagnostic {
     void printLocation(const Sink::ErrorLocation& location);
   };
 
-  extern OstreamSink COUT_SINK;
+  OstreamSink& getCoutSink();
 }  // namespace fluir::diagnostic
 
 #endif

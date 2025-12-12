@@ -29,7 +29,7 @@ namespace fluir::diagnostic {
                            const std::filesystem::path& file,
                            const Sink::ErrorLocation& location,
                            std::string_view msg) {
-    os_ << fmt::format("[] in '{}' ", levelOf(code), file.string());
+    os_ << fmt::format("{} in '{}' ", levelOf(code), file.string());
     printLocation(location);
     os_ << "\n\t" << prettyMessage(code);
     if (!msg.empty()) {
@@ -40,6 +40,8 @@ namespace fluir::diagnostic {
 
   void OstreamSink::printLocation(const Sink::ErrorLocation& location) { std::visit(*this, location); }
 
-  OstreamSink COUT_SINK{std::cout};
-
+  OstreamSink& getCoutSink() {
+    static OstreamSink COUT_SINK{std::cout};
+    return COUT_SINK;
+  }
 }  // namespace fluir::diagnostic

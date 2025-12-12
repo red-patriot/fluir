@@ -30,7 +30,9 @@ namespace fluir::diagnostic {
        "IDs must be unique."},
       {ERROR_NUMBER_OUT_OF_RANGE,
        "The number was parsed successfully, "
-       "but does not fit into the range pf its target type."}};
+       "but does not fit into the range pf its target type."},
+      {ERROR_CIRCULAR_DEPENDENCY, "There is a circular dependency between flow graph nodes."},
+      {ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED, "Operator overload resolution failed."}};
 
   }  // namespace
 

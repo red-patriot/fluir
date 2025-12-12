@@ -33,14 +33,20 @@ namespace fluir {
   }  // namespace
 
   Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph) {
+    bool failed = false;
     for (auto& declaration : graph.declarations) {
-      auto result = checkDeclType(ctx, std::move(declaration));
-      if (!result.has_value()) {
-        return NoResult;
+      try {
+        auto result = checkDeclType(ctx, std::move(declaration));
+        if (!result.has_value()) {
+          failed = true;
+          continue;
+        }
+        declaration = std::move(result.value());
+      } catch (const diagnostic::PanicMode&) {
+        failed = true;
       }
-      declaration = std::move(result.value());
     }
-    return graph;
+    return failed ? NoResult : std::make_optional(std::move(graph));
   }
 
   Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl) {
@@ -101,13 +107,13 @@ namespace fluir {
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
       if (!selectedOverload) {
-        ctx.diagnostics.emitError(
-          fmt::format("No suitable operator candidates for binary {} with operand types {}, {}.",
-                      stringify(binary->op()),
-                      ctx.symbolTable.getType(lhs)->name(),
-                      ctx.symbolTable.getType(rhs)->name()),
-          std::make_shared<asg::DiagnosticLocation>(ctx.currentFile.filename().string(), binary));
-        return false;
+        ctx.diag.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                               ctx.currentFile,
+                               binary->fullId(),
+                               "No binary {} exists with operand types {}, {}.",
+                               stringify(binary->op()),
+                               ctx.symbolTable.getType(lhs)->name(),
+                               ctx.symbolTable.getType(rhs)->name());
       }
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
@@ -130,11 +136,12 @@ namespace fluir {
       const auto operand = unary->operand()->type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
       if (!selectedOverload) {
-        ctx.diagnostics.emitError(
-          fmt::format("No suitable operator candidates for unary {} with operand type {}.",
-                      stringify(unary->op()),
-                      ctx.symbolTable.getType(operand)->name()),
-          std::make_shared<asg::DiagnosticLocation>(ctx.currentFile.filename().string(), unary));
+        ctx.diag.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                               ctx.currentFile,
+                               unary->fullId(),
+                               "No unary {} exists with operand type {}.",
+                               stringify(unary->op()),
+                               ctx.symbolTable.getType(operand)->name());
         return false;
       }
       unary->setDefinition(selectedOverload);

@@ -20,22 +20,22 @@ namespace fluir::diagnostic {
     }
   }  // namespace
 
-  OstreamSink::OstreamSink(std::ostream& os) : os_(os) { }
+  OstreamSink::OstreamSink(std::ostream& os) : os_(&os) { }
 
-  void OstreamSink::operator()(const int& lineNo) { os_ << fmt::format("at line {}", lineNo); }
-  void OstreamSink::operator()(const FullID& id) { os_ << fmt::format(" at element {}", fmt::join(id, ":")); }
+  void OstreamSink::operator()(const int& lineNo) { (*os_) << fmt::format("at line {}", lineNo); }
+  void OstreamSink::operator()(const FullID& id) { (*os_) << fmt::format(" at element {}", fmt::join(id, ":")); }
 
   void OstreamSink::report(Code code,
                            const std::filesystem::path& file,
                            const Sink::ErrorLocation& location,
                            std::string_view msg) {
-    os_ << fmt::format("{} in '{}' ", levelOf(code), file.string());
+    (*os_) << fmt::format("{} in '{}' ", levelOf(code), file.string());
     printLocation(location);
-    os_ << "\n\t" << prettyMessage(code);
+    (*os_) << "\n\t" << prettyMessage(code);
     if (!msg.empty()) {
-      os_ << "\n\t" << msg;
+      (*os_) << "\n\t" << msg;
     }
-    os_ << '\n';
+    (*os_) << '\n';
   }
 
   void OstreamSink::printLocation(const Sink::ErrorLocation& location) { std::visit(*this, location); }

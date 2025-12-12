@@ -47,10 +47,14 @@ namespace fluir {
   }
 
   Results<asg::ASG> ASGBuilder::run() {
-    for (const auto& declaration : tree_.declarations | std::views::values) {
-      graph_.declarations.emplace_back(std::visit(*this, declaration));
-    }
-    if (ctx_.diagnostics.containsErrors()) {
+    try {
+      for (const auto& declaration : tree_.declarations | std::views::values) {
+        graph_.declarations.emplace_back(std::visit(*this, declaration));
+      }
+      if (ctx_.diagnostics.containsErrors()) {
+        return NoResult;
+      }
+    } catch (const diagnostic::PanicMode&) {
       return NoResult;
     }
 
@@ -103,8 +107,7 @@ namespace fluir {
     if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
       // TODO: Detect which nodes form the cycle
-      ctx_.diagnostics.emitError("Circular dependency detected.");
-      return NoResult;
+      ctx_.diag.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     for (const auto& ptNode : sinkNodes) {
@@ -131,8 +134,7 @@ namespace fluir {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
       // TODO: Detect which nodes form the cycle
-      ctx_.diagnostics.emitError("Circular dependency detected.");
-      return nullptr;
+      ctx_.diag.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     if (alreadyFound_.contains(dependencyId)) {

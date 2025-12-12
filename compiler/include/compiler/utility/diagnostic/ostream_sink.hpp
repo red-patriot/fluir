@@ -10,17 +10,12 @@ namespace fluir::diagnostic {
   class OstreamSink : public Sink {
    public:
     explicit OstreamSink(std::ostream& os);
-    OstreamSink(OstreamSink const&) = delete;
-    OstreamSink& operator=(OstreamSink const&) = delete;
-    OstreamSink(OstreamSink&&) = delete;
-    OstreamSink& operator=(OstreamSink&&) = delete;
-    ~OstreamSink() override = default;
 
     void operator()(const int& lineNo);
     void operator()(const FullID& id);
 
    private:
-    std::ostream& os_;
+    std::ostream* os_;
 
     void report(Code code,
                 const std::filesystem::path& file,

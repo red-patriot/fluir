@@ -19,7 +19,7 @@ TEST_P(TestPrettyDiagnosticMessage, Test) {
 
 INSTANTIATE_TEST_SUITE_P(TestPrettyDiagnosticMessage,
                          TestPrettyDiagnosticMessage,
-                         ::testing::Values(tuple{"An unknown error was emitted", fd::Code::GENERIC_ERROR},
-                                           tuple{"An unknown warning was emitted", fd::Code::GENERIC_WARNING},
+                         ::testing::Values(tuple{"An unknown error was emitted.", fd::Code::GENERIC_ERROR},
+                                           tuple{"An unknown warning was emitted.", fd::Code::GENERIC_WARNING},
                                            tuple{"", fd::Code::GENERIC_NOTE},
                                            tuple{"ERROR 0x8001", static_cast<fd::Code>(0x8001)}));

@@ -8,7 +8,6 @@
 #include "compiler/frontend/parser.hpp"
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
-#include "compiler/utility/pass.hpp"
 #include "file_utility.hpp"
 #include "test_diagnostic_sink.hpp"
 

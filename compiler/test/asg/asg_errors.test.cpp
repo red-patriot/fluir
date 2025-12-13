@@ -6,7 +6,6 @@
 
 #include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parser.hpp"
-#include "compiler/utility/pass.hpp"
 #include "file_utility.hpp"
 #include "test_diagnostic_sink.hpp"
 

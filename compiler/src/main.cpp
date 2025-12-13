@@ -10,9 +10,7 @@
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
 #include "compiler/utility/context.hpp"
-#include "compiler/utility/pass.hpp"
-
-namespace fs = std::filesystem;
+` namespace fs = std::filesystem;
 
 namespace {
   void printDiagnostics(const fluir::Diagnostics& diagnostics) {

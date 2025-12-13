@@ -4,7 +4,6 @@ add_executable(fluir.compiler.test)
 
 set(FLUIR_UTILITY_TEST_SOURCES
     utility/diagnostics.test.cpp
-    utility/pass.test.cpp
     utility/diagnostic/sink.test.cpp
     utility/diagnostic/pretty_msg.test.cpp
 )

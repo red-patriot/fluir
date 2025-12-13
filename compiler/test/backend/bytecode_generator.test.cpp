@@ -6,7 +6,6 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
-#include "compiler/utility/pass.hpp"
 
 namespace fa = fluir::asg;
 namespace fc = fluir::code;
@@ -27,9 +26,9 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
 
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
@@ -45,10 +44,9 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
                         .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
                                    fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
 
-  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
-
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   for (int i = 0; i != expected.chunks.size(); ++i) {
@@ -84,10 +82,9 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                },
                                              .constants = {1.5_f64, 2.5_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
-
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
@@ -118,10 +115,9 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                },
                                              .constants = {3.456_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
-
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
@@ -178,10 +174,10 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                },
                                              .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
 
-  auto [ctx, actual] = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
+  auto actual = fluir::generateCode(ctx_, typeChecked.value());
 
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
-
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
@@ -222,13 +218,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
                                                },
                                              .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
@@ -267,13 +262,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
                                                },
                                              .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
@@ -322,13 +316,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
         },
       .constants = {8_i32, 16_i32, 28_i32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
@@ -377,13 +370,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
         },
       .constants = {8_u32, 16_u32, 28_u32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
@@ -446,13 +438,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
                                                },
                                              .constants = {8_i32, 12.4_f64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
@@ -494,13 +485,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
                                                },
                                              .constants = {8_i32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
@@ -535,13 +525,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
                                                },
                                              .constants = {8_u32, 12.4_f64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
@@ -583,13 +572,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
                                                },
                                              .constants = {8_u32}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
@@ -630,11 +618,10 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
         },
       .constants = {8_i32, 12.45_f64, 8_u64}}}};
 
-  auto actual = fluir::addContext(std::move(ctx_), std::move(input)) | fluir::typeCheck | fluir::generateCode;
+  auto actual = fluir::generateCode(ctx_, input);
 
-  EXPECT_FALSE(actual.ctx.diagnostics.containsErrors());
-
-  EXPECT_BC_HEADER_EQ(expected.header, actual.data.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.data.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.data.value().chunks.at(0));
+  EXPECT_FALSE(ctx_.diagnostics.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }

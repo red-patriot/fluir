@@ -12,10 +12,10 @@
 namespace fluir {
   /** The context of compilation. */
   struct Context {
-    diagnostic::Sink& diag{diagnostic::getCoutSink()}; /**< The sink to emit diagnostics to */
-    types::SymbolTable symbolTable;                    /**< The symbol table of the compilation */
-    std::filesystem::path currentFile;                 /**< The current file being processed */
-    Version version{0, 0, 0};                          /**< The current version of the compiler */
+    diagnostic::Sink& diagnosticSink{diagnostic::getCoutSink()}; /**< The sink to emit diagnostics to */
+    types::SymbolTable symbolTable;                              /**< The symbol table of the compilation */
+    std::filesystem::path currentFile;                           /**< The current file being processed */
+    Version version{0, 0, 0};                                    /**< The current version of the compiler */
   };
 }  // namespace fluir
 

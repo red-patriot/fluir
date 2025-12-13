@@ -17,7 +17,7 @@ namespace fd = fluir::diagnostic;
 class TestTypeError : public ::testing::TestWithParam<fs::path> {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx_{.diag = sink_, .symbolTable = fluir::types::buildSymbolTable()};
+  fluir::Context ctx_{.diagnosticSink = sink_, .symbolTable = fluir::types::buildSymbolTable()};
 
   fluir::Results<fluir::asg::ASG> generateAndTypeCheck(const fs::path& programFile) {
     if (auto pt = fluir::parseFile(ctx_, programFile); pt) {

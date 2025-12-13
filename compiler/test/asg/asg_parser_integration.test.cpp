@@ -19,7 +19,7 @@ TEST_P(TestAsgParserIntegration, Test) {
   const auto expected = fluir::test::readContents(outputFile);
 
   fluir::test::TestDiagnosticSink sink{};
-  fluir::Context ctx{.diag = sink};
+  fluir::Context ctx{.diagnosticSink = sink};
 
   auto pt = fluir::parseFile(ctx, programFile);
   ASSERT_TRUE(pt.has_value());

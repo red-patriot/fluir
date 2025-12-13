@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx{.diag = sink_, .version = fluir::Version{0, 1, 3}};
+  fluir::Context ctx{.diagnosticSink = sink_, .version = fluir::Version{0, 1, 3}};
 };
 
 TEST_P(TestDetectSyntaxError, Test) {

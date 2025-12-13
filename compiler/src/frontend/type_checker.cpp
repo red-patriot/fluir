@@ -106,13 +106,13 @@ namespace fluir {
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
       if (!selectedOverload) {
-        ctx.diag.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
-                               ctx.currentFile,
-                               binary->fullId(),
-                               "No binary {} exists with operand types {}, {}.",
-                               stringify(binary->op()),
-                               ctx.symbolTable.getType(lhs)->name(),
-                               ctx.symbolTable.getType(rhs)->name());
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                                         ctx.currentFile,
+                                         binary->fullId(),
+                                         "No binary {} exists with operand types {}, {}.",
+                                         stringify(binary->op()),
+                                         ctx.symbolTable.getType(lhs)->name(),
+                                         ctx.symbolTable.getType(rhs)->name());
       }
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
@@ -135,12 +135,12 @@ namespace fluir {
       const auto operand = unary->operand()->type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
       if (!selectedOverload) {
-        ctx.diag.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
-                               ctx.currentFile,
-                               unary->fullId(),
-                               "No unary {} exists with operand type {}.",
-                               stringify(unary->op()),
-                               ctx.symbolTable.getType(operand)->name());
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                                         ctx.currentFile,
+                                         unary->fullId(),
+                                         "No unary {} exists with operand type {}.",
+                                         stringify(unary->op()),
+                                         ctx.symbolTable.getType(operand)->name());
         return false;
       }
       unary->setDefinition(selectedOverload);

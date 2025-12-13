@@ -19,7 +19,7 @@ namespace fluir {
     if (diagnostic::isError(code)) {
       failed = true;
     }
-    ctx_.diag.emitAtLine(
+    ctx_.diagnosticSink.emitAtLine(
       code, ctx_.currentFile, element ? element->GetLineNum() : 0, format, std::forward<FmtArgs>(args)...);
   }
 
@@ -46,7 +46,7 @@ namespace fluir {
   Results<pt::ParseTree> Parser::parseFile(const std::filesystem::path& file) {
     try {
       if (!std::filesystem::exists(file)) {
-        ctx_.diag.emitAtLine(diagnostic::Code::ERROR_FILE_DOES_NOT_EXIST, file, 0);
+        ctx_.diagnosticSink.emitAtLine(diagnostic::Code::ERROR_FILE_DOES_NOT_EXIST, file, 0);
       }
     } catch (diagnostic::PanicMode) {
       return NoResult;

@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 class TestASGError : public ::testing::TestWithParam<fs::path> {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx_{.diag = sink_};
+  fluir::Context ctx_{.diagnosticSink = sink_};
 
   std::optional<fluir::asg::AbstractSyntaxGraph> buildGraph(const fs::path& programFile) {
     if (auto parsed = fluir::parseFile(ctx_, programFile); parsed) {

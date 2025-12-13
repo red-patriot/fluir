@@ -114,7 +114,7 @@ namespace fluir {
     if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
       // TODO: Detect which nodes form the cycle
-      ctx_.diag.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     for (const auto& ptNode : sinkNodes) {
@@ -141,7 +141,7 @@ namespace fluir {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
       // TODO: Detect which nodes form the cycle
-      ctx_.diag.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     if (alreadyFound_.contains(dependencyId)) {

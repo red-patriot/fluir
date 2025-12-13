@@ -30,7 +30,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
@@ -55,7 +55,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) 
     std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
@@ -81,7 +81,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) 
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
@@ -109,7 +109,7 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, n3, n2, fluir::FullID{1, 4}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
@@ -139,7 +139,7 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
@@ -164,7 +164,7 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink, .symbolTable = ft::buildSymbolTable()};
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::typeCheck(ctx, std::move(asg));

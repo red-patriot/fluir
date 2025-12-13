@@ -17,7 +17,7 @@ using namespace fluir::literals_types;
 class TestBytecodeGenerator : public ::testing::Test {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx_{.diag = sink_,
+  fluir::Context ctx_{.diagnosticSink = sink_,
                       .symbolTable = fluir::types::buildSymbolTable(),
                       .version = fluir::Version{.major = 0, .minor = 1, .patch = 3}};
 };

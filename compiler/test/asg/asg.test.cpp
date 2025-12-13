@@ -9,7 +9,7 @@
 
 TEST(TestAstBuilder, SingleEmptyFunction) {
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink};
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::ParseTree pt{
     .declarations = {{1,
                       fluir::pt::FunctionDecl{.id = 1,
@@ -32,7 +32,7 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink};
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -66,7 +66,7 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink};
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -106,7 +106,7 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
 
 TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diag = sink};
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{.id = 1,

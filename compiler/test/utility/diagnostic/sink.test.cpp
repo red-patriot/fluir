@@ -26,7 +26,7 @@ namespace {
 
 TEST(TestDiagnosticSink, ThrowOnErrorEmit) {
   TestSink uut;
-  EXPECT_THROW(uut.emitAtElement(fd::Code::GENERIC_ERROR, testFile, {12}), fd::PanicMode);
+  EXPECT_THROW(uut.emitAtElement(fd::Code::GENERIC_ERROR, testFile, {12}), fd::Panic);
 }
 
 TEST(TestDiagnosticSink, NoThrowOnWarningEmit) {
@@ -41,7 +41,7 @@ TEST(TestDiagnosticSink, NoThrowOnNoteEmit) {
 
 TEST(TestDiagnosticSink, ThrowOnErrorEmitWithExtraMsg) {
   TestSink uut;
-  EXPECT_THROW(uut.emitAtLine(fd::Code::GENERIC_ERROR, testFile, 18, "msg"), fd::PanicMode);
+  EXPECT_THROW(uut.emitAtLine(fd::Code::GENERIC_ERROR, testFile, 18, "msg"), fd::Panic);
 }
 
 TEST(TestDiagnosticSink, NoThrowOnWarningEmitWithExtraMsg) {

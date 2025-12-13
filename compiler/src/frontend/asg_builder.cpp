@@ -61,7 +61,7 @@ namespace fluir {
       if (failed) {
         return NoResult;
       }
-    } catch (const diagnostic::PanicMode&) {
+    } catch (const diagnostic::Panic&) {
       return NoResult;
     }
 

@@ -48,7 +48,7 @@ namespace fluir {
       if (!std::filesystem::exists(file)) {
         ctx_.diagnosticSink.emitAtLine(diagnostic::Code::ERROR_FILE_DOES_NOT_EXIST, file, 0);
       }
-    } catch (diagnostic::PanicMode) {
+    } catch (diagnostic::Panic) {
       return NoResult;
     }
 
@@ -102,7 +102,7 @@ namespace fluir {
         declaration(child);
       }
       panicIf(!headerFound, doc_.RootElement(), diagnostic::Code::ERROR_MISSING_MODULE_HEADER);
-    } catch (const diagnostic::PanicMode&) {
+    } catch (const diagnostic::Panic&) {
       // If something goes wrong at this level, there isn't really anything to
       // do except bail
       return false;

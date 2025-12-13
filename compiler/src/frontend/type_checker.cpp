@@ -40,7 +40,7 @@ namespace fluir {
           continue;
         }
         declaration = std::move(result.value());
-      } catch (const diagnostic::PanicMode&) {
+      } catch (const diagnostic::Panic&) {
         failed = true;
       }
     }

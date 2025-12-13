@@ -4,9 +4,11 @@
 #include <concepts>
 
 namespace fluir::diagnostic {
-  struct PanicMode { };
+  /** A unique object to throw to initiate a panic in the compiler. */
+  struct Panic { };
 
-  inline void startPanic() { throw PanicMode{}; }
+  /** Starts a panic*/
+  [[noreturn]] inline void startPanic() { throw Panic{}; }
 
   namespace detail {
     struct PanicGuard {
@@ -15,11 +17,12 @@ namespace fluir::diagnostic {
       friend void operator+(PanicGuard, Func&& func) {
         try {
           func();
-        } catch (const PanicMode&) { }
+        } catch (const Panic&) { }
       }
     };
   }  // namespace detail
 
+  /** Creates a new block used to synchronize a panic. */
 #define FLUIR_SYNCHRONIZE_PANIC(Sink) ::fluir::diagnostic::detail::PanicGuard{} + [&]()
 }  // namespace fluir::diagnostic
 

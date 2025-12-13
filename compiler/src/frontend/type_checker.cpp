@@ -26,7 +26,7 @@ namespace fluir {
         case asg::NodeKind::Cast:
           return checkType(ctx, node->as<asg::Cast>());
         default:
-          ctx.diagnostics.emitInternalError("Unknown node kind encountered");
+          diagnostic::emitInternalError("Unknown node kind encountered");
           return false;
       }
     }
@@ -60,8 +60,9 @@ namespace fluir {
   }
 
   namespace {
-    bool checkType(Context& ctx, asg::Constant* constant) {
+    bool checkType(Context&, asg::Constant* constant) {
       // This is dependent on the order of the types in Literal
+      // TODO: Refactor this to be independent
       switch (constant->value().index()) {
         case 0:  // F64
           constant->setType(types::ID_F64);
@@ -91,7 +92,7 @@ namespace fluir {
           constant->setType(types::ID_U64);
           break;
         default:
-          ctx.diagnostics.emitInternalError("Entered an impossible case");
+          diagnostic::emitInternalError("Entered an impossible case");
           break;
       }
       return true;

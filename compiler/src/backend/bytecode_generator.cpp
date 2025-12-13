@@ -44,7 +44,7 @@ namespace fluir {
 
     // TODO: Handle user-defined ops here
     if (node.lhs()->type() != node.rhs()->type()) {
-      ctx_.diagnostics.emitInternalError("Unexpected type mismatch");
+      diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
@@ -56,7 +56,7 @@ namespace fluir {
       emitUintOperator(node.op());
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -72,7 +72,7 @@ namespace fluir {
       emitUintOperator(node.op(), IS_UNARY);
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -98,7 +98,7 @@ namespace fluir {
     } else if (type == types::ID_U64) {
       constant = addConstant(code::Value(node.u64()));
     } else {
-      ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");
+      diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
     }
     // TODO: Handle too large

@@ -361,7 +361,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
   pt::I32 Parser::i32(Element* element) {
@@ -377,7 +377,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
   pt::I64 Parser::i64(Element* element) {
@@ -393,7 +393,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
 
@@ -410,7 +410,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
   pt::U16 Parser::u16(Element* element) {
@@ -426,7 +426,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
   pt::U32 Parser::u32(Element* element) {
@@ -442,7 +442,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
   pt::U64 Parser::u64(Element* element) {
@@ -458,7 +458,7 @@ namespace fluir {
     panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
             element,
             diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    ctx_.diagnostics.emitInternalError("Control reached an impossible point");
+    diagnostic::emitInternalError("Control reached an impossible point");
     return {};
   }
 

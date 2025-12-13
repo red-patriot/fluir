@@ -17,7 +17,7 @@ namespace fluir {
    public:
     static Results<asg::ASG> buildFrom(Context& ctx, const pt::ParseTree& tree);
 
-    fluir::asg::Declaration operator()(const fluir::pt::FunctionDecl& func);
+    Results<asg::Declaration> operator()(const fluir::pt::FunctionDecl& func);
 
    private:
     Context& ctx_;

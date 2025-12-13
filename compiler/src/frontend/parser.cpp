@@ -72,13 +72,10 @@ namespace fluir {
     doc_.Clear();
     doc_.Parse(source.data());
 
-    flowGraph();
-
-    if (ctx_.diagnostics.containsErrors()) {
+    if (!flowGraph()) {
       return NoResult;
-    } else {
-      return std::move(tree_);
     }
+    return std::move(tree_);
   }
 
   bool Parser::flowGraph() {

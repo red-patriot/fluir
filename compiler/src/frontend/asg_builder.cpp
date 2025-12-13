@@ -34,24 +34,31 @@ namespace fluir {
 
   ASGBuilder::ASGBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
 
-  fluir::asg::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
+  Results<asg::Declaration> ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
     fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
 
     auto bodyResults = buildDataFlowGraph(ctx_, func.body, {func.id});
 
-    if (!ctx_.diagnostics.containsErrors()) {
-      decl.statements = std::move(bodyResults.value());
+    if (!bodyResults) {
+      return NoResult;
     }
+    decl.statements = std::move(bodyResults.value());
 
     return decl;
   }
 
   Results<asg::ASG> ASGBuilder::run() {
     try {
+      bool failed = false;
       for (const auto& declaration : tree_.declarations | std::views::values) {
-        graph_.declarations.emplace_back(std::visit(*this, declaration));
+        auto declAsg = std::visit(*this, declaration);
+        if (declAsg.has_value()) {
+          graph_.declarations.emplace_back(std::move(declAsg.value()));
+        } else {
+          failed = true;
+        }
       }
-      if (ctx_.diagnostics.containsErrors()) {
+      if (failed) {
         return NoResult;
       }
     } catch (const diagnostic::PanicMode&) {

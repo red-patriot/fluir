@@ -534,6 +534,4 @@ namespace fluir {
       std::unreachable();
     }
   }
-
-  std::string Parser::SourceLocation::str() const { return fmt::format("on line {} of '{}'", lineNo, filename); }
 }  // namespace fluir

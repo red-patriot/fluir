@@ -2,8 +2,6 @@
 
 #include <fmt/format.h>
 
-#include "compiler/models/asg/diagnostic_location.hpp"
-
 namespace fluir {
   namespace {
     bool checkType(Context& ctx, asg::Constant* constant);

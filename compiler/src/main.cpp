@@ -13,12 +13,6 @@
 namespace fs = std::filesystem;
 
 namespace {
-  void printDiagnostics(const fluir::Diagnostics& diagnostics) {
-    for (const auto& diagnostic : diagnostics) {
-      std::cout << fluir::toString(diagnostic) << '\n';
-    }
-  }
-
   fluir::Results<fluir::asg::ASG> runFrontend(fluir::Context& ctx, const fs::path& source) {
     auto parseTree = fluir::parseFile(ctx, source);
     if (!parseTree) {

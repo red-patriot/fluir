@@ -73,19 +73,6 @@ namespace fluir {
     template <typename... FmtArgs>
     void panicIf(
       bool condition, Element*, diagnostic::Code code, fmt::format_string<FmtArgs...> format = "", FmtArgs&&... args);
-
-    /** Line and file information for a Diagnostic.
-     * Used to indicate a file's syntax is not correct in some way.
-     */
-    class SourceLocation : public Diagnostic::Location {
-     public:
-      SourceLocation(int line, std::string file) : lineNo(line), filename(std::move(file)) { }
-      std::string str() const override;
-
-     private:
-      int lineNo;           /**< The line number of the element at which the diagnostic originates */
-      std::string filename; /**< The file from which the diagnostic originates */
-    };
   };
 }  // namespace fluir
 

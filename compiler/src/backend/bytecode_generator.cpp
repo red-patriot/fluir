@@ -159,7 +159,8 @@ namespace fluir {
     }
     current_.constants.emplace_back(std::move(value));
     if (current_.constants.size() > UINT8_MAX) {
-      ctx_.diagnostics.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
+      // TODO: Fix this limitation
+      diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
     }
     return current_.constants.size() - 1;
   }
@@ -220,7 +221,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -254,7 +255,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -284,7 +285,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }

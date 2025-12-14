@@ -34,23 +34,34 @@ namespace fluir {
 
   ASGBuilder::ASGBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
 
-  fluir::asg::Declaration ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
+  Results<asg::Declaration> ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
     fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
 
     auto bodyResults = buildDataFlowGraph(ctx_, func.body, {func.id});
 
-    if (!ctx_.diagnostics.containsErrors()) {
-      decl.statements = std::move(bodyResults.value());
+    if (!bodyResults) {
+      return NoResult;
     }
+    decl.statements = std::move(bodyResults.value());
 
     return decl;
   }
 
   Results<asg::ASG> ASGBuilder::run() {
-    for (const auto& declaration : tree_.declarations | std::views::values) {
-      graph_.declarations.emplace_back(std::visit(*this, declaration));
-    }
-    if (ctx_.diagnostics.containsErrors()) {
+    try {
+      bool failed = false;
+      for (const auto& declaration : tree_.declarations | std::views::values) {
+        auto declAsg = std::visit(*this, declaration);
+        if (declAsg.has_value()) {
+          graph_.declarations.emplace_back(std::move(declAsg.value()));
+        } else {
+          failed = true;
+        }
+      }
+      if (failed) {
+        return NoResult;
+      }
+    } catch (const diagnostic::Panic&) {
       return NoResult;
     }
 
@@ -103,8 +114,7 @@ namespace fluir {
     if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
       // TODO: Detect which nodes form the cycle
-      ctx_.diagnostics.emitError("Circular dependency detected.");
-      return NoResult;
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     for (const auto& ptNode : sinkNodes) {
@@ -131,8 +141,7 @@ namespace fluir {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
       // TODO: Detect which nodes form the cycle
-      ctx_.diagnostics.emitError("Circular dependency detected.");
-      return nullptr;
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     if (alreadyFound_.contains(dependencyId)) {

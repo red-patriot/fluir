@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "compiler/types/builtin_symbols.hpp"
+#include "test_diagnostic_sink.hpp"
 
 namespace fa = fluir::asg;
 namespace ft = fluir::types;
@@ -28,11 +29,12 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) 
   decl.statements.emplace_back(
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -52,11 +54,12 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) 
   decl.statements.emplace_back(
     std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -77,11 +80,12 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) 
   decl.statements.emplace_back(
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, lhs, rhs, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -104,11 +108,12 @@ TEST(TestDeclaractionTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
   decl.statements.emplace_back(
     std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS, n3, n2, fluir::FullID{1, 4}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_F64;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -133,11 +138,12 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   decl.statements.emplace_back(
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->statements.front();
 
@@ -157,11 +163,12 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
   decl.statements.emplace_back(
     std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, operand, fluir::FullID{1, 3}, fluir::FlowGraphLocation{}));
 
-  fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
 
   const auto result = fluir::typeCheck(ctx, std::move(asg));
-  EXPECT_FALSE(ctx.diagnostics.containsErrors());
+  EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->declarations.front().statements.front();
 

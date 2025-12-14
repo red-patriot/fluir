@@ -1,1 +1,1 @@
-[ERROR] on line 4 of 'ill_formed_version.fl': Unexpected element 'version-bad' in program header.
+ERROR_UNEXPECTED_ELEMENT

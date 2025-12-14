@@ -5,9 +5,11 @@
 #include "compiler/frontend/asg_builder.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"
+#include "test_diagnostic_sink.hpp"
 
 TEST(TestAstBuilder, SingleEmptyFunction) {
-  fluir::Context ctx;
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::ParseTree pt{
     .declarations = {{1,
                       fluir::pt::FunctionDecl{.id = 1,
@@ -19,9 +21,8 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 
   auto results = fluir::buildGraph(ctx, pt);
   auto& actual = results.value();
-  auto& diagnostics = ctx.diagnostics;
 
-  ASSERT_FALSE(diagnostics.containsErrors());
+  ASSERT_FALSE(sink.containsErrors());
   EXPECT_EQ(1, actual.declarations.size());
   EXPECT_EQ(1, actual.declarations.front().id);
   EXPECT_EQ(expectedLocation, actual.declarations.front().location);
@@ -30,7 +31,8 @@ TEST(TestAstBuilder, SingleEmptyFunction) {
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
-  fluir::Context ctx;
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -49,9 +51,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
 
   auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = ctx.diagnostics;
 
-  ASSERT_FALSE(diagnostics.containsErrors());
+  ASSERT_FALSE(sink.containsErrors());
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
@@ -64,7 +65,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
-  fluir::Context ctx;
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{
@@ -84,9 +86,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
 
   auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = ctx.diagnostics;
 
-  ASSERT_FALSE(diagnostics.containsErrors());
+  ASSERT_FALSE(sink.containsErrors());
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
@@ -104,7 +105,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
 }
 
 TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
-  fluir::Context ctx;
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink};
   fluir::pt::Block block = {
     .nodes = {{1,
                fluir::pt::Binary{.id = 1,
@@ -134,9 +136,8 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
 
   auto results = fluir::buildDataFlowGraph(ctx, block);
   auto& actual = results.value();
-  auto& diagnostics = ctx.diagnostics;
 
-  ASSERT_FALSE(diagnostics.containsErrors());
+  ASSERT_FALSE(sink.containsErrors());
   ASSERT_EQ(2, actual.size());
   auto statement =
     std::ranges::find_if(actual, [](const auto& statement) { return statement->template is<fluir::asg::BinaryOp>(); });

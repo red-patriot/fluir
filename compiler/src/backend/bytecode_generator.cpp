@@ -44,7 +44,7 @@ namespace fluir {
 
     // TODO: Handle user-defined ops here
     if (node.lhs()->type() != node.rhs()->type()) {
-      ctx_.diagnostics.emitInternalError("Unexpected type mismatch");
+      diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
@@ -56,7 +56,7 @@ namespace fluir {
       emitUintOperator(node.op());
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -72,7 +72,7 @@ namespace fluir {
       emitUintOperator(node.op(), IS_UNARY);
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -98,7 +98,7 @@ namespace fluir {
     } else if (type == types::ID_U64) {
       constant = addConstant(code::Value(node.u64()));
     } else {
-      ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");
+      diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
     }
     // TODO: Handle too large
@@ -159,7 +159,8 @@ namespace fluir {
     }
     current_.constants.emplace_back(std::move(value));
     if (current_.constants.size() > UINT8_MAX) {
-      ctx_.diagnostics.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
+      // TODO: Fix this limitation
+      diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
     }
     return current_.constants.size() - 1;
   }
@@ -220,7 +221,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -254,7 +255,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -284,7 +285,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }

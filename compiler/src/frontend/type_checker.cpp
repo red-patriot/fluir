@@ -2,8 +2,6 @@
 
 #include <fmt/format.h>
 
-#include "compiler/models/asg/diagnostic_location.hpp"
-
 namespace fluir {
   namespace {
     bool checkType(Context& ctx, asg::Constant* constant);
@@ -26,21 +24,26 @@ namespace fluir {
         case asg::NodeKind::Cast:
           return checkType(ctx, node->as<asg::Cast>());
         default:
-          ctx.diagnostics.emitInternalError("Unknown node kind encountered");
-          return false;
+          diagnostic::emitInternalError("Unknown node kind encountered");
       }
     }
   }  // namespace
 
   Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph) {
+    bool failed = false;
     for (auto& declaration : graph.declarations) {
-      auto result = checkDeclType(ctx, std::move(declaration));
-      if (!result.has_value()) {
-        return NoResult;
+      try {
+        auto result = checkDeclType(ctx, std::move(declaration));
+        if (!result.has_value()) {
+          failed = true;
+          continue;
+        }
+        declaration = std::move(result.value());
+      } catch (const diagnostic::Panic&) {
+        failed = true;
       }
-      declaration = std::move(result.value());
     }
-    return graph;
+    return failed ? NoResult : std::make_optional(std::move(graph));
   }
 
   Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl) {
@@ -54,8 +57,9 @@ namespace fluir {
   }
 
   namespace {
-    bool checkType(Context& ctx, asg::Constant* constant) {
+    bool checkType(Context&, asg::Constant* constant) {
       // This is dependent on the order of the types in Literal
+      // TODO: Refactor this to be independent
       switch (constant->value().index()) {
         case 0:  // F64
           constant->setType(types::ID_F64);
@@ -85,7 +89,7 @@ namespace fluir {
           constant->setType(types::ID_U64);
           break;
         default:
-          ctx.diagnostics.emitInternalError("Entered an impossible case");
+          diagnostic::emitInternalError("Entered an impossible case");
           break;
       }
       return true;
@@ -101,13 +105,13 @@ namespace fluir {
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
       if (!selectedOverload) {
-        ctx.diagnostics.emitError(
-          fmt::format("No suitable operator candidates for binary {} with operand types {}, {}.",
-                      stringify(binary->op()),
-                      ctx.symbolTable.getType(lhs)->name(),
-                      ctx.symbolTable.getType(rhs)->name()),
-          std::make_shared<asg::DiagnosticLocation>(ctx.currentFile.filename().string(), binary));
-        return false;
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                                         ctx.currentFile,
+                                         binary->fullId(),
+                                         "No binary {} exists with operand types {}, {}.",
+                                         stringify(binary->op()),
+                                         ctx.symbolTable.getType(lhs)->name(),
+                                         ctx.symbolTable.getType(rhs)->name());
       }
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
@@ -130,11 +134,12 @@ namespace fluir {
       const auto operand = unary->operand()->type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
       if (!selectedOverload) {
-        ctx.diagnostics.emitError(
-          fmt::format("No suitable operator candidates for unary {} with operand type {}.",
-                      stringify(unary->op()),
-                      ctx.symbolTable.getType(operand)->name()),
-          std::make_shared<asg::DiagnosticLocation>(ctx.currentFile.filename().string(), unary));
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
+                                         ctx.currentFile,
+                                         unary->fullId(),
+                                         "No unary {} exists with operand type {}.",
+                                         stringify(unary->op()),
+                                         ctx.symbolTable.getType(operand)->name());
         return false;
       }
       unary->setDefinition(selectedOverload);

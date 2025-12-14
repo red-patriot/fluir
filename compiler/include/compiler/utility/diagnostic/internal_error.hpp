@@ -13,7 +13,7 @@ namespace fluir::diagnostic {
   };
 
   /** Emits an internal error. */
-  inline void emitInternalError(std::string_view message) { throw InternalError{std::string(message)}; }
+  [[noreturn]] inline void emitInternalError(std::string_view message) { throw InternalError{std::string(message)}; }
 }  // namespace fluir::diagnostic
 
 #endif

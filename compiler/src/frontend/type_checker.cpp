@@ -25,7 +25,6 @@ namespace fluir {
           return checkType(ctx, node->as<asg::Cast>());
         default:
           diagnostic::emitInternalError("Unknown node kind encountered");
-          return false;
       }
     }
   }  // namespace

@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/utility/diagnostic/pretty_msg.hpp"
 #include "compiler/utility/diagnostics.hpp"

@@ -1,0 +1,4 @@
+#ifndef FLUIR_UTILITY_TRIE_HPP
+#define FLUIR_UTILITY_TRIE_HPP
+
+#endif

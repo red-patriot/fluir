@@ -35,3 +35,14 @@ TEST(TestTrie, ContainsWithMultipleElementsOfDifferingLengths) {
   EXPECT_FALSE(uut.contains("a"));
   EXPECT_FALSE(uut.contains("asdf"));
 }
+
+TEST(TestTrie, CanRetrieveElements) {
+  Trie<int> uut{0, {{"abc", 1}, {"hello", 2}, {"abdd", 3}, {"ad", 4}, {"stuff", 5}}};
+
+  EXPECT_EQ(0, uut.at("asdf"));  // Non contained elements are the default
+  EXPECT_EQ(1, uut.at("abc"));
+  EXPECT_EQ(2, uut.at("hello"));
+  EXPECT_EQ(3, uut.at("abdd"));
+  EXPECT_EQ(4, uut.at("ad"));
+  EXPECT_EQ(5, uut.at("stuff"));
+}

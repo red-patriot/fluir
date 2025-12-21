@@ -52,8 +52,12 @@ namespace fluir::util {
   }
 
   template <std::copyable T>
-  Trie<T>::const_reference Trie<T>::at(key_type) const {
-    return default_;
+  Trie<T>::const_reference Trie<T>::at(key_type key) const {
+    auto value = findRest(key, root_);
+    if (!value) {
+      return default_;
+    }
+    return *value;
   }
 
   template <std::copyable T>

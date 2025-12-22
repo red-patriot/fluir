@@ -19,6 +19,11 @@ namespace fluir::util {
     using const_reference = const value_type&;
 
     Trie(const_reference defaultValue, const std::initializer_list<std::pair<key_type, value_type>>& entries);
+    // Delete copy and move since we don't need them for now...
+    Trie(const Trie&) = delete;
+    Trie& operator=(const Trie&) = delete;
+    Trie(Trie&& other) = delete;
+    Trie& operator=(Trie&& other) = delete;
     ~Trie();
 
     const_reference at(key_type key) const;

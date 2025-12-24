@@ -119,6 +119,21 @@ namespace fluir {
             stack_.emplace_back(val);
             break;
           }
+        case GET_VAL:
+          {
+            const auto index = FLUIR_READ_BYTE();
+            if (!(stack_.size() < 256)) {
+              return ExecResult::ERROR;
+            }
+            stack_.emplace_back(current_->constants[index]);
+            break;
+          }
+        case SET_VAL:
+          {
+            const auto index = FLUIR_READ_BYTE();
+            stack_[index] = stack_.back();
+            break;
+          }
         case F64_ADD:
           floatBinary<std::plus<code::F64>>();
           break;

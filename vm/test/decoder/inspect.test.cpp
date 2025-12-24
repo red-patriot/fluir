@@ -392,3 +392,31 @@ CHUNK foo
     EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
   }
 }
+
+TEST(TestInspectDecoder, DecodesGetSetValInstructions) {
+  std::string source = R"(I07220A000000000000001A
+CHUNK foo
+  CONSTANTS x1
+    VF64 7.0
+  CODE x9
+    IPUSH x0
+    IGET_VAL x0
+    ISET_VAL x0
+    IPOP
+    IPOP
+    IEXIT
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .chunks = {fluir::code::Chunk{.name = "foo",
+                                  .code = {PUSH, 0x0, GET_VAL, 0x0, SET_VAL, 0x0, POP, POP, EXIT},
+                                  .constants = {7.000000000000_f64}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}

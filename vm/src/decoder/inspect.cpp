@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "fluir/util/macros.hpp"
 #include "fluir/util/trie.hpp"
 
 namespace fluir {
@@ -162,30 +163,17 @@ namespace fluir {
   }
 
   TokenType InspectDecoder::decodeIdentifierType() {
-    static const util::Trie keywords{
-      TokenType::IDENTIFIER, {{"CHUNK", TokenType::CHUNK},           {"CODE", TokenType::CODE},
-                              {"CONSTANTS", TokenType::CONSTANTS},   {"IEXIT", TokenType::INST_EXIT},
-                              {"IPOP", TokenType::INST_POP},         {"IPUSH", TokenType::INST_PUSH},
-                              {"IF64_ADD", TokenType::INST_F64_ADD}, {"IF64_SUB", TokenType::INST_F64_SUB},
-                              {"IF64_MUL", TokenType::INST_F64_MUL}, {"IF64_DIV", TokenType::INST_F64_DIV},
-                              {"IF64_NEG", TokenType::INST_F64_NEG}, {"IF64_AFF", TokenType::INST_F64_AFF},
-                              {"IF64_INC", TokenType::INST_F64_INC}, {"IF64_DEC", TokenType::INST_F64_DEC},
-                              {"II64_ADD", TokenType::INST_I64_ADD}, {"II64_SUB", TokenType::INST_I64_SUB},
-                              {"II64_MUL", TokenType::INST_I64_MUL}, {"II64_DIV", TokenType::INST_I64_DIV},
-                              {"II64_NEG", TokenType::INST_I64_NEG}, {"II64_AFF", TokenType::INST_I64_AFF},
-                              {"II64_INC", TokenType::INST_I64_INC}, {"II64_DEC", TokenType::INST_I64_DEC},
-                              {"IU64_ADD", TokenType::INST_U64_ADD}, {"IU64_SUB", TokenType::INST_U64_SUB},
-                              {"IU64_MUL", TokenType::INST_U64_MUL}, {"IU64_DIV", TokenType::INST_U64_DIV},
-                              {"IU64_AFF", TokenType::INST_U64_AFF}, {"IU64_INC", TokenType::INST_U64_INC},
-                              {"IU64_DEC", TokenType::INST_U64_DEC}, {"ICAST_IU", TokenType::INST_CAST_IU},
-                              {"ICAST_UI", TokenType::INST_CAST_UI}, {"ICAST_IF", TokenType::INST_CAST_IF},
-                              {"ICAST_UF", TokenType::INST_CAST_UF}, {"ICAST_FI", TokenType::INST_CAST_FI},
-                              {"ICAST_FU", TokenType::INST_CAST_FU}, {"ICAST_WIDTH", TokenType::INST_CAST_WIDTH},
-                              {"VF64", TokenType::TYPE_F64},         {"VI8", TokenType::TYPE_I8},
-                              {"VI16", TokenType::TYPE_I16},         {"VI32", TokenType::TYPE_I32},
-                              {"VI64", TokenType::TYPE_I64},         {"VU8", TokenType::TYPE_U8},
-                              {"VU16", TokenType::TYPE_U16},         {"VU32", TokenType::TYPE_U32},
-                              {"VU64", TokenType::TYPE_U64}}};
+    static const util::Trie keywords{TokenType::IDENTIFIER,
+                                     {{"CHUNK", TokenType::CHUNK},
+                                      {"CODE", TokenType::CODE},
+                                      {"CONSTANTS", TokenType::CONSTANTS},
+#define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
+                                      FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
+#undef FLUIR_INSTRUCTION_BRANCHES
+#define FLUIR_TYPE_BRANCHES(type, concrete) {FLUIR_STRINGIFY(FLUIR_CCAT(V, type)), FLUIR_CCAT(TokenType::TYPE_, type)},
+                                        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_BRANCHES)
+#undef FLUIR_TYPE_BRANCHES
+                                     }};
 
     std::string_view word{start_, current_};
     TokenType tokenType;

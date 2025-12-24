@@ -1,0 +1,9 @@
+#ifndef FLUIR_UTILITY_MACROS_HPP
+#define FLUIR_UTILITY_MACROS_HPP
+
+#define FLUIR_STRINGIFY_IMPL(x) #x
+#define FLUIR_STRINGIFY(x) FLUIR_STRINGIFY_IMPL(x)
+
+#define FLUIR_CCAT(a, b) a##b
+
+#endif

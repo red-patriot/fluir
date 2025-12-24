@@ -26,7 +26,9 @@ namespace fluir::util {
     Trie& operator=(Trie&& other) = delete;
     ~Trie();
 
+    /** Accesses the element at the given key, or the default if the key is not found. */
     const_reference at(key_type key) const;
+    /** Returns true if the element is found in the trie, false otherwise. */
     bool contains(key_type key) const;
 
    private:
@@ -38,8 +40,8 @@ namespace fluir::util {
       std::variant<nodes, value_type> value;
     };
 
-    value_type default_{};
-    Node* root_{};
+    value_type default_{}; /**< The default value. */
+    Node* root_{};         /**< The root of the tree structure */
 
     void insert(key_type key, const value_type& value, Node* node);
     value_type const* findRest(const key_type& rest, Node* node) const;

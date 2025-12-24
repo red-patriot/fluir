@@ -32,6 +32,7 @@ option(
 create_version_files()
 
 add_subdirectory(bytecode)
+add_subdirectory(utility)
 add_subdirectory(compiler)
 add_subdirectory(vm)
 

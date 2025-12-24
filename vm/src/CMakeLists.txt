@@ -20,7 +20,7 @@ target_include_directories(
     fluir.libvm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../include
 )
 
-target_link_libraries(fluir.libvm PUBLIC fluir::code)
+target_link_libraries(fluir.libvm PUBLIC fluir::code fluir::utility)
 
 add_executable(fluir.vm main.cpp)
 

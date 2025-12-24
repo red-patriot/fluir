@@ -7,6 +7,7 @@
 #include <fmt/format.h>
 
 #include "compiler/frontend/text_parse.hpp"
+#include "fluir/util/trie.hpp"
 
 using namespace std::string_literals;
 
@@ -168,14 +169,16 @@ namespace fluir {
   }
 
   void Parser::declaration(Element* element) {
+    static const util::Trie<void (*)(Parser* p, Element* e)> declarationParsers{
+      [](Parser* p, Element* e) -> void {
+        p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a declaration.");
+      },
+      {{"function", [](Parser* p, Element* e) -> void { p->functionDecl(e); }}}};
+
     std::string_view name = element->Name();
     FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
-      // TODO: This could use a trie
-      if (name == "function") {
-        functionDecl(element);
-      } else {
-        panicAt(element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a declaration.");
-      }
+      auto declarationParser = declarationParsers.at(name);
+      declarationParser(this, element);
     };
   }
 
@@ -222,18 +225,19 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Node> Parser::node(Element* element) {
-    // TODO: This could use a trie
+    using NodeIdPair = std::pair<ID, pt::Node>;
+    static const util::Trie<NodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
+      [](Parser* p, Element* e) -> NodeIdPair {
+        p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a node.");
+        std::unreachable();
+      },
+      {{"constant", [](Parser* p, Element* e) -> NodeIdPair { return p->constant(e); }},
+       {"binary", [](Parser* p, Element* e) -> NodeIdPair { return p->binary(e); }},
+       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }}}};
+
     std::string_view type = element->Name();
-    if (type == "constant") {
-      return constant(element);
-    } else if (type == "binary") {
-      return binary(element);
-    } else if (type == "unary") {
-      return unary(element);
-    } else {
-      panicAt(element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a node.");
-      std::unreachable();
-    }
+    auto nodeParser = nodeParsers.at(type);
+    return nodeParser(this, element);
   }
 
   std::pair<ID, pt::Conduit> Parser::conduit(Element* element) {
@@ -292,31 +296,26 @@ namespace fluir {
   }
 
   pt::Literal Parser::literal(Element* element) {
-    // TODO: This could use a trie to be faster
-    // TODO: Support other literal types
+    static const util::Trie<pt::Literal (*)(Parser*, Element*)> literalParsers{
+      // TODO: Support other literal types
+      [](Parser* self, Element* element) -> pt::Literal {
+        self->panicAt(
+          element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "'<{}>'  is not a valid literal type.", element->Name());
+        std::unreachable();
+      },
+      {{"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
+       {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
+       {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
+       {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
+       {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
+       {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
+       {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
+       {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
+       {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }}}};
+
     std::string_view name = element->Name();
-    if (name == "f64") {
-      return f64(element);
-    } else if (name == "i8") {
-      return i8(element);
-    } else if (name == "i16") {
-      return i16(element);
-    } else if (name == "i32") {
-      return i32(element);
-    } else if (name == "i64") {
-      return i64(element);
-    } else if (name == "u8") {
-      return u8(element);
-    } else if (name == "u16") {
-      return u16(element);
-    } else if (name == "u32") {
-      return u32(element);
-    } else if (name == "u64") {
-      return u64(element);
-    }
-    panicAt(
-      element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "'<{}>'  is not a valid literal type.", element->Name());
-    std::unreachable();
+    auto* literalParser = literalParsers.at(name);
+    return literalParser(this, element);
   }
   pt::F64 Parser::f64(Element* element) {
     double value = 0.0;

@@ -61,6 +61,7 @@ target_include_directories(
 target_link_libraries(
     fluir.libcompiler
     PUBLIC fluir::code
+           fluir::utility
            fmt::fmt
            tinyxml2::tinyxml2
 )

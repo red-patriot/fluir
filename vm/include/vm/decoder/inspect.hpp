@@ -57,13 +57,6 @@ namespace fluir {
     void eatWhitespace();
 
     TokenType decodeIdentifierType();
-    TokenType checkKeyword(std::string_view expected, TokenType type);
-    TokenType checkPrimitiveType();
-    TokenType checkInstruction();
-    TokenType checkCastInstruction();
-    TokenType checkFPInstruction();
-    TokenType checkIntInstruction();
-    TokenType checkUintInstruction();
     Token createToken(TokenType type);
     size_t toUnsignedInteger(Token rawNumber);
 

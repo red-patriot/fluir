@@ -14,10 +14,10 @@ set(FLUIR_FRONTEND_TEST_SOURCES
     frontend/type_errors.test.cpp
 )
 
-set(FLUIR_ASG_TEST_SOURCES
-    asg/asg_errors.test.cpp
-    asg/asg_parser_integration.test.cpp
-    asg/asg.test.cpp
+set(FLUIR_AST_TEST_SOURCES
+    ast/ast_errors.test.cpp
+    ast/ast_parser_integration.test.cpp
+    ast/ast.test.cpp
 )
 
 set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
@@ -35,7 +35,7 @@ target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
             ${FLUIR_FRONTEND_TEST_SOURCES}
-            ${FLUIR_ASG_TEST_SOURCES}
+            ${FLUIR_AST_TEST_SOURCES}
             ${FLUIR_BACKEND_TEST_SOURCES}
             ${FLUIR_TYPES_TEST_SOURCES}
             scope_guard.test.cpp

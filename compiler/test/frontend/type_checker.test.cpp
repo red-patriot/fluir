@@ -5,7 +5,7 @@
 #include "compiler/types/builtin_symbols.hpp"
 #include "test_diagnostic_sink.hpp"
 
-namespace fa = fluir::asg;
+namespace fa = fluir::ast;
 namespace ft = fluir::types;
 
 TEST(TestDeclaractionTypeChecker, HandlesSingleConstant) {
@@ -155,9 +155,9 @@ TEST(TestDeclaractionTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
 }
 
 TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
-  fa::ASG asg{.declarations = {}};
-  asg.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
-  auto& decl = asg.declarations.front();
+  fa::AST ast{.declarations = {}};
+  ast.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
+  auto& decl = ast.declarations.front();
   auto operand = std::make_shared<fa::Constant>(
     static_cast<fluir::literals_types::U8>(7), fluir::FullID{1, 1}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
@@ -167,7 +167,7 @@ TEST(TestDeclaractionTypeChecker, HandlesFunctionDecl) {
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
   const auto expected = fluir::types::ID_U8;
 
-  const auto result = fluir::typeCheck(ctx, std::move(asg));
+  const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& actual = result->declarations.front().statements.front();

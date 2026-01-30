@@ -1,4 +1,4 @@
-#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/ast_builder.hpp"
 
 #include <algorithm>
 #include <ranges>
@@ -25,17 +25,17 @@ namespace {
 }  // namespace
 
 namespace fluir {
-  Results<asg::ASG> buildGraph(Context& ctx, const pt::ParseTree& tree) { return ASGBuilder::buildFrom(ctx, tree); }
+  Results<ast::AST> buildGraph(Context& ctx, const pt::ParseTree& tree) { return ASTBuilder::buildFrom(ctx, tree); }
 
-  Results<asg::ASG> ASGBuilder::buildFrom(Context& ctx, const pt::ParseTree& tree) {
-    ASGBuilder builder{ctx, tree};
+  Results<ast::AST> ASTBuilder::buildFrom(Context& ctx, const pt::ParseTree& tree) {
+    ASTBuilder builder{ctx, tree};
     return builder.run();
   }
 
-  ASGBuilder::ASGBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
+  ASTBuilder::ASTBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
 
-  Results<asg::Declaration> ASGBuilder::operator()(const fluir::pt::FunctionDecl& func) {
-    fluir::asg::FunctionDecl decl{func.id, func.location, func.name, {}};
+  Results<ast::Declaration> ASTBuilder::operator()(const fluir::pt::FunctionDecl& func) {
+    fluir::ast::FunctionDecl decl{func.id, func.location, func.name, {}};
 
     auto bodyResults = buildDataFlowGraph(ctx_, func.body, {func.id});
 
@@ -47,13 +47,13 @@ namespace fluir {
     return decl;
   }
 
-  Results<asg::ASG> ASGBuilder::run() {
+  Results<ast::AST> ASTBuilder::run() {
     try {
       bool failed = false;
       for (const auto& declaration : tree_.declarations | std::views::values) {
-        auto declAsg = std::visit(*this, declaration);
-        if (declAsg.has_value()) {
-          graph_.declarations.emplace_back(std::move(declAsg.value()));
+        auto declAst = std::visit(*this, declaration);
+        if (declAst.has_value()) {
+          graph_.declarations.emplace_back(std::move(declAst.value()));
         } else {
           failed = true;
         }
@@ -68,11 +68,11 @@ namespace fluir {
     return std::move(graph_);
   }
 
-  Results<asg::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block, std::vector<ID> parents) {
+  Results<ast::DataFlowGraph> buildDataFlowGraph(Context& ctx, pt::Block block, std::vector<ID> parents) {
     return FlowGraphBuilder::buildFrom(ctx, std::move(block), std::move(parents));
   }
 
-  Results<asg::DataFlowGraph> FlowGraphBuilder::buildFrom(Context& ctx, pt::Block block, std::vector<ID> parents) {
+  Results<ast::DataFlowGraph> FlowGraphBuilder::buildFrom(Context& ctx, pt::Block block, std::vector<ID> parents) {
     FlowGraphBuilder builder{ctx, std::move(block), std::move(parents)};
 
     return builder.run();
@@ -81,34 +81,34 @@ namespace fluir {
   FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents) :
     ctx_(ctx), block_(std::move(block)), parents_(std::move(parents)) { }
 
-  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
+  ast::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     parents_.push_back(pt.id);
     FLUIR_SCOPE_EXIT { parents_.pop_back(); };
-    return std::make_unique<asg::BinaryOp>(
+    return std::make_unique<ast::BinaryOp>(
       pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), parents_, pt.location);
   }
 
-  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
+  ast::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
     parents_.push_back(pt.id);
     FLUIR_SCOPE_EXIT { parents_.pop_back(); };
 
-    return std::make_unique<asg::UnaryOp>(pt.op, getDependency(pt.id, 0), parents_, pt.location);
+    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), parents_, pt.location);
   };
 
-  asg::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
+  ast::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
     parents_.push_back(pt.id);
     FLUIR_SCOPE_EXIT { parents_.pop_back(); };
-    return std::make_unique<asg::Constant>(pt.value, parents_, pt.location);
+    return std::make_unique<ast::Constant>(pt.value, parents_, pt.location);
   }
 
-  Results<asg::DataFlowGraph> FlowGraphBuilder::run() {
+  Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     // Find a Node without dependents in the graph
     const auto sinkNodes = getSinkNodes(block_);
     if (sinkNodes.empty() && !block_.nodes.empty()) {
@@ -118,14 +118,14 @@ namespace fluir {
     }
 
     for (const auto& ptNode : sinkNodes) {
-      auto asgNode = std::visit(*this, block_.nodes.at(ptNode));
-      graph_.emplace_back(std::move(asgNode));
+      auto astNode = std::visit(*this, block_.nodes.at(ptNode));
+      graph_.emplace_back(std::move(astNode));
     }
 
     return std::move(graph_);
   }
 
-  asg::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
+  ast::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
     // Find the dependency of ID:index in the graph
     const auto dependencyPt =
       std::ranges::find_if(block_.conduits, [&dependentId, &index](const pt::Block::Conduits::value_type& v) {
@@ -148,7 +148,7 @@ namespace fluir {
       return alreadyFound_.at(dependencyId);
     }
     auto& pt = block_.nodes.at(dependencyId);  // TODO: Handle missing ID
-    asg::SharedDependency dependency{std::visit(*this, pt)};
+    ast::SharedDependency dependency{std::visit(*this, pt)};
     alreadyFound_.insert({dependencyId, dependency});
     return dependency;
   }

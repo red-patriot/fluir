@@ -3,19 +3,19 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/debug/asg_printer.hpp"
-#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/debug/ast_printer.hpp"
+#include "compiler/frontend/ast_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "file_utility.hpp"
 #include "test_diagnostic_sink.hpp"
 
 namespace fs = std::filesystem;
 
-class TestAsgParserIntegration : public ::testing::TestWithParam<fs::path> { };
+class TestAstParserIntegration : public ::testing::TestWithParam<fs::path> { };
 
-TEST_P(TestAsgParserIntegration, Test) {
+TEST_P(TestAstParserIntegration, Test) {
   const auto& programFile = GetParam();
-  const auto outputFile = fs::path{programFile}.replace_extension(".asg");
+  const auto outputFile = fs::path{programFile}.replace_extension(".ast");
   const auto expected = fluir::test::readContents(outputFile);
 
   fluir::test::TestDiagnosticSink sink{};
@@ -26,7 +26,7 @@ TEST_P(TestAsgParserIntegration, Test) {
   auto results = fluir::buildGraph(ctx, pt.value());
 
   std::stringstream ss;
-  fluir::debug::AsgPrinter printer{ss, true};
+  fluir::debug::AstPrinter printer{ss, true};
   printer.print(results.value());
 
   auto actual = ss.str();
@@ -34,7 +34,7 @@ TEST_P(TestAsgParserIntegration, Test) {
   EXPECT_EQ(expected, actual);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestAsgParserIntegration,
-                         TestAsgParserIntegration,
-                         ::testing::ValuesIn(fluir::test::getTestPrograms("asg")),
+INSTANTIATE_TEST_SUITE_P(TestAstParserIntegration,
+                         TestAstParserIntegration,
+                         ::testing::ValuesIn(fluir::test::getTestPrograms("ast")),
                          fluir::test::filePathName);

@@ -5,7 +5,7 @@
 #include "bytecode/version.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
-#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/ast_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
@@ -13,20 +13,20 @@
 namespace fs = std::filesystem;
 
 namespace {
-  fluir::Results<fluir::asg::ASG> runFrontend(fluir::Context& ctx, const fs::path& source) {
+  fluir::Results<fluir::ast::AST> runFrontend(fluir::Context& ctx, const fs::path& source) {
     auto parseTree = fluir::parseFile(ctx, source);
     if (!parseTree) {
       return fluir::NoResult;
     }
-    auto asg = fluir::buildGraph(ctx, *parseTree);
-    if (!asg) {
+    auto ast = fluir::buildGraph(ctx, *parseTree);
+    if (!ast) {
       return fluir::NoResult;
     }
-    asg = fluir::typeCheck(ctx, std::move(*asg));
-    if (!asg) {
+    ast = fluir::typeCheck(ctx, std::move(*ast));
+    if (!ast) {
       return fluir::NoResult;
     }
-    return asg;
+    return ast;
   }
 }  // namespace
 
@@ -47,12 +47,12 @@ int main(int argc, char** argv) {
     fluir::Context ctx{.version = fluir::CURRENT_VERSION};
     ctx.symbolTable = fluir::types::buildSymbolTable();
 
-    auto asg = runFrontend(ctx, source);
-    if (!asg) {
+    auto ast = runFrontend(ctx, source);
+    if (!ast) {
       return 1;
     }
 
-    auto backendResults = fluir::generateCode(ctx, *asg);
+    auto backendResults = fluir::generateCode(ctx, *ast);
     if (!backendResults) {
       return 1;
     }

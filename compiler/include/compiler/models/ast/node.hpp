@@ -1,5 +1,5 @@
-#ifndef FLUIR_COMPILER_MODELS_ASG_NODE_HPP
-#define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
+#ifndef FLUIR_COMPILER_MODELS_AST_NODE_HPP
+#define FLUIR_COMPILER_MODELS_AST_NODE_HPP
 
 #include <cassert>
 #include <memory>
@@ -13,7 +13,7 @@
 #include "compiler/types/operator_def.hpp"
 #include "compiler/types/typeid.hpp"
 
-namespace fluir::asg {
+namespace fluir::ast {
   enum class NodeKind {
     Constant,
     BinaryOperator,
@@ -180,6 +180,6 @@ namespace fluir::asg {
 
   using DataFlowGraph = std::vector<UniqueNode>;
 
-}  // namespace fluir::asg
+}  // namespace fluir::ast
 
 #endif

@@ -10,7 +10,7 @@
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> generateCode(Context& ctx, const ast::AST& graph) {
     return BytecodeGenerator::generate(ctx, graph);
   }
 
@@ -18,12 +18,12 @@ namespace fluir {
     return writer.write(code, destination);
   }
 
-  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const ast::AST& graph) {
     BytecodeGenerator generator{ctx, graph};
     return generator.run();
   }
 
-  void BytecodeGenerator::operator()(const asg::FunctionDecl& func) {
+  void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
 
@@ -38,7 +38,7 @@ namespace fluir {
     code_.chunks.push_back(std::move(current_));
   }
 
-  void BytecodeGenerator::generate(const asg::BinaryOp& node) {
+  void BytecodeGenerator::generate(const ast::BinaryOp& node) {
     recursivelyGenerate(*node.lhs());
     recursivelyGenerate(*node.rhs());
 
@@ -60,7 +60,7 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::UnaryOp& node) {
+  void BytecodeGenerator::generate(const ast::UnaryOp& node) {
     constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
 
@@ -76,7 +76,7 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::Constant& node) {
+  void BytecodeGenerator::generate(const ast::Constant& node) {
     auto type = node.type();
     size_t constant;
     if (type == types::ID_F64) {
@@ -105,7 +105,7 @@ namespace fluir {
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
-  void BytecodeGenerator::generate(const asg::Cast& cast) {
+  void BytecodeGenerator::generate(const ast::Cast& cast) {
     recursivelyGenerate(*cast.operand());
 
     // TODO: Handle user-defined casts here
@@ -146,7 +146,7 @@ namespace fluir {
     }
   }
 
-  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
@@ -178,16 +178,16 @@ namespace fluir {
     return std::move(code_);
   }
 
-  void BytecodeGenerator::recursivelyGenerate(const asg::Node& node) {
+  void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {
     switch (node.kind()) {
-      case asg::NodeKind::BinaryOperator:
-        return generate(*node.as<asg::BinaryOp>());
-      case asg::NodeKind::UnaryOperator:
-        return generate(*node.as<asg::UnaryOp>());
-      case asg::NodeKind::Constant:
-        return generate(*node.as<asg::Constant>());
-      case asg::NodeKind::Cast:
-        return generate(*node.as<asg::Cast>());
+      case ast::NodeKind::BinaryOperator:
+        return generate(*node.as<ast::BinaryOp>());
+      case ast::NodeKind::UnaryOperator:
+        return generate(*node.as<ast::UnaryOp>());
+      case ast::NodeKind::Constant:
+        return generate(*node.as<ast::Constant>());
+      case ast::NodeKind::Cast:
+        return generate(*node.as<ast::Cast>());
     }
   }
 

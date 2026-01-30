@@ -4,7 +4,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/ast_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
@@ -19,10 +19,10 @@ class TestTypeError : public ::testing::TestWithParam<fs::path> {
   fluir::test::TestDiagnosticSink sink_;
   fluir::Context ctx_{.diagnosticSink = sink_, .symbolTable = fluir::types::buildSymbolTable()};
 
-  fluir::Results<fluir::asg::ASG> generateAndTypeCheck(const fs::path& programFile) {
+  fluir::Results<fluir::ast::AST> generateAndTypeCheck(const fs::path& programFile) {
     if (auto pt = fluir::parseFile(ctx_, programFile); pt) {
-      if (auto asg = fluir::buildGraph(ctx_, *pt); asg) {
-        return fluir::typeCheck(ctx_, std::move(*asg));
+      if (auto ast = fluir::buildGraph(ctx_, *pt); ast) {
+        return fluir::typeCheck(ctx_, std::move(*ast));
       }
     }
     return fluir::NoResult;
@@ -42,7 +42,7 @@ TEST_P(TestTypeError, Test) {
   EXPECT_EQ(errors, actual);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestASGError,
+INSTANTIATE_TEST_SUITE_P(TestASTError,
                          TestTypeError,
                          ::testing::ValuesIn(fluir::test::getTestPrograms("type_errors")),
                          fluir::test::filePathName);

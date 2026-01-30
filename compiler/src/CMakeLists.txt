@@ -16,7 +16,7 @@ add_library(
 
 set(FLUIR_COMPILER_FRONTEND_SOURCES
     "frontend/parser.cpp"
-    "frontend/asg_builder.cpp"
+    "frontend/ast_builder.cpp"
     "frontend/text_parse.cpp"
     "frontend/type_checker.cpp"
 )
@@ -27,7 +27,7 @@ set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/inspect_writer.cpp"
 )
 
-set(FLUIR_COMPILER_DEBUG_SOURCES "debug/asg_printer.cpp"
+set(FLUIR_COMPILER_DEBUG_SOURCES "debug/ast_printer.cpp"
                                  "debug/parse_tree_printer.cpp"
 )
 

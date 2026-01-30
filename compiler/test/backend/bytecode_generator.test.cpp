@@ -8,7 +8,7 @@
 #include "compiler/types/builtin_symbols.hpp"
 #include "test_diagnostic_sink.hpp"
 
-namespace fa = fluir::asg;
+namespace fa = fluir::ast;
 namespace fc = fluir::code;
 namespace ft = fluir::types;
 using namespace fc::value_literals;
@@ -23,7 +23,7 @@ class TestBytecodeGenerator : public ::testing::Test {
 };
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
@@ -39,7 +39,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
@@ -58,7 +58,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back(
     fa::FunctionDecl{.id = 3, .name = "foo", .statements = []() {
                        fa::DataFlowGraph graph;
@@ -94,7 +94,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back(
     fa::FunctionDecl{.id = 3, .name = "bar", .statements = []() {
                        fa::DataFlowGraph graph;
@@ -136,7 +136,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
     std::make_shared<fa::Constant>(4.4, fluir::FullID{3, 6}, fluir::FlowGraphLocation{}),
     fluir::FullID{3, 4},
     fluir::FlowGraphLocation{});
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back(
     fa::FunctionDecl{.id = 3, .name = "bar", .statements = [&]() {
                        fa::DataFlowGraph graph;
@@ -187,7 +187,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
@@ -230,7 +230,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
@@ -274,7 +274,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
@@ -328,7 +328,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
@@ -382,7 +382,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
 
@@ -450,7 +450,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
 
@@ -497,7 +497,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
 
@@ -537,7 +537,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
 
@@ -584,7 +584,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
-  fa::ASG input;
+  fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "inc_dec", .statements = {}};
 

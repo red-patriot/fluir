@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/asg_builder.hpp"
+#include "compiler/frontend/ast_builder.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"
 #include "test_diagnostic_sink.hpp"
@@ -56,12 +56,12 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithoutSharing) {
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
-  ASSERT_TRUE(statement->is<fluir::asg::BinaryOp>());
-  auto binary = statement->as<fluir::asg::BinaryOp>();
+  ASSERT_TRUE(statement->is<fluir::ast::BinaryOp>());
+  auto binary = statement->as<fluir::ast::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::STAR, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
-  EXPECT_DOUBLE_EQ(-4.7, binary->rhs()->as<fluir::asg::Constant>()->f64());
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::ast::Constant>()->f64());
+  EXPECT_DOUBLE_EQ(-4.7, binary->rhs()->as<fluir::ast::Constant>()->f64());
 }
 
 TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
@@ -91,15 +91,15 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
   ASSERT_EQ(1, actual.size());
   auto& statement = actual.at(0);
 
-  ASSERT_TRUE(statement->is<fluir::asg::BinaryOp>());
-  auto binary = statement->as<fluir::asg::BinaryOp>();
+  ASSERT_TRUE(statement->is<fluir::ast::BinaryOp>());
+  auto binary = statement->as<fluir::ast::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::STAR, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
-  ASSERT_TRUE(binary->rhs()->is<fluir::asg::UnaryOp>());
-  auto unary = binary->rhs()->as<fluir::asg::UnaryOp>();
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::ast::Constant>()->f64());
+  ASSERT_TRUE(binary->rhs()->is<fluir::ast::UnaryOp>());
+  auto unary = binary->rhs()->as<fluir::ast::UnaryOp>();
   EXPECT_EQ(fluir::Operator::PLUS, unary->op());
-  EXPECT_DOUBLE_EQ(5.6, unary->operand()->as<fluir::asg::Constant>()->f64());
+  EXPECT_DOUBLE_EQ(5.6, unary->operand()->as<fluir::ast::Constant>()->f64());
 
   EXPECT_EQ(binary->lhs(), unary->operand());
 }
@@ -140,23 +140,23 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   ASSERT_FALSE(sink.containsErrors());
   ASSERT_EQ(2, actual.size());
   auto statement =
-    std::ranges::find_if(actual, [](const auto& statement) { return statement->template is<fluir::asg::BinaryOp>(); });
+    std::ranges::find_if(actual, [](const auto& statement) { return statement->template is<fluir::ast::BinaryOp>(); });
   ASSERT_NE(statement, actual.end());
-  auto binary = (*statement)->as<fluir::asg::BinaryOp>();
+  auto binary = (*statement)->as<fluir::ast::BinaryOp>();
 
   EXPECT_EQ(fluir::Operator::SLASH, binary->op());
-  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::asg::Constant>()->f64());
-  ASSERT_TRUE(binary->rhs()->is<fluir::asg::UnaryOp>());
-  auto unary1 = binary->rhs()->as<fluir::asg::UnaryOp>();
+  EXPECT_DOUBLE_EQ(5.6, binary->lhs()->as<fluir::ast::Constant>()->f64());
+  ASSERT_TRUE(binary->rhs()->is<fluir::ast::UnaryOp>());
+  auto unary1 = binary->rhs()->as<fluir::ast::UnaryOp>();
   EXPECT_EQ(fluir::Operator::PLUS, unary1->op());
-  EXPECT_DOUBLE_EQ(5.6, unary1->operand()->as<fluir::asg::Constant>()->f64());
+  EXPECT_DOUBLE_EQ(5.6, unary1->operand()->as<fluir::ast::Constant>()->f64());
 
   EXPECT_EQ(binary->lhs(), unary1->operand());
 
   auto statement2 =
-    std::ranges::find_if(actual, [](const auto& statement) { return statement->template is<fluir::asg::UnaryOp>(); });
+    std::ranges::find_if(actual, [](const auto& statement) { return statement->template is<fluir::ast::UnaryOp>(); });
   ASSERT_NE(statement2, actual.end());
-  auto unary2 = (*statement2)->as<fluir::asg::UnaryOp>();
+  auto unary2 = (*statement2)->as<fluir::ast::UnaryOp>();
 
   EXPECT_EQ(fluir::Operator::MINUS, unary2->op());
   EXPECT_EQ(binary->rhs(), unary2->operand());

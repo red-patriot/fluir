@@ -188,6 +188,10 @@ namespace fluir {
         return generate(*node.as<ast::Constant>());
       case ast::NodeKind::Cast:
         return generate(*node.as<ast::Cast>());
+      case ast::NodeKind::VarWrite:
+      case ast::NodeKind::VarRead:
+        // TODO
+        assert(false && "TODO!");
     }
   }
 

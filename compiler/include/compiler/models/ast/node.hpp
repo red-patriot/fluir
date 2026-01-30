@@ -14,12 +14,7 @@
 #include "compiler/types/typeid.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind {
-    Constant,
-    BinaryOperator,
-    UnaryOperator,
-    Cast,
-  };
+  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, VarWrite, VarRead };
 
   class Node {
    public:
@@ -179,6 +174,19 @@ namespace fluir::ast {
   };
 
   using DataFlowGraph = std::vector<UniqueNode>;
+
+  class VarWrite : public Node {
+   public:
+    VarWrite(FullID id, const FlowGraphLocation& location) : Node(NodeKind::VarWrite, std::move(id), location) { }
+
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::VarWrite; }
+  };
+
+  class VarRead : public Node {
+   public:
+    VarRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::VarWrite, std::move(id), location) { }
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::VarRead; }
+  };
 
 }  // namespace fluir::ast
 

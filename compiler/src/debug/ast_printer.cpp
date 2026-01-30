@@ -104,6 +104,8 @@ namespace fluir::debug {
       case ast::NodeKind::Constant:
         return (*this)(*node.as<ast::Constant>());
       case ast::NodeKind::Cast:
+      case ast::NodeKind::VarWrite:
+      case ast::NodeKind::VarRead:
         assert(false && "TODO");
     }
   }

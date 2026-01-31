@@ -18,6 +18,9 @@ namespace fluir::debug {
     void operator()(const ast::BinaryOp& binary);
     void operator()(const ast::UnaryOp& unary);
     void operator()(const ast::Constant& constant);
+    void operator()(const ast::Cast& cast);
+    void operator()(const ast::LocalWrite& write);
+    void operator()(const ast::LocalRead& read);
 
    private:
     std::ostream& out_;

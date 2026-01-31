@@ -72,6 +72,12 @@ namespace fluir::debug {
     std::visit(printer, constant.value());
   }
 
+  void AstPrinter::operator()(const ast::Cast& cast) {
+    out_ << formatIndented("Cast({}): {} -> {}\n", cast.id(), cast.from(), cast.to());
+  }
+  void AstPrinter::operator()(const ast::LocalWrite& write) { out_ << formatIndented("LocalWrite({})\n", write.id()); }
+  void AstPrinter::operator()(const ast::LocalRead& read) { out_ << formatIndented("LocalRead({})\n", read.id()); }
+
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       print(*node);
@@ -104,9 +110,11 @@ namespace fluir::debug {
       case ast::NodeKind::Constant:
         return (*this)(*node.as<ast::Constant>());
       case ast::NodeKind::Cast:
-      case ast::NodeKind::VarWrite:
-      case ast::NodeKind::VarRead:
-        assert(false && "TODO");
+        return (*this)(*node.as<ast::Cast>());
+      case ast::NodeKind::LocalWrite:
+        return (*this)(*node.as<ast::LocalWrite>());
+      case ast::NodeKind::LocalRead:
+        return (*this)(*node.as<ast::LocalRead>());
     }
   }
 

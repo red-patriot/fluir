@@ -14,7 +14,7 @@
 #include "compiler/types/typeid.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, VarWrite, VarRead };
+  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead };
 
   class Node {
    public:
@@ -175,17 +175,17 @@ namespace fluir::ast {
 
   using DataFlowGraph = std::vector<UniqueNode>;
 
-  class VarWrite : public Node {
+  class LocalWrite : public Node {
    public:
-    VarWrite(FullID id, const FlowGraphLocation& location) : Node(NodeKind::VarWrite, std::move(id), location) { }
+    LocalWrite(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalWrite, std::move(id), location) { }
 
-    static bool classOf(const Node& node) { return node.kind() == NodeKind::VarWrite; }
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalWrite; }
   };
 
-  class VarRead : public Node {
+  class LocalRead : public Node {
    public:
-    VarRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::VarWrite, std::move(id), location) { }
-    static bool classOf(const Node& node) { return node.kind() == NodeKind::VarRead; }
+    LocalRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalWrite, std::move(id), location) { }
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
   };
 
 }  // namespace fluir::ast

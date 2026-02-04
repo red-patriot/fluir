@@ -98,3 +98,10 @@ TEST(TestTopologicalSort, HandlesMoveOnlyTypes) {
   EXPECT_TRUE(
     std::ranges::equal(expected, nodes, [](int lhs, const std::unique_ptr<int>& rhs) { return lhs == *rhs; }));
 }
+
+TEST(TestTopologicalSort, HandlesEmptyGraph) {
+  fluir::dag::Nodes<std::string> nodes{};
+  fluir::dag::Arcs<std::string> arcs{};
+
+  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs));
+}

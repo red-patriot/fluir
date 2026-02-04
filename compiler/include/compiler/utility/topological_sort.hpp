@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace fluir {
+namespace fluir::dag {
   template <typename T>
   using Nodes = std::vector<T>;
 
@@ -70,6 +70,37 @@ namespace fluir {
 
     return true;
   }
-}  // namespace fluir
+
+  template <typename Value, typename IdFunc>
+  bool topologicalSort(Nodes<Value>& nodes,
+                       const Arcs<std::invoke_result_t<IdFunc, const Value&>>& arcs,
+                       IdFunc getId) {
+    using Id = std::invoke_result_t<IdFunc, const Value&>;
+
+    // Build a mapping of the IDs to the original nodes
+    std::unordered_map<Id, size_t> idToIndex;
+    Nodes<Id> ids;
+    ids.reserve(nodes.size());
+    for (size_t i = 0; i < nodes.size(); ++i) {
+      ids.push_back(getId(nodes[i]));
+      idToIndex[getId(nodes[i])] = i;
+    }
+
+    if (!topologicalSort(ids, arcs)) {
+      return false;
+    }
+
+    // Reorder nodes according to sorted indices
+    Nodes<Value> sorted;
+    sorted.reserve(nodes.size());
+    for (const auto& id : ids) {
+      auto idx = idToIndex.at(id);
+      sorted.push_back(std::move(nodes[idx]));
+    }
+    nodes = std::move(sorted);
+
+    return true;
+  }
+}  // namespace fluir::dag
 
 #endif

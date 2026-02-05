@@ -138,3 +138,95 @@ TEST(TestSymbolTable, SelfConversionsAreIgnored) {
   EXPECT_FALSE(uut.canExplicitlyConvert(A, A));
   EXPECT_FALSE(uut.canImplicitlyConvert(A, A));
 }
+
+TEST(TestSymbolTable, CanPushAndPopScopes) {
+  fluir::types::SymbolTable uut;
+
+  EXPECT_NO_THROW(uut.pushScope());
+  EXPECT_NO_THROW(uut.pushScope());
+  EXPECT_NO_THROW(uut.popScope());
+  EXPECT_NO_THROW(uut.popScope());
+  EXPECT_NO_THROW(uut.popScope());
+}
+
+TEST(TestSymbolTable, CanAddAndAccessLocalVariables) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto B = uut.addType(fluir::types::Type{"B"});
+  const auto C = uut.addType(fluir::types::Type{"C"});
+
+  uut.pushScope();
+  uut.addLocalVariable(1, A);
+  uut.addLocalVariable(2, B);
+  uut.addLocalVariable(3, C);
+  uut.addLocalVariable(4, C);
+
+  auto actual1 = uut.getLocalVariableType(1);
+  auto actual2 = uut.getLocalVariableType(2);
+  auto actual3 = uut.getLocalVariableType(3);
+  auto actual4 = uut.getLocalVariableType(4);
+
+  EXPECT_EQ(A, actual1);
+  EXPECT_EQ(B, actual2);
+  EXPECT_EQ(C, actual3);
+  EXPECT_EQ(C, actual4);
+}
+
+TEST(TestSymbolTable, ReadingNonexistingVariableReturnsInvalid) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+
+  uut.pushScope();
+  uut.addLocalVariable(1, A);
+
+  auto actual = uut.getLocalVariableType(3);
+
+  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual);
+}
+
+TEST(TestSymbolTable, PoppingScopeRemovesLocalVariables) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto B = uut.addType(fluir::types::Type{"B"});
+  const auto C = uut.addType(fluir::types::Type{"C"});
+
+  uut.pushScope();
+  uut.pushScope();
+  uut.addLocalVariable(1, A);
+  uut.addLocalVariable(2, B);
+  auto actual1 = uut.getLocalVariableType(1);
+
+  uut.popScope();
+  uut.addLocalVariable(3, C);
+
+  auto actual2 = uut.getLocalVariableType(1);
+  auto actual3 = uut.getLocalVariableType(3);
+
+  uut.popScope();
+
+  EXPECT_EQ(A, actual1);
+  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual2);
+  EXPECT_EQ(C, actual3);
+}
+
+TEST(TestSymbolTable, OnlyCurrentLocalScopeIsSearchedForVariables) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto B = uut.addType(fluir::types::Type{"B"});
+
+  uut.pushScope();
+  uut.addLocalVariable(1, A);
+  uut.pushScope();
+
+  uut.addLocalVariable(2, B);
+
+  auto actual1 = uut.getLocalVariableType(1);
+  auto actual2 = uut.getLocalVariableType(2);
+
+  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual1);
+  EXPECT_EQ(B, actual2);
+}

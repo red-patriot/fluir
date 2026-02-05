@@ -75,7 +75,11 @@ namespace fluir::debug {
   void AstPrinter::operator()(const ast::Cast& cast) {
     out_ << formatIndented("Cast({}): {} -> {}\n", cast.id(), cast.from(), cast.to());
   }
-  void AstPrinter::operator()(const ast::LocalWrite& write) { out_ << formatIndented("LocalWrite({})\n", write.id()); }
+  void AstPrinter::operator()(const ast::LocalWrite& write) {
+    out_ << formatIndented("LocalWrite({})\n", write.id());
+    FLUIR_SCOPED_INDENT;
+    print(*write.child());
+  }
   void AstPrinter::operator()(const ast::LocalRead& read) { out_ << formatIndented("LocalRead({})\n", read.id()); }
 
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {

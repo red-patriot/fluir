@@ -56,8 +56,16 @@ namespace fluir::ast {
     types::TypeID type_ = types::ID_INVALID;
   };
 
-  using SharedDependency = std::shared_ptr<Node>;
+  using SharedDependency = std::unique_ptr<Node>;
   using UniqueNode = std::unique_ptr<Node>;
+  template <typename NodeType, typename... Args>
+  auto createDependency(Args&&... args) {
+    return std::make_unique<NodeType>(std::forward<Args>(args)...);
+  }
+  template <typename NodeType>
+  auto clone(const std::unique_ptr<NodeType>& p) {
+    return createDependency<NodeType>(*p);
+  }
 
   class Constant : public Node {
    public:
@@ -177,14 +185,20 @@ namespace fluir::ast {
 
   class LocalWrite : public Node {
    public:
-    LocalWrite(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalWrite, std::move(id), location) { }
-
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalWrite; }
+
+    LocalWrite(SharedDependency child, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
+
+    [[nodiscard]] const SharedDependency& child() const { return child_; }
+
+   private:
+    SharedDependency child_;
   };
 
   class LocalRead : public Node {
    public:
-    LocalRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalWrite, std::move(id), location) { }
+    LocalRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalRead, std::move(id), location) { }
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
   };
 

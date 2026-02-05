@@ -116,12 +116,12 @@ namespace fluir {
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
       if (overloadLHS != lhs) {
-        auto castOp = std::make_shared<ast::Cast>(overloadLHS, binary->lhs(), binary->fullId(), binary->location());
-        binary->lhs() = std::move(castOp);
+        binary->lhs() =
+          ast::createDependency<ast::Cast>(overloadLHS, std::move(binary->lhs()), binary->fullId(), binary->location());
       }
       if (overloadRHS != rhs) {
-        auto castOp = std::make_shared<ast::Cast>(overloadRHS, binary->rhs(), binary->fullId(), binary->location());
-        binary->rhs() = std::move(castOp);
+        binary->rhs() =
+          ast::createDependency<ast::Cast>(overloadRHS, std::move(binary->rhs()), binary->fullId(), binary->location());
       }
       return true;
     }
@@ -145,8 +145,8 @@ namespace fluir {
       unary->setDefinition(selectedOverload);
       auto [overloadOp, _] = selectedOverload->getParameters();
       if (overloadOp != operand) {
-        auto castOp = std::make_shared<ast::Cast>(overloadOp, unary->operand(), unary->fullId(), unary->location());
-        unary->operand() = std::move(castOp);
+        unary->operand() =
+          ast::createDependency<ast::Cast>(overloadOp, std::move(unary->operand()), unary->fullId(), unary->location());
       }
       return true;
     }

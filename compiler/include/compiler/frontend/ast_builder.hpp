@@ -41,8 +41,11 @@ namespace fluir {
     Context& ctx_;
     ast::DataFlowGraph graph_;
     pt::Block block_;
-    std::unordered_map<ID, ast::SharedDependency> alreadyFound_;
+    ID current_{INVALID_ID};
+    std::unordered_set<ID> alreadyFound_;
+    std::unordered_set<ID> locals_;
     std::vector<ID> inProgressNodes_;
+    std::vector<ID> dependencies_;
     std::vector<ID> parents_;
 
     explicit FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents);
@@ -50,6 +53,7 @@ namespace fluir {
     Results<ast::DataFlowGraph> run();
 
     ast::SharedDependency getDependency(ID dependentId, int index);
+    ast::SharedDependency createLocal();
   };
 }  // namespace fluir
 

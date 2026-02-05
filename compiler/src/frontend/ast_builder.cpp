@@ -5,7 +5,8 @@
 #include <unordered_set>
 #include <variant>
 
-#include "../../include/compiler/utility/scope_guard.hpp"
+#include "compiler/utility/scope_guard.hpp"
+#include "compiler/utility/topological_sort.hpp"
 
 namespace {
   /** Returns the set of Nodes that are not dependencies of other Nodes */
@@ -21,6 +22,26 @@ namespace {
                           [&sinkNodes](const auto& conduit) { sinkNodes.erase(conduit.input); });
 
     return sinkNodes;
+  }
+
+  std::unordered_set<fluir::ID> getLocalNodes(const fluir::pt::Block& block) {
+    std::unordered_set<fluir::ID> locals;
+    std::unordered_map<fluir::ID, size_t> dependents;
+
+    for (const auto& id : block.nodes | std::views::keys) {
+      dependents.insert({id, 0});
+      locals.insert(id);
+    }
+
+    for (const auto& conduit : block.conduits | std::views::values) {
+      dependents.at(conduit.input) += conduit.children.size();
+    }
+
+    // We only keep the nodes with multiple dependents, these will become
+    // local variables in the AST. The rest will be temporaries
+    erase_if(locals, [&](const auto& item) { return dependents.at(item) < 2; });
+
+    return locals;
   }
 }  // namespace
 
@@ -84,7 +105,6 @@ namespace fluir {
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-
     parents_.push_back(pt.id);
     FLUIR_SCOPE_EXIT { parents_.pop_back(); };
     return std::make_unique<ast::BinaryOp>(
@@ -109,6 +129,23 @@ namespace fluir {
   }
 
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
+    alreadyFound_.reserve(block_.nodes.size());
+    locals_ = getLocalNodes(block_);
+    std::unordered_map<ID, std::vector<ID>> dependencies;
+    for (const auto& local : locals_) {
+      current_ = local;
+      auto astNode = std::visit(*this, block_.nodes.at(local));
+      auto write = ast::createDependency<ast::LocalWrite>(std::move(astNode), astNode->location());
+      dependencies.insert({local, std::move(dependencies_)});
+      dependencies_ = {};
+      graph_.emplace_back(std::move(write));
+    }
+
+    // TODO: Topological sort of graph_ so locals are written/read in the right order
+    if (!dag::topologicalSort(graph_, dependencies, [](const ast::UniqueNode& node) -> ID { return node->id(); })) {
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
+    }
+
     // Find a Node without dependents in the graph
     const auto sinkNodes = getSinkNodes(block_);
     if (sinkNodes.empty() && !block_.nodes.empty()) {
@@ -126,7 +163,8 @@ namespace fluir {
   }
 
   ast::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
-    // Find the dependency of ID:index in the graph
+    // Find the dependency of ID:index in the tree
+
     const auto dependencyPt =
       std::ranges::find_if(block_.conduits, [&dependentId, &index](const pt::Block::Conduits::value_type& v) {
         auto& [_, conduit] = v;
@@ -144,12 +182,21 @@ namespace fluir {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
-    if (alreadyFound_.contains(dependencyId)) {
-      return alreadyFound_.at(dependencyId);
+    if (locals_.contains(dependencyId)) {
+      auto readID = parents_;
+      readID.push_back(dependencyId);
+      // TODO: Mark the dependency here
+      dependencies_.push_back(dependencyId);
+      return ast::createDependency<ast::LocalRead>(std::move(readID), FlowGraphLocation{});
     }
+
     auto& pt = block_.nodes.at(dependencyId);  // TODO: Handle missing ID
     ast::SharedDependency dependency{std::visit(*this, pt)};
-    alreadyFound_.insert({dependencyId, dependency});
+    alreadyFound_.insert(dependencyId);
     return dependency;
+  }
+
+  ast::SharedDependency FlowGraphBuilder::createLocal() {
+    return ast::createDependency<ast::LocalRead>(parents_, FlowGraphLocation{});
   }
 }  // namespace fluir

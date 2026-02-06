@@ -1,6 +1,8 @@
 #ifndef FLUIR_COMPILER_BACKEND_BYTECODE_GENERATOR_HPP
 #define FLUIR_COMPILER_BACKEND_BYTECODE_GENERATOR_HPP
 
+#include <stack>
+
 #include "bytecode/byte_code.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/ast.hpp"
@@ -20,12 +22,19 @@ namespace fluir {
     void generate(const ast::UnaryOp& unary);
     void generate(const ast::Constant& constant);
     void generate(const ast::Cast& cast);
+    void generate(const ast::LocalWrite& write);
+    void generate(const ast::LocalRead& read);
 
    private:
     Context& ctx_;
     const ast::AST& graph_;
     code::ByteCode code_;
     code::Chunk current_;
+
+    struct Scope {
+      std::unordered_map<ID, size_t> slots;
+    };
+    std::stack<Scope> scopes_;
 
     explicit BytecodeGenerator(Context& ctx, const ast::AST& graph);
 
@@ -44,3 +53,12 @@ namespace fluir {
 }  // namespace fluir
 
 #endif
+
+/**
+ * EXPECT
+ *     Which is: { '\x1', '\0', '\v', '\x1', '\x1', '\b', '\x1', '\x2', '\x3', '\0', '\x5' (5), '\x2' (2), '\x3' (3),
+ * '\0', '\v' (11, 0xB), '\x2' (2), '\x2' (2), '\0' } ACTUAL Which is: { '\x1', '\0', '\v', '\x1', '\x1', '\b', '\x2',
+ * '\x1', '\x2', '\x3' (3), '\0', '\x5' (5), '\x2' (2), '\x3' (3), '\0', '\v' (11, 0xB), '\x2' (2), '\0' }
+ *
+ *
+ */

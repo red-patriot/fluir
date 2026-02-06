@@ -127,64 +127,78 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
-  ASSERT_TRUE(false) << "TODO";
-  // auto shared = fa::createDependency<fa::BinaryOp>(
-  //   fluir::Operator::SLASH,
-  //   fa::createDependency<fa::UnaryOp>(fluir::Operator::MINUS,
-  //                                 fa::createDependency<fa::Constant>(3.5, fluir::FullID{3, 5},
-  //                                 fluir::FlowGraphLocation{}), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-  //   fa::createDependency<fa::Constant>(4.4, fluir::FullID{3, 6}, fluir::FlowGraphLocation{}),
-  //   fluir::FullID{3, 4},
-  //   fluir::FlowGraphLocation{});
-  // fa::AST input;
-  // input.declarations.emplace_back(
-  //   fa::FunctionDecl{.id = 3, .name = "bar", .statements = [&]() {
-  //                      fa::DataFlowGraph graph;
-  //                      graph.push_back(std::make_unique<fa::BinaryOp>(
-  //                        fluir::Operator::PLUS,
-  //                        fa::createDependency<fa::Constant>(100.0, fluir::FullID{3, 3}, fluir::FlowGraphLocation{}),
-  //                        shared,
-  //                        fluir::FullID{3, 1},
-  //                        fluir::FlowGraphLocation{}));
-  //                      graph.push_back(std::make_unique<fa::UnaryOp>(
-  //                        fluir::Operator::MINUS, shared, fluir::FullID{3, 7}, fluir::FlowGraphLocation{}));
-  //                      return graph;
-  //                    }()});
-  //
-  // fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-  //                       .chunks = {fc::Chunk{.name = "bar",
-  //                                            .code =
-  //                                              {
-  //                                                fc::PUSH,
-  //                                                0x00,
-  //                                                fc::PUSH,
-  //                                                0x01,
-  //                                                fc::F64_NEG,
-  //                                                fc::PUSH,
-  //                                                0x02,
-  //                                                fc::F64_DIV,
-  //                                                fc::F64_ADD,
-  //                                                fc::POP,
-  //                                                fc::PUSH,
-  //                                                0x01,
-  //                                                fc::F64_NEG,
-  //                                                fc::PUSH,
-  //                                                0x02,
-  //                                                fc::F64_DIV,
-  //                                                fc::F64_NEG,
-  //                                                fc::POP,
-  //                                                fc::Instruction::EXIT,
-  //                                              },
-  //                                            .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
-  //
-  // auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
-  // auto actual = fluir::generateCode(ctx_, typeChecked.value());
-  //
-  // EXPECT_FALSE(sink_.containsErrors());
-  // EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  // EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  // EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  const fluir::FullID SHARED_ID{3, 4};
+  fa::AST input;
+  input.declarations.push_back([&]() { return fa::Declaration{.id = 3, .name = "bar", .statements = {}}; }());
+  auto& decl = input.declarations.back();
+  {
+    auto shared = fa::createDependency<fa::LocalWrite>(
+      fa::createDependency<fa::BinaryOp>(
+        fluir::Operator::SLASH,
+        fa::createDependency<fa::UnaryOp>(
+          fluir::Operator::MINUS,
+          fa::createDependency<fa::Constant>(3.5, fluir::FullID{3, 5}, fluir::FlowGraphLocation{}),
+          fluir::FullID{3, 2},
+          fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::Constant>(4.4, fluir::FullID{3, 6}, fluir::FlowGraphLocation{}),
+        SHARED_ID,
+        fluir::FlowGraphLocation{}),
+      fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(shared));
+  }
+  {
+    auto binaryDependent = fa::createDependency<fa::BinaryOp>(
+      fluir::Operator::PLUS,
+      fa::createDependency<fa::Constant>(100.0, fluir::FullID{3, 3}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::LocalRead>(SHARED_ID, fluir::FlowGraphLocation{}),
+      fluir::FullID{3, 1},
+      fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(binaryDependent));
+  }
+  {
+    auto unaryDependent =
+      fa::createDependency<fa::UnaryOp>(fluir::Operator::MINUS,
+                                        fa::createDependency<fa::LocalRead>(SHARED_ID, fluir::FlowGraphLocation{}),
+                                        fluir::FullID{3, 7},
+                                        fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(unaryDependent));
+  }
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "bar",
+                                             .code =
+                                               {
+                                                 fc::PUSH,
+                                                 0x0,
+                                                 fc::F64_NEG,
+                                                 fc::PUSH,
+                                                 0x1,
+                                                 fc::F64_DIV,  // No POP, write {3,4}
+                                                 fc::PUSH,
+                                                 0x2,
+                                                 fc::GET_VAL,  // Read {3,4}
+                                                 0x0,
+                                                 fc::F64_ADD,
+                                                 fc::POP,
+                                                 fc::GET_VAL,  // Read {3,4}
+                                                 0x0,
+                                                 fc::F64_NEG,
+                                                 fc::POP,
+                                                 fc::POP,
+                                                 fc::EXIT,
+                                               },
+                                             .constants = {3.5_f64, 4.4_f64, 100.0_f64}}}};
+
+  auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
+  auto actual = fluir::generateCode(ctx_, typeChecked.value());
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
+
+// TODO: Test with multiple locals together
 
 TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   fa::AST input;

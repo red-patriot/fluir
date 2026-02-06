@@ -6,6 +6,7 @@
 #include <fmt/format.h>
 
 #include "compiler/types/traits.hpp"
+#include "compiler/utility/scope_guard.hpp"
 
 using fluir::code::Instruction;
 
@@ -27,13 +28,28 @@ namespace fluir {
     current_ = code::Chunk{};
     current_.name = func.name;
 
+    // Create a new local scope
+    scopes_.emplace();
+    auto& currentScope = scopes_.top();
+
     for (const auto& node : func.statements) {
+      const auto beforeLocalCount = currentScope.slots.size();
       recursivelyGenerate(*node);
-      // Each top level node will leave a value on the stack, so pop it off
-      emitByte(Instruction::POP);
+      if (beforeLocalCount == currentScope.slots.size()) {
+        // Each top level node will leave a value on the stack,
+        // so pop it off iff it was not added as a new local
+        emitByte(Instruction::POP);
+      }
     }
 
+    for (size_t i = 0; i < currentScope.slots.size(); i++) {
+      // TODO: A POP_N instruction could make this more efficient
+      emitByte(code::POP);
+    }
+    scopes_.pop();
+
     // (FOR NOW) end all functions with the EXIT instruction
+    // TODO: Update this when we implement function defs/calls
     emitByte(Instruction::EXIT);
     code_.chunks.push_back(std::move(current_));
   }
@@ -146,6 +162,21 @@ namespace fluir {
     }
   }
 
+  void BytecodeGenerator::generate(const ast::LocalWrite& write) {
+    recursivelyGenerate(*write.child());
+
+    auto& [slots] = scopes_.top();
+    auto stackIndex = slots.size();
+    assert(stackIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
+    slots.insert({write.id(), stackIndex});
+  }
+  void BytecodeGenerator::generate(const ast::LocalRead& read) {
+    const auto& [slots] = scopes_.top();
+    // TODO: Handle missing ID
+    const auto slot = slots.at(read.id());
+    emitBytes(Instruction::GET_VAL, slot);
+  }
+
   BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
@@ -189,9 +220,9 @@ namespace fluir {
       case ast::NodeKind::Cast:
         return generate(*node.as<ast::Cast>());
       case ast::NodeKind::LocalWrite:
+        return generate(*node.as<ast::LocalWrite>());
       case ast::NodeKind::LocalRead:
-        // TODO
-        assert(false && "TODO!");
+        return generate(*node.as<ast::LocalRead>());
     }
   }
 

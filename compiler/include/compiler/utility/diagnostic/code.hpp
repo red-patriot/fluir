@@ -8,9 +8,7 @@ namespace fluir::diagnostic {
 #define FLUIR_DIAGNOSTIC_CODE(x)                  \
     x(GENERIC_NOTE)                               \
     x(GENERIC_WARNING)                            \
-    x(WARNING_UNKNOWN)                            \
     x(GENERIC_ERROR)                              \
-    x(ERROR_UNKNOWN)                              \
     x(ERROR_WRONG_ROOT_ELEMENT)                   \
     x(ERROR_MISSING_MODULE_HEADER)                \
     x(ERROR_UNEXPECTED_DUPLICATE_HEADER)          \

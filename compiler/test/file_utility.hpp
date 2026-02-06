@@ -30,7 +30,7 @@ namespace fluir::test {
       if (translation.contains(line)) {
         errors.push_back(translation.at(line));
       } else {
-        errors.push_back(diagnostic::Code::ERROR_UNKNOWN);
+        errors.push_back(diagnostic::Code::GENERIC_ERROR);
       }
     }
     return errors;

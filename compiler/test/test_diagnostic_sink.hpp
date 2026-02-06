@@ -26,6 +26,8 @@ namespace fluir::test {
     void clear() { emitted_.clear(); }
     const std::vector<DiagnosticData>& emitted() { return emitted_; }
 
+    const DiagnosticData& last() const { return emitted_.back(); }
+
    private:
     std::vector<DiagnosticData> emitted_;
 

@@ -51,7 +51,7 @@ namespace fluir::types {
     void popScope();
 
     /** Adds a local variable with the given ID and its type to the current scope */
-    void addLocalVariable(ID id, TypeID type);
+    bool addLocalVariable(ID id, TypeID type);
     /** Retrieves the type of the local variable with the given ID */
     TypeID getLocalVariableType(ID id) const;
 

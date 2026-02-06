@@ -158,16 +158,20 @@ namespace fluir::types {
     }
   }
 
-  void SymbolTable::addLocalVariable(ID id, TypeID type) {
+  bool SymbolTable::addLocalVariable(ID id, TypeID type) {
+    if (id == INVALID_ID) {
+      return false;
+    }
     auto& localScope = localScopes_.top();
     auto& variables = localScope.variables;
     variables.insert({id, type});
+    return true;
   }
 
   TypeID SymbolTable::getLocalVariableType(ID id) const {
     auto& localScope = localScopes_.top();
     auto& variables = localScope.variables;
-    if (!variables.contains(id)) {
+    if (id == INVALID_ID || !variables.contains(id)) {
       return TypeID::ID_INVALID;
     }
 

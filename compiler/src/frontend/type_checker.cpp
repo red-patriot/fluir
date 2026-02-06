@@ -1,5 +1,6 @@
 #include "compiler/frontend/type_checker.hpp"
 
+#include <compiler/utility/scope_guard.hpp>
 #include <fmt/format.h>
 
 namespace fluir {
@@ -8,6 +9,8 @@ namespace fluir {
     bool checkType(Context& ctx, ast::BinaryOp* binary);
     bool checkType(Context& ctx, ast::UnaryOp* unary);
     bool checkType(Context& ctx, ast::Cast* cast);
+    bool checkType(Context& ctx, ast::LocalWrite* write);
+    bool checkType(Context& ctx, ast::LocalRead* read);
 
     bool checkType(Context& ctx, ast::Node* node) {
       if (node->type() != types::ID_INVALID) {
@@ -23,6 +26,10 @@ namespace fluir {
           return checkType(ctx, node->as<ast::UnaryOp>());
         case ast::NodeKind::Cast:
           return checkType(ctx, node->as<ast::Cast>());
+        case ast::NodeKind::LocalWrite:
+          return checkType(ctx, node->as<ast::LocalWrite>());
+        case ast::NodeKind::LocalRead:
+          return checkType(ctx, node->as<ast::LocalRead>());
         default:
           diagnostic::emitInternalError("Unknown node kind encountered");
       }
@@ -47,6 +54,8 @@ namespace fluir {
   }
 
   Results<ast::Declaration> checkDeclType(Context& ctx, ast::Declaration decl) {
+    ctx.symbolTable.pushScope();
+    FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {
         return NoResult;
@@ -155,5 +164,32 @@ namespace fluir {
       // TODO: Handle user-defined casts here
       return checkType(ctx, cast->operand().get());
     }
+
+    bool checkType(Context& ctx, ast::LocalWrite* write) {
+      if (!checkType(ctx, write->child().get())) {
+        return false;
+      }
+      auto type = write->child()->type();
+      if (write->id() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->id(), type)) {
+        return true;
+      }
+
+      diagnostic::emitInternalError("Encountered an invalid element ID.");
+    }
+
+    bool checkType(Context& ctx, ast::LocalRead* read) {
+      if (read->id() == INVALID_ID) {
+        diagnostic::emitInternalError("Encountered an invalid element ID.");
+      }
+
+      auto type = ctx.symbolTable.getLocalVariableType(read->id());
+      read->setType(type);
+      if (type == types::ID_INVALID) {
+        ctx.diagnosticSink.emitAtElement(
+          diagnostic::Code::ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, ctx.currentFile, read->fullId());
+      }
+      return true;
+    }
+
   }  // namespace
 }  // namespace fluir

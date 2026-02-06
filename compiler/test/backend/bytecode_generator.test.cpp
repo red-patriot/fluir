@@ -200,6 +200,70 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
 
 // TODO: Test with multiple locals together
 
+TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
+  const fluir::FullID SHARED_1{1, 1};
+  const fluir::FullID SHARED_2{1, 6};
+  fa::AST input;
+  input.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "main", .statements = {}}; }());
+  auto& decl = input.declarations.back();
+
+  {
+    auto shared1 = fa::createDependency<fa::LocalWrite>(
+      fa::createDependency<fa::UnaryOp>(
+        fluir::Operator::MINUS,
+        fa::createDependency<fa::BinaryOp>(
+          fluir::Operator::STAR,
+          fa::createDependency<fa::Constant>(2, fluir::FullID{1, 4}, fluir::FlowGraphLocation{}),
+          fa::createDependency<fa::Constant>(3, fluir::FullID{1, 5}, fluir::FlowGraphLocation{}),
+          fluir::FullID{1, 3},
+          fluir::FlowGraphLocation{}),
+        SHARED_1,
+        fluir::FlowGraphLocation{}),
+      fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(shared1));
+  }
+  {
+    auto shared2 = fa::createDependency<fa::LocalWrite>(
+      fa::createDependency<fa::BinaryOp>(
+        fluir::Operator::STAR,
+        fa::createDependency<fa::LocalRead>(SHARED_1, fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::Constant>(2, fluir::FullID{1, 8}, fluir::FlowGraphLocation{}),
+        SHARED_2,
+        fluir::FlowGraphLocation{}),
+      fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(shared2));
+  }
+  {
+    auto binary =
+      fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
+                                         fa::createDependency<fa::LocalRead>(SHARED_2, fluir::FlowGraphLocation{}),
+                                         fa::createDependency<fa::LocalRead>(SHARED_1, fluir::FlowGraphLocation{}),
+                                         fluir::FullID{1, 8},
+                                         fluir::FlowGraphLocation{});
+    decl.statements.push_back(std::move(binary));
+  }
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{
+                          .name = "main",
+                          .code =
+                            {
+                              fc::PUSH, 0x0,         fc::PUSH, 0x1,         fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,
+                              0x0,      fc::PUSH,    0x0,      fc::I64_MUL, fc::GET_VAL, 0x1,         fc::GET_VAL,
+                              0x0,      fc::I64_ADD, fc::POP,  fc::POP,     fc::POP,     fc::EXIT,
+                            },
+                          .constants = {2_i32, 3_i32},
+                        }}};
+
+  auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
+  auto actual = fluir::generateCode(ctx_, typeChecked.value());
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+}
+
 TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   fa::AST input;
   input.declarations.emplace_back([&]() {

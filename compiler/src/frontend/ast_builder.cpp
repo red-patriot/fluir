@@ -141,7 +141,7 @@ namespace fluir {
       graph_.emplace_back(std::move(write));
     }
 
-    // TODO: Topological sort of graph_ so locals are written/read in the right order
+    // Topological sort of graph_ so locals are written/read in the right order
     if (!dag::topologicalSort(graph_, dependencies, [](const ast::UniqueNode& node) -> ID { return node->id(); })) {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
@@ -150,7 +150,6 @@ namespace fluir {
     const auto sinkNodes = getSinkNodes(block_);
     if (sinkNodes.empty() && !block_.nodes.empty()) {
       // There is a circular dependency in the nodes, none of them are top-level
-      // TODO: Detect which nodes form the cycle
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
@@ -178,14 +177,12 @@ namespace fluir {
     if (std::ranges::find(inProgressNodes_, dependencyId) != inProgressNodes_.end()) {
       // We are trying to place a dependency on an in progress node, so
       // there is a circular dependency
-      // TODO: Detect which nodes form the cycle
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
     if (locals_.contains(dependencyId)) {
       auto readID = parents_;
       readID.push_back(dependencyId);
-      // TODO: Mark the dependency here
       dependencies_.push_back(dependencyId);
       return ast::createDependency<ast::LocalRead>(std::move(readID), FlowGraphLocation{});
     }

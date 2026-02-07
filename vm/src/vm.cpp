@@ -125,7 +125,7 @@ namespace fluir {
             if (!(stack_.size() < 256)) {
               return ExecResult::ERROR;
             }
-            stack_.emplace_back(current_->constants[index]);
+            stack_.emplace_back(stack_[index]);
             break;
           }
         case SET_VAL:

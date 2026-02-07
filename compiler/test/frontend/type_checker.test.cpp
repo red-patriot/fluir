@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "compiler/types/builtin_symbols.hpp"
+#include "file_utility.hpp"
 #include "test_diagnostic_sink.hpp"
 
 namespace fa = fluir::ast;

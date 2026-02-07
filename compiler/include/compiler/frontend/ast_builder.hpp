@@ -7,6 +7,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
+#include "compiler/utility/topological_sort.hpp"
 
 namespace fluir {
   Results<ast::AST> buildGraph(Context& ctx, const pt::ParseTree& tree);
@@ -45,7 +46,7 @@ namespace fluir {
     std::unordered_set<ID> alreadyFound_;
     std::unordered_set<ID> locals_;
     std::vector<ID> inProgressNodes_;
-    std::vector<ID> dependencies_;
+    fluir::dag::NodeSet<ID> dependencies_;
     std::vector<ID> parents_;
 
     explicit FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents);

@@ -1,0 +1,28 @@
+Function(1): 'main'
+  LocalWrite(2)
+    ConstantF64(2): 2.0000
+  LocalWrite(3)
+    ConstantI32(3): 3
+  LocalWrite(5)
+    BinaryOp(5): /
+      LocalRead(2)
+      BinaryOp(4): +
+        ConstantF64(1): 1.5000
+        LocalRead(2)
+  LocalWrite(6)
+    BinaryOp(6): *
+      LocalRead(2)
+      LocalRead(3)
+  LocalWrite(7)
+    BinaryOp(7): +
+      LocalRead(5)
+      LocalRead(6)
+  BinaryOp(8): -
+    LocalRead(6)
+    LocalRead(3)
+  BinaryOp(19): +
+    LocalRead(5)
+    LocalRead(6)
+  BinaryOp(20): +
+    LocalRead(7)
+    LocalRead(7)

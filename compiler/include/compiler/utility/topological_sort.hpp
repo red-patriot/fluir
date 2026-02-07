@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <deque>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace fluir::dag {
@@ -11,13 +12,15 @@ namespace fluir::dag {
   using Nodes = std::vector<T>;
 
   template <typename T>
-  using Arcs = std::unordered_map<T, Nodes<T>>;
+  using NodeSet = std::unordered_set<T>;
+  template <typename T>
+  using Arcs = std::unordered_map<T, NodeSet<T>>;
 
   /** Sorts the directed graph topologically, if possible.
    *
    * @tparam Value the value type of each node
    * @param nodes The Nodes in the graph
-   * @param arcs A map from each node to all the nodes that depend on it.
+   * @param arcs A map from each node to all the nodes it depends on.
    * @note It is assumed that the set of values in nodes and the set of
    *       values in keys and values in arcs must be equal.
    * @note Each node is assumed to have a unique value
@@ -31,10 +34,10 @@ namespace fluir::dag {
     std::ranges::for_each(nodes, [&](const Value& node) { inDegree.insert({node, 0}); });
 
     // Calculate in-degrees and dependents
-    for (const auto& [source, targets] : arcs) {
-      for (const auto& target : targets) {
-        ++inDegree[target];
-        dependentArcs[source].push_back(target);
+    for (const auto& [node, dependencies] : arcs) {
+      for (const auto& dependency : dependencies) {
+        ++inDegree[node];                           // node depends on dependency, so node has incoming edge
+        dependentArcs[dependency].push_back(node);  // dependency has node as dependent
       }
     }
 

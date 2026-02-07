@@ -131,7 +131,7 @@ namespace fluir {
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     alreadyFound_.reserve(block_.nodes.size());
     locals_ = getLocalNodes(block_);
-    std::unordered_map<ID, std::vector<ID>> dependencies;
+    dag::Arcs<ID> dependencies;
     for (const auto& local : locals_) {
       current_ = local;
       auto astNode = std::visit(*this, block_.nodes.at(local));
@@ -183,7 +183,7 @@ namespace fluir {
     if (locals_.contains(dependencyId)) {
       auto readID = parents_;
       readID.push_back(dependencyId);
-      dependencies_.push_back(dependencyId);
+      dependencies_.insert(dependencyId);
       return ast::createDependency<ast::LocalRead>(std::move(readID), FlowGraphLocation{});
     }
 

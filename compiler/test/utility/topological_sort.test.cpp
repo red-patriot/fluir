@@ -10,56 +10,56 @@
 TEST(TestTopologicalSort, SortsGraphWithNoCycles) {
   std::vector<int> expected{3, 2, 1};
 
-  std::vector<int> nodes{1, 2, 3};
-  std::unordered_map<int, std::vector<int>> edges{{3, {2}}, {2, {1}}, {1, {}}};
+  fluir::dag::Nodes<int> nodes{1, 2, 3};
+  fluir::dag::Arcs<int> arcs{{1, {2}}, {2, {3}}, {3, {}}};
 
-  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, edges));
+  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs));
 
   EXPECT_EQ(expected, nodes);
 }
 
 TEST(TestTopologicalSort, SortsGraphWithMultipleRoots) {
-  std::vector<int> expected{1, 5, 2, 3, 4};
+  fluir::dag::Nodes<int> expected{1, 5, 2, 3, 4};
 
-  std::vector<int> nodes{1, 2, 3, 4, 5};
-  std::unordered_map<int, std::vector<int>> edges{{1, {2, 3}}, {2, {3}}, {3, {4}}, {4, {}}, {5, {3, 4}}};
+  fluir::dag::Nodes<int> nodes{1, 2, 3, 4, 5};
+  fluir::dag::Arcs<int> arcs{{1, {}}, {2, {1}}, {3, {1, 2, 5}}, {4, {3, 5}}, {5, {}}};
 
-  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, edges));
+  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs));
 
   EXPECT_EQ(expected, nodes);
 }
 
 TEST(TestTopologicalSort, FailsIfThereIsACycle) {
-  std::vector<int> nodes{1, 2, 3, 4, 5};
-  std::unordered_map<int, std::vector<int>> edges{{1, {2}}, {2, {3}}, {3, {4}}, {4, {2}}, {5, {4}}};
+  fluir::dag::Nodes<int> nodes{1, 2, 3, 4, 5};
+  fluir::dag::Arcs<int> arcs{{1, {}}, {2, {4}}, {3, {2}}, {4, {3, 5}}, {5, {}}};
 
-  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, edges));
+  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, arcs));
 }
 
 TEST(TestTopologicalSort, FailsIfWholeGraphIsACycle) {
-  std::vector<int> nodes{1, 2, 3, 4, 5};
-  std::unordered_map<int, std::vector<int>> edges{{1, {2}}, {2, {3}}, {3, {4}}, {4, {5}}, {5, {1}}};
+  fluir::dag::Nodes<int> nodes{1, 2, 3, 4, 5};
+  fluir::dag::Arcs<int> arcs{{1, {2}}, {2, {3}}, {3, {4}}, {4, {5}}, {5, {1}}};
 
-  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, edges));
+  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, arcs));
 }
 
 TEST(TestTopologicalSort, StressTest) {
   constexpr size_t SIZE = 10000;
-  std::vector<int> expected(SIZE);
+  fluir::dag::Nodes<int> expected(SIZE);
   std::ranges::iota(expected, 0);
-  std::vector<int> nodes = expected;
+  fluir::dag::Nodes<int> nodes = expected;
   std::ranges::reverse(nodes);
 
-  std::unordered_map<int, std::vector<int>> edges{};
+  fluir::dag::Arcs<int> arcs{};
   for (const auto& node : nodes) {
-    std::vector<int> children;
-    for (int i = node + 1; i < SIZE && i < node + 6; ++i) {
-      children.push_back(i);
+    fluir::dag::NodeSet<int> children;
+    for (int i = std::max(0, node - 5); i < node; ++i) {
+      children.insert(i);
     }
-    edges.emplace(node, std::move(children));
+    arcs.emplace(node, std::move(children));
   }
 
-  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, edges));
+  EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs));
 
   EXPECT_EQ(expected, nodes);
 }
@@ -69,7 +69,7 @@ TEST(TestTopologicalSort, HandlesIdMappingCorrectly) {
   fluir::dag::Nodes<int> expected{2, 3, 1};
 
   fluir::dag::Nodes<int> nodes{1, 2, 3};
-  fluir::dag::Arcs<std::string> arcs{{"1"s, {}}, {"2"s, {"3"s}}, {"3"s, {"1"s}}};
+  fluir::dag::Arcs<std::string> arcs{{"1"s, {"3"s}}, {"2"s, {}}, {"3"s, {"2"s}}};
 
   EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs, [](int node) -> std::string { return std::to_string(node); }));
 
@@ -78,9 +78,9 @@ TEST(TestTopologicalSort, HandlesIdMappingCorrectly) {
 
 TEST(TestTopologicalSort, MappedVersionFailsIfThereIsACycle) {
   fluir::dag::Nodes<int> nodes{1, 2, 3, 4, 5};
-  fluir::dag::Arcs<std::string> edges{{"1", {"2"}}, {"2", {"3"}}, {"3", {"4"}}, {"4", {"2"}}, {"5", {"4"}}};
+  fluir::dag::Arcs<std::string> arcs{{"1", {"2"}}, {"2", {"3"}}, {"3", {"4"}}, {"4", {"2"}}, {"5", {"4"}}};
 
-  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, edges, [](int node) -> std::string { return std::to_string(node); }));
+  EXPECT_FALSE(fluir::dag::topologicalSort(nodes, arcs, [](int node) -> std::string { return std::to_string(node); }));
 }
 
 TEST(TestTopologicalSort, HandlesMoveOnlyTypes) {
@@ -91,7 +91,7 @@ TEST(TestTopologicalSort, HandlesMoveOnlyTypes) {
   nodes.emplace_back(std::make_unique<int>(3));
   nodes.emplace_back(std::make_unique<int>(5));
 
-  fluir::dag::Arcs<int> arcs{{1, {3}}, {3, {}}, {5, {1}}};
+  fluir::dag::Arcs<int> arcs{{1, {5}}, {3, {1}}, {5, {}}};
 
   EXPECT_TRUE(fluir::dag::topologicalSort(nodes, arcs, [](const std::unique_ptr<int>& node) -> int { return *node; }));
 

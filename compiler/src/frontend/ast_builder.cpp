@@ -105,27 +105,26 @@ namespace fluir {
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    parents_.push_back(pt.id);
-    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
+    auto fullID = parents_;
+    fullID.push_back(pt.id);
     return std::make_unique<ast::BinaryOp>(
-      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), parents_, pt.location);
+      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), std::move(fullID), pt.location);
   }
 
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    parents_.push_back(pt.id);
-    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
-
-    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), parents_, pt.location);
+    auto fullID = parents_;
+    fullID.push_back(pt.id);
+    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), std::move(fullID), pt.location);
   };
 
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    parents_.push_back(pt.id);
-    FLUIR_SCOPE_EXIT { parents_.pop_back(); };
-    return std::make_unique<ast::Constant>(pt.value, parents_, pt.location);
+    auto fullID = parents_;
+    fullID.push_back(pt.id);
+    return std::make_unique<ast::Constant>(pt.value, std::move(fullID), pt.location);
   }
 
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {

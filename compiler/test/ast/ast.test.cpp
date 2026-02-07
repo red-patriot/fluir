@@ -171,3 +171,40 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   EXPECT_EQ(fluir::Operator::MINUS, unary2->op());
   EXPECT_TRUE(unary2->operand()->is<fluir::ast::LocalRead>());
 }
+
+TEST(TestBuildFlowGraph, BgfixFullIdsIncorrect) {
+  fluir::FullID expected{1, 2};
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink};
+  fluir::pt::ParseTree pt{
+    .declarations = {{1,
+                      fluir::pt::FunctionDecl{.id = 1,
+                                              .location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100},
+                                              .name = "main",
+                                              .body = fluir::pt::EMPTY_BLOCK}}}};
+  {
+    auto& decl = std::get<fluir::pt::FunctionDecl>(pt.declarations.at(1));
+    decl.body = fluir::pt::Block{
+      .nodes =
+        {{1,
+          fluir::pt::Binary{
+            .id = 1, .location = {.x = 0, .y = 20, .z = 2, .width = 7, .height = 7}, .op = fluir::Operator::STAR}},
+         {2,
+          fluir::pt::Constant{
+            .id = 2, .location = {.x = 5, .y = 5, .z = 0, .width = 5, .height = 5}, .value = fluir::pt::F64{5.6}}},
+         {3,
+          fluir::pt::Constant{
+            .id = 3, .location = {.x = 5, .y = 12, .z = 0, .width = 5, .height = 5}, .value = fluir::pt::F64{-4.7}}}},
+      .conduits = {
+        {4, fluir::pt::Conduit{.id = 4, .input = 2, .children = {fluir::pt::Conduit::Output{.target = 1, .index = 0}}}},
+        {5, fluir::pt::Conduit{.id = 5, .input = 3, .children = {fluir::pt::Conduit::Output{.target = 1, .index = 1}}}},
+      }};
+  }
+
+  const auto results = fluir::buildGraph(ctx, pt);
+  const auto& decl = results->declarations.front();
+
+  const auto actual = decl.statements.front()->as<fluir::ast::BinaryOp>()->lhs()->fullId();
+
+  EXPECT_EQ(expected, actual);
+}

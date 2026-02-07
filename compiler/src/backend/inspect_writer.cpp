@@ -73,6 +73,8 @@ namespace fluir {
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH:
+        case code::Instruction::GET_VAL:
+        case code::Instruction::SET_VAL:
         case code::Instruction::CAST_WIDTH:
           emitInstructionWithArg(os, *i, *(i + 1));
           ++i;

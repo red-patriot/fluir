@@ -28,10 +28,7 @@ namespace fluir {
     current_ = code::Chunk{};
     current_.name = func.name;
 
-    // Create a new local scope
-    scopes_.emplace();
-    auto& currentScope = scopes_.top();
-
+    auto& currentScope = pushScope();
     for (const auto& node : func.statements) {
       const auto beforeLocalCount = currentScope.slots.size();
       recursivelyGenerate(*node);
@@ -41,12 +38,7 @@ namespace fluir {
         emitByte(Instruction::POP);
       }
     }
-
-    for (size_t i = 0; i < currentScope.slots.size(); i++) {
-      // TODO: A POP_N instruction could make this more efficient
-      emitByte(code::POP);
-    }
-    scopes_.pop();
+    popScope();
 
     // (FOR NOW) end all functions with the EXIT instruction
     // TODO: Update this when we implement function defs/calls
@@ -228,6 +220,19 @@ namespace fluir {
       case ast::NodeKind::LocalRead:
         return generate(*node.as<ast::LocalRead>());
     }
+  }
+
+  BytecodeGenerator::Scope& BytecodeGenerator::pushScope() {
+    scopes_.emplace();
+    return scopes_.top();
+  }
+  void BytecodeGenerator::popScope() {
+    auto& currentScope = scopes_.top();
+    // Clean up the local variables from this scope before popping it
+    if (!currentScope.slots.empty()) {
+      emitBytes(Instruction::MULTIPOP, static_cast<std::uint8_t>(currentScope.slots.size()));
+    }
+    scopes_.pop();
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

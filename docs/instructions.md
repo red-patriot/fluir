@@ -13,6 +13,7 @@ This document describes the complete set of bytecode instructions understood by 
 | `EXIT`       |          | Causes the VM to shut down gracefully.                                                                                |
 | `PUSH`       | index    | Pushes the value at index in the constant table to the top of the stack.                                              |
 | `POP`        |          | Pops the top value from the stack. As a temporary debug step, prints the value popped (this will be removed in v0.3). |
+| `MULTIPOP`   | count    | Pops the top count values from the stack. Does NOT print the value popped, like the temporary behavior of `POP`.      |
 | `GET_VAL`    | index    | Pushes the value at index on the stack to the top of the stack.                                                       |
 | `SET_VAL`    | index    | Writes the value on the top of the stack to index in the stack.                                                       |
 | `F64_ADD`    |          | Adds (binary+) the two F64 values on the top of the stack and pushes the result.                                      |

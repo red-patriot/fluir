@@ -170,24 +170,13 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                         .chunks = {fc::Chunk{.name = "bar",
                                              .code =
                                                {
-                                                 fc::PUSH,
-                                                 0x0,
-                                                 fc::F64_NEG,
-                                                 fc::PUSH,
-                                                 0x1,
+                                                 fc::PUSH,    0x0,         fc::F64_NEG, fc::PUSH,     0x1,
                                                  fc::F64_DIV,  // No POP, write {3,4}
-                                                 fc::PUSH,
-                                                 0x2,
+                                                 fc::PUSH,    0x2,
                                                  fc::GET_VAL,  // Read {3,4}
-                                                 0x0,
-                                                 fc::F64_ADD,
-                                                 fc::POP,
+                                                 0x0,         fc::F64_ADD, fc::POP,
                                                  fc::GET_VAL,  // Read {3,4}
-                                                 0x0,
-                                                 fc::F64_NEG,
-                                                 fc::POP,
-                                                 fc::POP,
-                                                 fc::EXIT,
+                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::EXIT,
                                                },
                                              .constants = {3.5_f64, 4.4_f64, 100.0_f64}}}};
 
@@ -243,17 +232,17 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
     decl.statements.push_back(std::move(binary));
   }
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{
-                          .name = "main",
-                          .code =
-                            {
-                              fc::PUSH, 0x0,         fc::PUSH, 0x1,         fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,
-                              0x0,      fc::PUSH,    0x0,      fc::I64_MUL, fc::GET_VAL, 0x1,         fc::GET_VAL,
-                              0x0,      fc::I64_ADD, fc::POP,  fc::POP,     fc::POP,     fc::EXIT,
-                            },
-                          .constants = {2_i32, 3_i32},
-                        }}};
+  fc::ByteCode expected{
+    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+    .chunks = {fc::Chunk{
+      .name = "main",
+      .code =
+        {
+          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH, 0x0, fc::I64_MUL,
+          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::EXIT,
+        },
+      .constants = {2_i32, 3_i32},
+    }}};
 
   auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
   auto actual = fluir::generateCode(ctx_, typeChecked.value());

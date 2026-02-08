@@ -45,6 +45,9 @@ namespace fluir {
     Results<code::ByteCode> run();
     void recursivelyGenerate(const ast::Node& node);
 
+    Scope& pushScope();
+    void popScope();
+
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);
     void emitUintOperator(const Operator op, bool unary = false);

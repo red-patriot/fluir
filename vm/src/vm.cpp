@@ -4,6 +4,7 @@
 #include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
 #include <functional>
 #include <iostream>
+#include <stack>
 
 #include "vm/exceptions.hpp"
 #include "vm/utility/narrow_widen.hpp"
@@ -266,6 +267,13 @@ namespace fluir {
           std::cout << stack_.back() << '\n';
           stack_.pop_back();
           break;
+        case MULTIPOP:
+          {
+            auto count = FLUIR_READ_BYTE();
+            for (size_t i = 0; i != count; ++i) {
+              stack_.pop_back();
+            }
+          }
         case EXIT:
           // TODO: Clean up this testing code later...
           goto afterLoop;

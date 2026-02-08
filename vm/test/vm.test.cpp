@@ -579,12 +579,24 @@ TEST(TestVM, GetSetValues) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
-    .chunks = {fc::Chunk{.code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, 0, EXIT}, .constants = {3_i8, 3_u8}}}};
+    .chunks = {fc::Chunk{.code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, EXIT}, .constants = {3_i8, 3_u8}}}};
 
   fluir::VirtualMachine uut;
 
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_DOUBLE_EQ(expected, uut.viewStack().back().asI8());
+}
+
+TEST(TestVM, PopsMultiple) {
+  auto expected = 4;
+  fluir::code::ByteCode code{
+    .header = {},
+    .chunks = {fc::Chunk{.code = {PUSH, 0, PUSH, 0, PUSH, 0, PUSH, 0, MULTIPOP, 4, EXIT}, .constants = {3_i8, 3_u8}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().empty());
 }
 
 TEST(TestVM, GetValueReadsFromStackNotConstants) {

@@ -200,8 +200,6 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
 }
 
-// TODO: Test with multiple locals together
-
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
   const FullID SHARED_1{1, 1};
   const FullID SHARED_2{1, 6};
@@ -707,4 +705,17 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+}
+
+TEST_F(TestBytecodeGenerator, HandlesMissingLocalVariable) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "inc_dec", .statements = {}};
+
+    decl.statements.push_back(std::make_unique<fa::LocalRead>(2, FullID{3, 1}, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  EXPECT_THROW(fluir::generateCode(ctx_, input), fluir::diagnostic::InternalError);
 }

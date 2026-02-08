@@ -172,7 +172,11 @@ namespace fluir {
   }
   void BytecodeGenerator::generate(const ast::LocalRead& read) {
     const auto& [slots] = scopes_.top();
-    // TODO: Handle missing ID
+    if (!slots.contains(read.variable())) {
+      // This shouldn't happen because it should be caught in type checking
+      diagnostic::emitInternalError(fmt::format(
+        "Expected variable {}, read by node ({}) not found.", read.variable(), fmt::join(read.fullId(), ":")));
+    }
     const auto slot = slots.at(read.variable());
     emitBytes(Instruction::GET_VAL, slot);
   }

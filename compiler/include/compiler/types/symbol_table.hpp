@@ -1,11 +1,13 @@
 #ifndef FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 #define FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
+#include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
 #include "compiler/types/conversion.hpp"
 #include "compiler/types/operator_def.hpp"
@@ -15,6 +17,7 @@
 namespace fluir::types {
   /** A hierarchical table of the available symbols at a specific scope */
   class SymbolTable {
+    //? Should all the type operations also follow scoping rules, or should they be global?
    public:
     SymbolTable();
 
@@ -42,9 +45,25 @@ namespace fluir::types {
     /** Tests if `from` can be explicitly converted to a `to` */
     bool canExplicitlyConvert(TypeID from, TypeID to);
 
+    /** Creates a new local scope for locals */
+    void pushScope();
+    /** Pops the top scope on the stack. This function has no effect if there are no scopes pushed */
+    void popScope();
+
+    /** Adds a local variable with the given ID and its type to the current scope */
+    bool addLocalVariable(ID id, TypeID type);
+    /** Retrieves the type of the local variable with the given ID */
+    TypeID getLocalVariableType(ID id) const;
+
    private:
     using OverloadSet =
       std::unordered_set<OperatorDefinition, std::hash<OperatorDefinition>, CompareOperatorDefByParameters>;
+
+    struct Scope {
+      std::unordered_map<ID, TypeID> variables{};
+    };
+
+    std::stack<Scope> localScopes_{};
     std::unordered_map<TypeID, Type> types_{};
     std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};

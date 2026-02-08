@@ -1,0 +1,4 @@
+Function(1): 'main'
+  BinaryOp(3): +
+    ConstantF64(1): 1.0000
+    ConstantF64(2): 2.0000

@@ -4,13 +4,15 @@
 #include <cstdint>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/types/traits.hpp"
+#include "compiler/utility/scope_guard.hpp"
 
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> generateCode(Context& ctx, const ast::AST& graph) {
     return BytecodeGenerator::generate(ctx, graph);
   }
 
@@ -18,27 +20,34 @@ namespace fluir {
     return writer.write(code, destination);
   }
 
-  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const ast::AST& graph) {
     BytecodeGenerator generator{ctx, graph};
     return generator.run();
   }
 
-  void BytecodeGenerator::operator()(const asg::FunctionDecl& func) {
+  void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
 
+    auto& currentScope = pushScope();
     for (const auto& node : func.statements) {
+      const auto beforeLocalCount = currentScope.slots.size();
       recursivelyGenerate(*node);
-      // Each top level node will leave a value on the stack, so pop it off
-      emitByte(Instruction::POP);
+      if (beforeLocalCount == currentScope.slots.size()) {
+        // Each top level node will leave a value on the stack,
+        // so pop it off iff it was not added as a new local
+        emitByte(Instruction::POP);
+      }
     }
+    popScope();
 
     // (FOR NOW) end all functions with the EXIT instruction
+    // TODO: Update this when we implement function defs/calls
     emitByte(Instruction::EXIT);
     code_.chunks.push_back(std::move(current_));
   }
 
-  void BytecodeGenerator::generate(const asg::BinaryOp& node) {
+  void BytecodeGenerator::generate(const ast::BinaryOp& node) {
     recursivelyGenerate(*node.lhs());
     recursivelyGenerate(*node.rhs());
 
@@ -60,7 +69,7 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::UnaryOp& node) {
+  void BytecodeGenerator::generate(const ast::UnaryOp& node) {
     constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
 
@@ -76,7 +85,7 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const asg::Constant& node) {
+  void BytecodeGenerator::generate(const ast::Constant& node) {
     auto type = node.type();
     size_t constant;
     if (type == types::ID_F64) {
@@ -105,7 +114,7 @@ namespace fluir {
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
-  void BytecodeGenerator::generate(const asg::Cast& cast) {
+  void BytecodeGenerator::generate(const ast::Cast& cast) {
     recursivelyGenerate(*cast.operand());
 
     // TODO: Handle user-defined casts here
@@ -146,7 +155,26 @@ namespace fluir {
     }
   }
 
-  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
+  void BytecodeGenerator::generate(const ast::LocalWrite& write) {
+    recursivelyGenerate(*write.child());
+
+    auto& [slots] = scopes_.top();
+    auto stackIndex = slots.size();
+    assert(stackIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
+    slots.insert({write.variable(), stackIndex});
+  }
+  void BytecodeGenerator::generate(const ast::LocalRead& read) {
+    const auto& [slots] = scopes_.top();
+    if (!slots.contains(read.variable())) {
+      // This shouldn't happen because it should be caught in type checking
+      diagnostic::emitInternalError(fmt::format(
+        "Expected variable {}, read by node ({}) not found.", read.variable(), fmt::join(read.fullId(), ":")));
+    }
+    const auto slot = slots.at(read.variable());
+    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(slot));
+  }
+
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
@@ -178,17 +206,34 @@ namespace fluir {
     return std::move(code_);
   }
 
-  void BytecodeGenerator::recursivelyGenerate(const asg::Node& node) {
+  void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {
     switch (node.kind()) {
-      case asg::NodeKind::BinaryOperator:
-        return generate(*node.as<asg::BinaryOp>());
-      case asg::NodeKind::UnaryOperator:
-        return generate(*node.as<asg::UnaryOp>());
-      case asg::NodeKind::Constant:
-        return generate(*node.as<asg::Constant>());
-      case asg::NodeKind::Cast:
-        return generate(*node.as<asg::Cast>());
+      case ast::NodeKind::BinaryOperator:
+        return generate(*node.as<ast::BinaryOp>());
+      case ast::NodeKind::UnaryOperator:
+        return generate(*node.as<ast::UnaryOp>());
+      case ast::NodeKind::Constant:
+        return generate(*node.as<ast::Constant>());
+      case ast::NodeKind::Cast:
+        return generate(*node.as<ast::Cast>());
+      case ast::NodeKind::LocalWrite:
+        return generate(*node.as<ast::LocalWrite>());
+      case ast::NodeKind::LocalRead:
+        return generate(*node.as<ast::LocalRead>());
     }
+  }
+
+  BytecodeGenerator::Scope& BytecodeGenerator::pushScope() {
+    scopes_.emplace();
+    return scopes_.top();
+  }
+  void BytecodeGenerator::popScope() {
+    auto& currentScope = scopes_.top();
+    // Clean up the local variables from this scope before popping it
+    if (!currentScope.slots.empty()) {
+      emitBytes(Instruction::MULTIPOP, static_cast<std::uint8_t>(currentScope.slots.size()));
+    }
+    scopes_.pop();
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

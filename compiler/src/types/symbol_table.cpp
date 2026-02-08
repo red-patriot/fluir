@@ -150,4 +150,32 @@ namespace fluir::types {
     return std::ranges::find_if(options, [&](const Conversion& candidate) { return candidate.to == to; }) !=
            options.end();
   }
+
+  void SymbolTable::pushScope() { localScopes_.emplace(); }
+  void SymbolTable::popScope() {
+    if (!localScopes_.empty()) {
+      localScopes_.pop();
+    }
+  }
+
+  bool SymbolTable::addLocalVariable(ID id, TypeID type) {
+    if (id == INVALID_ID) {
+      return false;
+    }
+    auto& localScope = localScopes_.top();
+    auto& variables = localScope.variables;
+    variables.insert({id, type});
+    return true;
+  }
+
+  TypeID SymbolTable::getLocalVariableType(ID id) const {
+    auto& localScope = localScopes_.top();
+    auto& variables = localScope.variables;
+    if (id == INVALID_ID || !variables.contains(id)) {
+      return TypeID::ID_INVALID;
+    }
+
+    return variables.at(id);
+  }
+
 }  // namespace fluir::types

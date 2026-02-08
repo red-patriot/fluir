@@ -1,35 +1,42 @@
 #include "compiler/frontend/type_checker.hpp"
 
+#include <compiler/utility/scope_guard.hpp>
 #include <fmt/format.h>
 
 namespace fluir {
   namespace {
-    bool checkType(Context& ctx, asg::Constant* constant);
-    bool checkType(Context& ctx, asg::BinaryOp* binary);
-    bool checkType(Context& ctx, asg::UnaryOp* unary);
-    bool checkType(Context& ctx, asg::Cast* cast);
+    bool checkType(Context& ctx, ast::Constant* constant);
+    bool checkType(Context& ctx, ast::BinaryOp* binary);
+    bool checkType(Context& ctx, ast::UnaryOp* unary);
+    bool checkType(Context& ctx, ast::Cast* cast);
+    bool checkType(Context& ctx, ast::LocalWrite* write);
+    bool checkType(Context& ctx, ast::LocalRead* read);
 
-    bool checkType(Context& ctx, asg::Node* node) {
+    bool checkType(Context& ctx, ast::Node* node) {
       if (node->type() != types::ID_INVALID) {
         // This node has already been type-checked
         return true;
       }
       switch (node->kind()) {
-        case asg::NodeKind::Constant:
-          return checkType(ctx, node->as<asg::Constant>());
-        case asg::NodeKind::BinaryOperator:
-          return checkType(ctx, node->as<asg::BinaryOp>());
-        case asg::NodeKind::UnaryOperator:
-          return checkType(ctx, node->as<asg::UnaryOp>());
-        case asg::NodeKind::Cast:
-          return checkType(ctx, node->as<asg::Cast>());
+        case ast::NodeKind::Constant:
+          return checkType(ctx, node->as<ast::Constant>());
+        case ast::NodeKind::BinaryOperator:
+          return checkType(ctx, node->as<ast::BinaryOp>());
+        case ast::NodeKind::UnaryOperator:
+          return checkType(ctx, node->as<ast::UnaryOp>());
+        case ast::NodeKind::Cast:
+          return checkType(ctx, node->as<ast::Cast>());
+        case ast::NodeKind::LocalWrite:
+          return checkType(ctx, node->as<ast::LocalWrite>());
+        case ast::NodeKind::LocalRead:
+          return checkType(ctx, node->as<ast::LocalRead>());
         default:
           diagnostic::emitInternalError("Unknown node kind encountered");
       }
     }
   }  // namespace
 
-  Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph) {
+  Results<ast::AST> typeCheck(Context& ctx, ast::AST graph) {
     bool failed = false;
     for (auto& declaration : graph.declarations) {
       try {
@@ -46,7 +53,9 @@ namespace fluir {
     return failed ? NoResult : std::make_optional(std::move(graph));
   }
 
-  Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl) {
+  Results<ast::Declaration> checkDeclType(Context& ctx, ast::Declaration decl) {
+    ctx.symbolTable.pushScope();
+    FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {
         return NoResult;
@@ -57,7 +66,7 @@ namespace fluir {
   }
 
   namespace {
-    bool checkType(Context&, asg::Constant* constant) {
+    bool checkType(Context&, ast::Constant* constant) {
       // This is dependent on the order of the types in Literal
       // TODO: Refactor this to be independent
       switch (constant->value().index()) {
@@ -95,7 +104,7 @@ namespace fluir {
       return true;
     }
 
-    bool checkType(Context& ctx, asg::BinaryOp* binary) {
+    bool checkType(Context& ctx, ast::BinaryOp* binary) {
       if (!checkType(ctx, binary->lhs().get()) || !checkType(ctx, binary->rhs().get())) {
         return false;
       }
@@ -116,17 +125,17 @@ namespace fluir {
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
       if (overloadLHS != lhs) {
-        auto castOp = std::make_shared<asg::Cast>(overloadLHS, binary->lhs(), binary->fullId(), binary->location());
-        binary->lhs() = std::move(castOp);
+        binary->lhs() =
+          ast::createDependency<ast::Cast>(overloadLHS, std::move(binary->lhs()), binary->fullId(), binary->location());
       }
       if (overloadRHS != rhs) {
-        auto castOp = std::make_shared<asg::Cast>(overloadRHS, binary->rhs(), binary->fullId(), binary->location());
-        binary->rhs() = std::move(castOp);
+        binary->rhs() =
+          ast::createDependency<ast::Cast>(overloadRHS, std::move(binary->rhs()), binary->fullId(), binary->location());
       }
       return true;
     }
 
-    bool checkType(Context& ctx, asg::UnaryOp* unary) {
+    bool checkType(Context& ctx, ast::UnaryOp* unary) {
       if (!checkType(ctx, unary->operand().get())) {
         return false;
       }
@@ -145,15 +154,42 @@ namespace fluir {
       unary->setDefinition(selectedOverload);
       auto [overloadOp, _] = selectedOverload->getParameters();
       if (overloadOp != operand) {
-        auto castOp = std::make_shared<asg::Cast>(overloadOp, unary->operand(), unary->fullId(), unary->location());
-        unary->operand() = std::move(castOp);
+        unary->operand() =
+          ast::createDependency<ast::Cast>(overloadOp, std::move(unary->operand()), unary->fullId(), unary->location());
       }
       return true;
     }
 
-    bool checkType(Context& ctx, asg::Cast* cast) {
+    bool checkType(Context& ctx, ast::Cast* cast) {
       // TODO: Handle user-defined casts here
       return checkType(ctx, cast->operand().get());
     }
+
+    bool checkType(Context& ctx, ast::LocalWrite* write) {
+      if (!checkType(ctx, write->child().get())) {
+        return false;
+      }
+      auto type = write->child()->type();
+      if (write->variable() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
+        return true;
+      }
+
+      diagnostic::emitInternalError("Encountered an invalid element ID.");
+    }
+
+    bool checkType(Context& ctx, ast::LocalRead* read) {
+      if (read->variable() == INVALID_ID) {
+        diagnostic::emitInternalError("Encountered an invalid element ID.");
+      }
+
+      auto type = ctx.symbolTable.getLocalVariableType(read->variable());
+      read->setType(type);
+      if (type == types::ID_INVALID) {
+        ctx.diagnosticSink.emitAtElement(
+          diagnostic::Code::ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, ctx.currentFile, read->fullId());
+      }
+      return true;
+    }
+
   }  // namespace
 }  // namespace fluir

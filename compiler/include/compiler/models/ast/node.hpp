@@ -1,5 +1,5 @@
-#ifndef FLUIR_COMPILER_MODELS_ASG_NODE_HPP
-#define FLUIR_COMPILER_MODELS_ASG_NODE_HPP
+#ifndef FLUIR_COMPILER_MODELS_AST_NODE_HPP
+#define FLUIR_COMPILER_MODELS_AST_NODE_HPP
 
 #include <cassert>
 #include <memory>
@@ -13,13 +13,8 @@
 #include "compiler/types/operator_def.hpp"
 #include "compiler/types/typeid.hpp"
 
-namespace fluir::asg {
-  enum class NodeKind {
-    Constant,
-    BinaryOperator,
-    UnaryOperator,
-    Cast,
-  };
+namespace fluir::ast {
+  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead };
 
   class Node {
    public:
@@ -61,8 +56,16 @@ namespace fluir::asg {
     types::TypeID type_ = types::ID_INVALID;
   };
 
-  using SharedDependency = std::shared_ptr<Node>;
+  using SharedDependency = std::unique_ptr<Node>;
   using UniqueNode = std::unique_ptr<Node>;
+  template <typename NodeType, typename... Args>
+  auto createDependency(Args&&... args) {
+    return std::make_unique<NodeType>(std::forward<Args>(args)...);
+  }
+  template <typename NodeType>
+  auto clone(const std::unique_ptr<NodeType>& p) {
+    return createDependency<NodeType>(*p);
+  }
 
   class Constant : public Node {
    public:
@@ -180,6 +183,35 @@ namespace fluir::asg {
 
   using DataFlowGraph = std::vector<UniqueNode>;
 
-}  // namespace fluir::asg
+  class LocalWrite : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalWrite; }
+
+    LocalWrite(SharedDependency child, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
+
+    [[nodiscard]] const SharedDependency& child() const { return child_; }
+    [[nodiscard]] ID variable() const { return id(); }
+
+   private:
+    SharedDependency child_;
+  };
+
+  class LocalRead : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
+
+    LocalRead(ID variable, FullID parentID, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(std::move(variable)) { }
+
+    [[nodiscard]] const FullID& parent() const { return fullId(); }
+    /** Returns the ID of the read variable */
+    [[nodiscard]] ID variable() const { return variable_; }
+
+   private:
+    ID variable_;
+  };
+
+}  // namespace fluir::ast
 
 #endif

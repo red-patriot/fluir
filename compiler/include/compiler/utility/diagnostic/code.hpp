@@ -8,9 +8,7 @@ namespace fluir::diagnostic {
 #define FLUIR_DIAGNOSTIC_CODE(x)                  \
     x(GENERIC_NOTE)                               \
     x(GENERIC_WARNING)                            \
-    x(WARNING_UNKNOWN)                            \
     x(GENERIC_ERROR)                              \
-    x(ERROR_UNKNOWN)                              \
     x(ERROR_WRONG_ROOT_ELEMENT)                   \
     x(ERROR_MISSING_MODULE_HEADER)                \
     x(ERROR_UNEXPECTED_DUPLICATE_HEADER)          \
@@ -24,7 +22,9 @@ namespace fluir::diagnostic {
     x(ERROR_DUPLICATE_IDS_FOUND)                  \
     x(ERROR_NUMBER_OUT_OF_RANGE)                  \
     x(ERROR_CIRCULAR_DEPENDENCY)                  \
-    x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)
+    x(ERROR_MISSING_DEPENDENCY)                   \
+    x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
+    x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)
   // clang-format on
 
   enum class Code : std::uint16_t {

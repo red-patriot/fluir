@@ -9,6 +9,9 @@ namespace fluir::code {
   code(EXIT)                             \
   code(PUSH)                             \
   code(POP)                              \
+  code(MULTIPOP)                         \
+  code(GET_VAL)                          \
+  code(SET_VAL)                          \
   code(F64_ADD)                          \
   code(F64_SUB)                          \
   code(F64_MUL)                          \

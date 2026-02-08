@@ -1,4 +1,4 @@
-#include "compiler/debug/asg_printer.hpp"
+#include "compiler/debug/ast_printer.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -7,16 +7,16 @@
 #include <fmt/format.h>
 
 namespace fluir::debug {
-  AsgPrinter::AsgPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
+  AstPrinter::AstPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
 
-  void AsgPrinter::print(const asg::ASG& asg) {
+  void AstPrinter::print(const ast::AST& ast) {
     // TODO: Sort decls if needed
-    for (const auto& decl : asg.declarations) {
+    for (const auto& decl : ast.declarations) {
       (*this)(decl);
     }
   }
 
-  void AsgPrinter::print(const asg::DataFlowGraph& graph) {
+  void AstPrinter::print(const ast::DataFlowGraph& graph) {
     if (inOrder_) {
       doInOrderPrint(graph);
     } else {
@@ -24,13 +24,13 @@ namespace fluir::debug {
     }
   }
 
-  void AsgPrinter::operator()(const asg::FunctionDecl& func) {
+  void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
     print(func.statements);
   }
 
-  void AsgPrinter::operator()(const asg::BinaryOp& binary) {
+  void AstPrinter::operator()(const ast::BinaryOp& binary) {
     out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
     FLUIR_SCOPED_INDENT;
@@ -38,14 +38,14 @@ namespace fluir::debug {
     print(*binary.rhs());
   }
 
-  void AsgPrinter::operator()(const asg::UnaryOp& unary) {
+  void AstPrinter::operator()(const ast::UnaryOp& unary) {
     out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
     FLUIR_SCOPED_INDENT;
     print(*unary.operand());
   }
 
-  void AsgPrinter::operator()(const asg::Constant& constant) {
+  void AstPrinter::operator()(const ast::Constant& constant) {
     using namespace literals_types;
     // TODO: Use type information instead of hardcoding this here
     auto printer = [this, &constant]<typename T>(const T& val) {
@@ -72,12 +72,27 @@ namespace fluir::debug {
     std::visit(printer, constant.value());
   }
 
-  void AsgPrinter::doOutOfOrderPrint(const asg::DataFlowGraph& graph) {
+  void AstPrinter::operator()(const ast::Cast& cast) {
+    out_ << formatIndented(
+      "Cast({}): {} -> {}\n", cast.id(), std::to_underlying(cast.from()), std::to_underlying(cast.to()));
+    FLUIR_SCOPED_INDENT;
+    print(*cast.operand());
+  }
+  void AstPrinter::operator()(const ast::LocalWrite& write) {
+    out_ << formatIndented("LocalWrite({})\n", write.id());
+    FLUIR_SCOPED_INDENT;
+    print(*write.child());
+  }
+  void AstPrinter::operator()(const ast::LocalRead& read) {
+    out_ << formatIndented("LocalRead({}): {}\n", read.id(), read.variable());
+  }
+
+  void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       print(*node);
     }
   }
-  void AsgPrinter::doInOrderPrint(const asg::DataFlowGraph& graph) {
+  void AstPrinter::doInOrderPrint(const ast::DataFlowGraph& graph) {
     // TODO: Sort elements if needed
     std::vector<std::pair<ID, size_t>> idIndices;
     idIndices.reserve(graph.size());
@@ -95,16 +110,20 @@ namespace fluir::debug {
     }
   }
 
-  void AsgPrinter::print(const asg::Node& node) {
+  void AstPrinter::print(const ast::Node& node) {
     switch (node.kind()) {
-      case asg::NodeKind::BinaryOperator:
-        return (*this)(*node.as<asg::BinaryOp>());
-      case asg::NodeKind::UnaryOperator:
-        return (*this)(*node.as<asg::UnaryOp>());
-      case asg::NodeKind::Constant:
-        return (*this)(*node.as<asg::Constant>());
-      case asg::NodeKind::Cast:
-        assert(false && "TODO");
+      case ast::NodeKind::BinaryOperator:
+        return (*this)(*node.as<ast::BinaryOp>());
+      case ast::NodeKind::UnaryOperator:
+        return (*this)(*node.as<ast::UnaryOp>());
+      case ast::NodeKind::Constant:
+        return (*this)(*node.as<ast::Constant>());
+      case ast::NodeKind::Cast:
+        return (*this)(*node.as<ast::Cast>());
+      case ast::NodeKind::LocalWrite:
+        return (*this)(*node.as<ast::LocalWrite>());
+      case ast::NodeKind::LocalRead:
+        return (*this)(*node.as<ast::LocalRead>());
     }
   }
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/types/traits.hpp"
 #include "compiler/utility/scope_guard.hpp"
@@ -170,7 +171,7 @@ namespace fluir {
         "Expected variable {}, read by node ({}) not found.", read.variable(), fmt::join(read.fullId(), ":")));
     }
     const auto slot = slots.at(read.variable());
-    emitBytes(Instruction::GET_VAL, slot);
+    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(slot));
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }

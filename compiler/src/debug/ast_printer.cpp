@@ -73,7 +73,10 @@ namespace fluir::debug {
   }
 
   void AstPrinter::operator()(const ast::Cast& cast) {
-    out_ << formatIndented("Cast({}): {} -> {}\n", cast.id(), cast.from(), cast.to());
+    out_ << formatIndented(
+      "Cast({}): {} -> {}\n", cast.id(), std::to_underlying(cast.from()), std::to_underlying(cast.to()));
+    FLUIR_SCOPED_INDENT;
+    print(*cast.operand());
   }
   void AstPrinter::operator()(const ast::LocalWrite& write) {
     out_ << formatIndented("LocalWrite({})\n", write.id());

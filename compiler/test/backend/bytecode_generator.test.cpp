@@ -14,6 +14,8 @@ namespace ft = fluir::types;
 using namespace fc::value_literals;
 using namespace fluir::literals_types;
 
+using fluir::FullID;
+
 class TestBytecodeGenerator : public ::testing::Test {
  public:
   fluir::test::TestDiagnosticSink sink_;
@@ -64,9 +66,9 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                        fa::DataFlowGraph graph;
                        graph.push_back(std::move(std::make_unique<fa::BinaryOp>(
                          fluir::Operator::STAR,
-                         fa::createDependency<fa::Constant>(1.5, fluir::FullID{3, 3}, fluir::FlowGraphLocation{}),
-                         fa::createDependency<fa::Constant>(2.5, fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-                         fluir::FullID{3, 1},
+                         fa::createDependency<fa::Constant>(1.5, FullID{3, 3}, fluir::FlowGraphLocation{}),
+                         fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                         FullID{3, 1},
                          fluir::FlowGraphLocation{})));
                        return graph;
                      }()});
@@ -100,8 +102,8 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                        fa::DataFlowGraph graph;
                        graph.push_back(std::make_unique<fa::UnaryOp>(
                          fluir::Operator::MINUS,
-                         fa::createDependency<fa::Constant>(3.456, fluir::FullID{3, 3}, fluir::FlowGraphLocation{}),
-                         fluir::FullID{3, 1},
+                         fa::createDependency<fa::Constant>(3.456, FullID{3, 3}, fluir::FlowGraphLocation{}),
+                         FullID{3, 1},
                          fluir::FlowGraphLocation{}));
                        return graph;
                      }()});
@@ -127,7 +129,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
-  const fluir::FullID SHARED_ID{3, 4};
+  const FullID SHARED_ID{3, 4};
   fa::AST input;
   input.declarations.push_back([&]() { return fa::Declaration{.id = 3, .name = "bar", .statements = {}}; }());
   auto& decl = input.declarations.back();
@@ -137,10 +139,10 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
         fluir::Operator::SLASH,
         fa::createDependency<fa::UnaryOp>(
           fluir::Operator::MINUS,
-          fa::createDependency<fa::Constant>(3.5, fluir::FullID{3, 5}, fluir::FlowGraphLocation{}),
-          fluir::FullID{3, 2},
+          fa::createDependency<fa::Constant>(3.5, FullID{3, 5}, fluir::FlowGraphLocation{}),
+          FullID{3, 2},
           fluir::FlowGraphLocation{}),
-        fa::createDependency<fa::Constant>(4.4, fluir::FullID{3, 6}, fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::Constant>(4.4, FullID{3, 6}, fluir::FlowGraphLocation{}),
         SHARED_ID,
         fluir::FlowGraphLocation{}),
       fluir::FlowGraphLocation{});
@@ -149,18 +151,18 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   {
     auto binaryDependent = fa::createDependency<fa::BinaryOp>(
       fluir::Operator::PLUS,
-      fa::createDependency<fa::Constant>(100.0, fluir::FullID{3, 3}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::LocalRead>(SHARED_ID, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 1},
+      fa::createDependency<fa::Constant>(100.0, FullID{3, 3}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::LocalRead>(SHARED_ID.back(), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      FullID{3, 1},
       fluir::FlowGraphLocation{});
     decl.statements.push_back(std::move(binaryDependent));
   }
   {
-    auto unaryDependent =
-      fa::createDependency<fa::UnaryOp>(fluir::Operator::MINUS,
-                                        fa::createDependency<fa::LocalRead>(SHARED_ID, fluir::FlowGraphLocation{}),
-                                        fluir::FullID{3, 7},
-                                        fluir::FlowGraphLocation{});
+    auto unaryDependent = fa::createDependency<fa::UnaryOp>(
+      fluir::Operator::MINUS,
+      fa::createDependency<fa::LocalRead>(SHARED_ID.back(), FullID{3, 7}, fluir::FlowGraphLocation{}),
+      FullID{3, 7},
+      fluir::FlowGraphLocation{});
     decl.statements.push_back(std::move(unaryDependent));
   }
 
@@ -201,8 +203,8 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
 // TODO: Test with multiple locals together
 
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
-  const fluir::FullID SHARED_1{1, 1};
-  const fluir::FullID SHARED_2{1, 6};
+  const FullID SHARED_1{1, 1};
+  const FullID SHARED_2{1, 6};
   fa::AST input;
   input.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "main", .statements = {}}; }());
   auto& decl = input.declarations.back();
@@ -213,9 +215,9 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
         fluir::Operator::MINUS,
         fa::createDependency<fa::BinaryOp>(
           fluir::Operator::STAR,
-          fa::createDependency<fa::Constant>(2, fluir::FullID{1, 4}, fluir::FlowGraphLocation{}),
-          fa::createDependency<fa::Constant>(3, fluir::FullID{1, 5}, fluir::FlowGraphLocation{}),
-          fluir::FullID{1, 3},
+          fa::createDependency<fa::Constant>(2, FullID{1, 4}, fluir::FlowGraphLocation{}),
+          fa::createDependency<fa::Constant>(3, FullID{1, 5}, fluir::FlowGraphLocation{}),
+          FullID{1, 3},
           fluir::FlowGraphLocation{}),
         SHARED_1,
         fluir::FlowGraphLocation{}),
@@ -226,20 +228,20 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
     auto shared2 = fa::createDependency<fa::LocalWrite>(
       fa::createDependency<fa::BinaryOp>(
         fluir::Operator::STAR,
-        fa::createDependency<fa::LocalRead>(SHARED_1, fluir::FlowGraphLocation{}),
-        fa::createDependency<fa::Constant>(2, fluir::FullID{1, 8}, fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::LocalRead>(SHARED_1.back(), FullID{SHARED_2}, fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::Constant>(2, FullID{1, 8}, fluir::FlowGraphLocation{}),
         SHARED_2,
         fluir::FlowGraphLocation{}),
       fluir::FlowGraphLocation{});
     decl.statements.push_back(std::move(shared2));
   }
   {
-    auto binary =
-      fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
-                                         fa::createDependency<fa::LocalRead>(SHARED_2, fluir::FlowGraphLocation{}),
-                                         fa::createDependency<fa::LocalRead>(SHARED_1, fluir::FlowGraphLocation{}),
-                                         fluir::FullID{1, 8},
-                                         fluir::FlowGraphLocation{});
+    auto binary = fa::createDependency<fa::BinaryOp>(
+      fluir::Operator::PLUS,
+      fa::createDependency<fa::LocalRead>(SHARED_2.back(), FullID{1, 8}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::LocalRead>(SHARED_1.back(), FullID{1, 8}, fluir::FlowGraphLocation{}),
+      FullID{1, 8},
+      fluir::FlowGraphLocation{});
     decl.statements.push_back(std::move(binary));
   }
 
@@ -269,13 +271,13 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<I8>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<I8>(8), FullID{3, 1}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<I16>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<I16>(16), FullID{3, 2}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<I32>(32), fluir::FullID{3, 3}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<I32>(32), FullID{3, 3}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<I64>(64), fluir::FullID{3, 4}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<I64>(64), FullID{3, 4}, fluir::FlowGraphLocation{})));
     return decl;
   }());
 
@@ -312,13 +314,13 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<U8>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<U8>(8), FullID{3, 1}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<U16>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<U16>(16), FullID{3, 2}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<U32>(32), fluir::FullID{3, 3}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<U32>(32), FullID{3, 3}, fluir::FlowGraphLocation{})));
     decl.statements.push_back(
-      std::move(std::make_unique<fa::Constant>(static_cast<U64>(64), fluir::FullID{3, 4}, fluir::FlowGraphLocation{})));
+      std::move(std::make_unique<fa::Constant>(static_cast<U64>(64), FullID{3, 4}, fluir::FlowGraphLocation{})));
 
     return decl;
   }());
@@ -357,27 +359,27 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::PLUS,
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<I32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::MINUS,
-      fa::createDependency<fa::Constant>(static_cast<I32>(28), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<I32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<I32>(28), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::STAR,
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<I32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::SLASH,
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<I32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
 
     return decl;
@@ -411,27 +413,27 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::PLUS,
-      fa::createDependency<fa::Constant>(static_cast<U32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<U32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::MINUS,
-      fa::createDependency<fa::Constant>(static_cast<U32>(28), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<U32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<U32>(28), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::STAR,
-      fa::createDependency<fa::Constant>(static_cast<U32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<U32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
     decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
       fluir::Operator::SLASH,
-      fa::createDependency<fa::Constant>(static_cast<U32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{}),
-      fa::createDependency<fa::Constant>(static_cast<U32>(16), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}),
-      fluir::FullID{3, 3},
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
       fluir::FlowGraphLocation{})));
 
     return decl;
@@ -464,21 +466,20 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
 
-    auto integer =
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
-    auto floatPoint = fa::createDependency<fa::Constant>(12.4, fluir::FullID{3, 3}, fluir::FlowGraphLocation{});
+    auto integer = fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto floatPoint = fa::createDependency<fa::Constant>(12.4, FullID{3, 3}, fluir::FlowGraphLocation{});
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_F64, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_F64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(floatPoint), fluir::FullID{3, 3}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(floatPoint), FullID{3, 3}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U64, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_U64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -533,14 +534,13 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
 
-    auto integer =
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto integer = fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U32, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_U32, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U16, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_U16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U8, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_U8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -581,13 +581,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
 
-    auto integer =
-      fa::createDependency<fa::Constant>(static_cast<U32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
-    auto floatPoint = fa::createDependency<fa::Constant>(12.4, fluir::FullID{3, 3}, fluir::FlowGraphLocation{});
+    auto integer = fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto floatPoint = fa::createDependency<fa::Constant>(12.4, FullID{3, 3}, fluir::FlowGraphLocation{});
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_F64, std::move(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_F64, std::move(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U64, std::move(floatPoint), fluir::FullID{3, 3}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_U64, std::move(floatPoint), FullID{3, 3}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -622,14 +621,13 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
 
-    auto integer =
-      fa::createDependency<fa::Constant>(static_cast<U32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto integer = fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I32, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I32, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), fluir::FullID{3, 2}, fluir::FlowGraphLocation{}));
+      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -670,24 +668,23 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "inc_dec", .statements = {}};
 
-    auto integer =
-      fa::createDependency<fa::Constant>(static_cast<I32>(8), fluir::FullID{3, 1}, fluir::FlowGraphLocation{});
-    auto floatingPt = fa::createDependency<fa::Constant>(12.45, fluir::FullID{3, 2}, fluir::FlowGraphLocation{});
+    auto integer = fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
+    auto floatingPt = fa::createDependency<fa::Constant>(12.45, FullID{3, 2}, fluir::FlowGraphLocation{});
     auto unsignedInt =
-      fa::createDependency<fa::Constant>(static_cast<U64>(8), fluir::FullID{3, 3}, fluir::FlowGraphLocation{});
+      fa::createDependency<fa::Constant>(static_cast<U64>(8), FullID{3, 3}, fluir::FlowGraphLocation{});
 
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(integer), fluir::FullID{3, 4}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone(integer), FullID{3, 4}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(integer), fluir::FullID{3, 5}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone(integer), FullID{3, 5}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(floatingPt), fluir::FullID{3, 6}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone(floatingPt), FullID{3, 6}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(floatingPt), fluir::FullID{3, 7}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone(floatingPt), FullID{3, 7}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(unsignedInt), fluir::FullID{3, 8}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone(unsignedInt), FullID{3, 8}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(unsignedInt), fluir::FullID{3, 9}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone(unsignedInt), FullID{3, 9}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());

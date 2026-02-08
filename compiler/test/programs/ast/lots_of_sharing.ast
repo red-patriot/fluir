@@ -5,24 +5,24 @@ Function(1): 'main'
     ConstantI32(3): 3
   LocalWrite(5)
     BinaryOp(5): /
-      LocalRead(2)
+      LocalRead(5): 2
       BinaryOp(4): +
         ConstantF64(1): 1.5000
-        LocalRead(2)
+        LocalRead(4): 2
   LocalWrite(6)
     BinaryOp(6): *
-      LocalRead(2)
-      LocalRead(3)
+      LocalRead(6): 2
+      LocalRead(6): 3
   LocalWrite(7)
     BinaryOp(7): +
-      LocalRead(5)
-      LocalRead(6)
+      LocalRead(7): 5
+      LocalRead(7): 6
   BinaryOp(8): -
-    LocalRead(6)
-    LocalRead(3)
+    LocalRead(8): 6
+    LocalRead(8): 3
   BinaryOp(19): +
-    LocalRead(5)
-    LocalRead(6)
+    LocalRead(19): 5
+    LocalRead(19): 6
   BinaryOp(20): +
-    LocalRead(7)
-    LocalRead(7)
+    LocalRead(20): 7
+    LocalRead(20): 7

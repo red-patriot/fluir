@@ -191,6 +191,7 @@ namespace fluir::ast {
       Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
 
     [[nodiscard]] const SharedDependency& child() const { return child_; }
+    [[nodiscard]] ID variable() const { return id(); }
 
    private:
     SharedDependency child_;
@@ -198,8 +199,17 @@ namespace fluir::ast {
 
   class LocalRead : public Node {
    public:
-    LocalRead(FullID id, const FlowGraphLocation& location) : Node(NodeKind::LocalRead, std::move(id), location) { }
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
+
+    LocalRead(ID variable, FullID parentID, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(std::move(variable)) { }
+
+    [[nodiscard]] const FullID& parent() const { return fullId(); }
+    /** Returns the ID of the read variable */
+    [[nodiscard]] ID variable() const { return variable_; }
+
+   private:
+    ID variable_;
   };
 
 }  // namespace fluir::ast

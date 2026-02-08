@@ -105,7 +105,8 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
     {
       ASSERT_TRUE(binary->lhs()->is<fluir::ast::LocalRead>());
       const auto& lhs = binary->lhs()->as<fluir::ast::LocalRead>();
-      EXPECT_EQ(2, lhs->id());
+      EXPECT_EQ(1, lhs->id());
+      EXPECT_EQ(2, lhs->variable());
     }
 
     {
@@ -113,7 +114,7 @@ TEST(TestBuildFlowGraph, SingleBinaryExprWithSharing) {
       auto unary = binary->rhs()->as<fluir::ast::UnaryOp>();
       EXPECT_EQ(fluir::Operator::PLUS, unary->op());
       ASSERT_TRUE(unary->operand()->is<fluir::ast::LocalRead>());
-      EXPECT_EQ(2, unary->operand()->as<fluir::ast::LocalRead>()->id());
+      EXPECT_EQ(2, unary->operand()->as<fluir::ast::LocalRead>()->variable());
     }
   }
 }
@@ -172,7 +173,7 @@ TEST(TestBuildFlowGraph, MultipleExprWithSharing) {
   EXPECT_TRUE(unary2->operand()->is<fluir::ast::LocalRead>());
 }
 
-TEST(TestBuildFlowGraph, BgfixFullIdsIncorrect) {
+TEST(TestBuildFlowGraph, BugfixFullIdsIncorrect) {
   fluir::FullID expected{1, 2};
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink};

@@ -168,12 +168,12 @@ namespace fluir {
     auto& [slots] = scopes_.top();
     auto stackIndex = slots.size();
     assert(stackIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
-    slots.insert({write.id(), stackIndex});
+    slots.insert({write.variable(), stackIndex});
   }
   void BytecodeGenerator::generate(const ast::LocalRead& read) {
     const auto& [slots] = scopes_.top();
     // TODO: Handle missing ID
-    const auto slot = slots.at(read.id());
+    const auto slot = slots.at(read.variable());
     emitBytes(Instruction::GET_VAL, slot);
   }
 

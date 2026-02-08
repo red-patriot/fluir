@@ -100,40 +100,35 @@ namespace fluir {
   }
 
   FlowGraphBuilder::FlowGraphBuilder(Context& ctx, pt::Block block, std::vector<ID> parents) :
-    ctx_(ctx), block_(std::move(block)), parents_(std::move(parents)) { }
+    ctx_(ctx), block_(std::move(block)), currentID_(std::move(parents)) { }
 
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    auto fullID = parents_;
-    fullID.push_back(pt.id);
     return std::make_unique<ast::BinaryOp>(
-      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), std::move(fullID), pt.location);
+      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), currentID_, pt.location);
   }
 
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    auto fullID = parents_;
-    fullID.push_back(pt.id);
-    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), std::move(fullID), pt.location);
+    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), currentID_, pt.location);
   };
 
   ast::UniqueNode FlowGraphBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    auto fullID = parents_;
-    fullID.push_back(pt.id);
-    return std::make_unique<ast::Constant>(pt.value, std::move(fullID), pt.location);
+    return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
   }
 
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     alreadyFound_.reserve(block_.nodes.size());
     locals_ = getLocalNodes(block_);
+    currentID_.push_back(INVALID_ID);  // Make a space for the next level of IDs
     dag::Arcs<ID> dependencies;
     for (const auto& local : locals_) {
-      current_ = local;
-      auto astNode = std::visit(*this, block_.nodes.at(local));
+      currentID_.back() = local;
+      auto astNode = process(local, block_.nodes.at(local));
       auto write = ast::createDependency<ast::LocalWrite>(std::move(astNode), astNode->location());
       dependencies.insert({local, std::move(dependencies_)});
       dependencies_ = {};
@@ -153,11 +148,22 @@ namespace fluir {
     }
 
     for (const auto& ptNode : sinkNodes) {
-      auto astNode = std::visit(*this, block_.nodes.at(ptNode));
+      currentID_.back() = ptNode;
+      auto astNode = process(ptNode, block_.nodes.at(ptNode));
       graph_.emplace_back(std::move(astNode));
     }
 
+    currentID_.pop_back();
     return std::move(graph_);
+  }
+
+  ast::UniqueNode FlowGraphBuilder::process(ID id, pt::Node pt) {
+    // Remember the ID of the previous node and restore it after processing
+    const ID prevID = currentID_.back();
+    currentID_.back() = id;
+    FLUIR_SCOPE_EXIT { currentID_.back() = prevID; };
+    auto astNode = std::visit(*this, pt);
+    return astNode;
   }
 
   ast::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
@@ -180,19 +186,13 @@ namespace fluir {
     }
 
     if (locals_.contains(dependencyId)) {
-      auto readID = parents_;
-      readID.push_back(dependencyId);
       dependencies_.insert(dependencyId);
-      return ast::createDependency<ast::LocalRead>(std::move(readID), FlowGraphLocation{});
+      return ast::createDependency<ast::LocalRead>(dependencyId, currentID_, FlowGraphLocation{});
     }
 
     auto& pt = block_.nodes.at(dependencyId);  // TODO: Handle missing ID
-    ast::SharedDependency dependency{std::visit(*this, pt)};
+    auto dependency = process(dependencyId, pt);
     alreadyFound_.insert(dependencyId);
     return dependency;
-  }
-
-  ast::SharedDependency FlowGraphBuilder::createLocal() {
-    return ast::createDependency<ast::LocalRead>(parents_, FlowGraphLocation{});
   }
 }  // namespace fluir

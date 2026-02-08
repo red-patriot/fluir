@@ -170,7 +170,7 @@ namespace fluir {
         return false;
       }
       auto type = write->child()->type();
-      if (write->id() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->id(), type)) {
+      if (write->variable() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
         return true;
       }
 
@@ -178,11 +178,11 @@ namespace fluir {
     }
 
     bool checkType(Context& ctx, ast::LocalRead* read) {
-      if (read->id() == INVALID_ID) {
+      if (read->variable() == INVALID_ID) {
         diagnostic::emitInternalError("Encountered an invalid element ID.");
       }
 
-      auto type = ctx.symbolTable.getLocalVariableType(read->id());
+      auto type = ctx.symbolTable.getLocalVariableType(read->variable());
       read->setType(type);
       if (type == types::ID_INVALID) {
         ctx.diagnosticSink.emitAtElement(

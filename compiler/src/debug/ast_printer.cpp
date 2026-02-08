@@ -80,7 +80,9 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     print(*write.child());
   }
-  void AstPrinter::operator()(const ast::LocalRead& read) { out_ << formatIndented("LocalRead({})\n", read.id()); }
+  void AstPrinter::operator()(const ast::LocalRead& read) {
+    out_ << formatIndented("LocalRead({}): {}\n", read.id(), read.variable());
+  }
 
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {

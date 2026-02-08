@@ -22,6 +22,7 @@ namespace fluir::diagnostic {
     x(ERROR_DUPLICATE_IDS_FOUND)                  \
     x(ERROR_NUMBER_OUT_OF_RANGE)                  \
     x(ERROR_CIRCULAR_DEPENDENCY)                  \
+    x(ERROR_MISSING_DEPENDENCY)                   \
     x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
     x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)
   // clang-format on

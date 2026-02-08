@@ -32,6 +32,7 @@ namespace fluir::diagnostic {
        "The number was parsed successfully, "
        "but does not fit into the range pf its target type."},
       {ERROR_CIRCULAR_DEPENDENCY, "There is a circular dependency between flow graph nodes."},
+      {ERROR_MISSING_DEPENDENCY, "There is a missing dependency for a flow graph node."},
       {ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED, "Operator overload resolution failed."},
       {ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, "Cannot determine the type of a local dependency."}};
   }  // namespace

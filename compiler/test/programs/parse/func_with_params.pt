@@ -1,0 +1,19 @@
+1:
+    FunctionDecl(main)
+    at(x10, y10, z3, w100, h100)
+    input
+        2:
+            Param(in1)
+            at(x0, y30, z0, w10, h7)
+            type f64
+        3:
+            Param(in2)
+            at(x0, y50, z0, w10, h7)
+            type i32
+    output
+        4:
+            Return
+            at(x0, y24, z0, w10, h7)
+            type u8
+    body
+    conduits

@@ -187,14 +187,22 @@ namespace fluir {
   void Parser::functionDecl(Element* element) {
     constexpr std::string_view type = "function";
     constexpr std::string_view bodyTag = "body";
+    constexpr std::string_view inputTag = "input";
+    constexpr std::string_view outputTag = "output";
     std::string_view name = getAttribute(element, type, "name");
     ID id = parseId(element, type);
     auto location = parseLocation(element, type);
     std::optional<pt::Block> body;
+    pt::Parameters parameters;
+    pt::Returns returns;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       std::string_view childName = child->Name();
       if (childName == bodyTag) {
         body = block(child);
+      } else if (childName == inputTag) {
+        parameters = funcInputs(child);
+      } else if (childName == outputTag) {
+        returns = funcOutputs(child);
       } else {
         panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
       }
@@ -203,7 +211,56 @@ namespace fluir {
     panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
 
     panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-    tree_.declarations.emplace(id, pt::FunctionDecl{id, location, std::string(name), std::move(*body)});
+    tree_.declarations.emplace(
+      id,
+      pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(parameters), std::move(returns)});
+  }
+
+  pt::Parameters Parser::funcInputs(Element* section) {
+    pt::Parameters parameters;
+
+    for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        auto result = funcParameter(child);
+        auto& [id, param] = result;
+        parameters.insert({id, param});
+      };
+    }
+
+    return parameters;
+  }
+
+  std::pair<ID, pt::Parameter> Parser::funcParameter(Element* element) {
+    constexpr std::string_view type = "param";
+
+    auto name = getAttribute(element, type, "name");
+    auto id = parseId(element, "id");
+    auto location = parseBorderingLocation(element, type);
+    auto typeName = getAttribute(element, type, "type");
+
+    return {
+      id, pt::Parameter{.id = id, .location = location, .name = std::string(name), .typeName = std::string(typeName)}};
+  }
+
+  pt::Returns Parser::funcOutputs(Element* section) {
+    pt::Returns ret;
+
+    for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        auto result = funcReturn(child);
+        ret.insert(result);
+      };
+    }
+
+    return ret;
+  }
+
+  std::pair<ID, pt::Return> Parser::funcReturn(Element* element) {
+    constexpr std::string_view type = "return";
+    auto id = parseId(element, type);
+    auto location = parseBorderingLocation(element, type);
+    auto typeName = getAttribute(element, type, "type");
+    return {id, pt::Return{.id = id, .location = location, .typeName = std::string(typeName)}};
   }
 
   pt::Block Parser::block(Element* body) {
@@ -509,6 +566,27 @@ namespace fluir {
       .x = std::atoi(getAttribute(element, type, "x").data()),
       .y = std::atoi(getAttribute(element, type, "y").data()),
       .z = std::atoi(getAttribute(element, type, "z").data()),
+      .width = std::atoi(getAttribute(element, type, "w").data()),
+      .height = std::atoi(getAttribute(element, type, "h").data()),
+    };
+  }
+
+  FlowGraphLocation Parser::parseBorderingLocation(Element* element, std::string_view type) {
+    auto x = getOptionalAttribute(element, "x", "");
+    auto y = getOptionalAttribute(element, "y", "");
+    // TODO: Check these are valid
+
+    if (x.empty()) {
+      x = "0";
+    }
+    if (y.empty()) {
+      y = "0";
+    }
+
+    return FlowGraphLocation{
+      .x = std::atoi(x.data()),
+      .y = std::atoi(y.data()),
+      .z = 0,
       .width = std::atoi(getAttribute(element, type, "w").data()),
       .height = std::atoi(getAttribute(element, type, "h").data()),
     };

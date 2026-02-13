@@ -72,12 +72,36 @@ namespace fluir::pt {
 
   inline const Block EMPTY_BLOCK = {};
 
+  struct Parameter {
+    ID id;
+    FlowGraphLocation location;
+
+    std::string name;
+    std::string typeName;
+
+    friend bool operator==(const Parameter&, const Parameter&) = default;
+  };
+
+  struct Return {
+    ID id;
+    FlowGraphLocation location;
+
+    std::string typeName;
+
+    friend bool operator==(const Return&, const Return&) = default;
+  };
+
+  using Parameters = std::unordered_map<ID, Parameter>;
+  using Returns = std::unordered_map<ID, Return>;
+
   struct FunctionDecl {
     ID id;
     FlowGraphLocation location;
 
     std::string name;
     Block body;
+    Parameters parameters;
+    Returns returns;
 
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };

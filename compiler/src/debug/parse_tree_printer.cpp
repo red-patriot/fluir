@@ -31,6 +31,23 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("FunctionDecl({})\n", func.name) << doPrint(func.location);
 
+    if (!func.parameters.empty()) {
+      out_ << formatIndented("input\n");
+      FLUIR_SCOPED_INDENT;
+      auto orderedParams = keyOrder(func.parameters);
+      for (const auto& param : orderedParams) {
+        (*this)(func.parameters.at(param));
+      }
+    }
+    if (!func.returns.empty()) {
+      out_ << formatIndented("output\n");
+      auto orderedReturns = keyOrder(func.returns);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& ret : orderedReturns) {
+        (*this)(func.returns.at(ret));
+      }
+    }
+
     {
       out_ << formatIndented("body\n");
       auto orderedNodes = keyOrder(func.body.nodes);
@@ -48,6 +65,18 @@ namespace fluir::debug {
         (*this)(func.body.conduits.at(conduit));
       }
     }
+  }
+
+  void ParseTreePrinter::operator()(const pt::Parameter& param) {
+    out_ << formatIndented("{}:\n", param.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Param({})\n", param.name) << doPrint(param.location)
+         << formatIndented("type {}\n", param.typeName);
+  }
+  void ParseTreePrinter::operator()(const pt::Return& ret) {
+    out_ << formatIndented("{}:\n", ret.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Return\n") << doPrint(ret.location) << formatIndented("type {}\n", ret.typeName);
   }
 
   void ParseTreePrinter::operator()(const pt::Binary& binary) {

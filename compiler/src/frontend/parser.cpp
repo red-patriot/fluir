@@ -185,13 +185,12 @@ namespace fluir {
   }
 
   void Parser::functionDecl(Element* element) {
-    constexpr std::string_view type = "function";
     constexpr std::string_view bodyTag = "body";
     constexpr std::string_view inputTag = "input";
     constexpr std::string_view outputTag = "output";
-    std::string_view name = getAttribute(element, type, "name");
-    ID id = parseId(element, type);
-    auto location = parseLocation(element, type);
+    std::string_view name = getAttribute(element, "name");
+    ID id = parseId(element);
+    auto location = parseLocation(element);
     std::optional<pt::Block> body;
     pt::Parameters parameters;
     pt::Returns returns;
@@ -231,12 +230,10 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Parameter> Parser::funcParameter(Element* element) {
-    constexpr std::string_view type = "param";
-
-    auto name = getAttribute(element, type, "name");
-    auto id = parseId(element, "id");
-    auto location = parseBorderingLocation(element, type);
-    auto typeName = getAttribute(element, type, "type");
+    auto name = getAttribute(element, "name");
+    auto id = parseId(element);
+    auto location = parseBorderingLocation(element);
+    auto typeName = getAttribute(element, "type");
 
     return {
       id, pt::Parameter{.id = id, .location = location, .name = std::string(name), .typeName = std::string(typeName)}};
@@ -256,10 +253,9 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Return> Parser::funcReturn(Element* element) {
-    constexpr std::string_view type = "return";
-    auto id = parseId(element, type);
-    auto location = parseBorderingLocation(element, type);
-    auto typeName = getAttribute(element, type, "type");
+    auto id = parseId(element);
+    auto location = parseBorderingLocation(element);
+    auto typeName = getAttribute(element, "type");
     return {id, pt::Return{.id = id, .location = location, .typeName = std::string(typeName)}};
   }
 
@@ -307,9 +303,8 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Conduit> Parser::conduit(Element* element) {
-    constexpr std::string_view type = "conduit";
-    auto id = parseId(element, type);
-    auto input = parseIdReference(element, "input", type);
+    auto id = parseId(element);
+    auto input = parseIdReference(element, "input");
     auto indexStr = getOptionalAttribute(element, "index", "0");
     auto index = std::stoi(indexStr.data());
     std::vector<pt::Conduit::Output> children;
@@ -321,8 +316,7 @@ namespace fluir {
   }
 
   pt::Conduit::Output Parser::conduitOutput(Element* element) {
-    constexpr std::string_view type = "output";
-    auto target = parseIdReference(element, "target", type);
+    auto target = parseIdReference(element, "target");
     auto indexStr = getOptionalAttribute(element, "index", "0");
     auto index = std::stoi(indexStr.data());
 
@@ -330,33 +324,30 @@ namespace fluir {
   }
 
   std::pair<ID, pt::Node> Parser::constant(Element* element) {
-    std::string_view type = "constant";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     auto value = literal(element->FirstChildElement());
 
     return {id, pt::Constant{id, location, value}};
   }
 
   std::pair<ID, pt::Node> Parser::binary(Element* element) {
-    std::string_view type = "binary";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     // TODO: Remove this
-    auto lhs = parseOptionalIdReference(element, "lhs", type);
-    auto rhs = parseOptionalIdReference(element, "rhs", type);
-    auto op = parseOperator(element, "operator", type);
+    auto lhs = parseOptionalIdReference(element, "lhs");
+    auto rhs = parseOptionalIdReference(element, "rhs");
+    auto op = parseOperator(element, "operator");
 
     return {id, pt::Binary{id, location, lhs, rhs, op}};
   }
 
   std::pair<ID, pt::Node> Parser::unary(Element* element) {
-    std::string_view type = "unary";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     // TODO: Remove this
-    auto lhs = parseOptionalIdReference(element, "lhs", type);
-    auto op = parseOperator(element, "operator", type);
+    auto lhs = parseOptionalIdReference(element, "lhs");
+    auto op = parseOperator(element, "operator");
 
     return {id, pt::Unary{id, location, lhs, op}};
   }
@@ -516,13 +507,13 @@ namespace fluir {
     diagnostic::emitInternalError("Control reached an impossible point");
   }
 
-  std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
+  std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
     panicIf(value == nullptr,
             element,
             diagnostic::Code::ERROR_MISSING_ATTRIBUTE,
             "element <{}> is missing attribute '{}'.",
-            type,
+            element->Name(),
             attribute);
 
     return value;
@@ -539,39 +530,39 @@ namespace fluir {
     }
   }
 
-  ID Parser::parseId(Element* element, std::string_view type) { return parseIdReference(element, "id", type); }
+  ID Parser::parseId(Element* element) { return parseIdReference(element, "id"); }
 
-  ID Parser::parseIdReference(Element* element, std::string_view attribute, std::string_view type) {
+  ID Parser::parseIdReference(Element* element, std::string_view attribute) {
     ID reference = INVALID_ID;
     auto error = element->QueryUnsigned64Attribute(attribute.data(), &reference);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             diagnostic::Code::ERROR_MISSING_ATTRIBUTE,
             "element <{}> is missing attribute '{}'.",
-            type,
+            element->Name(),
             attribute);
 
     return reference;
   }
 
-  ID Parser::parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view) {
+  ID Parser::parseOptionalIdReference(Element* element, std::string_view attribute) {
     ID reference = INVALID_ID;
     element->QueryUnsigned64Attribute(attribute.data(), &reference);
 
     return reference;
   }
 
-  FlowGraphLocation Parser::parseLocation(Element* element, std::string_view type) {
+  FlowGraphLocation Parser::parseLocation(Element* element) {
     return {
-      .x = std::atoi(getAttribute(element, type, "x").data()),
-      .y = std::atoi(getAttribute(element, type, "y").data()),
-      .z = std::atoi(getAttribute(element, type, "z").data()),
-      .width = std::atoi(getAttribute(element, type, "w").data()),
-      .height = std::atoi(getAttribute(element, type, "h").data()),
+      .x = std::atoi(getAttribute(element, "x").data()),
+      .y = std::atoi(getAttribute(element, "y").data()),
+      .z = std::atoi(getAttribute(element, "z").data()),
+      .width = std::atoi(getAttribute(element, "w").data()),
+      .height = std::atoi(getAttribute(element, "h").data()),
     };
   }
 
-  FlowGraphLocation Parser::parseBorderingLocation(Element* element, std::string_view type) {
+  FlowGraphLocation Parser::parseBorderingLocation(Element* element) {
     auto x = getOptionalAttribute(element, "x", "");
     auto y = getOptionalAttribute(element, "y", "");
     // TODO: Check these are valid
@@ -587,12 +578,12 @@ namespace fluir {
       .x = std::atoi(x.data()),
       .y = std::atoi(y.data()),
       .z = 0,
-      .width = std::atoi(getAttribute(element, type, "w").data()),
-      .height = std::atoi(getAttribute(element, type, "h").data()),
+      .width = std::atoi(getAttribute(element, "w").data()),
+      .height = std::atoi(getAttribute(element, "h").data()),
     };
   }
 
-  Operator Parser::parseOperator(Element* element, std::string_view attribute, std::string_view) {
+  Operator Parser::parseOperator(Element* element, std::string_view attribute) {
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
     if (opText == "+") {

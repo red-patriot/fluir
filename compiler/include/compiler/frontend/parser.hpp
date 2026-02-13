@@ -63,16 +63,16 @@ namespace fluir {
     pt::U32 u32(Element* element);
     pt::U64 u64(Element* element);
 
-    std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
+    std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,
                                           std::string_view attribute,
                                           std::string_view defaultValue = "");
-    ID parseId(Element* element, std::string_view type);
-    ID parseIdReference(Element* element, std::string_view attribute, std::string_view type);
-    ID parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view type);
-    FlowGraphLocation parseLocation(Element* element, std::string_view type);
-    FlowGraphLocation parseBorderingLocation(Element* element, std::string_view type);
-    Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
+    ID parseId(Element* element);
+    ID parseIdReference(Element* element, std::string_view attribute);
+    ID parseOptionalIdReference(Element* element, std::string_view attribute);
+    FlowGraphLocation parseLocation(Element* element);
+    FlowGraphLocation parseBorderingLocation(Element* element);
+    Operator parseOperator(Element* element, std::string_view attribute);
 
     template <typename... FmtArgs>
     void panicAt(Element*, diagnostic::Code code, fmt::format_string<FmtArgs...> format = "", FmtArgs&&... args);

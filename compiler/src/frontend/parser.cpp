@@ -186,38 +186,45 @@ namespace fluir {
 
   void Parser::functionDecl(Element* element) {
     constexpr std::string_view type = "function";
+    constexpr std::string_view bodyTag = "body";
     std::string_view name = getAttribute(element, type, "name");
     ID id = parseId(element, type);
     auto location = parseLocation(element, type);
+    std::optional<pt::Block> body;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view childName = child->Name();
+      if (childName == bodyTag) {
+        body = block(child);
+      } else {
+        panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
+      }
+    }
 
-    auto bodyElement = element->FirstChildElement("body");
-    panicIf(!bodyElement, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
-
-    pt::Block body = block(bodyElement->FirstChildElement());
+    panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
 
     panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-    tree_.declarations.emplace(id, pt::FunctionDecl{id, location, std::string(name), body});
+    tree_.declarations.emplace(id, pt::FunctionDecl{id, location, std::string(name), std::move(*body)});
   }
 
-  pt::Block Parser::block(Element* element) {
+  pt::Block Parser::block(Element* body) {
     auto block = pt::EMPTY_BLOCK;
-    for (; element != nullptr; element = element->NextSiblingElement()) {
+    for (auto child = body->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
-        if (element->Name() == "conduit"s) {
+        if (child->Name() == "conduit"s) {
           // Parse a conduit
-          auto result = conduit(element);
+          auto result = conduit(child);
           auto& [id, resultConduit] = result;
           panicIf(block.nodes.contains(id) || block.conduits.contains(id),
-                  element,
+                  child,
                   diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
           block.conduits.emplace(std::move(result));
 
         } else {
           // Parse any other node
-          auto result = node(element);
+          auto result = node(child);
           auto& [id, resultNode] = result;
           panicIf(block.nodes.contains(id) || block.conduits.contains(id),
-                  element,
+                  child,
                   diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
           block.nodes.emplace(std::move(result));
         }

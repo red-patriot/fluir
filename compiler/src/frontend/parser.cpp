@@ -216,10 +216,17 @@ namespace fluir {
   }
 
   pt::Parameters Parser::funcInputs(Element* section) {
+    static constexpr std::string_view paramTag = "param";
     pt::Parameters parameters;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        panicIf(child->Name() != paramTag,
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Unexpected element <{}>. Expected <{}>",
+                child->Name(),
+                paramTag);
         auto result = funcParameter(child);
         auto& [id, param] = result;
         parameters.insert({id, param});
@@ -240,10 +247,17 @@ namespace fluir {
   }
 
   pt::Returns Parser::funcOutputs(Element* section) {
+    static constexpr std::string_view returnTag = "return";
     pt::Returns ret;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        panicIf(child->Name() != returnTag,
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Unexpected element <{}>. Expected <{}>",
+                child->Name(),
+                returnTag);
         auto result = funcReturn(child);
         ret.insert(result);
       };

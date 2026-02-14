@@ -38,18 +38,18 @@ namespace fluir {
     void declaration(Element* element);
     void functionDecl(Element* element);
 
-    pt::Parameters funcInputs(Element* element);
-    std::pair<ID, pt::Parameter> funcParameter(Element* element);
-    pt::Returns funcOutputs(Element* element);
-    std::pair<ID, pt::Return> funcReturn(Element* element);
+    pt::FunctionDecl::Parameters funcInputs(Element* element);
+    WithID<pt::FunctionDecl::Parameter> funcParameter(Element* element);
+    pt::FunctionDecl::Returns funcOutputs(Element* element);
+    WithID<pt::FunctionDecl::Return> funcReturn(Element* element);
 
     pt::Block block(Element* element);
-    std::pair<ID, pt::Node> node(Element* element);
-    std::pair<ID, pt::Node> constant(Element* element);
-    std::pair<ID, pt::Node> binary(Element* element);
-    std::pair<ID, pt::Node> unary(Element* element);
+    WithID<pt::Node> node(Element* element);
+    WithID<pt::Node> constant(Element* element);
+    WithID<pt::Node> binary(Element* element);
+    WithID<pt::Node> unary(Element* element);
 
-    std::pair<ID, pt::Conduit> conduit(Element* element);
+    WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);
 
     pt::Literal literal(Element* element);

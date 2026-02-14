@@ -192,8 +192,8 @@ namespace fluir {
     ID id = parseId(element);
     auto location = parseLocation(element);
     std::optional<pt::Block> body;
-    pt::Parameters parameters;
-    pt::Returns returns;
+    pt::FunctionDecl::Parameters parameters;
+    pt::FunctionDecl::Returns returns;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       std::string_view childName = child->Name();
       if (childName == bodyTag) {
@@ -215,9 +215,9 @@ namespace fluir {
       pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(parameters), std::move(returns)});
   }
 
-  pt::Parameters Parser::funcInputs(Element* section) {
+  pt::FunctionDecl::Parameters Parser::funcInputs(Element* section) {
     static constexpr std::string_view paramTag = "param";
-    pt::Parameters parameters;
+    pt::FunctionDecl::Parameters parameters;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
@@ -236,19 +236,20 @@ namespace fluir {
     return parameters;
   }
 
-  std::pair<ID, pt::Parameter> Parser::funcParameter(Element* element) {
+  WithID<pt::FunctionDecl::Parameter> Parser::funcParameter(Element* element) {
     auto name = getAttribute(element, "name");
     auto id = parseId(element);
     auto location = parseBorderingLocation(element);
     auto typeName = getAttribute(element, "type");
 
-    return {
-      id, pt::Parameter{.id = id, .location = location, .name = std::string(name), .typeName = std::string(typeName)}};
+    return {id,
+            pt::FunctionDecl::Parameter{
+              .id = id, .location = location, .name = std::string(name), .typeName = std::string(typeName)}};
   }
 
-  pt::Returns Parser::funcOutputs(Element* section) {
+  pt::FunctionDecl::Returns Parser::funcOutputs(Element* section) {
     static constexpr std::string_view returnTag = "return";
-    pt::Returns ret;
+    pt::FunctionDecl::Returns ret;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
@@ -266,11 +267,11 @@ namespace fluir {
     return ret;
   }
 
-  std::pair<ID, pt::Return> Parser::funcReturn(Element* element) {
+  WithID<pt::FunctionDecl::Return> Parser::funcReturn(Element* element) {
     auto id = parseId(element);
     auto location = parseBorderingLocation(element);
     auto typeName = getAttribute(element, "type");
-    return {id, pt::Return{.id = id, .location = location, .typeName = std::string(typeName)}};
+    return {id, pt::FunctionDecl::Return{.id = id, .location = location, .typeName = std::string(typeName)}};
   }
 
   pt::Block Parser::block(Element* body) {
@@ -300,8 +301,8 @@ namespace fluir {
     return block;
   }
 
-  std::pair<ID, pt::Node> Parser::node(Element* element) {
-    using NodeIdPair = std::pair<ID, pt::Node>;
+  WithID<pt::Node> Parser::node(Element* element) {
+    using NodeIdPair = WithID<pt::Node>;
     static const util::Trie<NodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
       [](Parser* p, Element* e) -> NodeIdPair {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a node.");
@@ -316,7 +317,7 @@ namespace fluir {
     return nodeParser(this, element);
   }
 
-  std::pair<ID, pt::Conduit> Parser::conduit(Element* element) {
+  WithID<pt::Conduit> Parser::conduit(Element* element) {
     auto id = parseId(element);
     auto input = parseIdReference(element, "input");
     auto indexStr = getOptionalAttribute(element, "index", "0");
@@ -337,7 +338,7 @@ namespace fluir {
     return pt::Conduit::Output{.target = target, .index = index};
   }
 
-  std::pair<ID, pt::Node> Parser::constant(Element* element) {
+  WithID<pt::Node> Parser::constant(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
     auto value = literal(element->FirstChildElement());
@@ -345,7 +346,7 @@ namespace fluir {
     return {id, pt::Constant{id, location, value}};
   }
 
-  std::pair<ID, pt::Node> Parser::binary(Element* element) {
+  WithID<pt::Node> Parser::binary(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
     // TODO: Remove this
@@ -356,7 +357,7 @@ namespace fluir {
     return {id, pt::Binary{id, location, lhs, rhs, op}};
   }
 
-  std::pair<ID, pt::Node> Parser::unary(Element* element) {
+  WithID<pt::Node> Parser::unary(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
     // TODO: Remove this

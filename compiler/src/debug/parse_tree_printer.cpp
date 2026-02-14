@@ -67,13 +67,13 @@ namespace fluir::debug {
     }
   }
 
-  void ParseTreePrinter::operator()(const pt::Parameter& param) {
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
     out_ << formatIndented("{}:\n", param.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Param({})\n", param.name) << doPrint(param.location)
          << formatIndented("type {}\n", param.typeName);
   }
-  void ParseTreePrinter::operator()(const pt::Return& ret) {
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
     out_ << formatIndented("{}:\n", ret.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Return\n") << doPrint(ret.location) << formatIndented("type {}\n", ret.typeName);

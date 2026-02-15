@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -30,43 +31,45 @@ namespace {
   }
 }  // namespace
 
-int main(int argc, char** argv) {
-  // TODO: Read real inputs from the command line
-  try {
-    if (argc != 2) {
-      std::cerr << "Usage: fluir.compiler file.fl\n";
-      return 1;
-    }
-    fs::path source;
-    try {
-      source = fs::canonical(fs::path{argv[1]});
-    } catch (const std::filesystem::filesystem_error& e) {
-      std::cerr << e.what() << '\n';
-      return 1;
-    }
-    fluir::Context ctx{.version = fluir::CURRENT_VERSION};
-    ctx.symbolTable = fluir::types::buildSymbolTable();
+int main(int argc, const char** argv) {
+  auto options = fluir::parseArgs(argc, argv);
+  if (!options) {
+    // Some arguments were invalid, report this in a POSIX-compliant manner
+    return EINVAL;
+  }
 
-    auto ast = runFrontend(ctx, source);
+  try {
+    // TODO: Select the correct diagnostics sink based on options
+    fluir::Context ctx{
+      .symbolTable = fluir::types::buildSymbolTable(),
+      // This is for the future when we take in multiple input files
+      .currentFile = fs::canonical(options->inputFilename),
+      .outputFilename = options->outputFilename,
+      .version = fluir::CURRENT_VERSION,
+    };
+
+    auto ast = runFrontend(ctx, ctx.currentFile);
     if (!ast) {
-      return 1;
+      return EXIT_FAILURE;
     }
 
     auto backendResults = fluir::generateCode(ctx, *ast);
     if (!backendResults) {
-      return 1;
+      return EXIT_FAILURE;
     }
 
     {
-      fs::path destination{"./out.flc"};
-      std::ofstream fout{destination};
+      std::ofstream fout{ctx.outputFilename};
       fluir::InspectWriter writer{};
       fluir::writeCode(*backendResults, writer, fout);
     }
 
-    return 0;
+    return EXIT_SUCCESS;
+  } catch (const std::filesystem::filesystem_error& e) {
+    std::cerr << "" << e.what() << '\n';
+    return EINVAL;
   } catch (const std::exception& e) {
     std::cerr << "An internal error occurred:\n\t" << e.what() << '\n';
-    return 1;
+    return EXIT_FAILURE;
   }
 }

@@ -18,6 +18,7 @@ namespace fluir::diagnostic {
     x(ERROR_MISSING_ELEMENT)                      \
     x(ERROR_MISSING_ATTRIBUTE)                    \
     x(ERROR_CANNOT_PARSE_ELEMENT_TEXT)            \
+    x(ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT)          \
     x(ERROR_UNRECOGNIZED_OPERATOR)                \
     x(ERROR_DUPLICATE_IDS_FOUND)                  \
     x(ERROR_NUMBER_OUT_OF_RANGE)                  \

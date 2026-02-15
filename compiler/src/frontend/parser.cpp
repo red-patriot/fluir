@@ -318,10 +318,10 @@ namespace fluir {
   }
 
   WithID<pt::Conduit> Parser::conduit(Element* element) {
-    auto id = parseId(element);
-    auto input = parseIdReference(element, "input");
-    auto indexStr = getOptionalAttribute(element, "index", "0");
-    auto index = std::stoi(indexStr.data());
+    const auto id = parseId(element);
+    const auto input = parseIdReference(element, "input");
+    const auto indexStr = getOptionalAttribute(element, "index", "0");
+    const auto index = std::stoi(indexStr.data());
     std::vector<pt::Conduit::Output> children;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       children.push_back(conduitOutput(child));
@@ -568,33 +568,74 @@ namespace fluir {
   }
 
   FlowGraphLocation Parser::parseLocation(Element* element) {
-    return {
-      .x = std::atoi(getAttribute(element, "x").data()),
-      .y = std::atoi(getAttribute(element, "y").data()),
-      .z = std::atoi(getAttribute(element, "z").data()),
-      .width = std::atoi(getAttribute(element, "w").data()),
-      .height = std::atoi(getAttribute(element, "h").data()),
-    };
+    auto x = fe::parseNumber<int>(getAttribute(element, "x"));
+    panicIf(!x.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.x, found '{}'.",
+            getAttribute(element, "x"));
+    auto y = fe::parseNumber<int>(getAttribute(element, "y"));
+    panicIf(!y.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.y, found '{}'.",
+            getAttribute(element, "y"));
+    auto z = fe::parseNumber<int>(getAttribute(element, "z"));
+    panicIf(!z.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.z, found '{}'.",
+            getAttribute(element, "z"));
+    auto width = fe::parseNumber<int>(getAttribute(element, "w"));
+    panicIf(!width.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.width, found '{}'.",
+            getAttribute(element, "w"));
+    auto height = fe::parseNumber<int>(getAttribute(element, "h"));
+    panicIf(!height.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.height, found '{}'.",
+            getAttribute(element, "h"));
+    return {x.value(), y.value(), z.value(), width.value(), height.value()};
   }
 
   FlowGraphLocation Parser::parseBorderingLocation(Element* element) {
-    auto x = getOptionalAttribute(element, "x", "");
-    auto y = getOptionalAttribute(element, "y", "");
-    // TODO: Check these are valid
+    auto xText = getOptionalAttribute(element, "x", "0");
+    auto x = fe::parseNumber<int>(xText);
+    panicIf(!x.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.x, found '{}'.",
+            xText);
+    auto yText = getOptionalAttribute(element, "y", "0");
+    auto y = fe::parseNumber<int>(yText);
+    panicIf(!y.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.y, found '{}'.",
+            yText);
 
-    if (x.empty()) {
-      x = "0";
-    }
-    if (y.empty()) {
-      y = "0";
-    }
+    auto width = fe::parseNumber<int>(getAttribute(element, "w"));
+    panicIf(!width.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.width, found '{}'.",
+            getAttribute(element, "w"));
+    auto height = fe::parseNumber<int>(getAttribute(element, "h"));
+    panicIf(!height.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.height, found '{}'.",
+            getAttribute(element, "h"));
 
     return FlowGraphLocation{
-      .x = std::atoi(x.data()),
-      .y = std::atoi(y.data()),
+      .x = x.value(),
+      .y = y.value(),
       .z = 0,
-      .width = std::atoi(getAttribute(element, "w").data()),
-      .height = std::atoi(getAttribute(element, "h").data()),
+      .width = width.value(),
+      .height = height.value(),
     };
   }
 

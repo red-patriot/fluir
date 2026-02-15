@@ -24,6 +24,8 @@ namespace fluir::diagnostic {
       {ERROR_MISSING_ELEMENT, "Missing a required XML element."},
       {ERROR_MISSING_ATTRIBUTE, "Element XML is missing a required attribute"},
       {ERROR_CANNOT_PARSE_ELEMENT_TEXT, "Cannot parse the text of the XML element into its expected representation."},
+      {ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
+       "Cannot parse the text of an XML attribute into its expected representation."},
       {ERROR_UNRECOGNIZED_OPERATOR, "The given operator is not recognized as one of the allowed operators."},
       {ERROR_DUPLICATE_IDS_FOUND,
        "Multiple elements with the same ID were found. "

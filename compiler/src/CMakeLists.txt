@@ -4,6 +4,7 @@ find_package(
     REQUIRED
 )
 find_package(tinyxml2 REQUIRED)
+find_package(argparse REQUIRED)
 
 include(strict-warnings)
 
@@ -66,6 +67,7 @@ target_link_libraries(
            fluir::utility
            fmt::fmt
            tinyxml2::tinyxml2
+           argparse::argparse
 )
 
 add_executable(fluir.compiler "main.cpp")

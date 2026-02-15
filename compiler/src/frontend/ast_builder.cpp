@@ -172,7 +172,7 @@ namespace fluir {
     return astNode;
   }
 
-  ast::SharedDependency FlowGraphBuilder::getDependency(ID dependentId, int index) {
+  ast::UniqueNode FlowGraphBuilder::getDependency(ID dependentId, int index) {
     // Find the dependency of ID:index in the tree
 
     const auto dependencyPt =

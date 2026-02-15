@@ -1,0 +1,6 @@
+#ifndef FLUIR_COMPILER_UTILITY_OPTIONS_HPP
+#define FLUIR_COMPILER_UTILITY_OPTIONS_HPP
+
+namespace fluir { }
+
+#endif

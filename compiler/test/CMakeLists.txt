@@ -6,6 +6,7 @@ set(FLUIR_UTILITY_TEST_SOURCES
     utility/diagnostic/sink.test.cpp
     utility/diagnostic/pretty_msg.test.cpp
     utility/topological_sort.test.cpp
+    utility/options.test.cpp
 )
 
 set(FLUIR_FRONTEND_TEST_SOURCES

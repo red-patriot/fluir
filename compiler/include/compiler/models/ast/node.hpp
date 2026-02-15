@@ -56,7 +56,6 @@ namespace fluir::ast {
     types::TypeID type_ = types::ID_INVALID;
   };
 
-  using SharedDependency = std::unique_ptr<Node>;
   using UniqueNode = std::unique_ptr<Node>;
   template <typename NodeType, typename... Args>
   auto createDependency(Args&&... args) {
@@ -120,15 +119,14 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::BinaryOperator; }
 
-    BinaryOp(
-      const Operator op, SharedDependency lhs, SharedDependency rhs, FullID id, const FlowGraphLocation& location) :
+    BinaryOp(const Operator op, UniqueNode lhs, UniqueNode rhs, FullID id, const FlowGraphLocation& location) :
       Node(NodeKind::BinaryOperator, std::move(id), location), op_(op), lhs_(std::move(lhs)), rhs_(std::move(rhs)) { }
 
     [[nodiscard]] const Operator& op() const { return op_; }
-    [[nodiscard]] SharedDependency& lhs() { return lhs_; }
-    [[nodiscard]] const SharedDependency& lhs() const { return lhs_; }
-    [[nodiscard]] SharedDependency& rhs() { return rhs_; }
-    [[nodiscard]] const SharedDependency& rhs() const { return rhs_; }
+    [[nodiscard]] UniqueNode& lhs() { return lhs_; }
+    [[nodiscard]] const UniqueNode& lhs() const { return lhs_; }
+    [[nodiscard]] UniqueNode& rhs() { return rhs_; }
+    [[nodiscard]] const UniqueNode& rhs() const { return rhs_; }
     [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
     void setDefinition(types::OperatorDefinition const* def) {
       def_ = def;
@@ -137,8 +135,8 @@ namespace fluir::ast {
 
    private:
     Operator op_;
-    SharedDependency lhs_;
-    SharedDependency rhs_;
+    UniqueNode lhs_;
+    UniqueNode rhs_;
     types::OperatorDefinition const* def_ = nullptr;
   };
 
@@ -146,12 +144,12 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::UnaryOperator; }
 
-    UnaryOp(const Operator op, SharedDependency operand, FullID id, const FlowGraphLocation& location) :
+    UnaryOp(const Operator op, UniqueNode operand, FullID id, const FlowGraphLocation& location) :
       Node(NodeKind::UnaryOperator, std::move(id), location), op_(op), operand_(std::move(operand)) { }
 
     [[nodiscard]] const Operator& op() const { return op_; }
-    [[nodiscard]] const SharedDependency& operand() const { return operand_; }
-    [[nodiscard]] SharedDependency& operand() { return operand_; }
+    [[nodiscard]] const UniqueNode& operand() const { return operand_; }
+    [[nodiscard]] UniqueNode& operand() { return operand_; }
     [[nodiscard]] types::OperatorDefinition const* definition() const { return def_; }
     void setDefinition(types::OperatorDefinition const* def) {
       def_ = def;
@@ -160,7 +158,7 @@ namespace fluir::ast {
 
    private:
     Operator op_;
-    SharedDependency operand_;
+    UniqueNode operand_;
     types::OperatorDefinition const* def_ = nullptr;
   };
 
@@ -168,17 +166,17 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Cast; }
 
-    Cast(types::TypeID to, SharedDependency operand, FullID id, const FlowGraphLocation& location) :
+    Cast(types::TypeID to, UniqueNode operand, FullID id, const FlowGraphLocation& location) :
       Node(NodeKind::Cast, std::move(id), location), operand_(std::move(operand)) {
       setType(to);
     }
 
     [[nodiscard]] types::TypeID to() const { return type(); }
     [[nodiscard]] types::TypeID from() const { return operand_->type(); }
-    [[nodiscard]] const SharedDependency& operand() const { return operand_; }
+    [[nodiscard]] const UniqueNode& operand() const { return operand_; }
 
    private:
-    SharedDependency operand_;
+    UniqueNode operand_;
   };
 
   using DataFlowGraph = std::vector<UniqueNode>;
@@ -187,14 +185,14 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalWrite; }
 
-    LocalWrite(SharedDependency child, const FlowGraphLocation& location) :
+    LocalWrite(UniqueNode child, const FlowGraphLocation& location) :
       Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
 
-    [[nodiscard]] const SharedDependency& child() const { return child_; }
+    [[nodiscard]] const UniqueNode& child() const { return child_; }
     [[nodiscard]] ID variable() const { return id(); }
 
    private:
-    SharedDependency child_;
+    UniqueNode child_;
   };
 
   class LocalRead : public Node {

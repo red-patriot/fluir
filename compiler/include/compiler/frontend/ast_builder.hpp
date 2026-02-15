@@ -53,7 +53,7 @@ namespace fluir {
     Results<ast::DataFlowGraph> run();
 
     ast::UniqueNode process(ID id, pt::Node pt);
-    ast::SharedDependency getDependency(ID dependentId, int index);
+    ast::UniqueNode getDependency(ID dependentId, int index);
   };
 }  // namespace fluir
 

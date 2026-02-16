@@ -54,6 +54,7 @@ set(FLUIR_COMPILER_TYPES_SOURCES
 set(FLUIR_COMPILER_UTILITY_SOURCES
     "utility/diagnostic/pretty_msg.cpp"
     "utility/diagnostic/ostream_sink.cpp"
+    "utility/diagnostic/colored_stdout_sink.cpp"
     "utility/options.cpp"
 )
 

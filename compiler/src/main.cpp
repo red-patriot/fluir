@@ -11,6 +11,7 @@
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
 #include "compiler/utility/context.hpp"
+#include "compiler/utility/diagnostic/colored_stdout_sink.hpp"
 namespace fs = std::filesystem;
 
 namespace {
@@ -39,8 +40,16 @@ int main(int argc, const char** argv) {
   }
 
   try {
+    fluir::diagnostic::Sink& sink = [&]() -> fluir::diagnostic::Sink& {
+      if (options->colorOutput) {
+        return fluir::diagnostic::getColoredStdoutSink();
+      }
+      return fluir::diagnostic::getCoutSink();
+    }();
+
     // TODO: Select the correct diagnostics sink based on options
     fluir::Context ctx{
+      .diagnosticSink = sink,
       .symbolTable = fluir::types::buildSymbolTable(),
       // This is for the future when we take in multiple input files
       .currentFile = fs::canonical(options->inputFilename),

@@ -6,6 +6,7 @@
 #include "bytecode/version.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
+#include "compiler/debug/ast_printer.hpp"
 #include "compiler/frontend/ast_builder.hpp"
 #include "compiler/frontend/parser.hpp"
 #include "compiler/frontend/type_checker.hpp"
@@ -59,6 +60,11 @@ int main(int argc, const char** argv) {
     auto ast = runFrontend(ctx, ctx.currentFile);
     if (!ast) {
       return EXIT_FAILURE;
+    }
+
+    if (options->developerOptions.printAST) {
+      fluir::debug::AstPrinter printer{std::cout};
+      printer.print(*ast);
     }
 
     auto backendResults = fluir::generateCode(ctx, *ast);

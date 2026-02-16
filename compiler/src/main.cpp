@@ -48,14 +48,13 @@ int main(int argc, const char** argv) {
     }();
 
     // TODO: Select the correct diagnostics sink based on options
-    fluir::Context ctx{
-      .diagnosticSink = sink,
-      .symbolTable = fluir::types::buildSymbolTable(),
-      // This is for the future when we take in multiple input files
-      .currentFile = fs::canonical(options->inputFilename),
-      .outputFilename = options->outputFilename,
-      .version = fluir::CURRENT_VERSION,
-    };
+    fluir::Context ctx{.diagnosticSink = sink,
+                       .symbolTable = fluir::types::buildSymbolTable(),
+                       // This is for the future when we take in multiple input files
+                       .currentFile = fs::canonical(options->inputFilename),
+                       .outputFilename = options->outputFilename,
+                       .version = fluir::CURRENT_VERSION,
+                       .ignoreVersionChecks = options->developerOptions.suppressVersionErrors};
 
     auto ast = runFrontend(ctx, ctx.currentFile);
     if (!ast) {

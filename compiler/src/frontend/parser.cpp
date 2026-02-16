@@ -118,13 +118,15 @@ namespace fluir {
       std::string_view name = child->Name();
       if (name == version_tag) {
         tree_.header.version = version(child);
-        panicIf(tree_.header.version != ctx_.version,
-                nullptr,
-                diagnostic::Code::ERROR_INCORRECT_MODULE_VERSION,
-                "Module version {}.{}.{}, which cannot be compiled by this version of the compiler.",
-                tree_.header.version.major,
-                tree_.header.version.minor,
-                tree_.header.version.patch);
+        if (!ctx_.ignoreVersionChecks) {
+          panicIf(tree_.header.version != ctx_.version,
+                  nullptr,
+                  diagnostic::Code::ERROR_INCORRECT_MODULE_VERSION,
+                  "Module version {}.{}.{}, which cannot be compiled by this version of the compiler.",
+                  tree_.header.version.major,
+                  tree_.header.version.minor,
+                  tree_.header.version.patch);
+        }
         versionFound = true;
       } else {
         panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "{} is invalid in program header", name);

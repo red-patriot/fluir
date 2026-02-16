@@ -15,7 +15,9 @@ namespace fluir {
     diagnostic::Sink& diagnosticSink{diagnostic::getCoutSink()}; /**< The sink to emit diagnostics to */
     types::SymbolTable symbolTable;                              /**< The symbol table of the compilation */
     std::filesystem::path currentFile;                           /**< The current file being processed */
+    std::filesystem::path outputFilename;                        /**< The output filename to write to */
     Version version{0, 0, 0};                                    /**< The current version of the compiler */
+    bool ignoreVersionChecks{false};                             /**< Whether to ignore version checks */
   };
 }  // namespace fluir
 

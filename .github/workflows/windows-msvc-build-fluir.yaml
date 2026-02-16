@@ -122,4 +122,3 @@ jobs:
           path: |
             launcher/dist/
           retention-days: 7
-

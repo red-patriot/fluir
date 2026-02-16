@@ -5,6 +5,15 @@ find_package(
 )
 find_package(tinyxml2 REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    REV
+    v3.2
+)
+FetchContent_MakeAvailable(argparse)
+
 include(strict-warnings)
 
 add_library(fluir.libcompiler)
@@ -39,8 +48,11 @@ set(FLUIR_COMPILER_TYPES_SOURCES
     "types/type.cpp"
 )
 
-set(FLUIR_COMPILER_UTILITY_SOURCES "utility/diagnostic/pretty_msg.cpp"
-                                   "utility/diagnostic/ostream_sink.cpp"
+set(FLUIR_COMPILER_UTILITY_SOURCES
+    "utility/diagnostic/pretty_msg.cpp"
+    "utility/diagnostic/ostream_sink.cpp"
+    "utility/diagnostic/colored_stdout_sink.cpp"
+    "utility/options.cpp"
 )
 
 target_sources(
@@ -64,8 +76,9 @@ target_link_libraries(
            fluir::utility
            fmt::fmt
            tinyxml2::tinyxml2
+           argparse::argparse
 )
 
 add_executable(fluir.compiler "main.cpp")
 
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler)
+target_link_libraries(fluir.compiler PUBLIC fluir.libcompiler)

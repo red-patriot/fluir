@@ -7,7 +7,6 @@
 #include "compiler/types/symbol_table.hpp"
 #include "compiler/utility/diagnostic/ostream_sink.hpp"
 #include "compiler/utility/diagnostics.hpp"
-#include "compiler/utility/options.hpp"
 #include "compiler/utility/results.hpp"
 
 namespace fluir {

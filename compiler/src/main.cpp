@@ -13,6 +13,8 @@
 #include "compiler/types/builtin_symbols.hpp"
 #include "compiler/utility/context.hpp"
 #include "compiler/utility/diagnostic/colored_stdout_sink.hpp"
+#include "compiler/utility/options.hpp"
+
 namespace fs = std::filesystem;
 
 namespace {

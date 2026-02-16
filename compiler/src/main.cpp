@@ -3,7 +3,8 @@
 #include <fstream>
 #include <iostream>
 
-#include "bytecode/version.hpp"
+#include <bytecode/version.hpp>
+
 #include "compiler/backend/bytecode_generator.hpp"
 #include "compiler/backend/inspect_writer.hpp"
 #include "compiler/debug/ast_printer.hpp"

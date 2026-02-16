@@ -14,9 +14,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(argparse)
 
-add_executable(myproject main.cpp)
-target_link_libraries(myproject argparse)
-
 include(strict-warnings)
 
 add_library(fluir.libcompiler)
@@ -84,4 +81,4 @@ target_link_libraries(
 
 add_executable(fluir.compiler "main.cpp")
 
-target_link_libraries(fluir.compiler PRIVATE fluir::compiler)
+target_link_libraries(fluir.compiler PUBLIC fluir.libcompiler)

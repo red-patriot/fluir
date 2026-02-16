@@ -4,7 +4,18 @@ find_package(
     REQUIRED
 )
 find_package(tinyxml2 REQUIRED)
-find_package(argparse REQUIRED)
+
+include(FetchContent)
+FetchContent_Declare(
+    argparse
+    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
+    REV
+    v3.2
+)
+FetchContent_MakeAvailable(argparse)
+
+add_executable(myproject main.cpp)
+target_link_libraries(myproject argparse)
 
 include(strict-warnings)
 

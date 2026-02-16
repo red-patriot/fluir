@@ -26,10 +26,11 @@ namespace fluir {
     parser.add_argument("file").help("The path to the fluir source file to compile.").required();
 
     parser.add_argument("--output", "-o").nargs(1).help("The file path to write the output.").default_value("out.flc"s);
-    parser.add_argument("--no-color")
-      .help("Disables printing colored output.")
-      .default_value(false)
-      .implicit_value(true);
+    parser.add_argument("--no-color").help("Disables printing colored output.").flag();
+
+    // Add hidden developer arguments
+    parser.add_argument("--dev-no-version").hidden().help("Disables checking the version of the input file.").flag();
+    parser.add_argument("--dev-print-ast").hidden().help("Prints the AST to standard out after parsing.").flag();
 
     try {
       parser.parse_args(argc, argv);
@@ -38,9 +39,12 @@ namespace fluir {
       return std::nullopt;
     }
 
-    return CompilerOptions{.inputFilename = parser.get<std::string>("file"),
-                           .outputFilename = parser.get<std::string>("--output"),
-                           .colorOutput = !parser.get<bool>("--no-color")};
+    return CompilerOptions{
+      .inputFilename = parser.get<std::string>("file"),
+      .outputFilename = parser.get<std::string>("--output"),
+      .colorOutput = !parser.get<bool>("--no-color"),
+      .developerOptions = DeveloperOptions{.printAST = parser.get<bool>("--dev-print-ast"),
+                                           .suppressVersionErrors = parser.get<bool>("--dev-no-version")}};
   }
   std::optional<CompilerOptions> parseArgs(const std::vector<std::string>& args) {
     int argc = static_cast<int>(args.size());

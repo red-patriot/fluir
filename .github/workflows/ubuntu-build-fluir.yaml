@@ -109,7 +109,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt update
-          sudo apt install libtinyxml2-dev libfmt-dev libgtest-dev libargparse-dev
+          sudo apt install libtinyxml2-dev libfmt-dev libgtest-dev
       - name: Configure GCC
         run: cmake --preset gcc-release
       - name: Build GCC

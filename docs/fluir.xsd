@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fluir XML Schema Definition
+  XSD 1.0 — no target namespace (matching .fl files which use no XML namespace).
+
+  .fl files are XML representations of Fluir data-flow programs.  The compiler
+  reads them with tinyxml2; the editor backend reads/writes them with lxml.
+
+  Hierarchy:
+    <fluir>
+      <header>                        (required, exactly once, must appear first)
+        <version>
+          <major>, <minor>, <patch>   (each a uint8: 0–255)
+        </version>
+      </header>
+      <function ...>*                 (zero or more)
+        <body>
+          (<constant|binary|unary|conduit>)*
+        </body>
+      </function>
+    </fluir>
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <!-- ====================================================================
+       Simple types
+       ==================================================================== -->
+
+  <!-- Version component: non-negative integer in the range 0–255 -->
+  <xs:simpleType name="versionComponent">
+    <xs:restriction base="xs:integer">
+      <xs:minInclusive value="0"/>
+      <xs:maxInclusive value="255"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!--
+    All operators accepted by <binary> and <unary> nodes.
+    The C++ parser uses a single parseOperator() function for both node types;
+    it accepts all six operators regardless of arity.  Semantic validation
+    (e.g. '/' is not a valid unary operator) is performed by the type checker,
+    not the parser.  The schema therefore uses one shared enumeration.
+  -->
+  <xs:simpleType name="nodeOperator">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="+"/>
+      <xs:enumeration value="-"/>
+      <xs:enumeration value="*"/>
+      <xs:enumeration value="/"/>
+      <xs:enumeration value="++"/>
+      <xs:enumeration value="--"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- ====================================================================
+       Attribute groups
+       ==================================================================== -->
+
+  <!-- Visual (x, y, z) position on the editor canvas -->
+  <xs:attributeGroup name="visualPosition">
+    <xs:attribute name="x" type="xs:integer" use="required"/>
+    <xs:attribute name="y" type="xs:integer" use="required"/>
+    <xs:attribute name="z" type="xs:integer" use="required"/>
+  </xs:attributeGroup>
+
+  <!-- Visual (w, h) size on the editor canvas -->
+  <xs:attributeGroup name="visualSize">
+    <xs:attribute name="w" type="xs:integer" use="required"/>
+    <xs:attribute name="h" type="xs:integer" use="required"/>
+  </xs:attributeGroup>
+
+  <!-- Combined id + position + size, shared by all node types and <function> -->
+  <xs:attributeGroup name="nodeAttrs">
+    <xs:attribute name="id" type="xs:positiveInteger" use="required"/>
+    <xs:attributeGroup ref="visualPosition"/>
+    <xs:attributeGroup ref="visualSize"/>
+  </xs:attributeGroup>
+
+  <!-- ====================================================================
+       Root element
+       ==================================================================== -->
+
+  <xs:element name="fluir">
+    <xs:complexType>
+      <xs:sequence>
+
+        <!-- <header> must appear exactly once and before any <function> elements -->
+        <xs:element name="header" minOccurs="1" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="version">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="major" type="versionComponent"/>
+                    <xs:element name="minor" type="versionComponent"/>
+                    <xs:element name="patch" type="versionComponent"/>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+        <!-- Zero or more function declarations follow the header -->
+        <xs:element name="function" minOccurs="0" maxOccurs="unbounded">
+          <xs:complexType>
+            <xs:sequence>
+
+              <!-- Every function contains exactly one <body> -->
+              <xs:element name="body">
+                <xs:complexType>
+                  <!--
+                    The body holds any mix of node and conduit elements
+                    in any order.  An empty body (<body/> or <body></body>)
+                    is valid.
+                  -->
+                  <xs:choice minOccurs="0" maxOccurs="unbounded">
+
+                    <!-- ================================================
+                         <constant>: a compile-time literal value node.
+                         Contains exactly one typed child element.
+                         ================================================ -->
+                    <xs:element name="constant">
+                      <xs:complexType>
+                        <xs:choice>
+                          <xs:element name="f64" type="xs:double"/>
+                          <xs:element name="i8"  type="xs:byte"/>
+                          <xs:element name="i16" type="xs:short"/>
+                          <xs:element name="i32" type="xs:int"/>
+                          <xs:element name="i64" type="xs:long"/>
+                          <xs:element name="u8"  type="xs:unsignedByte"/>
+                          <xs:element name="u16" type="xs:unsignedShort"/>
+                          <xs:element name="u32" type="xs:unsignedInt"/>
+                          <xs:element name="u64" type="xs:unsignedLong"/>
+                        </xs:choice>
+                        <xs:attributeGroup ref="nodeAttrs"/>
+                      </xs:complexType>
+                    </xs:element>
+
+                    <!-- ================================================
+                         <binary>: a two-operand arithmetic node.
+                         lhs/rhs are deprecated (parser has a TODO to
+                         remove them) but are still valid in files.
+                         ================================================ -->
+                    <xs:element name="binary">
+                      <xs:complexType>
+                        <xs:attributeGroup ref="nodeAttrs"/>
+                        <xs:attribute name="operator" type="nodeOperator" use="required"/>
+                        <xs:attribute name="lhs" type="xs:positiveInteger" use="optional"/>
+                        <xs:attribute name="rhs" type="xs:positiveInteger" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+
+                    <!-- ================================================
+                         <unary>: a single-operand arithmetic node.
+                         lhs is deprecated but still valid in files.
+                         ================================================ -->
+                    <xs:element name="unary">
+                      <xs:complexType>
+                        <xs:attributeGroup ref="nodeAttrs"/>
+                        <xs:attribute name="operator" type="nodeOperator" use="required"/>
+                        <xs:attribute name="lhs" type="xs:positiveInteger" use="optional"/>
+                      </xs:complexType>
+                    </xs:element>
+
+                    <!-- ================================================
+                         <conduit>: a directed data-flow edge carrying the
+                         output of one node to one or more input ports on
+                         other nodes.
+
+                         Note on <segment>: The editor server (Python)
+                         reads/writes <segment> children inside <conduit>
+                         for visual routing waypoints.  The C++ compiler
+                         does NOT support them — it calls conduitOutput()
+                         on every conduit child without tag-checking, which
+                         would fail on a <segment> since it has no "target"
+                         attribute.  No test files use <segment>.  This
+                         schema therefore omits <segment>.
+                         ================================================ -->
+                    <xs:element name="conduit">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="output" minOccurs="0" maxOccurs="unbounded">
+                            <xs:complexType>
+                              <xs:attribute name="target" type="xs:positiveInteger"    use="required"/>
+                              <xs:attribute name="index"  type="xs:nonNegativeInteger" use="optional" default="0"/>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="id"    type="xs:positiveInteger"    use="required"/>
+                        <xs:attribute name="input" type="xs:positiveInteger"    use="required"/>
+                        <xs:attribute name="index" type="xs:nonNegativeInteger" use="optional" default="0"/>
+                      </xs:complexType>
+                    </xs:element>
+
+                  </xs:choice>
+                </xs:complexType>
+
+                <!--
+                  All id attributes on nodes and conduits within a single body
+                  must be unique.  The C++ parser shares one id-space between
+                  its node map and conduit map, so duplicates across kinds are
+                  also rejected here.
+                -->
+                <xs:key name="nodeIds">
+                  <xs:selector xpath="constant|binary|unary|conduit"/>
+                  <xs:field xpath="@id"/>
+                </xs:key>
+
+                <!--
+                  Keyrefs for conduit/@input and conduit/output/@target are
+                  intentionally omitted.  The compiler validates these
+                  references during AST building, not parsing; they are
+                  semantic constraints.  Including them here would cause the
+                  schema to reject structurally-valid files that the compiler
+                  accepts at parse-time (e.g. build_ast_errors/missing_local.fl).
+                -->
+
+              </xs:element>
+            </xs:sequence>
+
+            <xs:attribute name="name" type="xs:string"          use="required"/>
+            <xs:attributeGroup ref="nodeAttrs"/>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+
+    <!-- function/@id values must be unique across the entire document -->
+    <xs:key name="functionIds">
+      <xs:selector xpath="function"/>
+      <xs:field xpath="@id"/>
+    </xs:key>
+
+  </xs:element>
+
+</xs:schema>

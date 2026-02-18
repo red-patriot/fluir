@@ -127,6 +127,8 @@ namespace fluir {
     return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
   }
 
+  ast::UniqueNode FlowGraphBuilder::operator()(const pt::Call&) { assert(false && "NOT IMPLEMENTED!"); }
+
   Results<ast::DataFlowGraph> FlowGraphBuilder::run() {
     alreadyFound_.reserve(block_.nodes.size());
     locals_ = getLocalNodes(ctx_, block_, currentID_);

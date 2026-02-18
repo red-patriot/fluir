@@ -98,6 +98,19 @@ namespace fluir::debug {
     std::visit(*this, constant.value);
   }
 
+  void ParseTreePrinter::operator()(const pt::Call& call) {
+    out_ << formatIndented("{}:\n", call.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Call({})\n", call.target) << doPrint(call.location);
+    formatIndented("0: return\n");
+    auto args = call.arguments;
+    std::ranges::sort(
+      args, [](const pt::Call::Argument& lhs, const pt::Call::Argument& rhs) { return lhs.index < rhs.index; });
+    for (const auto& [name, index] : args) {
+      out_ << formatIndented("{}: {}\n", index, name);
+    }
+  }
+
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
     out_ << formatIndented("{}:\n", conduit.id);
     FLUIR_SCOPED_INDENT;

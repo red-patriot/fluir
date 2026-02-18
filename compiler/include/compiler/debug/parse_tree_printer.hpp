@@ -20,6 +20,7 @@ namespace fluir::debug {
     void operator()(const pt::Binary& binary);
     void operator()(const pt::Unary& unary);
     void operator()(const pt::Constant& constant);
+    void operator()(const pt::Call& call);
 
     void operator()(const pt::Conduit& conduit);
 

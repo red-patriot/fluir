@@ -37,6 +37,7 @@ namespace fluir {
     ast::UniqueNode operator()(const pt::Binary& pt);
     ast::UniqueNode operator()(const pt::Unary& pt);
     ast::UniqueNode operator()(const pt::Constant& pt);
+    ast::UniqueNode operator()(const pt::Call& pt);
 
    private:
     Context& ctx_;

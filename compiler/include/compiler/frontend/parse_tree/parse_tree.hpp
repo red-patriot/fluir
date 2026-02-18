@@ -2,6 +2,7 @@
 #define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -43,6 +44,23 @@ namespace fluir::pt {
     friend bool operator==(const Unary&, const Unary&) = default;
   };
 
+  struct Call {
+    struct Argument {
+      std::string name;
+      int index;
+    };
+    using Arguments = std::vector<Argument>;
+    struct Return { };
+
+    ID id;
+    FlowGraphLocation location;
+
+    std::string target;
+    std::optional<Return> _return;  // For now, function calls have only one return max
+                                    // TODO: Support multiple return values
+    Arguments arguments;
+  };
+
   struct Conduit {
     struct Output {
       ID target = INVALID_ID;
@@ -59,7 +77,7 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant>;
+  using Node = std::variant<Binary, Unary, Constant, Call>;
   struct Block {
     using Nodes = std::unordered_map<ID, Node>;
     using Conduits = std::unordered_map<ID, Conduit>;

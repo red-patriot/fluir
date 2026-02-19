@@ -3,6 +3,7 @@
 #include <fstream>
 #include <optional>
 #include <sstream>
+#include <unordered_set>
 
 #include <fmt/format.h>
 
@@ -218,6 +219,7 @@ namespace fluir {
     static constexpr std::string_view paramTag = "param";
     auto location = parseLocation(section);
     std::vector<pt::FunctionDecl::Parameter> parameters;
+    std::unordered_set<std::string> paramNames;
     int idx = 0;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
@@ -228,6 +230,9 @@ namespace fluir {
                 "Unexpected element <{}>. Expected <{}>",
                 child->Name(),
                 paramTag);
+        auto name = getAttribute(child, "name");
+        panicIf(paramNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_PARAM_NAME);
+        paramNames.insert(std::string(name));
         parameters.push_back(funcParameter(child, idx));
         idx++;
       };
@@ -372,18 +377,36 @@ namespace fluir {
     auto target = getAttribute(element, "target");
     pt::Call::Arguments arguments;
     std::optional<pt::Call::Return> return_{std::nullopt};
+    std::unordered_set<int> argIndices;
+    std::unordered_set<std::string> argNames;
+
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
-      std::string_view childName = child->Name();
-      if (childName == "return") {
-        [[maybe_unused]] auto index = getAttribute(child, "index");
-        return_ = pt::Call::Return{};
-      } else if (childName == "arg") {
-        auto name = getAttribute(child, "name");
-        auto indexStr = getAttribute(child, "index");
-        auto index = fe::parseNumber<int>(indexStr);
-        // TODO: Error checking
-        arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
-      }
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        std::string_view childName = child->Name();
+        if (childName == "return") {
+          panicIf(return_.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
+          auto indexStr = getAttribute(child, "index");
+          auto index = fe::parseNumber<int>(indexStr);
+          panicIf(!index.has_value() || index.value() != 0, child, diagnostic::Code::ERROR_WRONG_RETURN_INDEX);
+          return_ = pt::Call::Return{};
+        } else if (childName == "arg") {
+          auto name = getAttribute(child, "name");
+          auto indexStr = getAttribute(child, "index");
+          auto index = fe::parseNumber<int>(indexStr);
+          panicIf(!index.has_value(),
+                  child,
+                  diagnostic::Code::ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
+                  "Expected an integer index on <arg>, found '{}'.",
+                  indexStr);
+          panicIf(argIndices.contains(index.value()), child, diagnostic::Code::ERROR_DUPLICATE_ARG_INDEX);
+          panicIf(argNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_ARG_NAME);
+          argIndices.insert(index.value());
+          argNames.insert(std::string(name));
+          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
+        } else {
+          panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element <{}> in call.", childName);
+        }
+      };
     }
 
     return {

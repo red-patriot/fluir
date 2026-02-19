@@ -25,6 +25,10 @@ namespace fluir::diagnostic {
     x(ERROR_CIRCULAR_DEPENDENCY)                  \
     x(ERROR_MISSING_DEPENDENCY)                   \
     x(ERROR_TOO_MANY_RETURNS)                     \
+    x(ERROR_WRONG_RETURN_INDEX)                   \
+    x(ERROR_DUPLICATE_ARG_INDEX)                  \
+    x(ERROR_DUPLICATE_ARG_NAME)                   \
+    x(ERROR_DUPLICATE_PARAM_NAME)                 \
     x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
     x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)
   // clang-format on

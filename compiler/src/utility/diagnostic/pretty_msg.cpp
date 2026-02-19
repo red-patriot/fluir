@@ -36,6 +36,10 @@ namespace fluir::diagnostic {
       {ERROR_CIRCULAR_DEPENDENCY, "There is a circular dependency between flow graph nodes."},
       {ERROR_MISSING_DEPENDENCY, "There is a missing dependency for a flow graph node."},
       {ERROR_TOO_MANY_RETURNS, "Functions may only return one value."},
+      {ERROR_WRONG_RETURN_INDEX, "A call return must have index 0."},
+      {ERROR_DUPLICATE_ARG_INDEX, "Call arguments must have unique indices."},
+      {ERROR_DUPLICATE_ARG_NAME, "Call arguments must have unique names."},
+      {ERROR_DUPLICATE_PARAM_NAME, "Function parameters must have unique names."},
       {ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED, "Operator overload resolution failed."},
       {ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, "Cannot determine the type of a local dependency."}};
   }  // namespace

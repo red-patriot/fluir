@@ -102,7 +102,9 @@ namespace fluir::debug {
     out_ << formatIndented("{}:\n", call.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Call({})\n", call.target) << doPrint(call.location);
-    formatIndented("0: return\n");
+    if (call._return) {
+      out_ << formatIndented("0: return\n");
+    }
     auto args = call.arguments;
     std::ranges::sort(
       args, [](const pt::Call::Argument& lhs, const pt::Call::Argument& rhs) { return lhs.index < rhs.index; });

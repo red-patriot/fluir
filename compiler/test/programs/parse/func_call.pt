@@ -18,7 +18,7 @@
             2: in2
         6:
             Unary
-            at(x0, y50, z2, w7 h7)
+            at(x0, y50, z2, w7, h7)
             ++
             lhs2
     conduits
@@ -52,7 +52,7 @@
     output
         4:
             Return
-            at(x100, y24, z2, w10, h7)
+            at(x100, y24, z0, w10, h7)
             type i32
     body
         5:

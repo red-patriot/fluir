@@ -48,6 +48,7 @@ namespace fluir {
     WithID<pt::Node> constant(Element* element);
     WithID<pt::Node> binary(Element* element);
     WithID<pt::Node> unary(Element* element);
+    WithID<pt::Node> call(Element* element);
 
     WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);

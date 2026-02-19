@@ -310,7 +310,8 @@ namespace fluir {
       },
       {{"constant", [](Parser* p, Element* e) -> NodeIdPair { return p->constant(e); }},
        {"binary", [](Parser* p, Element* e) -> NodeIdPair { return p->binary(e); }},
-       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }}}};
+       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }},
+       {"call", [](Parser* p, Element* e) -> NodeIdPair { return p->call(e); }}}};
 
     std::string_view type = element->Name();
     auto nodeParser = nodeParsers.at(type);
@@ -365,6 +366,32 @@ namespace fluir {
     auto op = parseOperator(element, "operator");
 
     return {id, pt::Unary{id, location, lhs, op}};
+  }
+
+  WithID<pt::Node> Parser::call(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+    auto target = getAttribute(element, "target");
+    pt::Call::Arguments arguments;
+    std::optional<pt::Call::Return> return_{std::nullopt};
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view childName = child->Name();
+      if (childName == "return") {
+        [[maybe_unused]] auto index = getAttribute(child, "index");
+        return_ = pt::Call::Return{};
+      } else if (childName == "arg") {
+        auto name = getAttribute(child, "name");
+        auto indexStr = getAttribute(child, "index");
+        auto index = fe::parseNumber<int>(indexStr);
+        // TODO: Error checking
+        arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
+      }
+    }
+
+    return {
+      id,
+      pt::Call{
+        .id = id, .location = location, .target = std::string(target), ._return = return_, .arguments = arguments}};
   }
 
   pt::Literal Parser::literal(Element* element) {

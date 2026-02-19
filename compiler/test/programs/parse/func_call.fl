@@ -63,15 +63,15 @@
         </output>
         <body>
             <binary id="5" x="57" y="4" z="2" w="5" h="5" operator="+"/>
+            <conduit id="6" input="2">
+                <output target="5" index="0"/>
+            </conduit>
+            <conduit id="7" input="3">
+                <output target="5" index="1"/>
+            </conduit>
+            <conduit id="8" input="5">
+                <output target="4" index="0"/>
+            </conduit>
         </body>
-        <conduit id="6" input="2">
-            <output target="5" index="0"/>
-        </conduit>
-        <conduit id="7" input="3">
-            <output target="5" index="1"/>
-        </conduit>
-        <conduit id="8" input="5">
-            <output target="4" index="0"/>
-        </conduit>
     </function>
 </fluir>

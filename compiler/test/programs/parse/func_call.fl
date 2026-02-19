@@ -54,12 +54,12 @@
               z="1"
               w="100"
               h="100">
-        <input>
-            <param name="in1" y="30" w="10" h="7" id="2" type="i32"/>
-            <param name="in2" y="50" w="10" h="7" id="3" type="i32"/>
+        <input x="0" y="30" z="0" w="10" h="30">
+            <param name="in1" id="2" type="i32"/>
+            <param name="in2" id="3" type="i32"/>
         </input>
-        <output>
-            <return y="24" x="100" w="10" h="7" id="4" type="i32"/>
+        <output x="100" y="24" z="0" w="10" h="7">
+            <return id="4" type="i32"/>
         </output>
         <body>
             <binary id="5" x="57" y="4" z="2" w="5" h="5" operator="+"/>

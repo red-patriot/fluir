@@ -41,18 +41,19 @@
     FunctionDecl(foo)
     at(x200, y200, z1, w100, h100)
     input
+        at(x0, y30, z0, w10, h30)
         2:
             Param(in1)
-            at(x0, y30, z0, w10, h7)
+            index 0
             type i32
         3:
             Param(in2)
-            at(x0, y50, z0, w10, h7)
+            index 1
             type i32
     output
+        at(x100, y24, z0, w10, h7)
         4:
             Return
-            at(x100, y24, z0, w10, h7)
             type i32
     body
         5:

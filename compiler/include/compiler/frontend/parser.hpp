@@ -38,10 +38,10 @@ namespace fluir {
     void declaration(Element* element);
     void functionDecl(Element* element);
 
-    pt::FunctionDecl::Parameters funcInputs(Element* element);
-    WithID<pt::FunctionDecl::Parameter> funcParameter(Element* element);
-    pt::FunctionDecl::Returns funcOutputs(Element* element);
-    WithID<pt::FunctionDecl::Return> funcReturn(Element* element);
+    pt::FunctionDecl::InputBlock funcInputs(Element* element);
+    pt::FunctionDecl::Parameter funcParameter(Element* element, int index);
+    pt::FunctionDecl::OutputBlock funcOutputs(Element* element);
+    pt::FunctionDecl::Return funcReturn(Element* element);
 
     pt::Block block(Element* element);
     WithID<pt::Node> node(Element* element);
@@ -72,7 +72,6 @@ namespace fluir {
     ID parseIdReference(Element* element, std::string_view attribute);
     ID parseOptionalIdReference(Element* element, std::string_view attribute);
     FlowGraphLocation parseLocation(Element* element);
-    FlowGraphLocation parseBorderingLocation(Element* element);
     Operator parseOperator(Element* element, std::string_view attribute);
 
     template <typename... FmtArgs>

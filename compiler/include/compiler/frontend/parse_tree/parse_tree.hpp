@@ -93,7 +93,7 @@ namespace fluir::pt {
   struct FunctionDecl {
     struct Parameter {
       ID id;
-      FlowGraphLocation location;
+      int index;
 
       std::string name;
       std::string typeName;
@@ -103,23 +103,33 @@ namespace fluir::pt {
 
     struct Return {
       ID id;
-      FlowGraphLocation location;
 
       std::string typeName;
 
       friend bool operator==(const Return&, const Return&) = default;
     };
 
-    using Parameters = std::unordered_map<ID, Parameter>;
-    using Returns = std::unordered_map<ID, Return>;
+    struct InputBlock {
+      FlowGraphLocation location;
+      std::vector<Parameter> parameters;
+
+      friend bool operator==(const InputBlock&, const InputBlock&) = default;
+    };
+
+    struct OutputBlock {
+      FlowGraphLocation location;
+      std::optional<Return> ret;
+
+      friend bool operator==(const OutputBlock&, const OutputBlock&) = default;
+    };
 
     ID id;
     FlowGraphLocation location;
 
     std::string name;
     Block body;
-    Parameters parameters;
-    Returns returns;
+    std::optional<InputBlock> input;
+    std::optional<OutputBlock> output;
 
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };

@@ -192,16 +192,16 @@ namespace fluir {
     ID id = parseId(element);
     auto location = parseLocation(element);
     std::optional<pt::Block> body;
-    pt::FunctionDecl::Parameters parameters;
-    pt::FunctionDecl::Returns returns;
+    std::optional<pt::FunctionDecl::InputBlock> input;
+    std::optional<pt::FunctionDecl::OutputBlock> output;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       std::string_view childName = child->Name();
       if (childName == bodyTag) {
         body = block(child);
       } else if (childName == inputTag) {
-        parameters = funcInputs(child);
+        input = funcInputs(child);
       } else if (childName == outputTag) {
-        returns = funcOutputs(child);
+        output = funcOutputs(child);
       } else {
         panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
       }
@@ -211,13 +211,14 @@ namespace fluir {
 
     panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
     tree_.declarations.emplace(
-      id,
-      pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(parameters), std::move(returns)});
+      id, pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)});
   }
 
-  pt::FunctionDecl::Parameters Parser::funcInputs(Element* section) {
+  pt::FunctionDecl::InputBlock Parser::funcInputs(Element* section) {
     static constexpr std::string_view paramTag = "param";
-    pt::FunctionDecl::Parameters parameters;
+    auto location = parseLocation(section);
+    std::vector<pt::FunctionDecl::Parameter> parameters;
+    int idx = 0;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
@@ -227,29 +228,27 @@ namespace fluir {
                 "Unexpected element <{}>. Expected <{}>",
                 child->Name(),
                 paramTag);
-        auto result = funcParameter(child);
-        auto& [id, param] = result;
-        parameters.insert({id, param});
+        parameters.push_back(funcParameter(child, idx));
+        idx++;
       };
     }
 
-    return parameters;
+    return pt::FunctionDecl::InputBlock{location, std::move(parameters)};
   }
 
-  WithID<pt::FunctionDecl::Parameter> Parser::funcParameter(Element* element) {
+  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element, int index) {
     auto name = getAttribute(element, "name");
     auto id = parseId(element);
-    auto location = parseBorderingLocation(element);
     auto typeName = getAttribute(element, "type");
 
-    return {id,
-            pt::FunctionDecl::Parameter{
-              .id = id, .location = location, .name = std::string(name), .typeName = std::string(typeName)}};
+    return pt::FunctionDecl::Parameter{
+      .id = id, .index = index, .name = std::string(name), .typeName = std::string(typeName)};
   }
 
-  pt::FunctionDecl::Returns Parser::funcOutputs(Element* section) {
+  pt::FunctionDecl::OutputBlock Parser::funcOutputs(Element* section) {
     static constexpr std::string_view returnTag = "return";
-    pt::FunctionDecl::Returns ret;
+    auto location = parseLocation(section);
+    std::optional<pt::FunctionDecl::Return> ret;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
@@ -259,19 +258,18 @@ namespace fluir {
                 "Unexpected element <{}>. Expected <{}>",
                 child->Name(),
                 returnTag);
-        auto result = funcReturn(child);
-        ret.insert(result);
+        panicIf(ret.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
+        ret = funcReturn(child);
       };
     }
 
-    return ret;
+    return pt::FunctionDecl::OutputBlock{location, std::move(ret)};
   }
 
-  WithID<pt::FunctionDecl::Return> Parser::funcReturn(Element* element) {
+  pt::FunctionDecl::Return Parser::funcReturn(Element* element) {
     auto id = parseId(element);
-    auto location = parseBorderingLocation(element);
     auto typeName = getAttribute(element, "type");
-    return {id, pt::FunctionDecl::Return{.id = id, .location = location, .typeName = std::string(typeName)}};
+    return pt::FunctionDecl::Return{.id = id, .typeName = std::string(typeName)};
   }
 
   pt::Block Parser::block(Element* body) {
@@ -626,44 +624,6 @@ namespace fluir {
             "Expected a number in element location.height, found '{}'.",
             getAttribute(element, "h"));
     return {x.value(), y.value(), z.value(), width.value(), height.value()};
-  }
-
-  FlowGraphLocation Parser::parseBorderingLocation(Element* element) {
-    auto xText = getOptionalAttribute(element, "x", "0");
-    auto x = fe::parseNumber<int>(xText);
-    panicIf(!x.has_value(),
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected a number in element location.x, found '{}'.",
-            xText);
-    auto yText = getOptionalAttribute(element, "y", "0");
-    auto y = fe::parseNumber<int>(yText);
-    panicIf(!y.has_value(),
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected a number in element location.y, found '{}'.",
-            yText);
-
-    auto width = fe::parseNumber<int>(getAttribute(element, "w"));
-    panicIf(!width.has_value(),
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected a number in element location.width, found '{}'.",
-            getAttribute(element, "w"));
-    auto height = fe::parseNumber<int>(getAttribute(element, "h"));
-    panicIf(!height.has_value(),
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected a number in element location.height, found '{}'.",
-            getAttribute(element, "h"));
-
-    return FlowGraphLocation{
-      .x = x.value(),
-      .y = y.value(),
-      .z = 0,
-      .width = width.value(),
-      .height = height.value(),
-    };
   }
 
   Operator Parser::parseOperator(Element* element, std::string_view attribute) {

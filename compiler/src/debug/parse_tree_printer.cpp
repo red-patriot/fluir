@@ -31,21 +31,11 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("FunctionDecl({})\n", func.name) << doPrint(func.location);
 
-    if (!func.parameters.empty()) {
-      out_ << formatIndented("input\n");
-      FLUIR_SCOPED_INDENT;
-      auto orderedParams = keyOrder(func.parameters);
-      for (const auto& param : orderedParams) {
-        (*this)(func.parameters.at(param));
-      }
+    if (func.input) {
+      (*this)(*func.input);
     }
-    if (!func.returns.empty()) {
-      out_ << formatIndented("output\n");
-      auto orderedReturns = keyOrder(func.returns);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& ret : orderedReturns) {
-        (*this)(func.returns.at(ret));
-      }
+    if (func.output) {
+      (*this)(*func.output);
     }
 
     {
@@ -70,13 +60,31 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
     out_ << formatIndented("{}:\n", param.id);
     FLUIR_SCOPED_INDENT;
-    out_ << formatIndented("Param({})\n", param.name) << doPrint(param.location)
+    out_ << formatIndented("Param({})\n", param.name) << formatIndented("index {}\n", param.index)
          << formatIndented("type {}\n", param.typeName);
   }
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
     out_ << formatIndented("{}:\n", ret.id);
     FLUIR_SCOPED_INDENT;
-    out_ << formatIndented("Return\n") << doPrint(ret.location) << formatIndented("type {}\n", ret.typeName);
+    out_ << formatIndented("Return\n") << formatIndented("type {}\n", ret.typeName);
+  }
+
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::InputBlock& input) {
+    out_ << formatIndented("input\n");
+    FLUIR_SCOPED_INDENT;
+    out_ << doPrint(input.location);
+    for (const auto& param : input.parameters) {
+      (*this)(param);
+    }
+  }
+
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::OutputBlock& output) {
+    out_ << formatIndented("output\n");
+    FLUIR_SCOPED_INDENT;
+    out_ << doPrint(output.location);
+    if (output.ret) {
+      (*this)(*output.ret);
+    }
   }
 
   void ParseTreePrinter::operator()(const pt::Binary& binary) {

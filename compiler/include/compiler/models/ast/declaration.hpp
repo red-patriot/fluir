@@ -1,7 +1,9 @@
 #ifndef FLUIR_COMPILER_MODELS_AST_DECLARATION_HPP
 #define FLUIR_COMPILER_MODELS_AST_DECLARATION_HPP
 
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "compiler/models/ast/node.hpp"
@@ -13,8 +15,10 @@ namespace fluir::ast {
     ID id;
     FlowGraphLocation location;
     std::string name;
-
     DataFlowGraph statements;
+
+    std::unordered_map<ID, std::string> parameters{};
+    std::optional<ID> returnValue{};  // TODO: Support multiple returns
   };
 
   using Declaration = FunctionDecl;  // TODO: Support other declarations

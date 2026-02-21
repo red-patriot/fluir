@@ -1,0 +1,9 @@
+Function(2): 'APlusB'
+  Parameters:
+    2: 'in1'
+    3: 'in2'
+  Return: 4
+  LocalWrite(4)
+    BinaryOp(5): +
+      LocalRead(2): 2
+      LocalRead(3): 3

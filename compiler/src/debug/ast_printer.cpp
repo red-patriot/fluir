@@ -27,6 +27,19 @@ namespace fluir::debug {
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
+    if (!func.parameters.empty()) {
+      out_ << formatIndented("Parameters:\n");
+      std::vector<ID> sortedIDs;
+      std::ranges::transform(func.parameters, std::back_inserter(sortedIDs), [](const auto& p) { return p.first; });
+      std::ranges::sort(sortedIDs);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& id : sortedIDs) {
+        out_ << formatIndented("{}: '{}'\n", id, func.parameters.at(id));
+      }
+    }
+    if (func.returnValue) {
+      out_ << formatIndented("Return: {}\n", *func.returnValue);
+    }
     print(func.statements);
   }
 

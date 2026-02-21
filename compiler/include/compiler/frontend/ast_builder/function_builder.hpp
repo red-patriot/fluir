@@ -26,6 +26,7 @@ namespace fluir::fe {
     pt::FunctionDecl pt_;
     FullID currentID_{};
     std::unordered_set<ID> alreadyFound_;
+    std::unordered_set<ID> parameters_;
     std::unordered_set<ID> locals_;
     std::vector<ID> inProgressNodes_;
     fluir::dag::NodeSet<ID> dependencies_;
@@ -36,6 +37,9 @@ namespace fluir::fe {
 
     ast::UniqueNode process(ID id, pt::Node pt);
     ast::UniqueNode getDependency(ID dependentId, int index);
+
+    std::unordered_set<ID> getLocalNodes();
+    std::unordered_set<ID> getSinkNodes() const;
   };
 
 }  // namespace fluir::fe

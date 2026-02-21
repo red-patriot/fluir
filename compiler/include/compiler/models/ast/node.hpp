@@ -185,6 +185,9 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalWrite; }
 
+    LocalWrite(FullID writeID, UniqueNode child, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalWrite, std::move(writeID), location), child_(std::move(child)) { }
+
     LocalWrite(UniqueNode child, const FlowGraphLocation& location) :
       Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
 

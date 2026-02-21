@@ -62,7 +62,7 @@ namespace fluir {
   ASTBuilder::ASTBuilder(Context& ctx, const pt::ParseTree& tree) : ctx_(ctx), tree_(tree) { }
 
   Results<ast::Declaration> ASTBuilder::operator()(const fluir::pt::FunctionDecl& func) {
-    fluir::ast::FunctionDecl decl{func.id, func.location, func.name, {}};
+    fluir::ast::FunctionDecl decl{.id = func.id, .location = func.location, .name = func.name, .statements = {}};
 
     auto bodyResults = buildDataFlowGraph(ctx_, func.body, {func.id});
 

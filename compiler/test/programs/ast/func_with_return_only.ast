@@ -1,0 +1,4 @@
+Function(1): 'getConst'
+  Return: 2
+  LocalWrite(2)
+    ConstantF64(3): 42.0000

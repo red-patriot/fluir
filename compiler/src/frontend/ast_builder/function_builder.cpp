@@ -54,6 +54,7 @@ namespace fluir::fe {
     for (const auto& local : locals_) {
       currentID_.back() = local;
       auto astNode = process(local, body.nodes.at(local));
+      alreadyFound_.insert(local);
       auto write = ast::createDependency<ast::LocalWrite>(std::move(astNode), astNode->location());
       dependencies.insert({local, std::move(dependencies_)});
       dependencies_ = {};

@@ -42,7 +42,7 @@ namespace fluir::debug {
       std::ranges::sort(sortedIDs);
       FLUIR_SCOPED_INDENT;
       for (const auto& id : sortedIDs) {
-        out_ << formatIndented("{}: '{}'\n", id, func.parameters.at(id));
+        out_ << formatIndented("{}: '{}'\n", id, func.parameters.at(id).name);
       }
     }
     if (func.returnValue) {

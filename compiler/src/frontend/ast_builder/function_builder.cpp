@@ -112,10 +112,10 @@ namespace fluir::fe {
       currentID_.pop_back();
     }
 
-    std::unordered_map<ID, std::string> parameters;
+    std::unordered_map<ID, ast::FunctionDecl::Parameter> parameters;
     if (pt_.input) {
       std::ranges::transform(pt_.input->parameters, std::inserter(parameters, parameters.begin()), [](const auto& p) {
-        return std::make_pair(p.id, p.name);
+        return std::make_pair(p.id, ast::FunctionDecl::Parameter{p.name, p.typeName});
       });
     }
 

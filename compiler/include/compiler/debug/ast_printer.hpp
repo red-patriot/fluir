@@ -21,6 +21,7 @@ namespace fluir::debug {
     void operator()(const ast::Cast& cast);
     void operator()(const ast::LocalWrite& write);
     void operator()(const ast::LocalRead& read);
+    void operator()(const ast::Call& call);
 
    private:
     std::ostream& out_;

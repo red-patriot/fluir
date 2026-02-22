@@ -14,7 +14,7 @@
 #include "compiler/types/typeid.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead };
+  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead, Call };
 
   class Node {
    public:
@@ -213,6 +213,20 @@ namespace fluir::ast {
     ID variable_;
   };
 
+  class Call : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Call; }
+
+    Call(std::string target, std::vector<UniqueNode> arguments, FullID id, const FlowGraphLocation& location) :
+      Node(NodeKind::Call, std::move(id), location), target_(std::move(target)), arguments_(std::move(arguments)) { }
+
+    const std::string& target() const { return target_; }
+    const std::vector<UniqueNode>& arguments() const { return arguments_; }
+
+   private:
+    std::string target_;                /**< The name of the target function to call */
+    std::vector<UniqueNode> arguments_; /**< The arguments to pass to the function */
+  };
 }  // namespace fluir::ast
 
 #endif

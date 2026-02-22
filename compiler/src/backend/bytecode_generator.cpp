@@ -220,6 +220,8 @@ namespace fluir {
         return generate(*node.as<ast::LocalWrite>());
       case ast::NodeKind::LocalRead:
         return generate(*node.as<ast::LocalRead>());
+      case ast::NodeKind::Call:
+        assert(false && "TODO");
     }
   }
 

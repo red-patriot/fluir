@@ -43,7 +43,22 @@ namespace fluir::fe {
     return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
   }
 
-  ast::UniqueNode FunctionAstBuilder::operator()(const pt::Call&) { assert(false && "NOT IMPLEMENTED!"); }
+  ast::UniqueNode FunctionAstBuilder::operator()(const pt::Call& pt) {
+    inProgressNodes_.emplace_back(pt.id);
+    FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
+
+    auto ptArgs = pt.arguments;
+    std::ranges::sort(
+      ptArgs, [](const pt::Call::Argument& lhs, const pt::Call::Argument& rhs) { return lhs.index < rhs.index; });
+
+    std::vector<ast::UniqueNode> astArgs;
+    for (const auto& [name, index] : ptArgs) {
+      auto argument = getDependency(pt.id, index);
+      astArgs.emplace_back(std::move(argument));
+    }
+
+    return ast::createDependency<ast::Call>(pt.target, std::move(astArgs), currentID_, pt.location);
+  }
 
   Results<ast::FunctionDecl> FunctionAstBuilder::run() {
     const auto& body = pt_.body;

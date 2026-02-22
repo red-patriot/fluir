@@ -178,6 +178,7 @@ namespace fluir {
         return false;
       }
       auto type = write->child()->type();
+      write->setType(type);
       if (write->variable() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
         return true;
       }

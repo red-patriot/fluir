@@ -210,6 +210,23 @@ namespace fluir {
 
     panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
 
+    if (output && output->ret) {
+      const ID returnId = output->ret->id;
+      panicIf(body->nodes.contains(returnId) || body->conduits.contains(returnId),
+              element,
+              diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+    }
+
+    if (input) {
+      for (const auto& param : input->parameters) {
+        panicIf(body->nodes.contains(param.id) || body->conduits.contains(param.id),
+                element,
+                diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+        panicIf(
+          output && output->ret && output->ret->id == param.id, element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+      }
+    }
+
     panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
     tree_.declarations.emplace(
       id, pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)});

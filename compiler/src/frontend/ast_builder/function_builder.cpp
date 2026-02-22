@@ -66,7 +66,6 @@ namespace fluir::fe {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
-    // TODO: Process return value
     std::optional<ID> returnID{std::nullopt};
     if (pt_.output && pt_.output->ret) {
       returnID = pt_.output->ret->id;

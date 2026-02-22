@@ -319,6 +319,41 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
   EXPECT_EQ(fluir::types::ID_I32, decl.statements.at(0)->type());
 }
 
+TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
+  fa::AST ast{.declarations = {}};
+  ast.declarations.push_back([&]() {
+    return fa::Declaration{.id = 1,
+                           .location = fluir::FlowGraphLocation{},
+                           .name = "test_func",
+                           .statements = {},
+                           .parameters = {{1, "a", "I32"}, {2, "b", "I16"}},
+                           .returnValue = fa::FunctionDecl::Return{4, "I64"}};
+  }());
+  auto& decl = ast.declarations.front();
+  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+    FullID{1, 4},
+    fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
+                                       fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       fa::createDependency<fa::LocalRead>(2, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       FullID{1, 3},
+                                       fluir::FlowGraphLocation{}),
+    fluir::FlowGraphLocation{}));
+
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
+
+  const auto result = fluir::typeCheck(ctx, std::move(ast));
+  ASSERT_FALSE(sink.containsErrors());
+
+  EXPECT_EQ(fluir::types::ID_I64, decl.statements.at(0)->type());
+  ASSERT_TRUE(decl.statements.front()->is<fa::LocalWrite>());
+  const auto& child = decl.statements.front()->as<fa::LocalWrite>()->child();
+  ASSERT_TRUE(child->is<fa::Cast>());
+  const auto& cast = child->as<fa::Cast>();
+  EXPECT_EQ(ft::ID_I32, cast->from());
+  EXPECT_EQ(ft::ID_I64, cast->to());
+}
+
 TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back([&]() {

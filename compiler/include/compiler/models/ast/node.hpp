@@ -192,6 +192,7 @@ namespace fluir::ast {
       Node(NodeKind::LocalWrite, child->fullId(), location), child_(std::move(child)) { }
 
     [[nodiscard]] const UniqueNode& child() const { return child_; }
+    [[nodiscard]] UniqueNode& child() { return child_; }
     [[nodiscard]] ID variable() const { return id(); }
 
    private:

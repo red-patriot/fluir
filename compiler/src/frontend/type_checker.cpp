@@ -69,12 +69,34 @@ namespace fluir {
       returnType = ctx.symbolTable.getTypeID(decl.returnValue->typeName);
     }
 
-    auto funcType = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
-    decl.type = funcType;
+    auto funcTypeID = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
+    decl.type = funcTypeID;
 
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {
         return NoResult;
+      }
+    }
+
+    // Check return is the right type, or insert a cast if necessary
+    if (decl.returnValue) {
+      const auto funcType = ctx.symbolTable.getFunctionType(decl.type);
+      for (auto& node : decl.statements) {
+        if (node->id() != decl.returnValue->id) {
+          continue;
+        }
+        auto* returnNode = node->as<ast::LocalWrite>();
+        if (!returnNode) {
+          diagnostic::emitInternalError("Unexpected node kind encountered");
+        }
+        if (returnNode->type() != funcType->returnType().value()) {
+          // Insert a cast before writing the return
+          returnNode->child() = ast::createDependency<ast::Cast>(funcType->returnType().value(),
+                                                                 std::move(returnNode->child()),
+                                                                 returnNode->fullId(),
+                                                                 returnNode->location());
+          returnNode->setType(funcType->returnType().value());
+        }
       }
     }
 

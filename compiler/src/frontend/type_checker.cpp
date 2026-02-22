@@ -58,15 +58,35 @@ namespace fluir {
     FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
     // Add all the function's parameter types as locals
     std::vector<types::TypeID> paramTypes;
+    bool paramsFailed = false;
     for (auto& param : decl.parameters) {
-      auto paramType = ctx.symbolTable.getTypeID(param.typeName);
-      paramTypes.push_back(paramType);
-      // TODO: Check for invalid types
-      ctx.symbolTable.addLocalVariable(param.id, paramType);
+      try {
+        auto paramType = ctx.symbolTable.getTypeID(param.typeName);
+        if (paramType == types::ID_INVALID) {
+          ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNRECOGNIZED_TYPE,
+                                           ctx.currentFile,
+                                           FullID{decl.id, param.id},
+                                           "Unrecognized type '{}' for parameter '{}'.",
+                                           param.typeName,
+                                           param.name);
+        }
+        paramTypes.push_back(paramType);
+        ctx.symbolTable.addLocalVariable(param.id, paramType);
+      } catch (const diagnostic::Panic&) {
+        paramsFailed = true;
+      }
     }
+    if (paramsFailed) return NoResult;
     std::optional<types::TypeID> returnType = std::nullopt;
     if (decl.returnValue) {
       returnType = ctx.symbolTable.getTypeID(decl.returnValue->typeName);
+      if (returnType == types::ID_INVALID) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNRECOGNIZED_TYPE,
+                                         ctx.currentFile,
+                                         FullID{decl.id, decl.returnValue->id},
+                                         "Unrecognized return type '{}'.",
+                                         decl.returnValue->typeName);
+      }
     }
 
     auto funcTypeID = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});

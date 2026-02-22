@@ -263,3 +263,31 @@ TEST(TestDeclarationTypeChecker, LocalReadFailsIfIdIsMissing) {
   const auto& errorID = std::get<FullID>(sink.last().location);
   EXPECT_EQ(expectedID, errorID);
 }
+
+TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
+  fa::AST ast{.declarations = {}};
+  ast.declarations.push_back([&]() {
+    return fa::Declaration{.id = 1,
+                           .location = fluir::FlowGraphLocation{},
+                           .name = "test_func",
+                           .statements = {},
+                           .parameters = {{1, {"a", "F64"}}, {2, {"b", "F64"}}}};
+  }());
+  auto& decl = ast.declarations.front();
+  decl.statements.emplace_back(
+    fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
+                                       fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       fa::createDependency<fa::LocalRead>(2, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       FullID{1, 3},
+                                       fluir::FlowGraphLocation{}));
+
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
+
+  const auto result = fluir::typeCheck(ctx, std::move(ast));
+  ASSERT_FALSE(sink.containsErrors());
+
+  EXPECT_EQ(fluir::types::ID_F64, decl.statements.at(0)->type());
+  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(1).type);
+  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(2).type);
+}

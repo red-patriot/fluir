@@ -56,6 +56,14 @@ namespace fluir {
   Results<ast::Declaration> checkDeclType(Context& ctx, ast::Declaration decl) {
     ctx.symbolTable.pushScope();
     FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
+    // Add all the function's parameter types as locals
+    for (auto& [id, param] : decl.parameters) {
+      auto paramType = ctx.symbolTable.getTypeID(param.typeName);
+      param.type = paramType;
+      // TODO: Check for invalid types
+      ctx.symbolTable.addLocalVariable(id, paramType);
+    }
+
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {
         return NoResult;

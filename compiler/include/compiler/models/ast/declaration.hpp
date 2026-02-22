@@ -16,7 +16,6 @@ namespace fluir::ast {
       ID id;
       std::string name;
       std::string typeName{};
-      types::TypeID type{types::ID_INVALID};
     };
 
     struct Return {

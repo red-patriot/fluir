@@ -60,7 +60,6 @@ namespace fluir {
     std::vector<types::TypeID> paramTypes;
     for (auto& param : decl.parameters) {
       auto paramType = ctx.symbolTable.getTypeID(param.typeName);
-      param.type = paramType;
       paramTypes.push_back(paramType);
       // TODO: Check for invalid types
       ctx.symbolTable.addLocalVariable(param.id, paramType);

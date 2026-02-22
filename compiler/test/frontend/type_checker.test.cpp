@@ -288,8 +288,6 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
   ASSERT_FALSE(sink.containsErrors());
 
   EXPECT_EQ(fluir::types::ID_F64, decl.statements.at(0)->type());
-  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(0).type);
-  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(1).type);
 }
 
 TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {

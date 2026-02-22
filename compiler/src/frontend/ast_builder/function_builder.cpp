@@ -81,11 +81,13 @@ namespace fluir::fe {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
     }
 
-    std::optional<ID> returnID{std::nullopt};
+    std::optional<ast::FunctionDecl::Return> returnVal{std::nullopt};
     if (pt_.output && pt_.output->ret) {
-      returnID = pt_.output->ret->id;
+      returnVal.emplace();
+      returnVal->id = pt_.output->ret->id;
+      returnVal->typeName = pt_.output->ret->typeName;
       FullID fullID = currentID_;
-      fullID.push_back(*returnID);
+      fullID.push_back(returnVal->id);
       // TODO: Support multiple return values
       auto returnedNode = getDependency(pt_.output->ret->id, 0);
       auto write =
@@ -112,10 +114,10 @@ namespace fluir::fe {
       currentID_.pop_back();
     }
 
-    std::unordered_map<ID, ast::FunctionDecl::Parameter> parameters;
+    std::vector<ast::FunctionDecl::Parameter> parameters;
     if (pt_.input) {
       std::ranges::transform(pt_.input->parameters, std::inserter(parameters, parameters.begin()), [](const auto& p) {
-        return std::make_pair(p.id, ast::FunctionDecl::Parameter{p.name, p.typeName});
+        return ast::FunctionDecl::Parameter{p.id, p.name, p.typeName};
       });
     }
 
@@ -125,7 +127,7 @@ namespace fluir::fe {
                           .name = pt_.name,
                           .statements = std::move(graph_),
                           .parameters = parameters,
-                          .returnValue = returnID};
+                          .returnValue = returnVal};
     return ast;
   }
 

@@ -57,12 +57,21 @@ namespace fluir {
     ctx.symbolTable.pushScope();
     FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
     // Add all the function's parameter types as locals
-    for (auto& [id, param] : decl.parameters) {
+    std::vector<types::TypeID> paramTypes;
+    for (auto& param : decl.parameters) {
       auto paramType = ctx.symbolTable.getTypeID(param.typeName);
       param.type = paramType;
+      paramTypes.push_back(paramType);
       // TODO: Check for invalid types
-      ctx.symbolTable.addLocalVariable(id, paramType);
+      ctx.symbolTable.addLocalVariable(param.id, paramType);
     }
+    std::optional<types::TypeID> returnType = std::nullopt;
+    if (decl.returnValue) {
+      returnType = ctx.symbolTable.getTypeID(decl.returnValue->typeName);
+    }
+
+    auto funcType = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
+    decl.type = funcType;
 
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {

@@ -271,7 +271,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
                            .location = fluir::FlowGraphLocation{},
                            .name = "test_func",
                            .statements = {},
-                           .parameters = {{1, {"a", "F64"}}, {2, {"b", "F64"}}}};
+                           .parameters = {{1, "a", "F64"}, {2, "b", "F64"}}};
   }());
   auto& decl = ast.declarations.front();
   decl.statements.emplace_back(
@@ -288,8 +288,8 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
   ASSERT_FALSE(sink.containsErrors());
 
   EXPECT_EQ(fluir::types::ID_F64, decl.statements.at(0)->type());
+  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(0).type);
   EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(1).type);
-  EXPECT_EQ(fluir::types::ID_F64, decl.parameters.at(2).type);
 }
 
 TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
@@ -299,8 +299,8 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
                            .location = fluir::FlowGraphLocation{},
                            .name = "test_func",
                            .statements = {},
-                           .parameters = {{1, {"a", "I32"}}, {2, {"b", "I16"}}},
-                           .returnValue = 4};
+                           .parameters = {{1, "a", "I32"}, {2, "b", "I16"}},
+                           .returnValue = fa::FunctionDecl::Return{4, "I32"}};
   }());
   auto& decl = ast.declarations.front();
   decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
@@ -319,4 +319,36 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
   ASSERT_FALSE(sink.containsErrors());
 
   EXPECT_EQ(fluir::types::ID_I32, decl.statements.at(0)->type());
+}
+
+TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
+  fa::AST ast{.declarations = {}};
+  ast.declarations.push_back([&]() {
+    return fa::Declaration{.id = 1,
+                           .location = fluir::FlowGraphLocation{},
+                           .name = "test_func",
+                           .statements = {},
+                           .parameters = {{1, "a", "I32"}, {2, "b", "I16"}},
+                           .returnValue = fa::FunctionDecl::Return{4, "I32"}};
+  }());
+  auto& decl = ast.declarations.front();
+  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+    FullID{1, 4},
+    fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
+                                       fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       fa::createDependency<fa::LocalRead>(2, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                       FullID{1, 3},
+                                       fluir::FlowGraphLocation{}),
+    fluir::FlowGraphLocation{}));
+
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
+  ft::FunctionType expected{{ft::ID_I32, ft::ID_I16}, ft::ID_I32};
+
+  const auto result = fluir::typeCheck(ctx, std::move(ast));
+  ASSERT_FALSE(sink.containsErrors());
+
+  const auto functionType = ctx.symbolTable.getFunctionType(decl.type);
+  ASSERT_TRUE(functionType);
+  EXPECT_EQ(expected, *functionType);
 }

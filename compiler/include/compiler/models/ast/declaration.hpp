@@ -13,18 +13,25 @@
 namespace fluir::ast {
   struct FunctionDecl {
     struct Parameter {
+      ID id;
       std::string name;
       std::string typeName{};
       types::TypeID type{types::ID_INVALID};
+    };
+
+    struct Return {
+      ID id;
+      std::string typeName;
     };
 
     ID id;
     FlowGraphLocation location;
     std::string name;
     DataFlowGraph statements;
+    types::TypeID type{types::ID_INVALID};
 
-    std::unordered_map<ID, Parameter> parameters{};
-    std::optional<ID> returnValue{};  // TODO: Support multiple returns
+    std::vector<Parameter> parameters{};
+    std::optional<Return> returnValue{};  // TODO: Support multiple returns
   };
 
   using Declaration = FunctionDecl;  // TODO: Support other declarations

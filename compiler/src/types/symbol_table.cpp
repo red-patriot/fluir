@@ -178,4 +178,20 @@ namespace fluir::types {
     return variables.at(id);
   }
 
+  FunctionType const* SymbolTable::addFunction(FunctionType func) {
+    auto [it, inserted] = functions_.emplace(func.name(), std::move(func));
+    if (!inserted) {
+      return nullptr;
+    }
+    return &it->second;
+  }
+
+  FunctionType const* SymbolTable::getFunctionType(const std::string& name) const {
+    auto it = functions_.find(name);
+    if (it == functions_.end()) {
+      return nullptr;
+    }
+    return &it->second;
+  }
+
 }  // namespace fluir::types

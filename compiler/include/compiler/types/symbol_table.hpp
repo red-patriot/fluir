@@ -10,6 +10,7 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
 #include "compiler/types/conversion.hpp"
+#include "compiler/types/function_type.hpp"
 #include "compiler/types/operator_def.hpp"
 #include "compiler/types/type.hpp"
 #include "compiler/types/typeid.hpp"
@@ -55,6 +56,12 @@ namespace fluir::types {
     /** Retrieves the type of the local variable with the given ID */
     TypeID getLocalVariableType(ID id) const;
 
+    /** Adds a function type to the table indexed by name.
+     *  Returns a pointer to the stored type, or nullptr if the name is already registered. */
+    FunctionType const* addFunction(FunctionType func);
+    /** Returns the function type for the given name, or nullptr if not registered. */
+    FunctionType const* getFunctionType(const std::string& name) const;
+
    private:
     using OverloadSet =
       std::unordered_set<OperatorDefinition, std::hash<OperatorDefinition>, CompareOperatorDefByParameters>;
@@ -68,6 +75,7 @@ namespace fluir::types {
     std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};
     std::unordered_map<TypeID, std::unordered_set<Conversion>> conversions_{};
+    std::unordered_map<std::string, FunctionType> functions_{};
   };
 }  // namespace fluir::types
 

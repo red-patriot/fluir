@@ -32,6 +32,7 @@ set(FLUIR_TYPES_TEST_SOURCES
     types/symbol_table.test.cpp
     types/overload_resolution.test.cpp
     types/builtin_symbols.test.cpp
+    types/function_type.test.cpp
 )
 
 target_sources(

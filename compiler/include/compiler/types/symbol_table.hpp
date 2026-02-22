@@ -59,10 +59,12 @@ namespace fluir::types {
     TypeID getLocalVariableType(ID id) const;
 
     /** Adds a function type to the table indexed by name.
-     *  Returns a pointer to the stored signature, or nullptr if the name is already registered. */
-    FunctionType const* addFunction(std::string name, FunctionType func);
+     *  Returns the TypeID assigned to the function, or ID_INVALID if the name is already registered. */
+    TypeID addFunction(std::string name, FunctionType func);
     /** Returns the function signature for the given name, or nullptr if not registered. */
     FunctionType const* getFunctionType(const std::string& name) const;
+    /** Returns the function signature for the given TypeID, or nullptr if not registered. */
+    FunctionType const* getFunctionType(TypeID id) const;
     /** Returns the TypeID assigned to the named function's signature, or ID_INVALID if not registered */
     TypeID getFunctionTypeID(const std::string& name) const;
 

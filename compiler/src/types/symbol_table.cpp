@@ -190,13 +190,21 @@ namespace fluir::types {
     return it->second;
   }
 
-  FunctionType const* SymbolTable::addFunction(std::string name, FunctionType func) {
+  TypeID SymbolTable::addFunction(std::string name, FunctionType func) {
     const TypeID typeID = registerFunctionType(func);
     auto [it, inserted] = functionNames_.emplace(std::move(name), typeID);
     if (!inserted) {
+      return ID_INVALID;
+    }
+    return typeID;
+  }
+
+  FunctionType const* SymbolTable::getFunctionType(TypeID id) const {
+    auto it = functionTypes_.find(id);
+    if (it == functionTypes_.end()) {
       return nullptr;
     }
-    return &functionTypes_.at(typeID);
+    return &it->second;
   }
 
   FunctionType const* SymbolTable::getFunctionType(const std::string& name) const {

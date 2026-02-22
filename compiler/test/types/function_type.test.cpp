@@ -51,8 +51,8 @@ TEST(TestSymbolTable, GetFunctionTypeOnEmptyTableReturnsNullptr) {
 
 TEST(TestSymbolTable, AddThenGetFunctionByName) {
   ft::SymbolTable table;
-  auto* added = table.addFunction("add", ft::FunctionType{{ft::ID_I32, ft::ID_I32}, ft::ID_I32});
-  ASSERT_NE(added, nullptr);
+  const auto addedID = table.addFunction("add", ft::FunctionType{{ft::ID_I32, ft::ID_I32}, ft::ID_I32});
+  ASSERT_NE(addedID, ft::TypeID::ID_INVALID);
 
   auto* found = table.getFunctionType("add");
   ASSERT_NE(found, nullptr);
@@ -64,7 +64,7 @@ TEST(TestSymbolTable, AddThenGetFunctionByName) {
 TEST(TestSymbolTable, DuplicateAddReturnsNullptr) {
   ft::SymbolTable table;
   table.addFunction("add", ft::FunctionType{{ft::ID_I32}, ft::ID_I32});
-  EXPECT_EQ(table.addFunction("add", ft::FunctionType{{ft::ID_I32}, ft::ID_I32}), nullptr);
+  EXPECT_EQ(table.addFunction("add", ft::FunctionType{{ft::ID_I32}, ft::ID_I32}), ft::TypeID::ID_INVALID);
 }
 
 TEST(TestSymbolTable, DuplicateAddLeavesOriginalUnchanged) {
@@ -79,18 +79,22 @@ TEST(TestSymbolTable, DuplicateAddLeavesOriginalUnchanged) {
 
 TEST(TestSymbolTable, FunctionWithNoReturn) {
   ft::SymbolTable table;
-  auto* added = table.addFunction("printVal", ft::FunctionType{{ft::ID_I32}, std::nullopt});
-  ASSERT_NE(added, nullptr);
-  EXPECT_FALSE(added->returnType().has_value());
+  const auto addedID = table.addFunction("printVal", ft::FunctionType{{ft::ID_I32}, std::nullopt});
+  ASSERT_NE(addedID, ft::TypeID::ID_INVALID);
+  auto* found = table.getFunctionType("printVal");
+  ASSERT_NE(found, nullptr);
+  EXPECT_FALSE(found->returnType().has_value());
 }
 
 TEST(TestSymbolTable, FunctionWithNoParameters) {
   ft::SymbolTable table;
-  auto* added = table.addFunction("getConst", ft::FunctionType{{}, ft::ID_F64});
-  ASSERT_NE(added, nullptr);
-  EXPECT_TRUE(added->parameters().empty());
-  ASSERT_TRUE(added->returnType().has_value());
-  EXPECT_EQ(added->returnType().value(), ft::ID_F64);
+  const auto addedID = table.addFunction("getConst", ft::FunctionType{{}, ft::ID_F64});
+  ASSERT_NE(addedID, ft::TypeID::ID_INVALID);
+  auto* found = table.getFunctionType("getConst");
+  ASSERT_NE(found, nullptr);
+  EXPECT_TRUE(found->parameters().empty());
+  ASSERT_TRUE(found->returnType().has_value());
+  EXPECT_EQ(found->returnType().value(), ft::ID_F64);
 }
 
 TEST(TestSymbolTable, MultipleFunctionsStoredIndependently) {

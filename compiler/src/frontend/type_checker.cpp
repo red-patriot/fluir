@@ -288,6 +288,21 @@ namespace fluir {
     bool checkType(Context& ctx, ast::Call* call) {
       auto* funcType = ctx.symbolTable.getFunctionType(call->target());
       if (!funcType) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNDEFINED_FUNCTION,
+                                         ctx.currentFile,
+                                         call->fullId(),
+                                         "Call to undefined function '{}'.",
+                                         call->target());
+        return false;
+      }
+      if (call->arguments().size() != funcType->parameters().size()) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_WRONG_ARITY,
+                                         ctx.currentFile,
+                                         call->fullId(),
+                                         "Function '{}' expects {} argument(s), but {} were provided.",
+                                         call->target(),
+                                         funcType->parameters().size(),
+                                         call->arguments().size());
         return false;
       }
       for (size_t i = 0; i < call->arguments().size(); ++i) {
@@ -299,6 +314,12 @@ namespace fluir {
         const auto expectedType = funcType->parameters()[i];
         if (argType != expectedType) {
           if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
+            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                             ctx.currentFile,
+                                             arg->fullId(),
+                                             "Cannot implicitly convert '{}' to '{}'.",
+                                             ctx.symbolTable.getType(argType)->name(),
+                                             ctx.symbolTable.getType(expectedType)->name());
             return false;
           }
           arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());

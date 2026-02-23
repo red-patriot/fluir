@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major><minor>0</minor><patch>0</patch>
+    </version>
+  </header>
+  <function name="takes_u8" id="2" x="0" y="0" z="0" w="50" h="50">
+    <input x="0" y="0" z="0" w="10" h="30">
+      <param name="x" id="1" type="U8"/>
+    </input>
+    <body></body>
+  </function>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <constant id="1" x="0" y="0" z="0" w="5" h="5"><i32>42</i32></constant>
+      <call target="takes_u8" id="2" x="20" y="20" z="0" w="12" h="12">
+        <arg name="x" index="1"/>
+      </call>
+      <conduit id="3" input="1"><output target="2" index="1"/></conduit>
+    </body>
+  </function>
+</fluir>

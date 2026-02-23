@@ -32,7 +32,9 @@ namespace fluir::diagnostic {
     x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
     x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)       \
     x(ERROR_UNRECOGNIZED_TYPE)                    \
-    x(ERROR_INCOMPATIBLE_TYPE)
+    x(ERROR_INCOMPATIBLE_TYPE)    \
+    x(ERROR_UNDEFINED_FUNCTION)   \
+    x(ERROR_WRONG_ARITY)
   // clang-format on
 
   enum class Code : std::uint16_t {

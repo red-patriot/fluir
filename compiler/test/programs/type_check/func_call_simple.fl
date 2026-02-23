@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major><minor>0</minor><patch>0</patch>
+    </version>
+  </header>
+  <function name="add" id="2" x="0" y="0" z="0" w="100" h="100">
+    <input x="0" y="0" z="0" w="10" h="50">
+      <param name="a" id="1" type="I32"/>
+      <param name="b" id="2" type="I32"/>
+    </input>
+    <output x="100" y="24" z="0" w="10" h="7">
+      <return id="3" type="I32"/>
+    </output>
+    <body>
+      <binary id="4" x="50" y="50" z="0" w="5" h="5" operator="+"/>
+      <conduit id="5" input="1"><output target="4" index="0"/></conduit>
+      <conduit id="6" input="2"><output target="4" index="1"/></conduit>
+      <conduit id="7" input="4"><output target="3" index="0"/></conduit>
+    </body>
+  </function>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <constant id="1" x="0" y="0" z="0" w="5" h="5"><i32>10</i32></constant>
+      <constant id="2" x="0" y="20" z="0" w="5" h="5"><i32>20</i32></constant>
+      <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
+        <return index="0"/>
+        <arg name="a" index="1"/>
+        <arg name="b" index="2"/>
+      </call>
+      <conduit id="4" input="1"><output target="3" index="1"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="2"/></conduit>
+    </body>
+  </function>
+</fluir>

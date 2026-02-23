@@ -223,6 +223,7 @@ namespace fluir::ast {
 
     const std::string& target() const { return target_; }
     const std::vector<UniqueNode>& arguments() const { return arguments_; }
+    std::vector<UniqueNode>& arguments() { return arguments_; }
 
    private:
     std::string target_;                /**< The name of the target function to call */

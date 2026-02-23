@@ -11,6 +11,7 @@ namespace fluir {
     bool checkType(Context& ctx, ast::Cast* cast);
     bool checkType(Context& ctx, ast::LocalWrite* write);
     bool checkType(Context& ctx, ast::LocalRead* read);
+    bool checkType(Context& ctx, ast::Call* call);
 
     void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
       slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
@@ -35,6 +36,8 @@ namespace fluir {
           return checkType(ctx, node->as<ast::LocalWrite>());
         case ast::NodeKind::LocalRead:
           return checkType(ctx, node->as<ast::LocalRead>());
+        case ast::NodeKind::Call:
+          return checkType(ctx, node->as<ast::Call>());
         default:
           diagnostic::emitInternalError("Unknown node kind encountered");
       }
@@ -42,6 +45,23 @@ namespace fluir {
   }  // namespace
 
   Results<ast::AST> typeCheck(Context& ctx, ast::AST graph) {
+    // Pre-pass: register all function signatures before body type-checking
+    // so functions can be called regardless of declaration order
+    for (auto& declaration : graph.declarations) {
+      if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
+        continue;
+      }
+      std::vector<types::TypeID> paramTypes;
+      for (const auto& param : declaration.parameters) {
+        paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
+      }
+      std::optional<types::TypeID> returnType;
+      if (declaration.returnValue) {
+        returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
+      }
+      ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
+    }
+
     bool failed = false;
     for (auto& declaration : graph.declarations) {
       try {
@@ -94,7 +114,10 @@ namespace fluir {
       }
     }
 
-    auto funcTypeID = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
+    auto funcTypeID = ctx.symbolTable.getFunctionTypeID(decl.name);
+    if (funcTypeID == types::ID_INVALID) {
+      funcTypeID = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
+    }
     decl.type = funcTypeID;
 
     for (auto& node : decl.statements) {
@@ -251,6 +274,31 @@ namespace fluir {
       if (type == types::ID_INVALID) {
         ctx.diagnosticSink.emitAtElement(
           diagnostic::Code::ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, ctx.currentFile, read->fullId());
+      }
+      return true;
+    }
+
+    bool checkType(Context& ctx, ast::Call* call) {
+      auto* funcType = ctx.symbolTable.getFunctionType(call->target());
+      if (!funcType) {
+        return false;
+      }
+      for (size_t i = 0; i < call->arguments().size(); ++i) {
+        auto& arg = call->arguments()[i];
+        if (!checkType(ctx, arg.get())) {
+          return false;
+        }
+        const auto argType = arg->type();
+        const auto expectedType = funcType->parameters()[i];
+        if (argType != expectedType) {
+          if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
+            return false;
+          }
+          arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
+        }
+      }
+      if (funcType->returnType()) {
+        call->setType(funcType->returnType().value());
       }
       return true;
     }

@@ -465,3 +465,17 @@ TEST(TestDeclarationTypeChecker, HandlesCallToLaterDeclaredFunction) {
   EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
 }
+
+TEST(TestDeclarationTypeChecker, EmitsErrorForDuplicateFunctionName) {
+  fluir::test::TestDiagnosticSink sink;
+  fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
+
+  fa::AST ast{.declarations = {}};
+  ast.declarations.push_back(fa::Declaration{.id = 1, .name = "foo", .statements = {}});
+  ast.declarations.push_back(fa::Declaration{.id = 2, .name = "foo", .statements = {}});
+
+  const auto result = fluir::typeCheck(ctx, std::move(ast));
+  EXPECT_TRUE(sink.containsErrors());
+  EXPECT_FALSE(result.has_value());
+  EXPECT_EQ(fluir::diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME, sink.last().code);
+}

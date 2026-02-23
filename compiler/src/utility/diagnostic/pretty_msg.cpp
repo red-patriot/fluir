@@ -45,7 +45,8 @@ namespace fluir::diagnostic {
       {ERROR_UNRECOGNIZED_TYPE, "The given name is not recognized as the name of a type."},
       {ERROR_INCOMPATIBLE_TYPE, "There is no valid conversion from the given type to the target type."},
       {ERROR_UNDEFINED_FUNCTION, "Attempted to call an undefined function."},
-      {ERROR_WRONG_ARITY, "Attempted to call a function with the wrong number of arguments"}};
+      {ERROR_WRONG_ARITY, "Attempted to call a function with the wrong number of arguments"},
+      {ERROR_DUPLICATE_FUNCTION_NAME, "Cannot define multiple functions with the same name."}};
   }  // namespace
 
   std::string prettyMessage(Code code) {

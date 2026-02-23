@@ -49,9 +49,7 @@ namespace fluir {
   Results<ast::AST> typeCheck(Context& ctx, ast::AST graph) {
     // Pre-pass: register all function signatures before body type-checking
     // so functions can be called regardless of declaration order
-    registerDeclarations(ctx, graph);
-
-    bool failed = false;
+    bool failed = !registerDeclarations(ctx, graph);
     for (auto& declaration : graph.declarations) {
       try {
         auto result = checkDeclType(ctx, std::move(declaration));
@@ -145,21 +143,30 @@ namespace fluir {
 
   namespace {
     bool registerDeclarations(Context& ctx, const ast::AST& ast) {
+      bool failed = false;
       for (auto& declaration : ast.declarations) {
-        if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
-          continue;
+        try {
+          if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
+            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME,
+                                             ctx.currentFile,
+                                             FullID{declaration.id},
+                                             "Function '{}' is already defined.",
+                                             declaration.name);
+          }
+          std::vector<types::TypeID> paramTypes;
+          for (const auto& param : declaration.parameters) {
+            paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
+          }
+          std::optional<types::TypeID> returnType;
+          if (declaration.returnValue) {
+            returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
+          }
+          ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
+        } catch (const diagnostic::Panic&) {
+          failed = true;
         }
-        std::vector<types::TypeID> paramTypes;
-        for (const auto& param : declaration.parameters) {
-          paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
-        }
-        std::optional<types::TypeID> returnType;
-        if (declaration.returnValue) {
-          returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
-        }
-        ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
       }
-      return true;
+      return !failed;
     }
 
     bool checkType(Context&, ast::Constant* constant) {

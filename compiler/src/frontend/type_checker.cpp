@@ -12,6 +12,11 @@ namespace fluir {
     bool checkType(Context& ctx, ast::LocalWrite* write);
     bool checkType(Context& ctx, ast::LocalRead* read);
 
+    void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
+      slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
+      parent->setType(targetType);
+    }
+
     bool checkType(Context& ctx, ast::Node* node) {
       if (node->type() != types::ID_INVALID) {
         // This node has already been type-checked
@@ -111,11 +116,7 @@ namespace fluir {
         }
         if (returnNode->type() != funcType->returnType().value()) {
           // Insert a cast before writing the return
-          returnNode->child() = ast::createDependency<ast::Cast>(funcType->returnType().value(),
-                                                                 std::move(returnNode->child()),
-                                                                 returnNode->fullId(),
-                                                                 returnNode->location());
-          returnNode->setType(funcType->returnType().value());
+          insertCast(funcType->returnType().value(), returnNode->child(), returnNode);
         }
       }
     }
@@ -183,12 +184,10 @@ namespace fluir {
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
       if (overloadLHS != lhs) {
-        binary->lhs() =
-          ast::createDependency<ast::Cast>(overloadLHS, std::move(binary->lhs()), binary->fullId(), binary->location());
+        insertCast(overloadLHS, binary->lhs(), binary);
       }
       if (overloadRHS != rhs) {
-        binary->rhs() =
-          ast::createDependency<ast::Cast>(overloadRHS, std::move(binary->rhs()), binary->fullId(), binary->location());
+        insertCast(overloadRHS, binary->rhs(), binary);
       }
       return true;
     }
@@ -212,8 +211,7 @@ namespace fluir {
       unary->setDefinition(selectedOverload);
       auto [overloadOp, _] = selectedOverload->getParameters();
       if (overloadOp != operand) {
-        unary->operand() =
-          ast::createDependency<ast::Cast>(overloadOp, std::move(unary->operand()), unary->fullId(), unary->location());
+        insertCast(overloadOp, unary->operand(), unary);
       }
       return true;
     }

@@ -13,6 +13,8 @@ namespace fluir {
     bool checkType(Context& ctx, ast::LocalRead* read);
     bool checkType(Context& ctx, ast::Call* call);
 
+    bool registerDeclarations(Context& ctx, const ast::AST& ast);
+
     void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
       slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
       parent->setType(targetType);
@@ -47,20 +49,7 @@ namespace fluir {
   Results<ast::AST> typeCheck(Context& ctx, ast::AST graph) {
     // Pre-pass: register all function signatures before body type-checking
     // so functions can be called regardless of declaration order
-    for (auto& declaration : graph.declarations) {
-      if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
-        continue;
-      }
-      std::vector<types::TypeID> paramTypes;
-      for (const auto& param : declaration.parameters) {
-        paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
-      }
-      std::optional<types::TypeID> returnType;
-      if (declaration.returnValue) {
-        returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
-      }
-      ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
-    }
+    registerDeclarations(ctx, graph);
 
     bool failed = false;
     for (auto& declaration : graph.declarations) {
@@ -155,6 +144,24 @@ namespace fluir {
   }
 
   namespace {
+    bool registerDeclarations(Context& ctx, const ast::AST& ast) {
+      for (auto& declaration : ast.declarations) {
+        if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
+          continue;
+        }
+        std::vector<types::TypeID> paramTypes;
+        for (const auto& param : declaration.parameters) {
+          paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
+        }
+        std::optional<types::TypeID> returnType;
+        if (declaration.returnValue) {
+          returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
+        }
+        ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
+      }
+      return true;
+    }
+
     bool checkType(Context&, ast::Constant* constant) {
       // This is dependent on the order of the types in Literal
       // TODO: Refactor this to be independent

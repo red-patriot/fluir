@@ -31,7 +31,8 @@ namespace fluir::diagnostic {
     x(ERROR_DUPLICATE_PARAM_NAME)                 \
     x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
     x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)       \
-    x(ERROR_UNRECOGNIZED_TYPE)
+    x(ERROR_UNRECOGNIZED_TYPE)                    \
+    x(ERROR_INCOMPATIBLE_TYPE)
   // clang-format on
 
   enum class Code : std::uint16_t {

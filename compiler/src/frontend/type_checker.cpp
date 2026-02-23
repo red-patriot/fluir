@@ -115,7 +115,14 @@ namespace fluir {
           diagnostic::emitInternalError("Unexpected node kind encountered");
         }
         if (returnNode->type() != funcType->returnType().value()) {
-          // Insert a cast before writing the return
+          if (!ctx.symbolTable.canImplicitlyConvert(returnNode->type(), funcType->returnType().value())) {
+            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                             ctx.currentFile,
+                                             returnNode->fullId(),
+                                             "Cannot implicitly convert '{}' to '{}'.",
+                                             ctx.symbolTable.getType(returnNode->type())->name(),
+                                             ctx.symbolTable.getType(funcType->returnType().value())->name());
+          }
           insertCast(funcType->returnType().value(), returnNode->child(), returnNode);
         }
       }

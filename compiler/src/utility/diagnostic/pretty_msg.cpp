@@ -42,7 +42,8 @@ namespace fluir::diagnostic {
       {ERROR_DUPLICATE_PARAM_NAME, "Function parameters must have unique names."},
       {ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED, "Operator overload resolution failed."},
       {ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, "Cannot determine the type of a local dependency."},
-      {ERROR_UNRECOGNIZED_TYPE, "The given name is not recognized as the name of a type."}};
+      {ERROR_UNRECOGNIZED_TYPE, "The given name is not recognized as the name of a type."},
+      {ERROR_INCOMPATIBLE_TYPE, "There is no valid conversion from the given type to the target type."}};
   }  // namespace
 
   std::string prettyMessage(Code code) {

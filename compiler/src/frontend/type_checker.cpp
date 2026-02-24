@@ -315,10 +315,10 @@ namespace fluir {
       bool argsFailed = false;
       for (size_t i = 0; i < call->arguments().size(); ++i) {
         auto& arg = call->arguments()[i];
-        bool argSucceeded = false;
-        FLUIR_SYNCHRONIZE_PANIC(ctx.diagnosticSink) {
+        try {
           if (!checkType(ctx, arg.get())) {
-            return;
+            argsFailed = true;
+            continue;
           }
           const auto argType = arg->type();
           const auto expectedType = funcType->parameters()[i];
@@ -330,13 +330,11 @@ namespace fluir {
                                                "Cannot implicitly convert '{}' to '{}'.",
                                                ctx.symbolTable.getType(argType)->name(),
                                                ctx.symbolTable.getType(expectedType)->name());
-            } else {
-              arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
             }
+
+            arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
           }
-          argSucceeded = true;
-        };
-        if (!argSucceeded) {
+        } catch (const diagnostic::Panic&) {
           argsFailed = true;
         }
       }

@@ -312,25 +312,36 @@ namespace fluir {
                                          call->arguments().size());
         return false;
       }
+      bool argsFailed = false;
       for (size_t i = 0; i < call->arguments().size(); ++i) {
         auto& arg = call->arguments()[i];
-        if (!checkType(ctx, arg.get())) {
-          return false;
-        }
-        const auto argType = arg->type();
-        const auto expectedType = funcType->parameters()[i];
-        if (argType != expectedType) {
-          if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
-            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
-                                             ctx.currentFile,
-                                             arg->fullId(),
-                                             "Cannot implicitly convert '{}' to '{}'.",
-                                             ctx.symbolTable.getType(argType)->name(),
-                                             ctx.symbolTable.getType(expectedType)->name());
-            return false;
+        bool argSucceeded = false;
+        FLUIR_SYNCHRONIZE_PANIC(ctx.diagnosticSink) {
+          if (!checkType(ctx, arg.get())) {
+            return;
           }
-          arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
+          const auto argType = arg->type();
+          const auto expectedType = funcType->parameters()[i];
+          if (argType != expectedType) {
+            if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
+              ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                               ctx.currentFile,
+                                               arg->fullId(),
+                                               "Cannot implicitly convert '{}' to '{}'.",
+                                               ctx.symbolTable.getType(argType)->name(),
+                                               ctx.symbolTable.getType(expectedType)->name());
+            } else {
+              arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
+            }
+          }
+          argSucceeded = true;
+        };
+        if (!argSucceeded) {
+          argsFailed = true;
         }
+      }
+      if (argsFailed) {
+        return false;
       }
       if (funcType->returnType()) {
         call->setType(funcType->returnType().value());

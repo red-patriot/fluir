@@ -29,7 +29,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}}}};
 
   auto actual = fluir::generateCode(ctx_, input);
 
@@ -46,8 +46,8 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
-                                   fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}},
+                                   fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}, .constants = {}}}};
 
   auto actual = fluir::generateCode(ctx_, input);
 
@@ -83,7 +83,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                  0x01,
                                                  fc::Instruction::F64_MUL,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {1.5_f64, 2.5_f64}}}};
 
@@ -116,7 +116,7 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                  0x00,
                                                  fc::Instruction::F64_NEG,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {3.456_f64}}}};
 
@@ -176,7 +176,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                  fc::GET_VAL,  // Read {3,4}
                                                  0x0,         fc::F64_ADD, fc::POP,
                                                  fc::GET_VAL,  // Read {3,4}
-                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::EXIT,
+                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
                                                },
                                              .constants = {3.5_f64, 4.4_f64, 100.0_f64}}}};
 
@@ -238,8 +238,8 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
       .name = "main",
       .code =
         {
-          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH, 0x0, fc::I64_MUL,
-          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::EXIT,
+          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
+          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
         },
       .constants = {2_i32, 3_i32},
     }}};
@@ -284,7 +284,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
                                                  fc::Instruction::PUSH,
                                                  0x03,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
 
@@ -328,7 +328,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
                                                  fc::Instruction::PUSH,
                                                  0x03,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
 
@@ -378,11 +378,11 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
       .name = "ints",
       .code =
         {
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
-          fc::Instruction::EXIT,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
+          fc::Instruction::RETURN,
         },
       .constants = {8_i32, 16_i32, 28_i32}}}};
 
@@ -432,11 +432,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
       .name = "ints",
       .code =
         {
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
-          fc::Instruction::EXIT,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
+          fc::Instruction::RETURN,
         },
       .constants = {8_u32, 16_u32, 28_u32}}}};
 
@@ -504,7 +504,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
                                                  fc::Instruction::CAST_WIDTH,
                                                  fc::NumericWidth::WIDTH_64,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i32, 12.4_f64}}}};
 
@@ -551,7 +551,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
                                                  fc::Instruction::CAST_IU,
                                                  fc::NumericWidth::WIDTH_8,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i32}}}};
 
@@ -591,7 +591,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
                                                  fc::Instruction::CAST_FU,
                                                  fc::NumericWidth::WIDTH_64,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u32, 12.4_f64}}}};
 
@@ -638,7 +638,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
                                                  fc::Instruction::CAST_UI,
                                                  fc::NumericWidth::WIDTH_8,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u32}}}};
 
@@ -684,7 +684,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
         {
           fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
           0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
-          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::EXIT,
+          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
         },
       .constants = {8_i32, 12.45_f64, 8_u64}}}};
 

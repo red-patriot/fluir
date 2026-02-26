@@ -29,6 +29,7 @@ namespace fluir {
     current_ = code::Chunk{};
     current_.name = func.name;
 
+    // TODO: Handle parameters
     auto& currentScope = pushScope();
     for (const auto& node : func.statements) {
       const auto beforeLocalCount = currentScope.slots.size();
@@ -41,9 +42,7 @@ namespace fluir {
     }
     popScope();
 
-    // (FOR NOW) end all functions with the EXIT instruction
-    // TODO: Update this when we implement function defs/calls
-    emitByte(Instruction::EXIT);
+    emitByte(Instruction::RETURN);
     code_.chunks.push_back(std::move(current_));
   }
 

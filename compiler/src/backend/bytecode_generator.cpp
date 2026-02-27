@@ -2,6 +2,8 @@
 
 #include <cassert>
 #include <cstdint>
+#include <format>
+#include <ranges>
 
 #include <fmt/format.h>
 #include <fmt/ranges.h>
@@ -30,11 +32,21 @@ namespace fluir {
     current_.name = func.name;
 
     // TODO: Handle parameters
-    auto& currentScope = pushScope();
+    auto& [slots, returnCount] = pushScope();
+    if (func.returnValue) {
+      // If there is a return value, it is reserved at slot 0
+      // TODO: Support multiple return values
+      slots.insert({func.returnValue->id, 0});
+      returnCount = 1;
+    }
+    // Push parameters in order onto the stack
+    for (const auto& param : func.parameters) {
+      slots.insert({param.id, slots.size()});
+    }
     for (const auto& node : func.statements) {
-      const auto beforeLocalCount = currentScope.slots.size();
+      const auto beforeLocalCount = slots.size();
       recursivelyGenerate(*node);
-      if (beforeLocalCount == currentScope.slots.size()) {
+      if (beforeLocalCount == slots.size()) {
         // Each top level node will leave a value on the stack,
         // so pop it off iff it was not added as a new local
         emitByte(Instruction::POP);
@@ -157,13 +169,13 @@ namespace fluir {
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
     recursivelyGenerate(*write.child());
 
-    auto& [slots] = scopes_.top();
+    auto& [slots, returnCount] = scopes_.top();
     auto stackIndex = slots.size();
     assert(stackIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
     slots.insert({write.variable(), stackIndex});
   }
   void BytecodeGenerator::generate(const ast::LocalRead& read) {
-    const auto& [slots] = scopes_.top();
+    const auto& [slots, returnCount] = scopes_.top();
     if (!slots.contains(read.variable())) {
       // This shouldn't happen because it should be caught in type checking
       diagnostic::emitInternalError(fmt::format(
@@ -173,13 +185,49 @@ namespace fluir {
     emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(slot));
   }
 
+  void BytecodeGenerator::generate(const ast::Call& call) {
+    auto targetType = ctx_.symbolTable.getFunctionType(call.target());
+    if (!targetType) {
+      diagnostic::emitInternalError(fmt::format("'{}' is not a function", call.target()));
+    }
+
+    if (targetType->returnType()) {
+      // Reserve space for the return value of the function if it has a return value
+      emitBytes(Instruction::RESERVE, 1);
+    }
+
+    for (auto& arg : call.arguments()) {
+      recursivelyGenerate(*arg);
+    }
+
+    // Find the function to execute
+    if (!functionIndices_.contains(call.target())) {
+      diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+    }
+    const auto index = functionIndices_.at(call.target());
+    emitByte(Instruction::CALL);
+    emitLongOperand(index);
+  }
+
   BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
+
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
     emitByte(byte2);
   }
+  void BytecodeGenerator::emitLongOperand(std::uint64_t arg) {
+    static constexpr int BYTE_SIZE = 8;
+    static constexpr int SHIFT = BYTE_SIZE * 3;
+    for (int i = 0; i != 4; ++i) {
+      // Consume the top 8 bits of the operand and emit them one by one to write into the bytecode.
+      const auto byte = static_cast<std::uint8_t>(arg >> SHIFT);
+      emitByte(byte);
+      arg <<= BYTE_SIZE;
+    }
+  }
+
   size_t BytecodeGenerator::addConstant(code::Value value) {
     if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
       return found - current_.constants.begin();
@@ -193,6 +241,11 @@ namespace fluir {
   }
 
   Results<code::ByteCode> BytecodeGenerator::run() {
+    for (const auto& [index, declaration] : std::views::enumerate(graph_.declarations)) {
+      // Track the indices of each function to manage calls
+      functionIndices_.insert({declaration.name, index});
+    }
+
     for (const auto& declaration : graph_.declarations) {
       (*this)(declaration);
     }
@@ -220,7 +273,7 @@ namespace fluir {
       case ast::NodeKind::LocalRead:
         return generate(*node.as<ast::LocalRead>());
       case ast::NodeKind::Call:
-        assert(false && "TODO");
+        return generate(*node.as<ast::Call>());
     }
   }
 
@@ -231,8 +284,8 @@ namespace fluir {
   void BytecodeGenerator::popScope() {
     auto& currentScope = scopes_.top();
     // Clean up the local variables from this scope before popping it
-    if (!currentScope.slots.empty()) {
-      emitBytes(Instruction::MULTIPOP, static_cast<std::uint8_t>(currentScope.slots.size()));
+    if (const auto toPop = static_cast<std::uint8_t>(currentScope.slots.size() - currentScope.returnCount); toPop > 0) {
+      emitBytes(Instruction::MULTIPOP, toPop);
     }
     scopes_.pop();
   }

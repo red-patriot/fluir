@@ -1,5 +1,5 @@
-#ifndef FLUIR_VM_VM_HPP
-#define FLUIR_VM_VM_HPP
+#ifndef FLUIR_VM_MACHINE_VM_HPP
+#define FLUIR_VM_MACHINE_VM_HPP
 
 #include <bytecode/byte_code.hpp>
 
@@ -28,6 +28,10 @@ namespace fluir {
     Stack stack_;
 
     ExecResult run();
+
+    static constexpr size_t FUNCTION_DEPTH = 512;
+    static constexpr size_t FRAME_LIMIT = 256;
+    static constexpr size_t STACK_LIMIT = FUNCTION_DEPTH * FRAME_LIMIT;
 
     template <typename Op>
     void floatBinary();

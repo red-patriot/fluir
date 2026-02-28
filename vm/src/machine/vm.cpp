@@ -1,4 +1,4 @@
-#include "vm/vm.hpp"
+#include "../../include/vm/machine/vm.hpp"
 
 #include <algorithm>
 #include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
@@ -80,7 +80,7 @@ namespace fluir {
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
     stack_.clear();
-    stack_.reserve(256);
+    stack_.reserve(STACK_LIMIT);
 
     code_ = code;
     current_ = &code_->chunks.at(0);
@@ -114,7 +114,7 @@ namespace fluir {
           {
             uint8_t index = FLUIR_READ_BYTE();
             const code::Value& val = current_->constants[index];
-            if (!(stack_.size() < 256)) {
+            if (!(stack_.size() < STACK_LIMIT)) {
               return ExecResult::ERROR;
             }
             stack_.emplace_back(val);
@@ -123,7 +123,7 @@ namespace fluir {
         case GET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            if (!(stack_.size() < 256)) {
+            if (!(stack_.size() < STACK_LIMIT)) {
               return ExecResult::ERROR;
             }
             stack_.emplace_back(stack_[index]);

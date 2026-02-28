@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "vm/vm.hpp"
+#include "vm/machine/vm.hpp"
 
 using std::tuple;
 

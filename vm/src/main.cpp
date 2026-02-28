@@ -4,9 +4,9 @@
 #include <sstream>
 #include <type_traits>
 
+#include "../include/vm/machine/vm.hpp"
 #include "bytecode/version.hpp"
 #include "vm/decoder/decode.hpp"
-#include "vm/vm.hpp"
 
 bool checkVersion(const fluir::Version& codeVersion) {
   if (codeVersion != fluir::CURRENT_VERSION) {

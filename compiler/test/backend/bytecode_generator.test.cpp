@@ -782,7 +782,7 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {2_i32, 3_i32}},
-                                   fc::Chunk{.name = "foo",
+                                   fc::Chunk{.name = "add_nums",
                                              .code =
                                                {
                                                  fc::GET_VAL,
@@ -804,5 +804,224 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
   EXPECT_FALSE(sink_.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
   EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  for (size_t i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    std::vector<fa::UniqueNode> args;
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(7), FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createDependency<fa::Call>("sink"s, std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "sink", .statements = {}};
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 3, .name = "x", .typeName = "I32"});
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::PUSH,
+                                                 0x00,  // arg 7
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {7_i32}},
+                                   fc::Chunk{.name = "sink",
+                                             .code =
+                                               {
+                                                 fc::MULTIPOP,
+                                                 0x01,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "get_val"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "get_val", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}},
+                                   fc::Chunk{.name = "get_val",
+                                             .code =
+                                               {
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "first"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "second"s, std::vector<fa::UniqueNode>{}, FullID{1, 2}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "first", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 3, .name = "second", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x02,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}},
+                                   fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .constants = {}},
+                                   fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .constants = {}}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "add", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 2, .name = "a", .typeName = "I32"});
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 3, .name = "b", .typeName = "I32"});
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "main", .statements = {}};
+    std::vector<fa::UniqueNode> args;
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(10), FullID{2, 1}, fluir::FlowGraphLocation{}));
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(20), FullID{2, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createDependency<fa::Call>("add"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "add",
+                                             .code =
+                                               {
+                                                 fc::MULTIPOP,
+                                                 0x02,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}},
+                                   fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::PUSH,
+                                                 0x00,  // arg 10
+                                                 fc::PUSH,
+                                                 0x01,  // arg 20
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,  // add is at index 0
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {10_i32, 20_i32}}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
 }

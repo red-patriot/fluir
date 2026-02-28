@@ -44,11 +44,10 @@ namespace fluir {
       slots.insert({param.id, slots.size()});
     }
     for (const auto& node : func.statements) {
-      const auto beforeLocalCount = slots.size();
       recursivelyGenerate(*node);
-      if (beforeLocalCount == slots.size()) {
+      if (!slots.contains(node->id())) {
         // Each top level node will leave a value on the stack,
-        // so pop it off iff it was not added as a new local
+        // so pop it off iff it is not a local variable
         emitByte(Instruction::POP);
       }
     }
@@ -170,9 +169,16 @@ namespace fluir {
     recursivelyGenerate(*write.child());
 
     auto& [slots, returnCount] = scopes_.top();
-    auto stackIndex = slots.size();
-    assert(stackIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
-    slots.insert({write.variable(), stackIndex});
+    if (slots.contains(write.variable())) {
+      // LocalWrite is updating an existing value.
+      const auto slot = static_cast<std::uint8_t>(slots.at(write.variable()));
+      emitBytes(Instruction::SET_VAL, slot);
+    } else {
+      // This LocalWrite is initializing a new value, so make a new slot for it
+      const auto nextIndex = slots.size();
+      assert(nextIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
+      slots.insert({write.variable(), slots.size()});
+    }
   }
   void BytecodeGenerator::generate(const ast::LocalRead& read) {
     const auto& [slots, returnCount] = scopes_.top();

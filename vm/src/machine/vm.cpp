@@ -17,13 +17,36 @@ namespace fluir {
     // language is implemented
     std::ostream& operator<<(std::ostream& os, const code::Value& value) {
       switch (value.type()) {
-#define FLUIR_PRINT_VALUE(Type, Concrete)          \
-  case code::PrimitiveType::Type:                  \
-    os << '(' << #Type << ')' << value.as##Type(); \
-    break;
-
-        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_PRINT_VALUE)
-#undef FLUIR_PRINT_VALUE
+        case code::PrimitiveType::EMPTY:
+          os << "<NULL>";
+          break;
+        case code::PrimitiveType::F64:
+          os << "(F64)" << value.asF64();
+          break;
+        case code::PrimitiveType::I8:
+          os << "(I8)" << value.asI8();
+          break;
+        case code::PrimitiveType::I16:
+          os << "(I16)" << value.asI16();
+          break;
+        case code::PrimitiveType::I32:
+          os << "(I32)" << value.asI32();
+          break;
+        case code::PrimitiveType::I64:
+          os << "(I64)" << value.asI64();
+          break;
+        case code::PrimitiveType::U8:
+          os << "(U8)" << value.asU8();
+          break;
+        case code::PrimitiveType::U16:
+          os << "(U16)" << value.asU16();
+          break;
+        case code::PrimitiveType::U32:
+          os << "(U32)" << value.asU32();
+          break;
+        case code::PrimitiveType::U64:
+          os << "(U64)" << value.asU64();
+          break;
       }
 
       return os;

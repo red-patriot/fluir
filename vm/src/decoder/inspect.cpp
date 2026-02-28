@@ -264,13 +264,24 @@ namespace fluir {
     }
     auto number = toUnsignedInteger(rawConstant);
     switch (type) {
-#define FLUIR_RAW_TO_VALUE(Type, Concrete) \
-  case code::PrimitiveType::Type:          \
-    return code::Value{static_cast<Concrete>(number)};
-
-      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_RAW_TO_VALUE)
-#undef FLUIR_RAW_TO_VALUE
+      case code::PrimitiveType::I8:
+        return code::Value{static_cast<std::int8_t>(number)};
+      case code::PrimitiveType::I16:
+        return code::Value{static_cast<std::int16_t>(number)};
+      case code::PrimitiveType::I32:
+        return code::Value{static_cast<std::int32_t>(number)};
+      case code::PrimitiveType::I64:
+        return code::Value{static_cast<std::int64_t>(number)};
+      case code::PrimitiveType::U8:
+        return code::Value{static_cast<std::uint8_t>(number)};
+      case code::PrimitiveType::U16:
+        return code::Value{static_cast<std::uint16_t>(number)};
+      case code::PrimitiveType::U32:
+        return code::Value{static_cast<std::uint32_t>(number)};
+      case code::PrimitiveType::U64:
+        return code::Value{static_cast<std::uint64_t>(number)};
+      default:
+        throw std::runtime_error{"Expected an integer type"};
     }
-    throw std::runtime_error{"Unrecognized value type."};
   }
 }  // namespace fluir

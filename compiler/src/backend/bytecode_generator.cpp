@@ -176,8 +176,12 @@ namespace fluir {
     } else {
       // This LocalWrite is initializing a new value, so make a new slot for it
       const auto nextIndex = slots.size();
-      assert(nextIndex < std::numeric_limits<std::uint8_t>::max());  // TODO: Increase this limit
-      slots.insert({write.variable(), slots.size()});
+      if (nextIndex >= std::numeric_limits<std::uint8_t>::max()) {
+        // TODO: Increase this limit
+        diagnostic::emitInternalError(std::format("Too many local variables defined. Only {} variables allowed.",
+                                                  std::numeric_limits<std::uint8_t>::max()));
+      }
+      slots.insert({write.variable(), nextIndex});
     }
   }
   void BytecodeGenerator::generate(const ast::LocalRead& read) {

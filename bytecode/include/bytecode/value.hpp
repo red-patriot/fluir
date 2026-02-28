@@ -12,40 +12,122 @@ namespace fluir::code {
     friend bool operator==(const Value&, const Value&);
 
    public:
-#define FLUIR_VALUE_CONSTRUCTOR(Type, Concrete) \
-  explicit Value(Concrete d) : type_{PrimitiveType::Type}, data_(d) { }
+    explicit Value(double d) : type_{PrimitiveType::F64}, data_(d) { }
+    explicit Value(std::int8_t d) : type_{PrimitiveType::I8}, data_(d) { }
+    explicit Value(std::int16_t d) : type_{PrimitiveType::I16}, data_(d) { }
+    explicit Value(std::int32_t d) : type_{PrimitiveType::I32}, data_(d) { }
+    explicit Value(std::int64_t d) : type_{PrimitiveType::I64}, data_(d) { }
+    explicit Value(std::uint8_t d) : type_{PrimitiveType::U8}, data_(d) { }
+    explicit Value(std::uint16_t d) : type_{PrimitiveType::U16}, data_(d) { }
+    explicit Value(std::uint32_t d) : type_{PrimitiveType::U32}, data_(d) { }
+    explicit Value(std::uint64_t d) : type_{PrimitiveType::U64}, data_(d) { }
 
-    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_CONSTRUCTOR)
+    [[nodiscard]] PrimitiveType type() const { return type_; }
 
-#undef FLUIR_VALUE_CONSTRUCTOR
+    [[nodiscard]] double& asF64() {
+      assertType(PrimitiveType::F64);
+      return data_.F64;
+    }
+    [[nodiscard]] const double& asF64() const {
+      assertType(PrimitiveType::F64);
+      return data_.F64;
+    }
 
-    [[nodiscard]] PrimitiveType type() const { return type_; };
+    [[nodiscard]] std::int8_t& asI8() {
+      assertType(PrimitiveType::I8);
+      return data_.I8;
+    }
+    [[nodiscard]] const std::int8_t& asI8() const {
+      assertType(PrimitiveType::I8);
+      return data_.I8;
+    }
 
-#define TEMP_CONCAT(a, b) a##b
-#define FLUIR_VALUE_ACCESSOR(Type, Concrete)                    \
-  [[nodiscard]] Concrete& TEMP_CONCAT(as, Type)() {             \
-    assertType(PrimitiveType::Type);                            \
-    return data_.Type;                                          \
-  }                                                             \
-  [[nodiscard]] const Concrete& TEMP_CONCAT(as, Type)() const { \
-    assertType(PrimitiveType::Type);                            \
-    return data_.Type;                                          \
-  }
+    [[nodiscard]] std::int16_t& asI16() {
+      assertType(PrimitiveType::I16);
+      return data_.I16;
+    }
+    [[nodiscard]] const std::int16_t& asI16() const {
+      assertType(PrimitiveType::I16);
+      return data_.I16;
+    }
 
-    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_ACCESSOR)
+    [[nodiscard]] std::int32_t& asI32() {
+      assertType(PrimitiveType::I32);
+      return data_.I32;
+    }
+    [[nodiscard]] const std::int32_t& asI32() const {
+      assertType(PrimitiveType::I32);
+      return data_.I32;
+    }
 
-#undef FLUIR_VALUE_ACCESSOR
+    [[nodiscard]] std::int64_t& asI64() {
+      assertType(PrimitiveType::I64);
+      return data_.I64;
+    }
+    [[nodiscard]] const std::int64_t& asI64() const {
+      assertType(PrimitiveType::I64);
+      return data_.I64;
+    }
+
+    [[nodiscard]] std::uint8_t& asU8() {
+      assertType(PrimitiveType::U8);
+      return data_.U8;
+    }
+    [[nodiscard]] const std::uint8_t& asU8() const {
+      assertType(PrimitiveType::U8);
+      return data_.U8;
+    }
+
+    [[nodiscard]] std::uint16_t& asU16() {
+      assertType(PrimitiveType::U16);
+      return data_.U16;
+    }
+    [[nodiscard]] const std::uint16_t& asU16() const {
+      assertType(PrimitiveType::U16);
+      return data_.U16;
+    }
+
+    [[nodiscard]] std::uint32_t& asU32() {
+      assertType(PrimitiveType::U32);
+      return data_.U32;
+    }
+    [[nodiscard]] const std::uint32_t& asU32() const {
+      assertType(PrimitiveType::U32);
+      return data_.U32;
+    }
+
+    [[nodiscard]] std::uint64_t& asU64() {
+      assertType(PrimitiveType::U64);
+      return data_.U64;
+    }
+    [[nodiscard]] const std::uint64_t& asU64() const {
+      assertType(PrimitiveType::U64);
+      return data_.U64;
+    }
 
    private:
     PrimitiveType type_;
 
     union Data {
-#define FLUIR_VALUE_UNION_MEMBER(Type, Concrete) \
-  Concrete Type;                                 \
-  explicit(false) Data(Concrete d) : Type(d) { }
+      double F64;
+      std::int8_t I8;
+      std::int16_t I16;
+      std::int32_t I32;
+      std::int64_t I64;
+      std::uint8_t U8;
+      std::uint16_t U16;
+      std::uint32_t U32;
+      std::uint64_t U64;
 
-      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_UNION_MEMBER)
-#undef FLUIR_VALUE_UNION_MEMBER
+      explicit(false) Data(double d) : F64(d) { }
+      explicit(false) Data(std::int8_t d) : I8(d) { }
+      explicit(false) Data(std::int16_t d) : I16(d) { }
+      explicit(false) Data(std::int32_t d) : I32(d) { }
+      explicit(false) Data(std::int64_t d) : I64(d) { }
+      explicit(false) Data(std::uint8_t d) : U8(d) { }
+      explicit(false) Data(std::uint16_t d) : U16(d) { }
+      explicit(false) Data(std::uint32_t d) : U32(d) { }
+      explicit(false) Data(std::uint64_t d) : U64(d) { }
     } data_;
 
     void assertType(PrimitiveType type) const {
@@ -73,14 +155,24 @@ namespace fluir::code {
     }
 
     switch (lhs.type()) {
-#define FLUIR_VALUE_COMPARE(Type, Concrete) \
-  case PrimitiveType::Type:                 \
-    return TEMP_CONCAT(lhs.as, Type)() == TEMP_CONCAT(rhs.as, Type)();
-
-      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_VALUE_COMPARE)
-
-#undef FLUIR_VALUE_COMPARE
-#undef TEMP_CONCAT
+      case PrimitiveType::F64:
+        return lhs.asF64() == rhs.asF64();
+      case PrimitiveType::I8:
+        return lhs.asI8() == rhs.asI8();
+      case PrimitiveType::I16:
+        return lhs.asI16() == rhs.asI16();
+      case PrimitiveType::I32:
+        return lhs.asI32() == rhs.asI32();
+      case PrimitiveType::I64:
+        return lhs.asI64() == rhs.asI64();
+      case PrimitiveType::U8:
+        return lhs.asU8() == rhs.asU8();
+      case PrimitiveType::U16:
+        return lhs.asU16() == rhs.asU16();
+      case PrimitiveType::U32:
+        return lhs.asU32() == rhs.asU32();
+      case PrimitiveType::U64:
+        return lhs.asU64() == rhs.asU64();
     }
     return false;
   }

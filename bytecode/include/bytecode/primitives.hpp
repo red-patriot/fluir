@@ -37,6 +37,7 @@ code(U64, std::uint64_t)
   constexpr uint8_t operator|(NumericCategory category, NumericWidth width) { return width | category; }
 
   enum class PrimitiveType {
+    EMPTY = 0,
     F64 = FLOAT | WIDTH_64,
     I8 = SIGNED | WIDTH_8,
     I16 = SIGNED | WIDTH_16,

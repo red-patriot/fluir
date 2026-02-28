@@ -12,6 +12,7 @@ namespace fluir::code {
     friend bool operator==(const Value&, const Value&);
 
    public:
+    Value() : type_{PrimitiveType::EMPTY} { }
     explicit Value(double d) : type_{PrimitiveType::F64}, data_(d) { }
     explicit Value(std::int8_t d) : type_{PrimitiveType::I8}, data_(d) { }
     explicit Value(std::int16_t d) : type_{PrimitiveType::I16}, data_(d) { }
@@ -23,6 +24,7 @@ namespace fluir::code {
     explicit Value(std::uint64_t d) : type_{PrimitiveType::U64}, data_(d) { }
 
     [[nodiscard]] PrimitiveType type() const { return type_; }
+    [[nodiscard]] bool empty() const { return type_ == PrimitiveType::EMPTY; }
 
     [[nodiscard]] double& asF64() {
       assertType(PrimitiveType::F64);
@@ -119,6 +121,7 @@ namespace fluir::code {
       std::uint32_t U32;
       std::uint64_t U64;
 
+      Data() : I64(0) { /* Zero-initialize if EMPTY */ }
       explicit(false) Data(double d) : F64(d) { }
       explicit(false) Data(std::int8_t d) : I8(d) { }
       explicit(false) Data(std::int16_t d) : I16(d) { }
@@ -155,6 +158,8 @@ namespace fluir::code {
     }
 
     switch (lhs.type()) {
+      case PrimitiveType::EMPTY:
+        return true;  // All empty values are mutually equal
       case PrimitiveType::F64:
         return lhs.asF64() == rhs.asF64();
       case PrimitiveType::I8:

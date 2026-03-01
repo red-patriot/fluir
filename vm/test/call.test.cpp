@@ -97,3 +97,14 @@ TEST(TestVMFunctionCalls, HandlesDeepCallStack) {
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_EQ(40, uut.viewStack().front().asI32());
 }
+
+TEST(TestVMFunctionCalls, HandlesMainWithReturn) {
+  std::int32_t expected = 4;
+
+  fluir::code::ByteCode code{.header = {.entryOffset = 0},
+                             .chunks = {fc::Chunk{.name = "main", .code = {RETURN}, .constants = {}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+}

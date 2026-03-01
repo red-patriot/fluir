@@ -29,7 +29,7 @@ namespace fluir {
 
     ExecResult execute(code::ByteCode const* code);
 
-    std::span<const code::Value> viewStack() const { return {stack_->data(), frames_.back().stackEnd}; }
+    std::span<const code::Value> viewStack() const { return {currentFrame_->basePtr, currentFrame_->stackEnd}; }
 
    private:
     code::ByteCode const* code_{nullptr};
@@ -37,13 +37,16 @@ namespace fluir {
     std::uint8_t const* ip_{nullptr};
     CallFrame* currentFrame_{nullptr};
     std::unique_ptr<Stack> stack_;
+    code::Chunk flStartup_;
 
     /** Initializes the VM state to begin running the bytecode */
     void init();
     /** Runs the bytecode until it finishes */
     ExecResult run();
 
-    size_t stackSize() { return frames_.back().stackEnd - stack_->data(); }
+    /** Loads the internal startup function */
+    void createFlStartup(size_t mainIndex);
+    size_t stackSize() const { return currentFrame_->stackEnd - stack_->data(); }
     code::Value& stackTop();
     void popStack();
     void pushStack(code::Value value);

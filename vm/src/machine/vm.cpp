@@ -129,7 +129,10 @@ namespace fluir {
     }
     frames_.reserve(FUNCTION_DEPTH);
     std::ranges::fill(*stack_, code::Value{});
-    initCall(&code_->chunks.at(0), stack_->data());  // TODO: Be smarter about loading the entry point
+
+    // TODO: Be smarter about loading the entry point
+    createFlStartup(0);
+    initCall(&flStartup_, stack_->data());
   }
 
   ExecResult VirtualMachine::run() {
@@ -304,7 +307,6 @@ namespace fluir {
             }
           }
         case EXIT:
-          // TODO: Clean up this testing code later...
           goto afterLoop;
         case RESERVE:
           {
@@ -337,6 +339,27 @@ namespace fluir {
     }
   afterLoop:
     return ExecResult::SUCCESS;
+  }
+
+  void VirtualMachine::createFlStartup(std::uint64_t index) {
+    using enum code::Instruction;
+    auto index0 = static_cast<std::uint8_t>(index >> 24);
+    auto index1 = static_cast<std::uint8_t>(index >> 16);
+    auto index2 = static_cast<std::uint8_t>(index >> 8);
+    auto index3 = static_cast<std::uint8_t>(index);
+
+    flStartup_ = code::Chunk{.name = "_fl_start",
+                             .code =
+                               {
+                                 CALL,
+                                 index0,
+                                 index1,
+                                 index2,
+                                 index3,
+                                 EXIT,
+                               },
+                             .constants = {},
+                             .inOutCount = 0};
   }
 
   code::Value& VirtualMachine::stackTop() { return *(currentFrame_->stackEnd - 1); }

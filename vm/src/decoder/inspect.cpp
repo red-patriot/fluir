@@ -65,10 +65,11 @@ namespace fluir {
     auto name = scanNext();
     auto constantBlock = constants();
     auto codeBlock = code();
+    auto inOutCount = inOut();
     // TODO: Check for errors
 
-    code_.chunks.push_back(
-      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .constants = constantBlock});
+    code_.chunks.push_back(code::Chunk{
+      .name = std::string{name.source}, .code = codeBlock, .constants = constantBlock, .inOutCount = inOutCount});
   }
 
   std::vector<code::Value> InspectDecoder::constants() {
@@ -95,6 +96,13 @@ namespace fluir {
     }
 
     return code;
+  }
+
+  std::uint8_t InspectDecoder::inOut() {
+    [[maybe_unused]] auto inOutSection = scanNext();
+    auto rawCount = scanNext();
+    auto count = toUnsignedInteger(rawCount);
+    return count;
   }
 
   Token InspectDecoder::identifier() {
@@ -167,6 +175,7 @@ namespace fluir {
                                      {{"CHUNK", TokenType::CHUNK},
                                       {"CODE", TokenType::CODE},
                                       {"CONSTANTS", TokenType::CONSTANTS},
+                                      {"INOUT", TokenType::INOUT},
 #define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
                                       FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
 #undef FLUIR_INSTRUCTION_BRANCHES

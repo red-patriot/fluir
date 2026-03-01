@@ -305,6 +305,7 @@ namespace fluir {
             for (size_t i = 0; i != count; ++i) {
               popStack();
             }
+            break;
           }
         case EXIT:
           goto afterLoop;
@@ -375,7 +376,7 @@ namespace fluir {
     std::uint64_t word = 0;
     for (int i = 0; i != 4; ++i) {
       const auto next = readByte();
-      word <<= 4;
+      word <<= 8;
       word |= next;
     }
 

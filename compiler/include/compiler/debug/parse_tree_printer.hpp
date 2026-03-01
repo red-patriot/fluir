@@ -14,9 +14,15 @@ namespace fluir::debug {
     void print(const pt::ParseTree& tree);
 
     void operator()(const pt::FunctionDecl& func);
+    void operator()(const pt::FunctionDecl::Parameter& param);
+    void operator()(const pt::FunctionDecl::Return& ret);
+    void operator()(const pt::FunctionDecl::InputBlock& input);
+    void operator()(const pt::FunctionDecl::OutputBlock& output);
+
     void operator()(const pt::Binary& binary);
     void operator()(const pt::Unary& unary);
     void operator()(const pt::Constant& constant);
+    void operator()(const pt::Call& call);
 
     void operator()(const pt::Conduit& conduit);
 

@@ -65,10 +65,11 @@ namespace fluir {
     auto name = scanNext();
     auto constantBlock = constants();
     auto codeBlock = code();
+    auto inOutCount = inOut();
     // TODO: Check for errors
 
-    code_.chunks.push_back(
-      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .constants = constantBlock});
+    code_.chunks.push_back(code::Chunk{
+      .name = std::string{name.source}, .code = codeBlock, .constants = constantBlock, .inOutCount = inOutCount});
   }
 
   std::vector<code::Value> InspectDecoder::constants() {
@@ -95,6 +96,13 @@ namespace fluir {
     }
 
     return code;
+  }
+
+  std::uint8_t InspectDecoder::inOut() {
+    [[maybe_unused]] auto inOutSection = scanNext();
+    auto rawCount = scanNext();
+    auto count = toUnsignedInteger(rawCount);
+    return static_cast<std::uint8_t>(count);
   }
 
   Token InspectDecoder::identifier() {
@@ -167,6 +175,7 @@ namespace fluir {
                                      {{"CHUNK", TokenType::CHUNK},
                                       {"CODE", TokenType::CODE},
                                       {"CONSTANTS", TokenType::CONSTANTS},
+                                      {"INOUT", TokenType::INOUT},
 #define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
                                       FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
 #undef FLUIR_INSTRUCTION_BRANCHES
@@ -264,13 +273,24 @@ namespace fluir {
     }
     auto number = toUnsignedInteger(rawConstant);
     switch (type) {
-#define FLUIR_RAW_TO_VALUE(Type, Concrete) \
-  case code::PrimitiveType::Type:          \
-    return code::Value{static_cast<Concrete>(number)};
-
-      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_RAW_TO_VALUE)
-#undef FLUIR_RAW_TO_VALUE
+      case code::PrimitiveType::I8:
+        return code::Value{static_cast<std::int8_t>(number)};
+      case code::PrimitiveType::I16:
+        return code::Value{static_cast<std::int16_t>(number)};
+      case code::PrimitiveType::I32:
+        return code::Value{static_cast<std::int32_t>(number)};
+      case code::PrimitiveType::I64:
+        return code::Value{static_cast<std::int64_t>(number)};
+      case code::PrimitiveType::U8:
+        return code::Value{static_cast<std::uint8_t>(number)};
+      case code::PrimitiveType::U16:
+        return code::Value{static_cast<std::uint16_t>(number)};
+      case code::PrimitiveType::U32:
+        return code::Value{static_cast<std::uint32_t>(number)};
+      case code::PrimitiveType::U64:
+        return code::Value{static_cast<std::uint64_t>(number)};
+      default:
+        throw std::runtime_error{"Expected an integer type"};
     }
-    throw std::runtime_error{"Unrecognized value type."};
   }
 }  // namespace fluir

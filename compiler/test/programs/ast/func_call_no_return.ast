@@ -1,0 +1,7 @@
+Function(1): 'main'
+  Call(2): 'bar'
+    Arg(1):
+      ConstantI32(1): 42
+Function(2): 'bar'
+  Parameters:
+    2: 'x'

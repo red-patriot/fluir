@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <ranges>
 #include <utility>
 
 #include <fmt/format.h>
@@ -10,9 +11,16 @@ namespace fluir::debug {
   AstPrinter::AstPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
 
   void AstPrinter::print(const ast::AST& ast) {
-    // TODO: Sort decls if needed
-    for (const auto& decl : ast.declarations) {
-      (*this)(decl);
+    std::vector<std::pair<ID, size_t>> idOrder;
+    if (inOrder_) {
+      std::ranges::transform(
+        ast.declarations,
+        std::back_inserter(idOrder),
+        [i = static_cast<size_t>(0)](const ast::Declaration& decl) mutable { return std::pair{decl.id, i++}; });
+      std::ranges::sort(idOrder);
+    }
+    for (const auto& index : idOrder | std::views::values) {
+      (*this)(ast.declarations.at(index));
     }
   }
 
@@ -27,6 +35,16 @@ namespace fluir::debug {
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
+    if (!func.parameters.empty()) {
+      out_ << formatIndented("Parameters:\n");
+      FLUIR_SCOPED_INDENT;
+      for (const auto& param : func.parameters) {
+        out_ << formatIndented("{}: '{}'\n", param.id, param.name);
+      }
+    }
+    if (func.returnValue) {
+      out_ << formatIndented("Return: {}\n", func.returnValue->id);
+    }
     print(func.statements);
   }
 
@@ -87,6 +105,17 @@ namespace fluir::debug {
     out_ << formatIndented("LocalRead({}): {}\n", read.id(), read.variable());
   }
 
+  void AstPrinter::operator()(const ast::Call& call) {
+    out_ << formatIndented("Call({}): '{}'\n", call.id(), call.target());
+    FLUIR_SCOPED_INDENT;
+    for (const auto& [idx, argument] : std::views::enumerate(call.arguments())) {
+      // TODO: Fix the weird 1-based indexing of function args
+      out_ << formatIndented("Arg({}):\n", idx + 1);
+      FLUIR_SCOPED_INDENT;
+      print(*argument);
+    }
+  }
+
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       print(*node);
@@ -124,6 +153,8 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::LocalWrite>());
       case ast::NodeKind::LocalRead:
         return (*this)(*node.as<ast::LocalRead>());
+      case ast::NodeKind::Call:
+        return (*this)(*node.as<ast::Call>());
     }
   }
 

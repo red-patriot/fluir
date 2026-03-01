@@ -18,13 +18,24 @@ namespace fluir::diagnostic {
     x(ERROR_MISSING_ELEMENT)                      \
     x(ERROR_MISSING_ATTRIBUTE)                    \
     x(ERROR_CANNOT_PARSE_ELEMENT_TEXT)            \
+    x(ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT)          \
     x(ERROR_UNRECOGNIZED_OPERATOR)                \
     x(ERROR_DUPLICATE_IDS_FOUND)                  \
     x(ERROR_NUMBER_OUT_OF_RANGE)                  \
     x(ERROR_CIRCULAR_DEPENDENCY)                  \
     x(ERROR_MISSING_DEPENDENCY)                   \
+    x(ERROR_TOO_MANY_RETURNS)                     \
+    x(ERROR_WRONG_RETURN_INDEX)                   \
+    x(ERROR_DUPLICATE_ARG_INDEX)                  \
+    x(ERROR_DUPLICATE_ARG_NAME)                   \
+    x(ERROR_DUPLICATE_PARAM_NAME)                 \
+    x(ERROR_DUPLICATE_FUNCTION_NAME)              \
     x(ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED)  \
-    x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)
+    x(ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL)       \
+    x(ERROR_UNRECOGNIZED_TYPE)                    \
+    x(ERROR_INCOMPATIBLE_TYPE)    \
+    x(ERROR_UNDEFINED_FUNCTION)   \
+    x(ERROR_WRONG_ARITY)
   // clang-format on
 
   enum class Code : std::uint16_t {

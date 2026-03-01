@@ -41,7 +41,10 @@ namespace fluir::code {
   code(CAST_UF)                          \
   code(CAST_FI)                          \
   code(CAST_FU)                          \
-  code(CAST_WIDTH)
+  code(CAST_WIDTH)                       \
+  code(CALL)                             \
+  code(RETURN)                           \
+  code(RESERVE)
 
   // clang-format
 

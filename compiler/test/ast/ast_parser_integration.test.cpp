@@ -25,6 +25,7 @@ TEST_P(TestAstParserIntegration, Test) {
   ASSERT_TRUE(pt.has_value());
   auto results = fluir::buildGraph(ctx, pt.value());
 
+  ASSERT_TRUE(results.has_value());
   std::stringstream ss;
   fluir::debug::AstPrinter printer{ss, true};
   printer.print(results.value());

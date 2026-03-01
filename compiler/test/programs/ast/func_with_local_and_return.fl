@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <header>
+        <version>
+            <major>0</major>
+            <minor>0</minor>
+            <patch>0</patch>
+        </version>
+    </header>
+    <function name="withLocal" id="1" x="0" y="0" z="0" w="100" h="100">
+        <input x="0" y="30" z="0" w="10" h="30">
+            <param name="a" id="2" type="i32"/>
+            <param name="b" id="3" type="i32"/>
+        </input>
+        <output x="100" y="24" z="0" w="10" h="7">
+            <return id="9" type="i32"/>
+        </output>
+        <body>
+            <constant id="4" x="10" y="10" z="1" w="12" h="5">
+                <i32>7</i32>
+            </constant>
+            <binary id="5" x="25" y="20" z="1" w="8" h="5" operator="-"/>
+            <binary id="6" x="40" y="30" z="1" w="8" h="5" operator="*"/>
+            <binary id="7" x="55" y="20" z="1" w="8" h="5" operator="+"/>
+            <binary id="8" x="70" y="30" z="1" w="8" h="5" operator="+"/>
+            <conduit id="10" input="4">
+                <output target="5" index="0"/>
+            </conduit>
+            <conduit id="11" input="3">
+                <output target="5" index="1"/>
+            </conduit>
+            <conduit id="12" input="5">
+                <output target="6" index="0"/>
+            </conduit>
+            <conduit id="13" input="5">
+                <output target="6" index="1"/>
+            </conduit>
+            <conduit id="14" input="2">
+                <output target="7" index="0"/>
+            </conduit>
+            <conduit id="15" input="6">
+                <output target="7" index="1"/>
+            </conduit>
+            <conduit id="16" input="7">
+                <output target="8" index="0"/>
+            </conduit>
+            <conduit id="17" input="3">
+                <output target="8" index="1"/>
+            </conduit>
+            <conduit id="18" input="8">
+                <output target="9" index="0"/>
+            </conduit>
+        </body>
+    </function>
+</fluir>

@@ -3,6 +3,7 @@
 #include <fstream>
 #include <optional>
 #include <sstream>
+#include <unordered_set>
 
 #include <fmt/format.h>
 
@@ -185,39 +186,133 @@ namespace fluir {
   }
 
   void Parser::functionDecl(Element* element) {
-    constexpr std::string_view type = "function";
-    std::string_view name = getAttribute(element, type, "name");
-    ID id = parseId(element, type);
-    auto location = parseLocation(element, type);
+    constexpr std::string_view bodyTag = "body";
+    constexpr std::string_view inputTag = "input";
+    constexpr std::string_view outputTag = "output";
+    std::string_view name = getAttribute(element, "name");
+    ID id = parseId(element);
+    auto location = parseLocation(element);
+    std::optional<pt::Block> body;
+    std::optional<pt::FunctionDecl::InputBlock> input;
+    std::optional<pt::FunctionDecl::OutputBlock> output;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view childName = child->Name();
+      if (childName == bodyTag) {
+        body = block(child);
+      } else if (childName == inputTag) {
+        input = funcInputs(child);
+      } else if (childName == outputTag) {
+        output = funcOutputs(child);
+      } else {
+        panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
+      }
+    }
 
-    auto bodyElement = element->FirstChildElement("body");
-    panicIf(!bodyElement, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
+    panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
 
-    pt::Block body = block(bodyElement->FirstChildElement());
+    if (output && output->ret) {
+      const ID returnId = output->ret->id;
+      panicIf(body->nodes.contains(returnId) || body->conduits.contains(returnId),
+              element,
+              diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+    }
+
+    if (input) {
+      for (const auto& param : input->parameters) {
+        panicIf(body->nodes.contains(param.id) || body->conduits.contains(param.id),
+                element,
+                diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+        panicIf(
+          output && output->ret && output->ret->id == param.id, element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+      }
+    }
 
     panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-    tree_.declarations.emplace(id, pt::FunctionDecl{id, location, std::string(name), body});
+    tree_.declarations.emplace(
+      id, pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)});
   }
 
-  pt::Block Parser::block(Element* element) {
-    auto block = pt::EMPTY_BLOCK;
-    for (; element != nullptr; element = element->NextSiblingElement()) {
+  pt::FunctionDecl::InputBlock Parser::funcInputs(Element* section) {
+    static constexpr std::string_view paramTag = "param";
+    auto location = parseLocation(section);
+    std::vector<pt::FunctionDecl::Parameter> parameters;
+    std::unordered_set<std::string> paramNames;
+    int idx = 0;
+
+    for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
-        if (element->Name() == "conduit"s) {
+        panicIf(child->Name() != paramTag,
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Unexpected element <{}>. Expected <{}>",
+                child->Name(),
+                paramTag);
+        auto name = getAttribute(child, "name");
+        panicIf(paramNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_PARAM_NAME);
+        paramNames.insert(std::string(name));
+        parameters.push_back(funcParameter(child, idx));
+        idx++;
+      };
+    }
+
+    return pt::FunctionDecl::InputBlock{location, std::move(parameters)};
+  }
+
+  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element, int index) {
+    auto name = getAttribute(element, "name");
+    auto id = parseId(element);
+    auto typeName = getAttribute(element, "type");
+
+    return pt::FunctionDecl::Parameter{
+      .id = id, .index = index, .name = std::string(name), .typeName = std::string(typeName)};
+  }
+
+  pt::FunctionDecl::OutputBlock Parser::funcOutputs(Element* section) {
+    static constexpr std::string_view returnTag = "return";
+    auto location = parseLocation(section);
+    std::optional<pt::FunctionDecl::Return> ret;
+
+    for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        panicIf(child->Name() != returnTag,
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Unexpected element <{}>. Expected <{}>",
+                child->Name(),
+                returnTag);
+        panicIf(ret.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
+        ret = funcReturn(child);
+      };
+    }
+
+    return pt::FunctionDecl::OutputBlock{location, std::move(ret)};
+  }
+
+  pt::FunctionDecl::Return Parser::funcReturn(Element* element) {
+    auto id = parseId(element);
+    auto typeName = getAttribute(element, "type");
+    return pt::FunctionDecl::Return{.id = id, .typeName = std::string(typeName)};
+  }
+
+  pt::Block Parser::block(Element* body) {
+    auto block = pt::EMPTY_BLOCK;
+    for (auto child = body->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        if (child->Name() == "conduit"s) {
           // Parse a conduit
-          auto result = conduit(element);
+          auto result = conduit(child);
           auto& [id, resultConduit] = result;
           panicIf(block.nodes.contains(id) || block.conduits.contains(id),
-                  element,
+                  child,
                   diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
           block.conduits.emplace(std::move(result));
 
         } else {
           // Parse any other node
-          auto result = node(element);
+          auto result = node(child);
           auto& [id, resultNode] = result;
           panicIf(block.nodes.contains(id) || block.conduits.contains(id),
-                  element,
+                  child,
                   diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
           block.nodes.emplace(std::move(result));
         }
@@ -226,8 +321,8 @@ namespace fluir {
     return block;
   }
 
-  std::pair<ID, pt::Node> Parser::node(Element* element) {
-    using NodeIdPair = std::pair<ID, pt::Node>;
+  WithID<pt::Node> Parser::node(Element* element) {
+    using NodeIdPair = WithID<pt::Node>;
     static const util::Trie<NodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
       [](Parser* p, Element* e) -> NodeIdPair {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a node.");
@@ -235,19 +330,19 @@ namespace fluir {
       },
       {{"constant", [](Parser* p, Element* e) -> NodeIdPair { return p->constant(e); }},
        {"binary", [](Parser* p, Element* e) -> NodeIdPair { return p->binary(e); }},
-       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }}}};
+       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }},
+       {"call", [](Parser* p, Element* e) -> NodeIdPair { return p->call(e); }}}};
 
     std::string_view type = element->Name();
     auto nodeParser = nodeParsers.at(type);
     return nodeParser(this, element);
   }
 
-  std::pair<ID, pt::Conduit> Parser::conduit(Element* element) {
-    constexpr std::string_view type = "conduit";
-    auto id = parseId(element, type);
-    auto input = parseIdReference(element, "input", type);
-    auto indexStr = getOptionalAttribute(element, "index", "0");
-    auto index = std::stoi(indexStr.data());
+  WithID<pt::Conduit> Parser::conduit(Element* element) {
+    const auto id = parseId(element);
+    const auto input = parseIdReference(element, "input");
+    const auto indexStr = getOptionalAttribute(element, "index", "0");
+    const auto index = std::stoi(indexStr.data());
     std::vector<pt::Conduit::Output> children;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       children.push_back(conduitOutput(child));
@@ -257,44 +352,84 @@ namespace fluir {
   }
 
   pt::Conduit::Output Parser::conduitOutput(Element* element) {
-    constexpr std::string_view type = "output";
-    auto target = parseIdReference(element, "target", type);
+    auto target = parseIdReference(element, "target");
     auto indexStr = getOptionalAttribute(element, "index", "0");
     auto index = std::stoi(indexStr.data());
 
     return pt::Conduit::Output{.target = target, .index = index};
   }
 
-  std::pair<ID, pt::Node> Parser::constant(Element* element) {
-    std::string_view type = "constant";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+  WithID<pt::Node> Parser::constant(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     auto value = literal(element->FirstChildElement());
 
     return {id, pt::Constant{id, location, value}};
   }
 
-  std::pair<ID, pt::Node> Parser::binary(Element* element) {
-    std::string_view type = "binary";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+  WithID<pt::Node> Parser::binary(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     // TODO: Remove this
-    auto lhs = parseOptionalIdReference(element, "lhs", type);
-    auto rhs = parseOptionalIdReference(element, "rhs", type);
-    auto op = parseOperator(element, "operator", type);
+    auto lhs = parseOptionalIdReference(element, "lhs");
+    auto rhs = parseOptionalIdReference(element, "rhs");
+    auto op = parseOperator(element, "operator");
 
     return {id, pt::Binary{id, location, lhs, rhs, op}};
   }
 
-  std::pair<ID, pt::Node> Parser::unary(Element* element) {
-    std::string_view type = "unary";
-    auto id = parseId(element, type);
-    auto location = parseLocation(element, type);
+  WithID<pt::Node> Parser::unary(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
     // TODO: Remove this
-    auto lhs = parseOptionalIdReference(element, "lhs", type);
-    auto op = parseOperator(element, "operator", type);
+    auto lhs = parseOptionalIdReference(element, "lhs");
+    auto op = parseOperator(element, "operator");
 
     return {id, pt::Unary{id, location, lhs, op}};
+  }
+
+  WithID<pt::Node> Parser::call(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+    auto target = getAttribute(element, "target");
+    pt::Call::Arguments arguments;
+    std::optional<pt::Call::Return> return_{std::nullopt};
+    std::unordered_set<int> argIndices;
+    std::unordered_set<std::string> argNames;
+
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+        std::string_view childName = child->Name();
+        if (childName == "return") {
+          panicIf(return_.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
+          auto indexStr = getAttribute(child, "index");
+          auto index = fe::parseNumber<int>(indexStr);
+          panicIf(!index.has_value() || index.value() != 0, child, diagnostic::Code::ERROR_WRONG_RETURN_INDEX);
+          return_ = pt::Call::Return{};
+        } else if (childName == "arg") {
+          auto name = getAttribute(child, "name");
+          auto indexStr = getAttribute(child, "index");
+          auto index = fe::parseNumber<int>(indexStr);
+          panicIf(!index.has_value(),
+                  child,
+                  diagnostic::Code::ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
+                  "Expected an integer index on <arg>, found '{}'.",
+                  indexStr);
+          panicIf(argIndices.contains(index.value()), child, diagnostic::Code::ERROR_DUPLICATE_ARG_INDEX);
+          panicIf(argNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_ARG_NAME);
+          argIndices.insert(index.value());
+          argNames.insert(std::string(name));
+          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
+        } else {
+          panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element <{}> in call.", childName);
+        }
+      };
+    }
+
+    return {
+      id,
+      pt::Call{
+        .id = id, .location = location, .target = std::string(target), ._return = return_, .arguments = arguments}};
   }
 
   pt::Literal Parser::literal(Element* element) {
@@ -452,13 +587,13 @@ namespace fluir {
     diagnostic::emitInternalError("Control reached an impossible point");
   }
 
-  std::string_view Parser::getAttribute(Element* element, std::string_view type, std::string_view attribute) {
+  std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
     panicIf(value == nullptr,
             element,
             diagnostic::Code::ERROR_MISSING_ATTRIBUTE,
             "element <{}> is missing attribute '{}'.",
-            type,
+            element->Name(),
             attribute);
 
     return value;
@@ -475,39 +610,63 @@ namespace fluir {
     }
   }
 
-  ID Parser::parseId(Element* element, std::string_view type) { return parseIdReference(element, "id", type); }
+  ID Parser::parseId(Element* element) { return parseIdReference(element, "id"); }
 
-  ID Parser::parseIdReference(Element* element, std::string_view attribute, std::string_view type) {
+  ID Parser::parseIdReference(Element* element, std::string_view attribute) {
     ID reference = INVALID_ID;
     auto error = element->QueryUnsigned64Attribute(attribute.data(), &reference);
     panicIf(error != tinyxml2::XML_SUCCESS,
             element,
             diagnostic::Code::ERROR_MISSING_ATTRIBUTE,
             "element <{}> is missing attribute '{}'.",
-            type,
+            element->Name(),
             attribute);
 
     return reference;
   }
 
-  ID Parser::parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view) {
+  ID Parser::parseOptionalIdReference(Element* element, std::string_view attribute) {
     ID reference = INVALID_ID;
     element->QueryUnsigned64Attribute(attribute.data(), &reference);
 
     return reference;
   }
 
-  FlowGraphLocation Parser::parseLocation(Element* element, std::string_view type) {
-    return {
-      .x = std::atoi(getAttribute(element, type, "x").data()),
-      .y = std::atoi(getAttribute(element, type, "y").data()),
-      .z = std::atoi(getAttribute(element, type, "z").data()),
-      .width = std::atoi(getAttribute(element, type, "w").data()),
-      .height = std::atoi(getAttribute(element, type, "h").data()),
-    };
+  FlowGraphLocation Parser::parseLocation(Element* element) {
+    auto x = fe::parseNumber<int>(getAttribute(element, "x"));
+    panicIf(!x.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.x, found '{}'.",
+            getAttribute(element, "x"));
+    auto y = fe::parseNumber<int>(getAttribute(element, "y"));
+    panicIf(!y.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.y, found '{}'.",
+            getAttribute(element, "y"));
+    auto z = fe::parseNumber<int>(getAttribute(element, "z"));
+    panicIf(!z.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.z, found '{}'.",
+            getAttribute(element, "z"));
+    auto width = fe::parseNumber<int>(getAttribute(element, "w"));
+    panicIf(!width.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.width, found '{}'.",
+            getAttribute(element, "w"));
+    auto height = fe::parseNumber<int>(getAttribute(element, "h"));
+    panicIf(!height.has_value(),
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected a number in element location.height, found '{}'.",
+            getAttribute(element, "h"));
+    return {x.value(), y.value(), z.value(), width.value(), height.value()};
   }
 
-  Operator Parser::parseOperator(Element* element, std::string_view attribute, std::string_view) {
+  Operator Parser::parseOperator(Element* element, std::string_view attribute) {
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
     if (opText == "+") {

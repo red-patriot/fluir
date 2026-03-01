@@ -1,15 +1,18 @@
 #ifndef FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 #define FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 
+#include <optional>
 #include <stack>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
 #include "compiler/types/conversion.hpp"
+#include "compiler/types/function_type.hpp"
 #include "compiler/types/operator_def.hpp"
 #include "compiler/types/type.hpp"
 #include "compiler/types/typeid.hpp"
@@ -55,6 +58,16 @@ namespace fluir::types {
     /** Retrieves the type of the local variable with the given ID */
     TypeID getLocalVariableType(ID id) const;
 
+    /** Adds a function type to the table indexed by name.
+     *  Returns the TypeID assigned to the function, or ID_INVALID if the name is already registered. */
+    TypeID addFunction(std::string name, FunctionType func);
+    /** Returns the function signature for the given name, or nullptr if not registered. */
+    FunctionType const* getFunctionType(const std::string& name) const;
+    /** Returns the function signature for the given TypeID, or nullptr if not registered. */
+    FunctionType const* getFunctionType(TypeID id) const;
+    /** Returns the TypeID assigned to the named function's signature, or ID_INVALID if not registered */
+    TypeID getFunctionTypeID(const std::string& name) const;
+
    private:
     using OverloadSet =
       std::unordered_set<OperatorDefinition, std::hash<OperatorDefinition>, CompareOperatorDefByParameters>;
@@ -63,11 +76,20 @@ namespace fluir::types {
       std::unordered_map<ID, TypeID> variables{};
     };
 
+    /** Registers a function signature and returns its TypeID, deduplicating by structure */
+    TypeID registerFunctionType(const FunctionType& func);
+
+    TypeID nextTypeID_{static_cast<TypeID>(1)};  // 0 == ID_INVALID; unified counter for all types
+
     std::stack<Scope> localScopes_{};
     std::unordered_map<TypeID, Type> types_{};
     std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};
     std::unordered_map<TypeID, std::unordered_set<Conversion>> conversions_{};
+
+    std::unordered_map<TypeID, FunctionType> functionTypes_{};
+    std::unordered_map<FunctionType, TypeID> functionTypeIDs_{};
+    std::unordered_map<std::string, TypeID> functionNames_{};
   };
 }  // namespace fluir::types
 

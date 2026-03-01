@@ -1,0 +1,6 @@
+Function(1): 'useOneParam'
+  Parameters:
+    2: 'a'
+  BinaryOp(3): +
+    LocalRead(2): 2
+    LocalRead(2): 2

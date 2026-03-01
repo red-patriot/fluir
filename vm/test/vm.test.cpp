@@ -1,4 +1,4 @@
-#include "vm/vm.hpp"
+#include "vm/machine/vm.hpp"
 
 #include <array>
 
@@ -609,6 +609,17 @@ TEST(TestVM, GetValueReadsFromStackNotConstants) {
 
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_EQ(2, uut.viewStack().back().asI32());
+}
+
+TEST(TestVM, HandlesReserveInstruction) {
+  fluir::code::ByteCode code{.header = {},
+                             .chunks = {fc::Chunk{.code = {RESERVE, 1, PUSH, 0, EXIT}, .constants = {4_i32}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(2, uut.viewStack().size());
+  EXPECT_TRUE(uut.viewStack().front().empty());
 }
 
 // TODO: Tests for error cases

@@ -1,0 +1,7 @@
+Function(1): 'sumInputs'
+  Parameters:
+    2: 'a'
+    3: 'b'
+  BinaryOp(4): +
+    LocalRead(2): 2
+    LocalRead(3): 3

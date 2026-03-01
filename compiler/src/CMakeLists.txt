@@ -26,6 +26,7 @@ add_library(
 set(FLUIR_COMPILER_FRONTEND_SOURCES
     "frontend/parser.cpp"
     "frontend/ast_builder.cpp"
+    "frontend/ast_builder/function_builder.cpp"
     "frontend/text_parse.cpp"
     "frontend/type_checker.cpp"
 )
@@ -43,6 +44,7 @@ set(FLUIR_COMPILER_DEBUG_SOURCES "debug/ast_printer.cpp"
 set(FLUIR_COMPILER_TYPES_SOURCES
     "types/builtin_symbols.cpp"
     "types/conversion.cpp"
+    "types/function_type.cpp"
     "types/operator_definition.cpp"
     "types/symbol_table.cpp"
     "types/type.cpp"

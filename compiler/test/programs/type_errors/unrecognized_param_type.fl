@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="33" h="21">
+    <input x="0" y="30" z="0" w="10" h="30">
+      <param name="x" id="2" type="not_a_type"/>
+    </input>
+    <body/>
+  </function>
+</fluir>

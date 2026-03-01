@@ -11,6 +11,14 @@ namespace fluir {
     bool checkType(Context& ctx, ast::Cast* cast);
     bool checkType(Context& ctx, ast::LocalWrite* write);
     bool checkType(Context& ctx, ast::LocalRead* read);
+    bool checkType(Context& ctx, ast::Call* call);
+
+    bool registerDeclarations(Context& ctx, const ast::AST& ast);
+
+    void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
+      slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
+      parent->setType(targetType);
+    }
 
     bool checkType(Context& ctx, ast::Node* node) {
       if (node->type() != types::ID_INVALID) {
@@ -30,6 +38,8 @@ namespace fluir {
           return checkType(ctx, node->as<ast::LocalWrite>());
         case ast::NodeKind::LocalRead:
           return checkType(ctx, node->as<ast::LocalRead>());
+        case ast::NodeKind::Call:
+          return checkType(ctx, node->as<ast::Call>());
         default:
           diagnostic::emitInternalError("Unknown node kind encountered");
       }
@@ -37,7 +47,9 @@ namespace fluir {
   }  // namespace
 
   Results<ast::AST> typeCheck(Context& ctx, ast::AST graph) {
-    bool failed = false;
+    // Pre-pass: register all function signatures before body type-checking
+    // so functions can be called regardless of declaration order
+    bool failed = !registerDeclarations(ctx, graph);
     for (auto& declaration : graph.declarations) {
       try {
         auto result = checkDeclType(ctx, std::move(declaration));
@@ -56,9 +68,73 @@ namespace fluir {
   Results<ast::Declaration> checkDeclType(Context& ctx, ast::Declaration decl) {
     ctx.symbolTable.pushScope();
     FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
+    // Add all the function's parameter types as locals
+    std::vector<types::TypeID> paramTypes;
+    bool paramsFailed = false;
+    for (auto& param : decl.parameters) {
+      try {
+        auto paramType = ctx.symbolTable.getTypeID(param.typeName);
+        if (paramType == types::ID_INVALID) {
+          ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNRECOGNIZED_TYPE,
+                                           ctx.currentFile,
+                                           FullID{decl.id, param.id},
+                                           "Unrecognized type '{}' for parameter '{}'.",
+                                           param.typeName,
+                                           param.name);
+        }
+        paramTypes.push_back(paramType);
+        ctx.symbolTable.addLocalVariable(param.id, paramType);
+      } catch (const diagnostic::Panic&) {
+        paramsFailed = true;
+      }
+    }
+    if (paramsFailed) return NoResult;
+    std::optional<types::TypeID> returnType = std::nullopt;
+    if (decl.returnValue) {
+      returnType = ctx.symbolTable.getTypeID(decl.returnValue->typeName);
+      if (returnType == types::ID_INVALID) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNRECOGNIZED_TYPE,
+                                         ctx.currentFile,
+                                         FullID{decl.id, decl.returnValue->id},
+                                         "Unrecognized return type '{}'.",
+                                         decl.returnValue->typeName);
+      }
+    }
+
+    auto funcTypeID = ctx.symbolTable.getFunctionTypeID(decl.name);
+    if (funcTypeID == types::ID_INVALID) {
+      funcTypeID = ctx.symbolTable.addFunction(decl.name, {paramTypes, returnType});
+    }
+    decl.type = funcTypeID;
+
     for (auto& node : decl.statements) {
       if (!checkType(ctx, node.get())) {
         return NoResult;
+      }
+    }
+
+    // Check return is the right type, or insert a cast if necessary
+    if (decl.returnValue) {
+      const auto funcType = ctx.symbolTable.getFunctionType(decl.type);
+      for (auto& node : decl.statements) {
+        if (node->id() != decl.returnValue->id) {
+          continue;
+        }
+        auto* returnNode = node->as<ast::LocalWrite>();
+        if (!returnNode) {
+          diagnostic::emitInternalError("Unexpected node kind encountered");
+        }
+        if (returnNode->type() != funcType->returnType().value()) {
+          if (!ctx.symbolTable.canImplicitlyConvert(returnNode->type(), funcType->returnType().value())) {
+            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                             ctx.currentFile,
+                                             returnNode->fullId(),
+                                             "Cannot implicitly convert '{}' to '{}'.",
+                                             ctx.symbolTable.getType(returnNode->type())->name(),
+                                             ctx.symbolTable.getType(funcType->returnType().value())->name());
+          }
+          insertCast(funcType->returnType().value(), returnNode->child(), returnNode);
+        }
       }
     }
 
@@ -66,6 +142,33 @@ namespace fluir {
   }
 
   namespace {
+    bool registerDeclarations(Context& ctx, const ast::AST& ast) {
+      bool failed = false;
+      for (auto& declaration : ast.declarations) {
+        try {
+          if (ctx.symbolTable.getFunctionTypeID(declaration.name) != types::ID_INVALID) {
+            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME,
+                                             ctx.currentFile,
+                                             FullID{declaration.id},
+                                             "Function '{}' is already defined.",
+                                             declaration.name);
+          }
+          std::vector<types::TypeID> paramTypes;
+          for (const auto& param : declaration.parameters) {
+            paramTypes.push_back(ctx.symbolTable.getTypeID(param.typeName));
+          }
+          std::optional<types::TypeID> returnType;
+          if (declaration.returnValue) {
+            returnType = ctx.symbolTable.getTypeID(declaration.returnValue->typeName);
+          }
+          ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
+        } catch (const diagnostic::Panic&) {
+          failed = true;
+        }
+      }
+      return !failed;
+    }
+
     bool checkType(Context&, ast::Constant* constant) {
       // This is dependent on the order of the types in Literal
       // TODO: Refactor this to be independent
@@ -125,12 +228,10 @@ namespace fluir {
       binary->setDefinition(selectedOverload);
       auto [overloadLHS, overloadRHS] = selectedOverload->getParameters();
       if (overloadLHS != lhs) {
-        binary->lhs() =
-          ast::createDependency<ast::Cast>(overloadLHS, std::move(binary->lhs()), binary->fullId(), binary->location());
+        insertCast(overloadLHS, binary->lhs(), binary);
       }
       if (overloadRHS != rhs) {
-        binary->rhs() =
-          ast::createDependency<ast::Cast>(overloadRHS, std::move(binary->rhs()), binary->fullId(), binary->location());
+        insertCast(overloadRHS, binary->rhs(), binary);
       }
       return true;
     }
@@ -154,8 +255,7 @@ namespace fluir {
       unary->setDefinition(selectedOverload);
       auto [overloadOp, _] = selectedOverload->getParameters();
       if (overloadOp != operand) {
-        unary->operand() =
-          ast::createDependency<ast::Cast>(overloadOp, std::move(unary->operand()), unary->fullId(), unary->location());
+        insertCast(overloadOp, unary->operand(), unary);
       }
       return true;
     }
@@ -170,6 +270,7 @@ namespace fluir {
         return false;
       }
       auto type = write->child()->type();
+      write->setType(type);
       if (write->variable() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
         return true;
       }
@@ -187,6 +288,61 @@ namespace fluir {
       if (type == types::ID_INVALID) {
         ctx.diagnosticSink.emitAtElement(
           diagnostic::Code::ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, ctx.currentFile, read->fullId());
+      }
+      return true;
+    }
+
+    bool checkType(Context& ctx, ast::Call* call) {
+      auto* funcType = ctx.symbolTable.getFunctionType(call->target());
+      if (!funcType) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNDEFINED_FUNCTION,
+                                         ctx.currentFile,
+                                         call->fullId(),
+                                         "Call to undefined function '{}'.",
+                                         call->target());
+        return false;
+      }
+      if (call->arguments().size() != funcType->parameters().size()) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_WRONG_ARITY,
+                                         ctx.currentFile,
+                                         call->fullId(),
+                                         "Function '{}' expects {} argument(s), but {} were provided.",
+                                         call->target(),
+                                         funcType->parameters().size(),
+                                         call->arguments().size());
+        return false;
+      }
+      bool argsFailed = false;
+      for (size_t i = 0; i < call->arguments().size(); ++i) {
+        auto& arg = call->arguments()[i];
+        try {
+          if (!checkType(ctx, arg.get())) {
+            argsFailed = true;
+            continue;
+          }
+          const auto argType = arg->type();
+          const auto expectedType = funcType->parameters()[i];
+          if (argType != expectedType) {
+            if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
+              ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                               ctx.currentFile,
+                                               arg->fullId(),
+                                               "Cannot implicitly convert '{}' to '{}'.",
+                                               ctx.symbolTable.getType(argType)->name(),
+                                               ctx.symbolTable.getType(expectedType)->name());
+            }
+
+            arg = ast::createDependency<ast::Cast>(expectedType, std::move(arg), call->fullId(), call->location());
+          }
+        } catch (const diagnostic::Panic&) {
+          argsFailed = true;
+        }
+      }
+      if (argsFailed) {
+        return false;
+      }
+      if (funcType->returnType()) {
+        call->setType(funcType->returnType().value());
       }
       return true;
     }

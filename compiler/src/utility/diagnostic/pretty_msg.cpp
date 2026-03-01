@@ -24,6 +24,8 @@ namespace fluir::diagnostic {
       {ERROR_MISSING_ELEMENT, "Missing a required XML element."},
       {ERROR_MISSING_ATTRIBUTE, "Element XML is missing a required attribute"},
       {ERROR_CANNOT_PARSE_ELEMENT_TEXT, "Cannot parse the text of the XML element into its expected representation."},
+      {ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
+       "Cannot parse the text of an XML attribute into its expected representation."},
       {ERROR_UNRECOGNIZED_OPERATOR, "The given operator is not recognized as one of the allowed operators."},
       {ERROR_DUPLICATE_IDS_FOUND,
        "Multiple elements with the same ID were found. "
@@ -33,8 +35,18 @@ namespace fluir::diagnostic {
        "but does not fit into the range pf its target type."},
       {ERROR_CIRCULAR_DEPENDENCY, "There is a circular dependency between flow graph nodes."},
       {ERROR_MISSING_DEPENDENCY, "There is a missing dependency for a flow graph node."},
+      {ERROR_TOO_MANY_RETURNS, "Functions may only return one value."},
+      {ERROR_WRONG_RETURN_INDEX, "A call return must have index 0."},
+      {ERROR_DUPLICATE_ARG_INDEX, "Call arguments must have unique indices."},
+      {ERROR_DUPLICATE_ARG_NAME, "Call arguments must have unique names."},
+      {ERROR_DUPLICATE_PARAM_NAME, "Function parameters must have unique names."},
       {ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED, "Operator overload resolution failed."},
-      {ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, "Cannot determine the type of a local dependency."}};
+      {ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, "Cannot determine the type of a local dependency."},
+      {ERROR_UNRECOGNIZED_TYPE, "The given name is not recognized as the name of a type."},
+      {ERROR_INCOMPATIBLE_TYPE, "There is no valid conversion from the given type to the target type."},
+      {ERROR_UNDEFINED_FUNCTION, "Attempted to call an undefined function."},
+      {ERROR_WRONG_ARITY, "Attempted to call a function with the wrong number of arguments"},
+      {ERROR_DUPLICATE_FUNCTION_NAME, "Cannot define multiple functions with the same name."}};
   }  // namespace
 
   std::string prettyMessage(Code code) {

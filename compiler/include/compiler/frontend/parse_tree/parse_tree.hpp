@@ -2,6 +2,7 @@
 #define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
@@ -43,6 +44,23 @@ namespace fluir::pt {
     friend bool operator==(const Unary&, const Unary&) = default;
   };
 
+  struct Call {
+    struct Argument {
+      std::string name;
+      int index;
+    };
+    using Arguments = std::vector<Argument>;
+    struct Return { };
+
+    ID id;
+    FlowGraphLocation location;
+
+    std::string target;
+    std::optional<Return> _return;  // For now, function calls have only one return max
+                                    // TODO: Support multiple return values
+    Arguments arguments;
+  };
+
   struct Conduit {
     struct Output {
       ID target = INVALID_ID;
@@ -59,7 +77,7 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant>;
+  using Node = std::variant<Binary, Unary, Constant, Call>;
   struct Block {
     using Nodes = std::unordered_map<ID, Node>;
     using Conduits = std::unordered_map<ID, Conduit>;
@@ -73,11 +91,45 @@ namespace fluir::pt {
   inline const Block EMPTY_BLOCK = {};
 
   struct FunctionDecl {
+    struct Parameter {
+      ID id;
+      int index;
+
+      std::string name;
+      std::string typeName;
+
+      friend bool operator==(const Parameter&, const Parameter&) = default;
+    };
+
+    struct Return {
+      ID id;
+
+      std::string typeName;
+
+      friend bool operator==(const Return&, const Return&) = default;
+    };
+
+    struct InputBlock {
+      FlowGraphLocation location;
+      std::vector<Parameter> parameters;
+
+      friend bool operator==(const InputBlock&, const InputBlock&) = default;
+    };
+
+    struct OutputBlock {
+      FlowGraphLocation location;
+      std::optional<Return> ret;
+
+      friend bool operator==(const OutputBlock&, const OutputBlock&) = default;
+    };
+
     ID id;
     FlowGraphLocation location;
 
     std::string name;
     Block body;
+    std::optional<InputBlock> input;
+    std::optional<OutputBlock> output;
 
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };

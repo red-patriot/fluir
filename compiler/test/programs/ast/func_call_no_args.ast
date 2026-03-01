@@ -1,0 +1,6 @@
+Function(1): 'main'
+  Call(1): 'get_val'
+Function(2): 'get_val'
+  Return: 2
+  LocalWrite(2)
+    ConstantI32(3): 99

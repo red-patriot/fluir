@@ -38,13 +38,19 @@ namespace fluir {
     void declaration(Element* element);
     void functionDecl(Element* element);
 
-    pt::Block block(Element* element);
-    std::pair<ID, pt::Node> node(Element* element);
-    std::pair<ID, pt::Node> constant(Element* element);
-    std::pair<ID, pt::Node> binary(Element* element);
-    std::pair<ID, pt::Node> unary(Element* element);
+    pt::FunctionDecl::InputBlock funcInputs(Element* element);
+    pt::FunctionDecl::Parameter funcParameter(Element* element, int index);
+    pt::FunctionDecl::OutputBlock funcOutputs(Element* element);
+    pt::FunctionDecl::Return funcReturn(Element* element);
 
-    std::pair<ID, pt::Conduit> conduit(Element* element);
+    pt::Block block(Element* element);
+    WithID<pt::Node> node(Element* element);
+    WithID<pt::Node> constant(Element* element);
+    WithID<pt::Node> binary(Element* element);
+    WithID<pt::Node> unary(Element* element);
+    WithID<pt::Node> call(Element* element);
+
+    WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);
 
     pt::Literal literal(Element* element);
@@ -58,15 +64,15 @@ namespace fluir {
     pt::U32 u32(Element* element);
     pt::U64 u64(Element* element);
 
-    std::string_view getAttribute(Element* element, std::string_view type, std::string_view attribute);
+    std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,
                                           std::string_view attribute,
                                           std::string_view defaultValue = "");
-    ID parseId(Element* element, std::string_view type);
-    ID parseIdReference(Element* element, std::string_view attribute, std::string_view type);
-    ID parseOptionalIdReference(Element* element, std::string_view attribute, std::string_view type);
-    FlowGraphLocation parseLocation(Element* element, std::string_view type);
-    Operator parseOperator(Element* element, std::string_view attribute, std::string_view type);
+    ID parseId(Element* element);
+    ID parseIdReference(Element* element, std::string_view attribute);
+    ID parseOptionalIdReference(Element* element, std::string_view attribute);
+    FlowGraphLocation parseLocation(Element* element);
+    Operator parseOperator(Element* element, std::string_view attribute);
 
     template <typename... FmtArgs>
     void panicAt(Element*, diagnostic::Code code, fmt::format_string<FmtArgs...> format = "", FmtArgs&&... args);

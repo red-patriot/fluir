@@ -13,6 +13,7 @@ namespace fc = fluir::code;
 namespace ft = fluir::types;
 using namespace fc::value_literals;
 using namespace fluir::literals_types;
+using namespace std::string_literals;
 
 using fluir::FullID;
 
@@ -22,6 +23,13 @@ class TestBytecodeGenerator : public ::testing::Test {
   fluir::Context ctx_{.diagnosticSink = sink_,
                       .symbolTable = fluir::types::buildSymbolTable(),
                       .version = fluir::Version{.major = 0, .minor = 1, .patch = 3}};
+
+  fluir::ast::AST prepare(fluir::ast::AST ast) {
+    auto result = fluir::typeCheck(ctx_, std::move(ast));
+
+    assert(result.has_value() && "Type checking failed");
+    return std::move(*result);
+  }
 };
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
@@ -29,8 +37,9 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -46,9 +55,10 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
   fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}},
-                                   fc::Chunk{.name = "foo", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}},
+                                   fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}, .constants = {}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -83,10 +93,11 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                                                  0x01,
                                                  fc::Instruction::F64_MUL,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {1.5_f64, 2.5_f64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -116,10 +127,11 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                                                  0x00,
                                                  fc::Instruction::F64_NEG,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {3.456_f64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -176,12 +188,12 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
                                                  fc::GET_VAL,  // Read {3,4}
                                                  0x0,         fc::F64_ADD, fc::POP,
                                                  fc::GET_VAL,  // Read {3,4}
-                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::EXIT,
+                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
                                                },
                                              .constants = {3.5_f64, 4.4_f64, 100.0_f64}}}};
 
-  auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
-  auto actual = fluir::generateCode(ctx_, typeChecked.value());
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
@@ -238,14 +250,14 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
       .name = "main",
       .code =
         {
-          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH, 0x0, fc::I64_MUL,
-          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::EXIT,
+          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
+          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
         },
       .constants = {2_i32, 3_i32},
     }}};
 
-  auto typeChecked = fluir::typeCheck(ctx_, std::move(input));
-  auto actual = fluir::generateCode(ctx_, typeChecked.value());
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
   EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
@@ -284,10 +296,11 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
                                                  fc::Instruction::PUSH,
                                                  0x03,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -328,10 +341,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
                                                  fc::Instruction::PUSH,
                                                  0x03,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -378,14 +392,15 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
       .name = "ints",
       .code =
         {
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
-          fc::Instruction::EXIT,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
+          fc::Instruction::RETURN,
         },
       .constants = {8_i32, 16_i32, 28_i32}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
   EXPECT_FALSE(sink_.containsErrors());
 
@@ -432,14 +447,15 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
       .name = "ints",
       .code =
         {
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH, 0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
-          fc::Instruction::EXIT,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
+          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
+          fc::Instruction::RETURN,
         },
       .constants = {8_u32, 16_u32, 28_u32}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -504,10 +520,11 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
                                                  fc::Instruction::CAST_WIDTH,
                                                  fc::NumericWidth::WIDTH_64,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i32, 12.4_f64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -551,7 +568,7 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
                                                  fc::Instruction::CAST_IU,
                                                  fc::NumericWidth::WIDTH_8,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_i32}}}};
 
@@ -591,10 +608,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
                                                  fc::Instruction::CAST_FU,
                                                  fc::NumericWidth::WIDTH_64,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u32, 12.4_f64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -638,10 +656,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
                                                  fc::Instruction::CAST_UI,
                                                  fc::NumericWidth::WIDTH_8,
                                                  fc::Instruction::POP,
-                                                 fc::Instruction::EXIT,
+                                                 fc::Instruction::RETURN,
                                                },
                                              .constants = {8_u32}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -684,10 +703,11 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
         {
           fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
           0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
-          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::EXIT,
+          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
         },
       .constants = {8_i32, 12.45_f64, 8_u64}}}};
 
+  input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
 
   EXPECT_FALSE(sink_.containsErrors());
@@ -707,4 +727,316 @@ TEST_F(TestBytecodeGenerator, HandlesMissingLocalVariable) {
   }());
 
   EXPECT_THROW(fluir::generateCode(ctx_, input), fluir::diagnostic::InternalError);
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "main", .statements = {}};
+    std::vector<fa::UniqueNode> args;
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(2), FullID{2, 1}, fluir::FlowGraphLocation{}));
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(3), FullID{2, 2}, fluir::FlowGraphLocation{}));
+
+    decl.statements.emplace_back(
+      fa::createDependency<fa::Call>("add_nums"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 3, .name = "add_nums", .statements = {}};
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 3, .name = "a", .typeName = "I32"});
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 2, .name = "b", .typeName = "I32"});
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+
+    decl.statements.push_back(fa::createDependency<fa::LocalWrite>(
+      fluir::FullID{3, 1},
+      fa::createDependency<fa::BinaryOp>(
+        fluir::Operator::PLUS,
+        fa::createDependency<fa::LocalRead>(3, fluir::FullID{3, 4}, fluir::FlowGraphLocation{}),
+        fa::createDependency<fa::LocalRead>(2, fluir::FullID{3, 4}, fluir::FlowGraphLocation{}),
+        FullID{3, 4},
+        fluir::FlowGraphLocation{}),
+      fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,  // Reserve space for the return
+                                                 0x01,
+                                                 fc::PUSH,
+                                                 0x00,  // Arg 1
+                                                 fc::PUSH,
+                                                 0x01,  // Arg 2
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {2_i32, 3_i32}},
+                                   fc::Chunk{.name = "add_nums",
+                                             .code =
+                                               {
+                                                 fc::GET_VAL,
+                                                 0x1,
+                                                 fc::GET_VAL,
+                                                 0x2,
+                                                 fc::I64_ADD,
+                                                 fc::SET_VAL,
+                                                 0x0,
+                                                 fc::POP,
+                                                 fc::MULTIPOP,
+                                                 0x2,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {},
+                                             .inOutCount = 3}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (size_t i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    std::vector<fa::UniqueNode> args;
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(7), FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createDependency<fa::Call>("sink"s, std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "sink", .statements = {}};
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 3, .name = "x", .typeName = "I32"});
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::PUSH,
+                                                 0x00,  // arg 7
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {7_i32}},
+                                   fc::Chunk{.name = "sink",
+                                             .code =
+                                               {
+                                                 fc::MULTIPOP,
+                                                 0x01,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {},
+                                             .inOutCount = 1}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "get_val"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "get_val", .statements = {}};
+    decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+      FullID{2, 1},
+      fa::createDependency<fa::Constant>(12, FullID{2, 2}, fluir::FlowGraphLocation{}),
+      fluir::FlowGraphLocation{}));
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x01,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {}},
+                                   fc::Chunk{.name = "get_val",
+                                             .code =
+                                               {
+                                                 fc::Instruction::PUSH,
+                                                 0x0,
+                                                 fc::Instruction::SET_VAL,
+                                                 0x0,
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {12_i32},
+                                             .inOutCount = 1}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "first"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(fa::createDependency<fa::Call>(
+      "second"s, std::vector<fa::UniqueNode>{}, FullID{1, 2}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "first", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 3, .name = "second", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    return decl;
+  }());
+
+  fc::ByteCode expected{
+    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+    .chunks = {fc::Chunk{.name = "main",
+                         .code =
+                           {
+                             fc::RESERVE,
+                             0x01,
+                             fc::CALL,
+                             0x00,
+                             0x00,
+                             0x00,
+                             0x01,
+                             fc::Instruction::POP,
+                             fc::RESERVE,
+                             0x01,
+                             fc::CALL,
+                             0x00,
+                             0x00,
+                             0x00,
+                             0x02,
+                             fc::Instruction::POP,
+                             fc::Instruction::RETURN,
+                           },
+                         .constants = {}},
+               fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .constants = {}, .inOutCount = 1},
+               fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .constants = {}, .inOutCount = 1}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 1, .name = "add", .statements = {}};
+    decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 2, .name = "a", .typeName = "I32"});
+    decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 3, .name = "b", .typeName = "I32"});
+    return decl;
+  }());
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{.id = 2, .name = "main", .statements = {}};
+    std::vector<fa::UniqueNode> args;
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(10), FullID{2, 1}, fluir::FlowGraphLocation{}));
+    args.emplace_back(
+      fa::createDependency<fa::Constant>(static_cast<I32>(20), FullID{2, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createDependency<fa::Call>("add"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
+    return decl;
+  }());
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .chunks = {fc::Chunk{.name = "add",
+                                             .code =
+                                               {
+                                                 fc::MULTIPOP,
+                                                 0x02,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {},
+                                             .inOutCount = 3},
+                                   fc::Chunk{.name = "main",
+                                             .code =
+                                               {
+                                                 fc::RESERVE,
+                                                 0x01,
+                                                 fc::PUSH,
+                                                 0x00,  // arg 10
+                                                 fc::PUSH,
+                                                 0x01,  // arg 20
+                                                 fc::CALL,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,
+                                                 0x00,  // add is at index 0
+                                                 fc::Instruction::POP,
+                                                 fc::Instruction::RETURN,
+                                               },
+                                             .constants = {10_i32, 20_i32}}}};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
+  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
+  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  }
 }

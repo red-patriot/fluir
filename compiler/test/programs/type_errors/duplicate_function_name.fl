@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major><minor>0</minor><patch>0</patch>
+    </version>
+  </header>
+  <function name="foo" id="1" x="0" y="0" z="0" w="50" h="50">
+    <body></body>
+  </function>
+  <function name="foo" id="2" x="60" y="0" z="0" w="50" h="50">
+    <body></body>
+  </function>
+</fluir>

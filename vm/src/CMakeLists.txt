@@ -11,7 +11,7 @@ target_sources(
     fluir.libvm
     PRIVATE decode.cpp
             decoder/inspect.cpp
-            vm.cpp
+            machine/vm.cpp
 )
 
 turn_up_warnings_on(fluir.libvm)

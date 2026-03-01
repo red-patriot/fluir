@@ -122,7 +122,6 @@ namespace fluir::util {
       auto index = std::distance(node->chars.begin(), firstChar);
       return findRest(rest.substr(1), children[index]);
     }
-    return nullptr;
   }
 
   template <std::copyable T>

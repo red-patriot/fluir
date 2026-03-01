@@ -31,6 +31,13 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("FunctionDecl({})\n", func.name) << doPrint(func.location);
 
+    if (func.input) {
+      (*this)(*func.input);
+    }
+    if (func.output) {
+      (*this)(*func.output);
+    }
+
     {
       out_ << formatIndented("body\n");
       auto orderedNodes = keyOrder(func.body.nodes);
@@ -47,6 +54,36 @@ namespace fluir::debug {
       for (const auto& conduit : orderedConduits) {
         (*this)(func.body.conduits.at(conduit));
       }
+    }
+  }
+
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
+    out_ << formatIndented("{}:\n", param.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Param({})\n", param.name) << formatIndented("index {}\n", param.index)
+         << formatIndented("type {}\n", param.typeName);
+  }
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
+    out_ << formatIndented("{}:\n", ret.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Return\n") << formatIndented("type {}\n", ret.typeName);
+  }
+
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::InputBlock& input) {
+    out_ << formatIndented("input\n");
+    FLUIR_SCOPED_INDENT;
+    out_ << doPrint(input.location);
+    for (const auto& param : input.parameters) {
+      (*this)(param);
+    }
+  }
+
+  void ParseTreePrinter::operator()(const pt::FunctionDecl::OutputBlock& output) {
+    out_ << formatIndented("output\n");
+    FLUIR_SCOPED_INDENT;
+    out_ << doPrint(output.location);
+    if (output.ret) {
+      (*this)(*output.ret);
     }
   }
 
@@ -67,6 +104,21 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Constant\n") << doPrint(constant.location);
     std::visit(*this, constant.value);
+  }
+
+  void ParseTreePrinter::operator()(const pt::Call& call) {
+    out_ << formatIndented("{}:\n", call.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Call({})\n", call.target) << doPrint(call.location);
+    if (call._return) {
+      out_ << formatIndented("0: return\n");
+    }
+    auto args = call.arguments;
+    std::ranges::sort(
+      args, [](const pt::Call::Argument& lhs, const pt::Call::Argument& rhs) { return lhs.index < rhs.index; });
+    for (const auto& [name, index] : args) {
+      out_ << formatIndented("{}: {}\n", index, name);
+    }
   }
 
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {

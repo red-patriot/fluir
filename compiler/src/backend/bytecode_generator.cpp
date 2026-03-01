@@ -30,7 +30,7 @@ namespace fluir {
   void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
-    current_.inOutCount = func.parameters.size();
+    current_.inOutCount = static_cast<std::uint8_t>(func.parameters.size());
     if (func.returnValue) {
       ++current_.inOutCount;
     }

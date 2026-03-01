@@ -304,6 +304,14 @@ namespace fluir {
         case EXIT:
           // TODO: Clean up this testing code later...
           goto afterLoop;
+        case RESERVE:
+          {
+            auto count = FLUIR_READ_BYTE();
+            for (std::uint8_t i = 0; i != count; ++i) {
+              pushStack(code::Value{});
+            }
+            break;
+          }
         default:
           return ExecResult::ERROR;
       }

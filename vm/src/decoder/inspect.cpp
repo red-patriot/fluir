@@ -102,7 +102,7 @@ namespace fluir {
     [[maybe_unused]] auto inOutSection = scanNext();
     auto rawCount = scanNext();
     auto count = toUnsignedInteger(rawCount);
-    return count;
+    return static_cast<std::uint8_t>(count);
   }
 
   Token InspectDecoder::identifier() {

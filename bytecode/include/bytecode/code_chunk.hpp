@@ -14,6 +14,7 @@ namespace fluir::code {
     std::string name = "";
     Bytes code{};
     std::vector<Value> constants{};
+    std::uint8_t inOutCount{0};
   };
 }  // namespace fluir::code
 

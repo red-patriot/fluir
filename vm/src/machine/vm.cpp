@@ -101,17 +101,9 @@ namespace fluir {
   }
 
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
-    // Reset the internal state
-    if (!stack_) {
-      stack_ = std::make_unique<Stack>();
-    }
-    std::ranges::fill(*stack_, code::Value{});
-    stackBegin_ = stack_->data();
-    stackEnd_ = stack_->data();
-
     code_ = code;
-    current_ = &code_->chunks.at(0);
-    ip_ = current_->code.data();  // TODO: Be smarter about loading the entry point
+    // Reset the internal state
+    init();
 
     try {
       return run();
@@ -130,6 +122,16 @@ namespace fluir {
     }
   }
 
+  void VirtualMachine::init() {
+    // Reset the stack
+    if (!stack_) {
+      stack_ = std::make_unique<Stack>();
+    }
+    frames_.reserve(FUNCTION_DEPTH);
+    std::ranges::fill(*stack_, code::Value{});
+    initCall(&code_->chunks.at(0), stack_->data());  // TODO: Be smarter about loading the entry point
+  }
+
   ExecResult VirtualMachine::run() {
 #define FLUIR_READ_BYTE() *ip_++
 
@@ -140,7 +142,7 @@ namespace fluir {
         case PUSH:
           {
             uint8_t index = FLUIR_READ_BYTE();
-            const code::Value& val = current_->constants[index];
+            const code::Value& val = currentFrame_->chunk->constants[index];
             if (stackSize() >= STACK_LIMIT) {
               return ExecResult::ERROR;
             }
@@ -153,13 +155,13 @@ namespace fluir {
             if (stackSize() >= STACK_LIMIT) {
               return ExecResult::ERROR;
             }
-            pushStack(stackBegin_[index]);
+            pushStack(currentFrame_->basePtr[index]);
             break;
           }
         case SET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            stackBegin_[index] = stackTop();
+            currentFrame_->basePtr[index] = stackTop();
             break;
           }
         case F64_ADD:
@@ -312,6 +314,23 @@ namespace fluir {
             }
             break;
           }
+        case CALL:
+          {
+            auto calleeIndex = readQuadWord();
+            auto callee = &code_->chunks.at(calleeIndex);
+            auto offset = callee->inOutCount;
+            auto basePtr = currentFrame_->stackEnd - offset;
+            initCall(callee, basePtr);
+            break;
+          }
+        case RETURN:
+          {
+            auto returnAddress = currentFrame_->returnAddress;
+            ip_ = returnAddress;
+            frames_.pop_back();
+            currentFrame_ = &frames_.back();
+          }
+          break;
         default:
           return ExecResult::ERROR;
       }
@@ -320,10 +339,36 @@ namespace fluir {
     return ExecResult::SUCCESS;
   }
 
-  code::Value& VirtualMachine::stackTop() { return *(stackEnd_ - 1); }
-  void VirtualMachine::popStack() { --stackEnd_; }
+  code::Value& VirtualMachine::stackTop() { return *(currentFrame_->stackEnd - 1); }
+  void VirtualMachine::popStack() { --currentFrame_->stackEnd; }
   void VirtualMachine::pushStack(code::Value value) {
-    (*stackEnd_) = std::move(value);
-    ++stackEnd_;
+    (*currentFrame_->stackEnd) = std::move(value);
+    ++currentFrame_->stackEnd;
+  }
+
+  std::uint8_t VirtualMachine::readByte() { return *ip_++; }
+
+  std::uint64_t VirtualMachine::readQuadWord() {
+    std::uint64_t word = 0;
+    for (int i = 0; i != 4; ++i) {
+      const auto next = readByte();
+      word <<= 4;
+      word |= next;
+    }
+
+    return word;
+  }
+
+  void VirtualMachine::initCall(code::Chunk const* callee, code::Value* basePtr) {
+    CallFrame frame{
+      .chunk = callee,
+      .returnAddress = ip_,
+      .basePtr = basePtr,
+      .stackEnd = basePtr,
+    };
+
+    ip_ = callee->code.data();
+    frames_.emplace_back(std::move(frame));
+    currentFrame_ = &frames_.back();
   }
 }  // namespace fluir

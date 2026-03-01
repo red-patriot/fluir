@@ -3,8 +3,11 @@
 
 #include <memory>
 #include <span>
+#include <vector>
 
 #include <bytecode/byte_code.hpp>
+
+#include "vm/machine/call_frame.hpp"
 
 namespace fluir {
   enum class ExecResult { SUCCESS = 0, ERROR, ERROR_DIVIDE_BY_ZERO };
@@ -26,19 +29,21 @@ namespace fluir {
 
     ExecResult execute(code::ByteCode const* code);
 
-    std::span<const code::Value> viewStack() const { return {stackBegin_, stackEnd_}; }
+    std::span<const code::Value> viewStack() const { return {stack_->data(), frames_.back().stackEnd}; }
 
    private:
     code::ByteCode const* code_{nullptr};
-    code::Chunk const* current_{nullptr};
+    std::vector<CallFrame> frames_;
     std::uint8_t const* ip_{nullptr};
+    CallFrame* currentFrame_{nullptr};
     std::unique_ptr<Stack> stack_;
-    code::Value* stackBegin_{nullptr};
-    code::Value* stackEnd_{nullptr};
 
+    /** Initializes the VM state to begin running the bytecode */
+    void init();
+    /** Runs the bytecode until it finishes */
     ExecResult run();
 
-    size_t stackSize() { return stackEnd_ - stackBegin_; }
+    size_t stackSize() { return frames_.back().stackEnd - stack_->data(); }
     code::Value& stackTop();
     void popStack();
     void pushStack(code::Value value);
@@ -55,6 +60,10 @@ namespace fluir {
     void uintBinary();
     template <typename Op>
     void uintUnary();
+
+    std::uint8_t readByte();
+    std::uint64_t readQuadWord();
+    void initCall(code::Chunk const* callee, code::Value* basePtr);
   };
 }  // namespace fluir
 

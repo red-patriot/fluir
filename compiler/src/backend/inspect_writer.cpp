@@ -65,6 +65,9 @@ namespace fluir {
       case F64:
         os << formatIndented("VF64 {:.12f}\n", constant.asF64());
         break;
+      case EMPTY:
+        os << formatIndented("EMPTY\n");
+        break;
     }
   }
 

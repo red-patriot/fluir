@@ -1,6 +1,7 @@
 #ifndef FLUIR_VM_MACHINE_VM_HPP
 #define FLUIR_VM_MACHINE_VM_HPP
 
+#include <array>
 #include <memory>
 #include <span>
 #include <vector>

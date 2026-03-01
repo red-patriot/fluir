@@ -55,55 +55,59 @@ namespace fluir {
 
   template <typename Op>
   void VirtualMachine::floatBinary() {
-    double rhs = stack_.back().asF64();
-    stack_.pop_back();
-    double lhs = stack_.back().asF64();
-    stack_.pop_back();
-    stack_.emplace_back(code::Value{Op{}(lhs, rhs)});
+    double rhs = stackTop().asF64();
+    popStack();
+    double lhs = stackTop().asF64();
+    popStack();
+    pushStack(code::Value{Op{}(lhs, rhs)});
   }
   template <typename Op>
   void VirtualMachine::floatUnary() {
-    double operand = stack_.back().asF64();
-    stack_.pop_back();
-    stack_.emplace_back(Op{}(operand));
+    double operand = stackTop().asF64();
+    popStack();
+    pushStack(code::Value(Op{}(operand)));
   }
   template <typename Op>
   void VirtualMachine::intBinary() {
     code::PrimitiveType typeR, typeL;
-    code::I64 rhs = utility::widenI(stack_.back(), typeR);
-    stack_.pop_back();
-    code::I64 lhs = utility::widenI(stack_.back(), typeL);
-    stack_.pop_back();
-    stack_.emplace_back(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    code::I64 rhs = utility::widenI(stackTop(), typeR);
+    popStack();
+    code::I64 lhs = utility::widenI(stackTop(), typeL);
+    popStack();
+    pushStack(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
     code::PrimitiveType type;
-    code::I64 operand = utility::widenI(stack_.back(), type);
-    stack_.pop_back();
-    stack_.emplace_back(utility::narrowI(Op{}(operand), type));
+    code::I64 operand = utility::widenI(stackTop(), type);
+    popStack();
+    pushStack(utility::narrowI(Op{}(operand), type));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
     code::PrimitiveType typeR, typeL;
-    code::U64 rhs = utility::widenU(stack_.back(), typeR);
-    stack_.pop_back();
-    code::U64 lhs = utility::widenU(stack_.back(), typeL);
-    stack_.pop_back();
-    stack_.emplace_back(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    code::U64 rhs = utility::widenU(stackTop(), typeR);
+    popStack();
+    code::U64 lhs = utility::widenU(stackTop(), typeL);
+    popStack();
+    pushStack(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
     code::PrimitiveType type;
-    code::U64 operand = utility::widenU(stack_.back(), type);
-    stack_.pop_back();
-    stack_.emplace_back(utility::narrowU(Op{}(operand), type));
+    code::U64 operand = utility::widenU(stackTop(), type);
+    popStack();
+    pushStack(utility::narrowU(Op{}(operand), type));
   }
 
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     // Reset the internal state
-    stack_.clear();
-    stack_.reserve(STACK_LIMIT);
+    if (!stack_) {
+      stack_ = std::make_unique<Stack>();
+    }
+    std::ranges::fill(*stack_, code::Value{});
+    stackBegin_ = stack_->data();
+    stackEnd_ = stack_->data();
 
     code_ = code;
     current_ = &code_->chunks.at(0);
@@ -137,25 +141,25 @@ namespace fluir {
           {
             uint8_t index = FLUIR_READ_BYTE();
             const code::Value& val = current_->constants[index];
-            if (!(stack_.size() < STACK_LIMIT)) {
+            if (stackSize() >= STACK_LIMIT) {
               return ExecResult::ERROR;
             }
-            stack_.emplace_back(val);
+            pushStack(val);
             break;
           }
         case GET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            if (!(stack_.size() < STACK_LIMIT)) {
+            if (stackSize() >= STACK_LIMIT) {
               return ExecResult::ERROR;
             }
-            stack_.emplace_back(stack_[index]);
+            pushStack(stackBegin_[index]);
             break;
           }
         case SET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            stack_[index] = stack_.back();
+            stackBegin_[index] = stackTop();
             break;
           }
         case F64_ADD:
@@ -225,76 +229,76 @@ namespace fluir {
         case CAST_IU:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             code::PrimitiveType _;
             auto widened = utility::widenI(toCast, _);
             auto casted = static_cast<code::U64>(widened);
 
-            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+            pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
           break;
         case CAST_UI:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             code::PrimitiveType _;
             auto widened = utility::widenU(toCast, _);
             auto casted = static_cast<code::I64>(widened);
-            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+            pushStack(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
           }
           break;
         case CAST_IF:
           {
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             code::PrimitiveType _;
             auto widened = utility::widenI(toCast, _);
             auto casted = static_cast<code::F64>(widened);
-            stack_.emplace_back(casted);
+            pushStack(code::Value{casted});
           }
           break;
         case CAST_FI:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             auto casted = static_cast<code::I64>(toCast.asF64());
-            stack_.push_back(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+            pushStack(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
           }
           break;
         case CAST_UF:
           {
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             code::PrimitiveType _;
             auto widened = utility::widenU(toCast, _);
             auto casted = static_cast<code::F64>(widened);
-            stack_.emplace_back(casted);
+            pushStack(code::Value{casted});
           }
           break;
         case CAST_FU:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
-            auto toCast = stack_.back();
-            stack_.pop_back();
+            auto toCast = stackTop();
+            popStack();
             auto casted = static_cast<code::U64>(toCast.asF64());
-            stack_.push_back(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+            pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
           break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
           // language is implemented
-          std::cout << stack_.back() << '\n';
-          stack_.pop_back();
+          std::cout << stackTop() << '\n';
+          popStack();
           break;
         case MULTIPOP:
           {
             auto count = FLUIR_READ_BYTE();
             for (size_t i = 0; i != count; ++i) {
-              stack_.pop_back();
+              popStack();
             }
           }
         case EXIT:
@@ -306,5 +310,12 @@ namespace fluir {
     }
   afterLoop:
     return ExecResult::SUCCESS;
+  }
+
+  code::Value& VirtualMachine::stackTop() { return *(stackEnd_ - 1); }
+  void VirtualMachine::popStack() { --stackEnd_; }
+  void VirtualMachine::pushStack(code::Value value) {
+    (*stackEnd_) = std::move(value);
+    ++stackEnd_;
   }
 }  // namespace fluir

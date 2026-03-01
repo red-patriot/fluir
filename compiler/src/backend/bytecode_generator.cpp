@@ -30,6 +30,10 @@ namespace fluir {
   void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
+    current_.inOutCount = func.parameters.size();
+    if (func.returnValue) {
+      ++current_.inOutCount;
+    }
 
     // TODO: Handle parameters
     auto& [slots, returnCount] = pushScope();
@@ -44,10 +48,11 @@ namespace fluir {
       slots.insert({param.id, slots.size()});
     }
     for (const auto& node : func.statements) {
+      auto beforeSlotsCount = slots.size();
       recursivelyGenerate(*node);
-      if (!slots.contains(node->id())) {
+      if (slots.size() == beforeSlotsCount) {
         // Each top level node will leave a value on the stack,
-        // so pop it off iff it is not a local variable
+        // so pop it off iff it was not added as a new local variable
         emitByte(Instruction::POP);
       }
     }

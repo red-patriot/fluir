@@ -22,10 +22,9 @@ namespace fluir {
     [[maybe_unused]] auto _ = indent();
     os << formatIndented("CONSTANTS x{:X}\n", chunk.constants.size());
     writeConstants(chunk.constants, os);
-
     os << formatIndented("CODE x{:X}\n", chunk.code.size());
-
     writeCode(chunk.code, os);
+    os << formatIndented("INOUT x{:X}\n", chunk.inOutCount);
   }
 
   void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {

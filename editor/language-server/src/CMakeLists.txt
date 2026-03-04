@@ -1,3 +1,4 @@
+find_package(nlohmann_json REQUIRED)
 find_path(ASIO_INCLUDE_DIR NAMES asio.hpp REQUIRED)
 
 add_library(
@@ -14,4 +15,4 @@ add_executable(fluir.lsp main.cpp)
 
 turn_up_warnings_on(fluir.lsp)
 
-target_link_libraries(fluir.lsp PRIVATE asio::asio)
+target_link_libraries(fluir.lsp PRIVATE asio::asio nlohmann_json::nlohmann_json)

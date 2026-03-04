@@ -35,6 +35,7 @@ add_subdirectory(bytecode)
 add_subdirectory(utility)
 add_subdirectory(compiler)
 add_subdirectory(vm)
+add_subdirectory(editor/language-server)
 
 if (FLUIR_BUILD_TESTS)
     enable_testing()

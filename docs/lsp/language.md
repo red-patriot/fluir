@@ -81,9 +81,6 @@ export interface SelectCompletion {
 
 ```typescript
 export interface SelectedCompletion {
-    /**
-     *
-     */
     text: string;
 }
 ```

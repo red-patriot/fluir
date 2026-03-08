@@ -140,4 +140,127 @@ namespace fluir::lsp {
     return obj;
   }
 
+  // --- fromJson specializations ---
+
+  // Lifecycle
+
+  template <>
+  api::InitRequest fromJson<api::InitRequest>(const nlohmann::json&) {
+    return {};
+  }
+
+  template <>
+  api::InitResponse fromJson<api::InitResponse>(const nlohmann::json& j) {
+    return {j.at("version").get<std::string>()};
+  }
+
+  template <>
+  api::ShutdownRequest fromJson<api::ShutdownRequest>(const nlohmann::json&) {
+    return {};
+  }
+
+  template <>
+  api::ShutdownResponse fromJson<api::ShutdownResponse>(const nlohmann::json&) {
+    return {};
+  }
+
+  // Document
+
+  template <>
+  api::OpenDocRequest fromJson<api::OpenDocRequest>(const nlohmann::json& j) {
+    return {j.at("path").get<std::string>(), j.at("content").get<std::string>()};
+  }
+
+  template <>
+  api::OpenDocResponse fromJson<api::OpenDocResponse>(const nlohmann::json&) {
+    return {};
+  }
+
+  template <>
+  api::CloseDocRequest fromJson<api::CloseDocRequest>(const nlohmann::json& j) {
+    return {j.at("path").get<std::string>()};
+  }
+
+  template <>
+  api::CloseDocResponse fromJson<api::CloseDocResponse>(const nlohmann::json&) {
+    return {};
+  }
+
+  template <>
+  api::DocEdit fromJson<api::DocEdit>(const nlohmann::json& j) {
+    return {j.at("contents").get<std::string>()};
+  }
+
+  template <>
+  api::DocEditResponse fromJson<api::DocEditResponse>(const nlohmann::json&) {
+    return {};
+  }
+
+  // Language
+
+  template <>
+  api::DocumentSymbolRequest fromJson<api::DocumentSymbolRequest>(const nlohmann::json& j) {
+    return {j.at("path").get<std::string>()};
+  }
+
+  template <>
+  api::DocumentSymbol fromJson<api::DocumentSymbol>(const nlohmann::json& j) {
+    std::optional<std::string> detail =
+      j.contains("detail") ? std::optional{j.at("detail").get<std::string>()} : std::nullopt;
+    std::optional<std::string> outType =
+      j.contains("outType") ? std::optional{j.at("outType").get<std::string>()} : std::nullopt;
+    std::optional<std::vector<std::string>> inType =
+      j.contains("inType") ? std::optional{j.at("inType").get<std::vector<std::string>>()} : std::nullopt;
+    return {j.at("name").get<std::string>(), detail, outType, inType};
+  }
+
+  template <>
+  api::TaggedDocumentSymbol fromJson<api::TaggedDocumentSymbol>(const nlohmann::json& j) {
+    FullID id = j.at("id").get<std::vector<uint64_t>>();
+    return {id, fromJson<api::DocumentSymbol>(j.at("symbol"))};
+  }
+
+  template <>
+  api::DocumentSymbols fromJson<api::DocumentSymbols>(const nlohmann::json& j) {
+    std::vector<api::TaggedDocumentSymbol> symbols;
+    for (const auto& elem : j.at("symbols")) {
+      symbols.push_back(fromJson<api::TaggedDocumentSymbol>(elem));
+    }
+    return {symbols};
+  }
+
+  template <>
+  api::CompletionsRequest fromJson<api::CompletionsRequest>(const nlohmann::json& j) {
+    FullID parentBlock = j.at("parentBlock").get<std::vector<uint64_t>>();
+    auto context = static_cast<api::CompletionsRequest::Context>(j.at("context").get<int>());
+    return {parentBlock, context};
+  }
+
+  template <>
+  api::CompletionOption fromJson<api::CompletionOption>(const nlohmann::json& j) {
+    std::optional<std::string> detail =
+      j.contains("detail") ? std::optional{j.at("detail").get<std::string>()} : std::nullopt;
+    return {j.at("label").get<std::string>(), static_cast<api::CompletionKind>(j.at("kind").get<int>()), detail};
+  }
+
+  template <>
+  api::CompletionPossibilities fromJson<api::CompletionPossibilities>(const nlohmann::json& j) {
+    std::vector<api::CompletionOption> completions;
+    for (const auto& elem : j.at("completions")) {
+      completions.push_back(fromJson<api::CompletionOption>(elem));
+    }
+    return {j.at("isComplete").get<bool>(), completions};
+  }
+
+  template <>
+  api::SelectCompletion fromJson<api::SelectCompletion>(const nlohmann::json& j) {
+    FullID parentBlock = j.at("parentBlock").get<std::vector<uint64_t>>();
+    return {parentBlock, j.at("selected").get<std::string>()};
+  }
+
+  template <>
+  api::SelectedCompletion fromJson<api::SelectedCompletion>(const nlohmann::json& j) {
+    return {j.at("text").get<std::string>()};
+  }
+
 }  // namespace fluir::lsp

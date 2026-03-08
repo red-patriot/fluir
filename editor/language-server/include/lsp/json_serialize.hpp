@@ -30,6 +30,51 @@ namespace fluir::lsp {
   nlohmann::json toJson(const api::CompletionPossibilities&);
   nlohmann::json toJson(const api::SelectCompletion&);
   nlohmann::json toJson(const api::SelectedCompletion&);
+  // Primary template — declared but not defined
+  template <typename T>
+  T fromJson(const nlohmann::json&) = delete;
+
+  // Lifecycle
+  template <>
+  api::InitRequest fromJson<api::InitRequest>(const nlohmann::json&);
+  template <>
+  api::InitResponse fromJson<api::InitResponse>(const nlohmann::json&);
+  template <>
+  api::ShutdownRequest fromJson<api::ShutdownRequest>(const nlohmann::json&);
+  template <>
+  api::ShutdownResponse fromJson<api::ShutdownResponse>(const nlohmann::json&);
+  // Document
+  template <>
+  api::OpenDocRequest fromJson<api::OpenDocRequest>(const nlohmann::json&);
+  template <>
+  api::OpenDocResponse fromJson<api::OpenDocResponse>(const nlohmann::json&);
+  template <>
+  api::CloseDocRequest fromJson<api::CloseDocRequest>(const nlohmann::json&);
+  template <>
+  api::CloseDocResponse fromJson<api::CloseDocResponse>(const nlohmann::json&);
+  template <>
+  api::DocEdit fromJson<api::DocEdit>(const nlohmann::json&);
+  template <>
+  api::DocEditResponse fromJson<api::DocEditResponse>(const nlohmann::json&);
+  // Language
+  template <>
+  api::DocumentSymbolRequest fromJson<api::DocumentSymbolRequest>(const nlohmann::json&);
+  template <>
+  api::DocumentSymbol fromJson<api::DocumentSymbol>(const nlohmann::json&);
+  template <>
+  api::TaggedDocumentSymbol fromJson<api::TaggedDocumentSymbol>(const nlohmann::json&);
+  template <>
+  api::DocumentSymbols fromJson<api::DocumentSymbols>(const nlohmann::json&);
+  template <>
+  api::CompletionsRequest fromJson<api::CompletionsRequest>(const nlohmann::json&);
+  template <>
+  api::CompletionOption fromJson<api::CompletionOption>(const nlohmann::json&);
+  template <>
+  api::CompletionPossibilities fromJson<api::CompletionPossibilities>(const nlohmann::json&);
+  template <>
+  api::SelectCompletion fromJson<api::SelectCompletion>(const nlohmann::json&);
+  template <>
+  api::SelectedCompletion fromJson<api::SelectedCompletion>(const nlohmann::json&);
 }  // namespace fluir::lsp
 
 #endif

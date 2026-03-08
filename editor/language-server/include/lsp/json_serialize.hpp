@@ -30,6 +30,9 @@ namespace fluir::lsp {
   nlohmann::json toJson(const api::CompletionPossibilities&);
   nlohmann::json toJson(const api::SelectCompletion&);
   nlohmann::json toJson(const api::SelectedCompletion&);
+  nlohmann::json toJson(const api::RequestDiagnostics&);
+  nlohmann::json toJson(const api::ModuleDiagnostic&);
+  nlohmann::json toJson(const api::Diagnostics&);
   // Primary template — declared but not defined
   template <typename T>
   T fromJson(const nlohmann::json&) = delete;
@@ -75,6 +78,12 @@ namespace fluir::lsp {
   api::SelectCompletion fromJson<api::SelectCompletion>(const nlohmann::json&);
   template <>
   api::SelectedCompletion fromJson<api::SelectedCompletion>(const nlohmann::json&);
+  template <>
+  api::RequestDiagnostics fromJson<api::RequestDiagnostics>(const nlohmann::json&);
+  template <>
+  api::ModuleDiagnostic fromJson<api::ModuleDiagnostic>(const nlohmann::json&);
+  template <>
+  api::Diagnostics fromJson<api::Diagnostics>(const nlohmann::json&);
 }  // namespace fluir::lsp
 
 #endif

@@ -211,6 +211,57 @@ TEST(JsonSerialize, SelectedCompletion) {
   EXPECT_EQ(result["text"], "some text");
 }
 
+TEST(JsonSerialize, RequestDiagnostics) {
+  api::RequestDiagnostics req{"path/to/file.fl"};
+  auto result = toJson(req);
+  EXPECT_EQ(result["path"], "path/to/file.fl");
+}
+
+TEST(JsonSerialize, ModuleDiagnosticWithId) {
+  fluir::FullID id{1, 2, 3};
+  api::ModuleDiagnostic diag{id, api::DiagnosticSeverity::ERROR, "something went wrong"};
+  auto result = toJson(diag);
+  ASSERT_TRUE(result["location"].is_array());
+  EXPECT_EQ(result["location"].size(), 3u);
+  EXPECT_EQ(result["location"][0], 1u);
+  EXPECT_EQ(result["severity"], static_cast<int>(api::DiagnosticSeverity::ERROR));
+  EXPECT_EQ(result["message"], "something went wrong");
+}
+
+TEST(JsonSerialize, ModuleDiagnosticWithLocation) {
+  fluir::FlowGraphLocation loc{10, 20, 0, 100, 50};
+  api::ModuleDiagnostic diag{loc, api::DiagnosticSeverity::WARNING, "a warning"};
+  auto result = toJson(diag);
+  ASSERT_TRUE(result["location"].is_object());
+  EXPECT_EQ(result["location"]["x"], 10);
+  EXPECT_EQ(result["location"]["y"], 20);
+  EXPECT_EQ(result["location"]["z"], 0);
+  EXPECT_EQ(result["location"]["width"], 100);
+  EXPECT_EQ(result["location"]["height"], 50);
+  EXPECT_EQ(result["severity"], static_cast<int>(api::DiagnosticSeverity::WARNING));
+  EXPECT_EQ(result["message"], "a warning");
+}
+
+TEST(JsonSerialize, DiagnosticsEmpty) {
+  api::Diagnostics diags{{}};
+  auto result = toJson(diags);
+  ASSERT_TRUE(result["diagnostics"].is_array());
+  EXPECT_EQ(result["diagnostics"].size(), 0u);
+}
+
+TEST(JsonSerialize, DiagnosticsTwoElements) {
+  fluir::FullID id{5};
+  fluir::FlowGraphLocation loc{1, 2, 3, 4, 5};
+  api::Diagnostics diags{{
+    api::ModuleDiagnostic{id, api::DiagnosticSeverity::ERROR, "error msg"},
+    api::ModuleDiagnostic{loc, api::DiagnosticSeverity::HINT, "hint msg"},
+  }};
+  auto result = toJson(diags);
+  ASSERT_EQ(result["diagnostics"].size(), 2u);
+  EXPECT_TRUE(result["diagnostics"][0]["location"].is_array());
+  EXPECT_TRUE(result["diagnostics"][1]["location"].is_object());
+}
+
 // --- FromJson ---
 
 TEST(FromJson, InitRequest) {
@@ -394,4 +445,53 @@ TEST(FromJson, SelectedCompletion) {
   api::SelectedCompletion orig{"some text"};
   auto result = fromJson<api::SelectedCompletion>(toJson(orig));
   EXPECT_EQ(result.text, "some text");
+}
+
+TEST(FromJson, RequestDiagnostics) {
+  api::RequestDiagnostics orig{"path/to/file.fl"};
+  auto result = fromJson<api::RequestDiagnostics>(toJson(orig));
+  EXPECT_EQ(result.path, "path/to/file.fl");
+}
+
+TEST(FromJson, ModuleDiagnosticWithId) {
+  fluir::FullID id{10, 20};
+  api::ModuleDiagnostic orig{id, api::DiagnosticSeverity::ERROR, "error message"};
+  auto result = fromJson<api::ModuleDiagnostic>(toJson(orig));
+  ASSERT_TRUE(std::holds_alternative<fluir::FullID>(result.location));
+  const auto& resId = std::get<fluir::FullID>(result.location);
+  ASSERT_EQ(resId.size(), 2u);
+  EXPECT_EQ(resId[0], 10u);
+  EXPECT_EQ(resId[1], 20u);
+  EXPECT_EQ(result.severity, api::DiagnosticSeverity::ERROR);
+  EXPECT_EQ(result.message, "error message");
+}
+
+TEST(FromJson, ModuleDiagnosticWithLocation) {
+  fluir::FlowGraphLocation loc{10, 20, 0, 100, 50};
+  api::ModuleDiagnostic orig{loc, api::DiagnosticSeverity::INFORMATION, "info"};
+  auto result = fromJson<api::ModuleDiagnostic>(toJson(orig));
+  ASSERT_TRUE(std::holds_alternative<fluir::FlowGraphLocation>(result.location));
+  const auto& resLoc = std::get<fluir::FlowGraphLocation>(result.location);
+  EXPECT_EQ(resLoc.x, 10);
+  EXPECT_EQ(resLoc.y, 20);
+  EXPECT_EQ(resLoc.z, 0);
+  EXPECT_EQ(resLoc.width, 100);
+  EXPECT_EQ(resLoc.height, 50);
+  EXPECT_EQ(result.severity, api::DiagnosticSeverity::INFORMATION);
+  EXPECT_EQ(result.message, "info");
+}
+
+TEST(FromJson, Diagnostics) {
+  fluir::FullID id{5};
+  fluir::FlowGraphLocation loc{1, 2, 3, 4, 5};
+  api::Diagnostics orig{{
+    api::ModuleDiagnostic{id, api::DiagnosticSeverity::ERROR, "err"},
+    api::ModuleDiagnostic{loc, api::DiagnosticSeverity::WARNING, "warn"},
+  }};
+  auto result = fromJson<api::Diagnostics>(toJson(orig));
+  ASSERT_EQ(result.diagnostics.size(), 2u);
+  EXPECT_TRUE(std::holds_alternative<fluir::FullID>(result.diagnostics[0].location));
+  EXPECT_TRUE(std::holds_alternative<fluir::FlowGraphLocation>(result.diagnostics[1].location));
+  EXPECT_EQ(result.diagnostics[0].message, "err");
+  EXPECT_EQ(result.diagnostics[1].message, "warn");
 }

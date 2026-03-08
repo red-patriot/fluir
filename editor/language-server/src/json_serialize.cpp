@@ -140,6 +140,49 @@ namespace fluir::lsp {
     return obj;
   }
 
+  nlohmann::json toJson(const api::RequestDiagnostics& r) {
+    auto obj = nlohmann::json::object();
+    obj["path"] = r.path;
+    return obj;
+  }
+
+  nlohmann::json toJson(const api::ModuleDiagnostic& m) {
+    auto obj = nlohmann::json::object();
+    std::visit(
+      [&obj](const auto& loc) {
+        using T = std::decay_t<decltype(loc)>;
+        if constexpr (std::is_same_v<T, FullID>) {
+          auto arr = nlohmann::json::array();
+          for (auto id : loc) {
+            arr.push_back(id);
+          }
+          obj["location"] = arr;
+        } else {
+          auto locObj = nlohmann::json::object();
+          locObj["x"] = loc.x;
+          locObj["y"] = loc.y;
+          locObj["z"] = loc.z;
+          locObj["width"] = loc.width;
+          locObj["height"] = loc.height;
+          obj["location"] = locObj;
+        }
+      },
+      m.location);
+    obj["severity"] = static_cast<int>(m.severity);
+    obj["message"] = m.message;
+    return obj;
+  }
+
+  nlohmann::json toJson(const api::Diagnostics& d) {
+    auto obj = nlohmann::json::object();
+    auto arr = nlohmann::json::array();
+    for (const auto& diag : d.diagnostics) {
+      arr.push_back(toJson(diag));
+    }
+    obj["diagnostics"] = arr;
+    return obj;
+  }
+
   // --- fromJson specializations ---
 
   // Lifecycle
@@ -261,6 +304,39 @@ namespace fluir::lsp {
   template <>
   api::SelectedCompletion fromJson<api::SelectedCompletion>(const nlohmann::json& j) {
     return {j.at("text").get<std::string>()};
+  }
+
+  template <>
+  api::RequestDiagnostics fromJson<api::RequestDiagnostics>(const nlohmann::json& j) {
+    return {j.at("path").get<std::string>()};
+  }
+
+  template <>
+  api::ModuleDiagnostic fromJson<api::ModuleDiagnostic>(const nlohmann::json& j) {
+    const auto& loc = j.at("location");
+    std::variant<FullID, FlowGraphLocation> location;
+    if (loc.is_array()) {
+      location = loc.get<FullID>();
+    } else {
+      location = FlowGraphLocation{
+        loc.at("x").get<int>(),
+        loc.at("y").get<int>(),
+        loc.at("z").get<int>(),
+        loc.at("width").get<int>(),
+        loc.at("height").get<int>(),
+      };
+    }
+    auto severity = static_cast<api::DiagnosticSeverity>(j.at("severity").get<int>());
+    return {location, severity, j.at("message").get<std::string>()};
+  }
+
+  template <>
+  api::Diagnostics fromJson<api::Diagnostics>(const nlohmann::json& j) {
+    std::vector<api::ModuleDiagnostic> diagnostics;
+    for (const auto& elem : j.at("diagnostics")) {
+      diagnostics.push_back(fromJson<api::ModuleDiagnostic>(elem));
+    }
+    return {diagnostics};
   }
 
 }  // namespace fluir::lsp

@@ -89,6 +89,32 @@ export interface SelectedCompletion {
 |-------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | text  | The full text of the completion to insert with tags ${FLUIR_LOCATION} and ${FLUIR_ID} for the editor to insert the appropriate location and ID for the new element |
 
+## RequestDiagnostics
+
+### Request - RequestDiagnostics
+
+```typescript
+export interface RequestDiagnostics {
+    path: string;
+}
+```
+
+| Field | Description                                       |
+|-------|---------------------------------------------------|
+| path  | The path to the module to request diagnostics for |
+
+### Response - Diagnostics
+
+```typescript
+export interface Diagnostics {
+    diagnostics: ModuleDiagnostic[];
+}
+```
+
+| Field       | Description                               |
+|-------------|-------------------------------------------|
+| diagnostics | All diagnostics produced in this document |
+
 # Types
 
 ## CompletionKind
@@ -114,6 +140,19 @@ export interface CompletionOption {
 }
 ```
 
+## DiagnosticSeverity
+
+```typescript
+export namespace DiagnosticSeverity {
+    export const Error = 1;
+    export const Warning = 2;
+    export const Information = 3;
+    export const Hint = 4;
+}
+
+export type DiagnosticSeverity = 1 | 2 | 3 | 4;
+```
+
 ## DocumentSymbol
 
 ```typescript
@@ -125,10 +164,32 @@ export interface DocumentSymbol {
 };
 ```
 
+## FlowGraphLocation
+
+```typescript
+export interface FlowGraphLocation {
+    x: number;
+    y: number;
+    z: number;
+    width: number;
+    height: number;
+}
+```
+
 ## FullID
 
 ```typescript
 export type FullId = number[];
+```
+
+## ModuleDiagnostic
+
+```typescript
+export interface ModuleDiagnostic {
+    location: FullID | FlowGraphLocation;
+    severity: DiagnosticSeverity;
+    message: string;
+}
 ```
 
 ## TaggedDocumentSymbol

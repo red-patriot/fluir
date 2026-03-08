@@ -6,22 +6,10 @@ using namespace fluir::lsp;
 
 // --- Lifecycle ---
 
-TEST(JsonSerialize, InitRequest) {
-  api::InitRequest req{};
-  auto result = toJson(req);
-  EXPECT_EQ(result, nlohmann::json::object());
-}
-
 TEST(JsonSerialize, InitResponse) {
   api::InitResponse resp{"1.2.3"};
   auto result = toJson(resp);
   EXPECT_EQ(result["version"], "1.2.3");
-}
-
-TEST(JsonSerialize, ShutdownRequest) {
-  api::ShutdownRequest req{};
-  auto result = toJson(req);
-  EXPECT_EQ(result, nlohmann::json::object());
 }
 
 TEST(JsonSerialize, ShutdownResponse) {
@@ -32,35 +20,16 @@ TEST(JsonSerialize, ShutdownResponse) {
 
 // --- Document ---
 
-TEST(JsonSerialize, OpenDocRequest) {
-  api::OpenDocRequest req{"path/to/file.fl", "content here"};
-  auto result = toJson(req);
-  EXPECT_EQ(result["path"], "path/to/file.fl");
-  EXPECT_EQ(result["content"], "content here");
-}
-
 TEST(JsonSerialize, OpenDocResponse) {
   api::OpenDocResponse resp{};
   auto result = toJson(resp);
   EXPECT_EQ(result, nlohmann::json::object());
 }
 
-TEST(JsonSerialize, CloseDocRequest) {
-  api::CloseDocRequest req{"path/to/file.fl"};
-  auto result = toJson(req);
-  EXPECT_EQ(result["path"], "path/to/file.fl");
-}
-
 TEST(JsonSerialize, CloseDocResponse) {
   api::CloseDocResponse resp{};
   auto result = toJson(resp);
   EXPECT_EQ(result, nlohmann::json::object());
-}
-
-TEST(JsonSerialize, DocEdit) {
-  api::DocEdit edit{"new contents"};
-  auto result = toJson(edit);
-  EXPECT_EQ(result["contents"], "new contents");
 }
 
 TEST(JsonSerialize, DocEditResponse) {
@@ -70,12 +39,6 @@ TEST(JsonSerialize, DocEditResponse) {
 }
 
 // --- Language ---
-
-TEST(JsonSerialize, DocumentSymbolRequest) {
-  api::DocumentSymbolRequest req{"path/to/file.fl"};
-  auto result = toJson(req);
-  EXPECT_EQ(result["path"], "path/to/file.fl");
-}
 
 TEST(JsonSerialize, DocumentSymbolNoOptionals) {
   api::DocumentSymbol sym{"myFunc", std::nullopt, std::nullopt, std::nullopt};
@@ -140,25 +103,6 @@ TEST(JsonSerialize, DocumentSymbolsTwoElements) {
   EXPECT_EQ(result["symbols"][1]["symbol"]["name"], "bar");
 }
 
-TEST(JsonSerialize, CompletionsRequest) {
-  fluir::FullID parentBlock{5, 6};
-  api::CompletionsRequest req{parentBlock, api::CompletionsRequest::Context::BODY};
-  auto result = toJson(req);
-
-  ASSERT_TRUE(result["parentBlock"].is_array());
-  EXPECT_EQ(result["parentBlock"].size(), 2u);
-  EXPECT_EQ(result["parentBlock"][0], 5u);
-  EXPECT_EQ(result["parentBlock"][1], 6u);
-  EXPECT_EQ(result["context"], static_cast<int>(api::CompletionsRequest::Context::BODY));
-}
-
-TEST(JsonSerialize, CompletionsRequestHeaderContext) {
-  fluir::FullID parentBlock{1};
-  api::CompletionsRequest req{parentBlock, api::CompletionsRequest::Context::HEADER};
-  auto result = toJson(req);
-  EXPECT_EQ(result["context"], static_cast<int>(api::CompletionsRequest::Context::HEADER));
-}
-
 TEST(JsonSerialize, CompletionOptionNoDetail) {
   api::CompletionOption opt{"myFunc", api::CompletionKind::FUNCTION_DEF, std::nullopt};
   auto result = toJson(opt);
@@ -194,27 +138,10 @@ TEST(JsonSerialize, CompletionPossibilitiesTwoOptions) {
   EXPECT_EQ(result["completions"][1]["label"], "bar");
 }
 
-TEST(JsonSerialize, SelectCompletion) {
-  fluir::FullID parentBlock{7, 8, 9};
-  api::SelectCompletion sel{parentBlock, "mySelected"};
-  auto result = toJson(sel);
-
-  ASSERT_TRUE(result["parentBlock"].is_array());
-  EXPECT_EQ(result["parentBlock"].size(), 3u);
-  EXPECT_EQ(result["parentBlock"][0], 7u);
-  EXPECT_EQ(result["selected"], "mySelected");
-}
-
 TEST(JsonSerialize, SelectedCompletion) {
   api::SelectedCompletion sel{"some text"};
   auto result = toJson(sel);
   EXPECT_EQ(result["text"], "some text");
-}
-
-TEST(JsonSerialize, RequestDiagnostics) {
-  api::RequestDiagnostics req{"path/to/file.fl"};
-  auto result = toJson(req);
-  EXPECT_EQ(result["path"], "path/to/file.fl");
 }
 
 TEST(JsonSerialize, ModuleDiagnosticWithId) {
@@ -269,119 +196,46 @@ TEST(FromJson, InitRequest) {
   (void)result;  // empty struct; just verify it compiles and doesn't throw
 }
 
-TEST(FromJson, InitResponse) {
-  api::InitResponse orig{"1.2.3"};
-  auto result = fromJson<api::InitResponse>(toJson(orig));
-  EXPECT_EQ(result.version, "1.2.3");
-}
-
 TEST(FromJson, ShutdownRequest) {
   auto result = fromJson<api::ShutdownRequest>(nlohmann::json::object());
   (void)result;
 }
 
-TEST(FromJson, ShutdownResponse) {
-  auto result = fromJson<api::ShutdownResponse>(nlohmann::json::object());
-  (void)result;
-}
-
 TEST(FromJson, OpenDocRequest) {
-  api::OpenDocRequest orig{"path/to/file.fl", "content here"};
-  auto result = fromJson<api::OpenDocRequest>(toJson(orig));
+  nlohmann::json j;
+  j["path"] = "path/to/file.fl";
+  j["content"] = "content here";
+  auto result = fromJson<api::OpenDocRequest>(j);
   EXPECT_EQ(result.path, "path/to/file.fl");
   EXPECT_EQ(result.content, "content here");
 }
 
-TEST(FromJson, OpenDocResponse) {
-  auto result = fromJson<api::OpenDocResponse>(nlohmann::json::object());
-  (void)result;
-}
-
 TEST(FromJson, CloseDocRequest) {
-  api::CloseDocRequest orig{"path/to/file.fl"};
-  auto result = fromJson<api::CloseDocRequest>(toJson(orig));
+  nlohmann::json j;
+  j["path"] = "path/to/file.fl";
+  auto result = fromJson<api::CloseDocRequest>(j);
   EXPECT_EQ(result.path, "path/to/file.fl");
-}
-
-TEST(FromJson, CloseDocResponse) {
-  auto result = fromJson<api::CloseDocResponse>(nlohmann::json::object());
-  (void)result;
 }
 
 TEST(FromJson, DocEdit) {
-  api::DocEdit orig{"new contents"};
-  auto result = fromJson<api::DocEdit>(toJson(orig));
+  nlohmann::json j;
+  j["contents"] = "new contents";
+  auto result = fromJson<api::DocEdit>(j);
   EXPECT_EQ(result.contents, "new contents");
 }
 
-TEST(FromJson, DocEditResponse) {
-  auto result = fromJson<api::DocEditResponse>(nlohmann::json::object());
-  (void)result;
-}
-
 TEST(FromJson, DocumentSymbolRequest) {
-  api::DocumentSymbolRequest orig{"path/to/file.fl"};
-  auto result = fromJson<api::DocumentSymbolRequest>(toJson(orig));
+  nlohmann::json j;
+  j["path"] = "path/to/file.fl";
+  auto result = fromJson<api::DocumentSymbolRequest>(j);
   EXPECT_EQ(result.path, "path/to/file.fl");
 }
 
-TEST(FromJson, DocumentSymbolNoOptionals) {
-  api::DocumentSymbol orig{"myFunc", std::nullopt, std::nullopt, std::nullopt};
-  auto result = fromJson<api::DocumentSymbol>(toJson(orig));
-  EXPECT_EQ(result.name, "myFunc");
-  EXPECT_FALSE(result.detail.has_value());
-  EXPECT_FALSE(result.outType.has_value());
-  EXPECT_FALSE(result.inType.has_value());
-}
-
-TEST(FromJson, DocumentSymbolAllOptionals) {
-  api::DocumentSymbol orig{
-    "myFunc",
-    std::optional<std::string>{"some detail"},
-    std::optional<std::string>{"F64"},
-    std::optional<std::vector<std::string>>{{"I32", "I64"}},
-  };
-  auto result = fromJson<api::DocumentSymbol>(toJson(orig));
-  EXPECT_EQ(result.name, "myFunc");
-  ASSERT_TRUE(result.detail.has_value());
-  EXPECT_EQ(*result.detail, "some detail");
-  ASSERT_TRUE(result.outType.has_value());
-  EXPECT_EQ(*result.outType, "F64");
-  ASSERT_TRUE(result.inType.has_value());
-  ASSERT_EQ(result.inType->size(), 2u);
-  EXPECT_EQ((*result.inType)[0], "I32");
-  EXPECT_EQ((*result.inType)[1], "I64");
-}
-
-TEST(FromJson, TaggedDocumentSymbol) {
-  fluir::FullID id{1, 2, 3};
-  api::DocumentSymbol sym{"block", std::nullopt, std::nullopt, std::nullopt};
-  api::TaggedDocumentSymbol orig{id, sym};
-  auto result = fromJson<api::TaggedDocumentSymbol>(toJson(orig));
-  ASSERT_EQ(result.id.size(), 3u);
-  EXPECT_EQ(result.id[0], 1u);
-  EXPECT_EQ(result.id[1], 2u);
-  EXPECT_EQ(result.id[2], 3u);
-  EXPECT_EQ(result.symbol.name, "block");
-}
-
-TEST(FromJson, DocumentSymbols) {
-  api::DocumentSymbol sym1{"foo", std::nullopt, std::nullopt, std::nullopt};
-  api::DocumentSymbol sym2{"bar", std::nullopt, std::nullopt, std::nullopt};
-  api::DocumentSymbols orig{{
-    api::TaggedDocumentSymbol{fluir::FullID{10}, sym1},
-    api::TaggedDocumentSymbol{fluir::FullID{20}, sym2},
-  }};
-  auto result = fromJson<api::DocumentSymbols>(toJson(orig));
-  ASSERT_EQ(result.symbols.size(), 2u);
-  EXPECT_EQ(result.symbols[0].symbol.name, "foo");
-  EXPECT_EQ(result.symbols[1].symbol.name, "bar");
-}
-
 TEST(FromJson, CompletionsRequestBody) {
-  fluir::FullID parentBlock{5, 6};
-  api::CompletionsRequest orig{parentBlock, api::CompletionsRequest::Context::BODY};
-  auto result = fromJson<api::CompletionsRequest>(toJson(orig));
+  nlohmann::json j;
+  j["parentBlock"] = nlohmann::json::array({uint64_t{5}, uint64_t{6}});
+  j["context"] = static_cast<int>(api::CompletionsRequest::Context::BODY);
+  auto result = fromJson<api::CompletionsRequest>(j);
   ASSERT_EQ(result.parentBlock.size(), 2u);
   EXPECT_EQ(result.parentBlock[0], 5u);
   EXPECT_EQ(result.parentBlock[1], 6u);
@@ -389,51 +243,18 @@ TEST(FromJson, CompletionsRequestBody) {
 }
 
 TEST(FromJson, CompletionsRequestHeader) {
-  fluir::FullID parentBlock{1};
-  api::CompletionsRequest orig{parentBlock, api::CompletionsRequest::Context::HEADER};
-  auto result = fromJson<api::CompletionsRequest>(toJson(orig));
+  nlohmann::json j;
+  j["parentBlock"] = nlohmann::json::array({uint64_t{1}});
+  j["context"] = static_cast<int>(api::CompletionsRequest::Context::HEADER);
+  auto result = fromJson<api::CompletionsRequest>(j);
   EXPECT_EQ(result.context, api::CompletionsRequest::Context::HEADER);
 }
 
-TEST(FromJson, CompletionOptionNoDetail) {
-  api::CompletionOption orig{"myFunc", api::CompletionKind::FUNCTION_DEF, std::nullopt};
-  auto result = fromJson<api::CompletionOption>(toJson(orig));
-  EXPECT_EQ(result.label, "myFunc");
-  EXPECT_EQ(result.kind, api::CompletionKind::FUNCTION_DEF);
-  EXPECT_FALSE(result.detail.has_value());
-}
-
-TEST(FromJson, CompletionOptionWithDetail) {
-  api::CompletionOption orig{"add", api::CompletionKind::CALL, std::optional<std::string>{"adds two numbers"}};
-  auto result = fromJson<api::CompletionOption>(toJson(orig));
-  EXPECT_EQ(result.label, "add");
-  EXPECT_EQ(result.kind, api::CompletionKind::CALL);
-  ASSERT_TRUE(result.detail.has_value());
-  EXPECT_EQ(*result.detail, "adds two numbers");
-}
-
-TEST(FromJson, CompletionPossibilitiesEmpty) {
-  api::CompletionPossibilities orig{true, {}};
-  auto result = fromJson<api::CompletionPossibilities>(toJson(orig));
-  EXPECT_EQ(result.isComplete, true);
-  EXPECT_TRUE(result.completions.empty());
-}
-
-TEST(FromJson, CompletionPossibilitiesWithOptions) {
-  api::CompletionOption opt1{"foo", api::CompletionKind::FUNCTION_DEF, std::nullopt};
-  api::CompletionOption opt2{"bar", api::CompletionKind::CONSTANT, std::nullopt};
-  api::CompletionPossibilities orig{false, {opt1, opt2}};
-  auto result = fromJson<api::CompletionPossibilities>(toJson(orig));
-  EXPECT_EQ(result.isComplete, false);
-  ASSERT_EQ(result.completions.size(), 2u);
-  EXPECT_EQ(result.completions[0].label, "foo");
-  EXPECT_EQ(result.completions[1].label, "bar");
-}
-
 TEST(FromJson, SelectCompletion) {
-  fluir::FullID parentBlock{7, 8, 9};
-  api::SelectCompletion orig{parentBlock, "mySelected"};
-  auto result = fromJson<api::SelectCompletion>(toJson(orig));
+  nlohmann::json j;
+  j["parentBlock"] = nlohmann::json::array({uint64_t{7}, uint64_t{8}, uint64_t{9}});
+  j["selected"] = "mySelected";
+  auto result = fromJson<api::SelectCompletion>(j);
   ASSERT_EQ(result.parentBlock.size(), 3u);
   EXPECT_EQ(result.parentBlock[0], 7u);
   EXPECT_EQ(result.parentBlock[1], 8u);
@@ -441,57 +262,9 @@ TEST(FromJson, SelectCompletion) {
   EXPECT_EQ(result.selected, "mySelected");
 }
 
-TEST(FromJson, SelectedCompletion) {
-  api::SelectedCompletion orig{"some text"};
-  auto result = fromJson<api::SelectedCompletion>(toJson(orig));
-  EXPECT_EQ(result.text, "some text");
-}
-
 TEST(FromJson, RequestDiagnostics) {
-  api::RequestDiagnostics orig{"path/to/file.fl"};
-  auto result = fromJson<api::RequestDiagnostics>(toJson(orig));
+  nlohmann::json j;
+  j["path"] = "path/to/file.fl";
+  auto result = fromJson<api::RequestDiagnostics>(j);
   EXPECT_EQ(result.path, "path/to/file.fl");
-}
-
-TEST(FromJson, ModuleDiagnosticWithId) {
-  fluir::FullID id{10, 20};
-  api::ModuleDiagnostic orig{id, api::DiagnosticSeverity::ERROR, "error message"};
-  auto result = fromJson<api::ModuleDiagnostic>(toJson(orig));
-  ASSERT_TRUE(std::holds_alternative<fluir::FullID>(result.location));
-  const auto& resId = std::get<fluir::FullID>(result.location);
-  ASSERT_EQ(resId.size(), 2u);
-  EXPECT_EQ(resId[0], 10u);
-  EXPECT_EQ(resId[1], 20u);
-  EXPECT_EQ(result.severity, api::DiagnosticSeverity::ERROR);
-  EXPECT_EQ(result.message, "error message");
-}
-
-TEST(FromJson, ModuleDiagnosticWithLocation) {
-  fluir::FlowGraphLocation loc{10, 20, 0, 100, 50};
-  api::ModuleDiagnostic orig{loc, api::DiagnosticSeverity::INFORMATION, "info"};
-  auto result = fromJson<api::ModuleDiagnostic>(toJson(orig));
-  ASSERT_TRUE(std::holds_alternative<fluir::FlowGraphLocation>(result.location));
-  const auto& resLoc = std::get<fluir::FlowGraphLocation>(result.location);
-  EXPECT_EQ(resLoc.x, 10);
-  EXPECT_EQ(resLoc.y, 20);
-  EXPECT_EQ(resLoc.z, 0);
-  EXPECT_EQ(resLoc.width, 100);
-  EXPECT_EQ(resLoc.height, 50);
-  EXPECT_EQ(result.severity, api::DiagnosticSeverity::INFORMATION);
-  EXPECT_EQ(result.message, "info");
-}
-
-TEST(FromJson, Diagnostics) {
-  fluir::FullID id{5};
-  fluir::FlowGraphLocation loc{1, 2, 3, 4, 5};
-  api::Diagnostics orig{{
-    api::ModuleDiagnostic{id, api::DiagnosticSeverity::ERROR, "err"},
-    api::ModuleDiagnostic{loc, api::DiagnosticSeverity::WARNING, "warn"},
-  }};
-  auto result = fromJson<api::Diagnostics>(toJson(orig));
-  ASSERT_EQ(result.diagnostics.size(), 2u);
-  EXPECT_TRUE(std::holds_alternative<fluir::FullID>(result.diagnostics[0].location));
-  EXPECT_TRUE(std::holds_alternative<fluir::FlowGraphLocation>(result.diagnostics[1].location));
-  EXPECT_EQ(result.diagnostics[0].message, "err");
-  EXPECT_EQ(result.diagnostics[1].message, "warn");
 }

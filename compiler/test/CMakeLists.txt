@@ -50,11 +50,12 @@ target_include_directories(
 
 target_compile_definitions(
     fluir.compiler.test
-    PRIVATE "TEST_FOLDER=std::filesystem::path(\"${CMAKE_CURRENT_SOURCE_DIR}\")"
+    PRIVATE "ROOT_COMPILER_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\""
 )
 target_link_libraries(
     fluir.compiler.test
     PRIVATE fluir::compiler
+            fluir::utility
             GTest::gtest
             GTest::gtest_main
 )

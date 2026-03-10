@@ -31,7 +31,7 @@ class TestTypeError : public ::testing::TestWithParam<fs::path> {
 
 TEST_P(TestTypeError, Test) {
   const fs::path programFile = GetParam();
-  const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
+  const auto errorsFile = fluir::test::getGoldenFile(programFile, ".errors");
   const auto errors = fluir::test::getErrors(errorsFile);
 
   auto results = generateAndTypeCheck(programFile);

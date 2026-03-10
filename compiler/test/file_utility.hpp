@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include "compiler/utility/diagnostic/code.hpp"
+#include "fluir/testing/test_files_dir.hpp"
 
 namespace fluir::test {
   inline std::string readContents(const std::filesystem::path& file) {
@@ -15,6 +16,15 @@ namespace fluir::test {
     std::stringstream ss;
     ss << fin.rdbuf();
     return ss.str();
+  }
+
+  inline std::filesystem::path getGoldenFile(const std::filesystem::path& absoluteCode,
+                                             std::string_view errorsExtension) {
+    static const std::filesystem::path PROGRAMS_ERRORS_DIR = std::filesystem::path{ROOT_COMPILER_TEST_DIR} / "programs";
+    auto relativeCodePath = fluir::test::getRelativePath(absoluteCode);
+    auto errorsPath = relativeCodePath.replace_extension(errorsExtension);
+    auto absErrorsPath = PROGRAMS_ERRORS_DIR / errorsPath;
+    return absErrorsPath;
   }
 
   inline std::vector<diagnostic::Code> getErrors(const std::filesystem::path& file) {
@@ -34,19 +44,6 @@ namespace fluir::test {
       }
     }
     return errors;
-  }
-
-  inline std::vector<std::filesystem::path> getTestPrograms(const std::filesystem::path& relative) {
-    std::filesystem::path absoluteParent = TEST_FOLDER / "programs" / relative;
-    std::vector<std::filesystem::path> programs;
-
-    for (const auto& entry : std::filesystem::directory_iterator(absoluteParent)) {
-      if (std::filesystem::is_regular_file(entry) && std::filesystem::path(entry).extension() == ".fl") {
-        programs.emplace_back(entry.path());
-      }
-    }
-
-    return programs;
   }
 
   inline std::string filePathName(const ::testing::TestParamInfo<std::filesystem::path>& info) {

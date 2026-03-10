@@ -21,7 +21,7 @@ class TestParser : public ::testing::TestWithParam<fs::path> {
 };
 
 TEST_F(TestParser, TestNonexistentFile) {
-  const fs::path programFile = TEST_FOLDER / "nonexistent.fl";
+  const fs::path programFile = "./nonexistent.fl";
 
   auto results = fluir::parseFile(ctx, programFile);
 
@@ -31,7 +31,7 @@ TEST_F(TestParser, TestNonexistentFile) {
 
 TEST_P(TestParser, Test) {
   const fs::path programFile = GetParam();
-  const auto outputFile = fs::path{programFile}.replace_extension(".pt");
+  const auto outputFile = fluir::test::getGoldenFile(programFile, ".pt");
   const auto expected = fluir::test::readContents(outputFile);
 
   auto results = fluir::parseFile(ctx, programFile);

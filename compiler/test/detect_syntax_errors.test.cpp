@@ -20,7 +20,7 @@ class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
 
 TEST_P(TestDetectSyntaxError, Test) {
   const auto programFile = GetParam();
-  const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
+  const auto errorsFile = fluir::test::getGoldenFile(programFile, ".errors");
   const auto errors = fluir::test::getErrors(errorsFile);
 
   fluir::Parser uut{ctx};

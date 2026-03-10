@@ -29,6 +29,7 @@ option(
     ${PROJECT_IS_TOP_LEVEL}
 )
 
+set(TEST_PROGRAMS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test_programs")
 create_version_files()
 
 add_subdirectory(bytecode)

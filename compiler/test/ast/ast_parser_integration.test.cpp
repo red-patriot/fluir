@@ -15,7 +15,7 @@ class TestAstParserIntegration : public ::testing::TestWithParam<fs::path> { };
 
 TEST_P(TestAstParserIntegration, Test) {
   const auto& programFile = GetParam();
-  const auto outputFile = fs::path{programFile}.replace_extension(".ast");
+  const auto outputFile = fluir::test::getGoldenFile(programFile, ".ast");
   const auto expected = fluir::test::readContents(outputFile);
 
   fluir::test::TestDiagnosticSink sink{};

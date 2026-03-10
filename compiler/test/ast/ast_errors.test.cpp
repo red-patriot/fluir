@@ -28,7 +28,7 @@ class TestASTError : public ::testing::TestWithParam<fs::path> {
 
 TEST_P(TestASTError, Test) {
   const fs::path programFile = GetParam();
-  const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
+  const auto errorsFile = fluir::test::getGoldenFile(programFile, ".errors");
   const auto errors = fluir::test::getErrors(errorsFile);
 
   auto results = buildGraph(programFile);

@@ -12,24 +12,24 @@
 #include <compiler/models/location.hpp>
 
 namespace fluir::lsp::api {
-  struct DocumentSymbolRequest {
+  struct SymbolRequest {
     std::string path;
   };
 
-  struct DocumentSymbol {
+  struct Symbol {
     std::string name;
     std::optional<std::string> detail;
     std::optional<std::string> outType;
     std::optional<std::vector<std::string> > inType;
   };
 
-  struct TaggedDocumentSymbol {
+  struct TaggedSymbol {
     FullID id;
-    DocumentSymbol symbol;
+    Symbol symbol;
   };
 
-  struct DocumentSymbols {
-    std::vector<TaggedDocumentSymbol> symbols;
+  struct Symbols {
+    std::vector<TaggedSymbol> symbols;
   };
 
   struct CompletionsRequest {

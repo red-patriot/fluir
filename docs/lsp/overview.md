@@ -34,12 +34,12 @@ changes the editor is making.
 These messages provide intelligent language features, such as code completion, tooltips, diagnostics, and type
 information. The editor will request information from the server as needed based on the open document(s).
 
-| Request                 | Response                  | Description                                                                       |
-|-------------------------|---------------------------|-----------------------------------------------------------------------------------|
-| `DocumentSymbolRequest` | `DocumentSymbols`         | Request information about symbols in a document.                                  |
-| `CompletionsRequest`    | `CompletionPossibilities` | Provides information about inserting new nodes at a given location.               |
-| `SelectCompletion`      | `SelectedCompletion`      | Selects a completion option and gets its actual text to insert into the document. |
-| `RequestDiagnostics`    | `Diagnostics`             | Explicit request for diagnostics of a module                                      |
+| Request              | Response                  | Description                                                                       |
+|----------------------|---------------------------|-----------------------------------------------------------------------------------|
+| `SymbolRequest`      | `Symbols`                 | Request information about symbols in a document.                                  |
+| `CompletionsRequest` | `CompletionPossibilities` | Provides information about inserting new nodes at a given location.               |
+| `SelectCompletion`   | `SelectedCompletion`      | Selects a completion option and gets its actual text to insert into the document. |
+| `RequestDiagnostics` | `Diagnostics`             | Explicit request for diagnostics of a module                                      |
 
 ## Message Structure
 

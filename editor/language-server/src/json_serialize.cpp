@@ -22,7 +22,7 @@ namespace fluir::lsp {
 
   // --- Language ---
 
-  nlohmann::json toJson(const api::DocumentSymbol& s) {
+  nlohmann::json toJson(const api::Symbol& s) {
     auto obj = nlohmann::json::object();
     obj["name"] = s.name;
     if (s.detail) {
@@ -41,7 +41,7 @@ namespace fluir::lsp {
     return obj;
   }
 
-  nlohmann::json toJson(const api::TaggedDocumentSymbol& s) {
+  nlohmann::json toJson(const api::TaggedSymbol& s) {
     auto obj = nlohmann::json::object();
     auto idArr = nlohmann::json::array();
     for (auto id : s.id) {
@@ -52,7 +52,7 @@ namespace fluir::lsp {
     return obj;
   }
 
-  nlohmann::json toJson(const api::DocumentSymbols& s) {
+  nlohmann::json toJson(const api::Symbols& s) {
     auto obj = nlohmann::json::object();
     auto arr = nlohmann::json::array();
     for (const auto& sym : s.symbols) {
@@ -160,7 +160,7 @@ namespace fluir::lsp {
   // Language
 
   template <>
-  api::DocumentSymbolRequest fromJson<api::DocumentSymbolRequest>(const nlohmann::json& j) {
+  api::SymbolRequest fromJson<api::SymbolRequest>(const nlohmann::json& j) {
     return {j.at("path").get<std::string>()};
   }
 

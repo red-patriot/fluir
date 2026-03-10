@@ -3,14 +3,14 @@
 This document describes the requests and responses sent in the Fluir LSP to provide language intelligence
 to the editor.
 
-## DocumentSymbolRequest
+## SymbolRequest
 
 Requests information on the symbols in a document.
 
-### Request - DocumentSymbolRequest
+### Request - SymbolRequest
 
 ```typescript
-export interface DocumentSymbolRequest {
+export interface SymbolRequest {
     path: string;
 }
 ```
@@ -19,11 +19,11 @@ export interface DocumentSymbolRequest {
 |--------|------------------------------------|
 | `path` | The canonical path to the document |
 
-### Response - DocumentSymbols
+### Response - Symbols
 
 ```typescript
-export interface DocumentSymbols {
-    symbols: TaggedDocumentSymbol[];
+export interface Symbols {
+    symbols: TaggedSymbol[];
 };
 ```
 
@@ -153,10 +153,10 @@ export namespace DiagnosticSeverity {
 export type DiagnosticSeverity = 1 | 2 | 3 | 4;
 ```
 
-## DocumentSymbol
+## Symbol
 
 ```typescript
-export interface DocumentSymbol {
+export interface Symbol {
     name: string;
     detail?: string;
     outType?: string;
@@ -192,11 +192,11 @@ export interface ModuleDiagnostic {
 }
 ```
 
-## TaggedDocumentSymbol
+## TaggedSymbol
 
 ```typescript
-export interface TaggedDocumentSymbol {
+export interface TaggedSymbol {
     id: FullId;
-    symbol: DocumentSymbol;
+    symbol: Symbol;
 }
 ```

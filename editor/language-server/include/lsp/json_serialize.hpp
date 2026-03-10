@@ -16,9 +16,9 @@ namespace fluir::lsp {
   nlohmann::json toJson(const api::CloseDocResponse&);
   nlohmann::json toJson(const api::DocEditResponse&);
   // Language
-  nlohmann::json toJson(const api::DocumentSymbol&);
-  nlohmann::json toJson(const api::TaggedDocumentSymbol&);
-  nlohmann::json toJson(const api::DocumentSymbols&);
+  nlohmann::json toJson(const api::Symbol&);
+  nlohmann::json toJson(const api::TaggedSymbol&);
+  nlohmann::json toJson(const api::Symbols&);
   nlohmann::json toJson(const api::CompletionOption&);
   nlohmann::json toJson(const api::CompletionPossibilities&);
   nlohmann::json toJson(const api::SelectedCompletion&);
@@ -42,7 +42,7 @@ namespace fluir::lsp {
   api::DocEdit fromJson<api::DocEdit>(const nlohmann::json&);
   // Language
   template <>
-  api::DocumentSymbolRequest fromJson<api::DocumentSymbolRequest>(const nlohmann::json&);
+  api::SymbolRequest fromJson<api::SymbolRequest>(const nlohmann::json&);
   template <>
   api::CompletionsRequest fromJson<api::CompletionsRequest>(const nlohmann::json&);
   template <>

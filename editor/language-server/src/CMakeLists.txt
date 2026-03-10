@@ -13,7 +13,10 @@ include(strict-warnings)
 
 add_library(fluir.liblsp STATIC)
 
-target_sources(fluir.liblsp PRIVATE "json_serialize.cpp")
+set(FLUIR_LSP_SOURCES "database/in_memory_db.cpp")
+
+target_sources(fluir.liblsp PRIVATE "json_serialize.cpp" ${FLUIR_LSP_SOURCES})
+
 target_include_directories(
     fluir.liblsp PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
 )

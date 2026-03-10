@@ -41,7 +41,7 @@ TEST(JsonSerialize, DocEditResponse) {
 // --- Language ---
 
 TEST(JsonSerialize, DocumentSymbolNoOptionals) {
-  api::DocumentSymbol sym{"myFunc", std::nullopt, std::nullopt, std::nullopt};
+  api::Symbol sym{"myFunc", std::nullopt, std::nullopt, std::nullopt};
   auto result = toJson(sym);
   EXPECT_EQ(result["name"], "myFunc");
   EXPECT_FALSE(result.contains("detail"));
@@ -50,7 +50,7 @@ TEST(JsonSerialize, DocumentSymbolNoOptionals) {
 }
 
 TEST(JsonSerialize, DocumentSymbolAllOptionals) {
-  api::DocumentSymbol sym{
+  api::Symbol sym{
     "myFunc",
     std::optional<std::string>{"some detail"},
     std::optional<std::string>{"F64"},
@@ -68,8 +68,8 @@ TEST(JsonSerialize, DocumentSymbolAllOptionals) {
 
 TEST(JsonSerialize, TaggedDocumentSymbol) {
   fluir::FullID id{1, 2, 3};
-  api::DocumentSymbol sym{"block", std::nullopt, std::nullopt, std::nullopt};
-  api::TaggedDocumentSymbol tagged{id, sym};
+  api::Symbol sym{"block", std::nullopt, std::nullopt, std::nullopt};
+  api::TaggedSymbol tagged{id, sym};
   auto result = toJson(tagged);
 
   ASSERT_TRUE(result["id"].is_array());
@@ -82,20 +82,20 @@ TEST(JsonSerialize, TaggedDocumentSymbol) {
 }
 
 TEST(JsonSerialize, DocumentSymbolsEmpty) {
-  api::DocumentSymbols syms{{}};
+  api::Symbols syms{{}};
   auto result = toJson(syms);
   ASSERT_TRUE(result["symbols"].is_array());
   EXPECT_EQ(result["symbols"].size(), 0u);
 }
 
 TEST(JsonSerialize, DocumentSymbolsTwoElements) {
-  api::DocumentSymbol sym1{"foo", std::nullopt, std::nullopt, std::nullopt};
-  api::DocumentSymbol sym2{"bar", std::nullopt, std::nullopt, std::nullopt};
+  api::Symbol sym1{"foo", std::nullopt, std::nullopt, std::nullopt};
+  api::Symbol sym2{"bar", std::nullopt, std::nullopt, std::nullopt};
   fluir::FullID id1{10};
   fluir::FullID id2{20};
-  api::DocumentSymbols syms{{
-    api::TaggedDocumentSymbol{id1, sym1},
-    api::TaggedDocumentSymbol{id2, sym2},
+  api::Symbols syms{{
+    api::TaggedSymbol{id1, sym1},
+    api::TaggedSymbol{id2, sym2},
   }};
   auto result = toJson(syms);
   ASSERT_EQ(result["symbols"].size(), 2u);
@@ -227,7 +227,7 @@ TEST(FromJson, DocEdit) {
 TEST(FromJson, DocumentSymbolRequest) {
   nlohmann::json j;
   j["path"] = "path/to/file.fl";
-  auto result = fromJson<api::DocumentSymbolRequest>(j);
+  auto result = fromJson<api::SymbolRequest>(j);
   EXPECT_EQ(result.path, "path/to/file.fl");
 }
 

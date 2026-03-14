@@ -90,12 +90,12 @@ namespace fluir::lsp {
     return *files_.at(file).resolveCache;
   }
 
-  // std::span<const api::ModuleDiagnostic> InMemoryDB::diagnostics(const std::filesystem::path& file) {
-  //   if (!files_.contains(file)) {
-  //     throw std::runtime_error("Database does not contain the given file");
-  //   }
-  //
-  //   return files_.at(file).diagnostics;
-  // }
+  std::span<const api::ModuleDiagnostic> InMemoryDB::diagnostics(const std::filesystem::path& file) {
+    if (!files_.contains(file)) {
+      throw std::runtime_error("Database does not contain the given file");
+    }
+
+    return files_.at(file).diagnostics;
+  }
 
 }  // namespace fluir::lsp

@@ -47,22 +47,26 @@ INSTANTIATE_TEST_SUITE_P(TestInMemoryTypeChecking,
                          ::testing::ValuesIn(fluir::test::getTestPrograms("type_check")),
                          fluir::test::filePathName);
 
-// using TestInMemoryHandlesDiagnostics = TestInMemoryDb;
-//
-// TEST_P(TestInMemoryHandlesDiagnostics, Test) {
-//   const auto& testFile = GetParam();
-//   auto contents = fluir::test::readContents(testFile);
-//
-//   fluir::lsp::InMemoryDB uut{testOptions_};
-//
-//   uut.setFileContents(testFile, std::move(contents));
-//
-//   const auto& diagnostics = uut.diagnostics(testFile);
-//
-//   EXPECT_FALSE(diagnostics.empty());
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TestInMemoryHandlesDiagnostics,
-//                          TestInMemoryHandlesDiagnostics,
-//                          ::testing::ValuesIn(fluir::test::getTestPrograms("syntax_error")),
-//                          fluir::test::filePathName);
+class TestInMemoryHandlesDiagnostics : public ::testing::TestWithParam<fs::path> {
+ public:
+  // Test files are unversioned, so just ignore version errors...
+  fluir::CompilerOptions testOptions_{};
+};
+
+TEST_P(TestInMemoryHandlesDiagnostics, Test) {
+  const auto& testFile = GetParam();
+  auto contents = fluir::test::readContents(testFile);
+
+  fluir::lsp::InMemoryDB uut{testOptions_};
+
+  uut.setFileContents(testFile, std::move(contents));
+
+  const auto& diagnostics = uut.diagnostics(testFile);
+
+  EXPECT_FALSE(diagnostics.empty());
+}
+
+INSTANTIATE_TEST_SUITE_P(TestInMemoryHandlesDiagnostics,
+                         TestInMemoryHandlesDiagnostics,
+                         ::testing::ValuesIn(fluir::test::getTestPrograms("syntax_error")),
+                         fluir::test::filePathName);

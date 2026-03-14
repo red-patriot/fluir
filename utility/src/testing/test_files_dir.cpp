@@ -1,6 +1,8 @@
 #include "fluir/testing/test_files_dir.hpp"
 
 #include <filesystem>
+#include <fstream>
+#include <sstream>
 #include <vector>
 
 namespace fluir::test {
@@ -21,5 +23,16 @@ namespace fluir::test {
 
   std::filesystem::path getRelativePath(const std::filesystem::path& programFile) {
     return std::filesystem::relative(programFile, ABSOLUTE_PROGRAMS_DIR);
+  }
+
+  std::string readContents(const std::filesystem::path& file) {
+    std::fstream fin(file);
+    std::stringstream ss;
+    ss << fin.rdbuf();
+    return ss.str();
+  }
+
+  std::string filePathName(const ::testing::TestParamInfo<std::filesystem::path>& info) {
+    return info.param.stem().string();
   }
 }  // namespace fluir::test

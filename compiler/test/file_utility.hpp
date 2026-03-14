@@ -11,13 +11,6 @@
 #include "fluir/testing/test_files_dir.hpp"
 
 namespace fluir::test {
-  inline std::string readContents(const std::filesystem::path& file) {
-    std::fstream fin(file);
-    std::stringstream ss;
-    ss << fin.rdbuf();
-    return ss.str();
-  }
-
   inline std::filesystem::path getGoldenFile(const std::filesystem::path& absoluteCode,
                                              std::string_view errorsExtension) {
     static const std::filesystem::path PROGRAMS_ERRORS_DIR = std::filesystem::path{ROOT_COMPILER_TEST_DIR} / "programs";
@@ -44,10 +37,6 @@ namespace fluir::test {
       }
     }
     return errors;
-  }
-
-  inline std::string filePathName(const ::testing::TestParamInfo<std::filesystem::path>& info) {
-    return info.param.stem().string();
   }
 }  // namespace fluir::test
 

@@ -26,6 +26,7 @@ target_link_libraries(
     PUBLIC asio::asio
            nlohmann_json::nlohmann_json
            fluir::compiler
+           fluir::utility
 )
 
 add_executable(fluir.lsp)

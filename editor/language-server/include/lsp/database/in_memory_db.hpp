@@ -8,6 +8,7 @@
 #include <compiler/frontend/parse_tree/parse_tree.hpp>
 #include <compiler/models/ast.hpp>
 #include <compiler/types/symbol_table.hpp>
+#include <compiler/utility/options.hpp>
 
 #include "lsp/api/language.hpp"
 
@@ -16,10 +17,12 @@ namespace fluir::lsp {
   /** A simple analysis database that stores data in memory */
   class InMemoryDB {
    public:
+    explicit InMemoryDB(const fluir::CompilerOptions& compilerOpts);
+
     // --- Inputs (set from outside) ---
     void setFileContents(std::filesystem::path file, std::string contents);
 
-    // --- Queries (derived, cached) ---
+    // --- Queries ---
     const fluir::pt::ParseTree& parsed(const std::filesystem::path& file);
     const fluir::ast::AST& resolved(const std::filesystem::path& file);
     const fluir::ast::AST& typechecked(const std::filesystem::path& file);
@@ -39,7 +42,8 @@ namespace fluir::lsp {
       std::optional<ast::AST> resolveCache;
       std::optional<fluir::types::SymbolTable> typecheckCache;
     };
-    std::unordered_map<std::filesystem::path, FileState> files_;
+    CompilerOptions options_;
+    std::unordered_map<std::filesystem::path, FileState> files_{};
   };
 }  // namespace fluir::lsp
 

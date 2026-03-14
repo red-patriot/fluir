@@ -27,7 +27,7 @@ namespace fluir::lsp {
     const fluir::ast::AST& resolved(const std::filesystem::path& file);
     const fluir::ast::AST& typechecked(const std::filesystem::path& file);
 
-    // --- Convenience queries (built on top) ---
+    // --- Convenience queries ---
     std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file);
     std::vector<api::Symbol> symbolsAt(const std::filesystem::path& file, FullID target);
     api::CompletionPossibilities completionsInBody(const std::filesystem::path& file, FullID target);
@@ -40,7 +40,8 @@ namespace fluir::lsp {
       std::string contents;
       std::optional<pt::ParseTree> parseCache;
       std::optional<ast::AST> resolveCache;
-      std::optional<fluir::types::SymbolTable> typecheckCache;
+      std::optional<types::SymbolTable> typecheckCache;
+      std::vector<api::ModuleDiagnostic> diagnostics;
     };
     CompilerOptions options_;
     std::unordered_map<std::filesystem::path, FileState> files_{};

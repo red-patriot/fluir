@@ -18,7 +18,7 @@ namespace fluir::lsp {
     files_.insert_or_assign(file, FileState{});
     auto& fileState = files_[file];
     fileState.contents = std::move(contents);
-    CompilerDiagnosticsShim sink;
+    CompilerDiagnosticsShim sink{fileState.diagnostics};
     Context compilerContext{.diagnosticSink = sink,
                             .symbolTable = types::buildSymbolTable(),
                             .currentFile = file,
@@ -89,5 +89,13 @@ namespace fluir::lsp {
 
     return *files_.at(file).resolveCache;
   }
+
+  // std::span<const api::ModuleDiagnostic> InMemoryDB::diagnostics(const std::filesystem::path& file) {
+  //   if (!files_.contains(file)) {
+  //     throw std::runtime_error("Database does not contain the given file");
+  //   }
+  //
+  //   return files_.at(file).diagnostics;
+  // }
 
 }  // namespace fluir::lsp

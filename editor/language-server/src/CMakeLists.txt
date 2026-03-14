@@ -13,7 +13,9 @@ include(strict-warnings)
 
 add_library(fluir.liblsp STATIC)
 
-set(FLUIR_LSP_SOURCES "database/in_memory_db.cpp")
+set(FLUIR_LSP_SOURCES "database/in_memory_db.cpp"
+                      "database/compiler_diagnostics_shim.cpp"
+)
 
 target_sources(fluir.liblsp PRIVATE "json_serialize.cpp" ${FLUIR_LSP_SOURCES})
 

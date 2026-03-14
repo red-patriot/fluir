@@ -1,5 +1,7 @@
 #include "lsp/database/in_memory_db.hpp"
 
+#include <span>
+
 #include <compiler/frontend/ast_builder.hpp>
 #include <compiler/frontend/parser.hpp>
 #include <compiler/frontend/type_checker.hpp>
@@ -17,14 +19,15 @@ namespace fluir::lsp {
       return t ? t->name() : "?";
     }
 
-    void collectVisibleNodes(const ast::Node& node,
-                             const types::SymbolTable& table,
-                             std::unordered_map<ID, api::Symbol>& symbols) {
+    void collectSymbols(const ast::Node& node,
+                        const types::SymbolTable& table,
+                        std::span<const ast::FunctionDecl> declarations,
+                        std::unordered_map<ID, api::Symbol>& symbols) {
       if (node.is<ast::Constant>()) {
         symbols[node.id()] = api::Symbol{
           .name = typeName(table, node.type()) + " Constant",
           .detail = std::nullopt,
-          .outType = std::nullopt,
+          .outType = typeName(table, node.type()),
           .inType = std::nullopt,
         };
       } else if (node.is<ast::BinaryOp>()) {
@@ -35,8 +38,8 @@ namespace fluir::lsp {
           .outType = std::nullopt,
           .inType = std::nullopt,
         };
-        collectVisibleNodes(*bin->lhs(), table, symbols);
-        collectVisibleNodes(*bin->rhs(), table, symbols);
+        collectSymbols(*bin->lhs(), table, declarations, symbols);
+        collectSymbols(*bin->rhs(), table, declarations, symbols);
       } else if (node.is<ast::UnaryOp>()) {
         auto* unary = node.as<ast::UnaryOp>();
         symbols[node.id()] = api::Symbol{
@@ -45,45 +48,49 @@ namespace fluir::lsp {
           .outType = std::nullopt,
           .inType = std::nullopt,
         };
-        collectVisibleNodes(*unary->operand(), table, symbols);
+        collectSymbols(*unary->operand(), table, declarations, symbols);
       } else if (node.is<ast::Call>()) {
         auto* call = node.as<ast::Call>();
+        std::optional<std::vector<std::string>> callInType;
+        std::optional<std::string> callOutType;
+        for (const auto& decl : declarations) {
+          if (decl.name == call->target()) {
+            if (!decl.parameters.empty()) {
+              std::vector<std::string> paramTypes;
+              for (const auto& p : decl.parameters) {
+                paramTypes.push_back(p.typeName);
+              }
+              callInType = std::move(paramTypes);
+            }
+            if (decl.returnValue) {
+              callOutType = decl.returnValue->typeName;
+            }
+            break;
+          }
+        }
         symbols[node.id()] = api::Symbol{
           .name = call->target(),
           .detail = std::nullopt,
-          .outType = std::nullopt,
-          .inType = std::nullopt,
+          .outType = std::move(callOutType),
+          .inType = std::move(callInType),
         };
         for (const auto& arg : call->arguments()) {
-          collectVisibleNodes(*arg, table, symbols);
+          collectSymbols(*arg, table, declarations, symbols);
         }
       } else if (node.is<ast::LocalWrite>()) {
-        collectVisibleNodes(*node.as<ast::LocalWrite>()->child(), table, symbols);
+        collectSymbols(*node.as<ast::LocalWrite>()->child(), table, declarations, symbols);
       } else if (node.is<ast::Cast>()) {
-        collectVisibleNodes(*node.as<ast::Cast>()->operand(), table, symbols);
+        collectSymbols(*node.as<ast::Cast>()->operand(), table, declarations, symbols);
       }
       // LocalRead: skip (compiler artifact)
     }
 
-    std::string formatDeclType(const ast::FunctionDecl& decl) {
-      std::string result = "(";
-      for (size_t i = 0; i < decl.parameters.size(); ++i) {
-        if (i > 0) result += ", ";
-        result += decl.parameters[i].name + ": " + decl.parameters[i].typeName;
-      }
-      result += ")";
-      if (decl.returnValue) {
-        result += " => " + decl.returnValue->typeName;
-      }
-      return result;
-    }
-
-    DeclarationInfo buildDeclarationInfo(const ast::FunctionDecl& decl, const types::SymbolTable& table) {
+    DeclarationInfo buildDeclarationInfo(const ast::FunctionDecl& decl,
+                                         const types::SymbolTable& table,
+                                         std::span<const ast::FunctionDecl> declarations) {
       DeclarationInfo info;
-      info.name = decl.name;
-      info.type = formatDeclType(decl);
 
-      // Add the declaration itself as a symbol
+      // Build the declaration's own symbol
       std::optional<std::vector<std::string>> inType;
       if (!decl.parameters.empty()) {
         std::vector<std::string> paramTypes;
@@ -96,7 +103,7 @@ namespace fluir::lsp {
       if (decl.returnValue) {
         outType = decl.returnValue->typeName;
       }
-      info.symbols[decl.id] = api::Symbol{
+      info.symbol = api::Symbol{
         .name = "func " + decl.name,
         .detail = std::nullopt,
         .outType = std::move(outType),
@@ -105,7 +112,7 @@ namespace fluir::lsp {
 
       // Walk statements to collect visible nodes
       for (const auto& stmt : decl.statements) {
-        collectVisibleNodes(*stmt, table, info.symbols);
+        collectSymbols(*stmt, table, declarations, info.symbols);
       }
 
       return info;
@@ -147,7 +154,8 @@ namespace fluir::lsp {
 
     // Build the declaration tree from compiler output
     for (const auto& decl : typeCheckResults->declarations) {
-      fileState.declarations.emplace(decl.id, buildDeclarationInfo(decl, compilerContext.symbolTable));
+      fileState.declarations.emplace(
+        decl.id, buildDeclarationInfo(decl, compilerContext.symbolTable, typeCheckResults->declarations));
     }
 
     files_[file] = std::move(fileState);
@@ -168,17 +176,25 @@ namespace fluir::lsp {
   }
 
   std::optional<api::Symbol> InMemoryDB::symbolAt(const std::filesystem::path& file, FullID target) {
-    if (!files_.contains(file) || target.size() < 2) {
+    if (!files_.contains(file) || target.empty()) {
       return std::nullopt;
     }
 
     const auto& fileState = files_.at(file);
     ID declId = target[0];
-    ID symbolId = target[1];
 
     auto declIt = fileState.declarations.find(declId);
     if (declIt == fileState.declarations.end()) {
       return std::nullopt;
+    }
+
+    if (target.size() == 1) {
+      return declIt->second.symbol;
+    }
+
+    ID symbolId = target[1];
+    if (symbolId == declId) {
+      return declIt->second.symbol;
     }
 
     auto symIt = declIt->second.symbols.find(symbolId);

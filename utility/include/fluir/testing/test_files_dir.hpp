@@ -9,6 +9,8 @@
 namespace fluir::test {
   /** Gets all test programs in the given directory relative to fluir/test_programs */
   std::vector<std::filesystem::path> getTestPrograms(const std::filesystem::path& relative);
+  /** Gets the absolute path given the directory relative to fluir/test_programs */
+  std::filesystem::path getTestProgram(const std::filesystem::path& relative);
   /** Gets the relative path of a file inside the test program directory */
   std::filesystem::path getRelativePath(const std::filesystem::path& programFile);
   /** Reads the contents of a file into a string */

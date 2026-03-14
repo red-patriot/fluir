@@ -14,8 +14,7 @@
 namespace fluir::lsp {
 
   struct DeclarationInfo {
-    std::string name;
-    std::string type;
+    api::Symbol symbol;
     std::unordered_map<ID, api::Symbol> symbols;
   };
 

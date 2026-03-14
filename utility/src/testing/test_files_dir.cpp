@@ -1,6 +1,7 @@
 #include "fluir/testing/test_files_dir.hpp"
 
 #include <filesystem>
+#include <format>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -19,6 +20,14 @@ namespace fluir::test {
     }
 
     return programs;
+  }
+
+  std::filesystem::path getTestProgram(const std::filesystem::path& relative) {
+    auto absolute = ABSOLUTE_PROGRAMS_DIR / relative;
+    if (!std::filesystem::is_regular_file(absolute)) {
+      throw std::runtime_error(std::format("Expected a filepath, got {}", relative.string()));
+    }
+    return absolute;
   }
 
   std::filesystem::path getRelativePath(const std::filesystem::path& programFile) {

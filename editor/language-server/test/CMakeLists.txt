@@ -7,6 +7,7 @@ target_sources(
     PRIVATE "json_serialize.test.cpp"
             "analysis_db.test.cpp"
             "compiler_diagnostics_shim.test.cpp"
+            "symbol_tree.test.cpp"
 )
 
 target_include_directories(fluir.lsp.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

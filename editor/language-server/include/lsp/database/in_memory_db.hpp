@@ -4,15 +4,20 @@
 #include <filesystem>
 #include <span>
 #include <string>
+#include <unordered_map>
 
-#include <compiler/frontend/parse_tree/parse_tree.hpp>
-#include <compiler/models/ast.hpp>
-#include <compiler/types/symbol_table.hpp>
+#include <compiler/models/id.hpp>
 #include <compiler/utility/options.hpp>
 
 #include "lsp/api/language.hpp"
 
 namespace fluir::lsp {
+
+  struct DeclarationInfo {
+    std::string name;
+    std::string type;
+    std::unordered_map<ID, api::Symbol> symbols;
+  };
 
   /** A simple analysis database that stores data in memory */
   class InMemoryDB {
@@ -23,13 +28,8 @@ namespace fluir::lsp {
     void setFileContents(std::filesystem::path file, std::string contents);
 
     // --- Queries ---
-    const fluir::pt::ParseTree& parsed(const std::filesystem::path& file);
-    const fluir::ast::AST& resolved(const std::filesystem::path& file);
-    const fluir::ast::AST& typechecked(const std::filesystem::path& file);
-
-    // --- Convenience queries ---
     std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file);
-    std::vector<api::Symbol> symbolsAt(const std::filesystem::path& file, FullID target);
+    std::optional<api::Symbol> symbolAt(const std::filesystem::path& file, FullID target);
     api::CompletionPossibilities completionsInBody(const std::filesystem::path& file, FullID target);
     api::CompletionPossibilities completionsInHeader(const std::filesystem::path& file, FullID target);
 
@@ -38,9 +38,7 @@ namespace fluir::lsp {
    private:
     struct FileState {
       std::string contents;
-      std::optional<pt::ParseTree> parseCache;
-      std::optional<ast::AST> resolveCache;
-      std::optional<types::SymbolTable> typecheckCache;
+      std::unordered_map<ID, DeclarationInfo> declarations;
       std::vector<api::ModuleDiagnostic> diagnostics;
     };
     CompilerOptions options_;

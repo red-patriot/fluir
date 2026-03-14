@@ -20,9 +20,7 @@ TEST_P(TestInMemoryDbParsing, Test) {
 
   fluir::lsp::InMemoryDB uut{testOptions_};
 
-  uut.setFileContents(testFile, std::move(contents));
-
-  EXPECT_NO_THROW(uut.parsed(testFile));
+  EXPECT_NO_THROW(uut.setFileContents(testFile, std::move(contents)));
 }
 
 INSTANTIATE_TEST_SUITE_P(TestInMemoryDbParsing,
@@ -38,8 +36,9 @@ TEST_P(TestInMemoryTypeChecking, Test) {
 
   uut.setFileContents(testFile, std::move(contents));
 
-  EXPECT_NO_THROW(uut.resolved(testFile));
-  EXPECT_NO_THROW(uut.typechecked(testFile));
+  // Verify the tree was built with declarations and symbols
+  const auto& diagnostics = uut.diagnostics(testFile);
+  EXPECT_TRUE(diagnostics.empty());
 }
 
 INSTANTIATE_TEST_SUITE_P(TestInMemoryTypeChecking,

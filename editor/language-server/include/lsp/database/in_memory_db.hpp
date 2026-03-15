@@ -1,15 +1,11 @@
 #ifndef FLUIR_LSP_DATABASE_IN_MEMORY_DB_HPP
 #define FLUIR_LSP_DATABASE_IN_MEMORY_DB_HPP
 
-#include <filesystem>
-#include <span>
-#include <string>
 #include <unordered_map>
 
-#include <compiler/models/id.hpp>
 #include <compiler/utility/options.hpp>
 
-#include "lsp/api/language.hpp"
+#include "lsp/database/database.hpp"
 
 namespace fluir::lsp {
 
@@ -19,20 +15,15 @@ namespace fluir::lsp {
   };
 
   /** A simple analysis database that stores data in memory */
-  class InMemoryDB {
+  class InMemoryDB : public LanguageDatabase {
    public:
     explicit InMemoryDB(const fluir::CompilerOptions& compilerOpts);
 
-    // --- Inputs (set from outside) ---
-    void setFileContents(std::filesystem::path file, std::string contents);
+    void setFileContents(std::filesystem::path file, std::string contents) override;
+    void invalidate(const std::filesystem::path& file) override;
 
-    // --- Queries ---
-    std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file);
-    std::optional<api::Symbol> symbolAt(const std::filesystem::path& file, FullID target);
-    api::CompletionPossibilities completionsInBody(const std::filesystem::path& file, FullID target);
-    api::CompletionPossibilities completionsInHeader(const std::filesystem::path& file, FullID target);
-
-    void invalidate(const std::filesystem::path& file);  // clears all cached queries for file
+    std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file) override;
+    std::optional<api::Symbol> symbolAt(const std::filesystem::path& file, FullID target) override;
 
    private:
     struct FileState {

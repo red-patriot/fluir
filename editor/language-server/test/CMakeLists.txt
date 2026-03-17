@@ -8,6 +8,7 @@ target_sources(
             "analysis_db.test.cpp"
             "compiler_diagnostics_shim.test.cpp"
             "symbol_tree.test.cpp"
+            "server.test.cpp"
 )
 
 target_include_directories(fluir.lsp.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

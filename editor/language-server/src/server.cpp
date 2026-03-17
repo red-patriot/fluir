@@ -2,6 +2,7 @@
 
 #include <asio/use_awaitable.hpp>
 
+#include "lsp/api/lifecycle.hpp"
 #include "lsp/json_serialize.hpp"
 
 namespace fluir::lsp {
@@ -12,25 +13,38 @@ namespace fluir::lsp {
   asio::awaitable<void> Server::processOne() {
     auto msg = co_await requests_.async_receive(asio::use_awaitable);
     auto result = dispatch(msg);
-    co_await responses_.async_send(asio::error_code{}, std::move(result), asio::use_awaitable);
+    if (result) co_await responses_.async_send(asio::error_code{}, std::move(*result), asio::use_awaitable);
   }
 
-  nlohmann::json Server::dispatch(const nlohmann::json& msg) {
+  asio::awaitable<void> Server::run() {
+    while (true) {
+      auto msg = co_await requests_.async_receive(asio::use_awaitable);
+      auto result = dispatch(msg);
+      if (result) co_await responses_.async_send(asio::error_code{}, std::move(*result), asio::use_awaitable);
+      if (msg.at("request").get<std::string>() == "Shutdown") break;
+    }
+  }
+
+  std::optional<nlohmann::json> Server::dispatch(const nlohmann::json& msg) {
     auto name = msg.at("request").get<std::string>();
 
     if (name == "OpenDoc") {
       auto req = fromJson<api::OpenDocRequest>(msg.at("params"));
       auto resp = openDoc(req);
-      return {{"response", name}, {"result", resp}};
+      return nlohmann::json{{"response", name}, {"result", resp}};
     }
 
     if (name == "CloseDoc") {
       auto req = fromJson<api::CloseDocRequest>(msg.at("params"));
       auto resp = closeDoc(req);
-      return {{"response", name}, {"result", resp}};
+      return nlohmann::json{{"response", name}, {"result", resp}};
     }
 
-    return {{"error", "unknown request"}};
+    if (name == "Shutdown") {
+      return nlohmann::json{{"response", name}, {"result", toJson(api::ShutdownResponse{})}};
+    }
+
+    return std::nullopt;
   }
 
   nlohmann::json Server::openDoc(const api::OpenDocRequest& req) {

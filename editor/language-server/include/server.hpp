@@ -19,8 +19,11 @@ namespace fluir::lsp {
     /** Processes the next message */
     asio::awaitable<void> processOne();
 
+    /** Processes messages until Shutdown is received */
+    asio::awaitable<void> run();
+
    private:
-    nlohmann::json dispatch(const nlohmann::json& msg);
+    std::optional<nlohmann::json> dispatch(const nlohmann::json& msg);
     nlohmann::json openDoc(const api::OpenDocRequest& req);
     nlohmann::json closeDoc(const api::CloseDocRequest& req);
 

@@ -47,6 +47,12 @@ class ServerTest : public ::testing::Test {
     ctx_.restart();
   }
 
+  void runAll() {
+    asio::co_spawn(ctx_, server_->run(), asio::detached);
+    ctx_.run();
+    ctx_.restart();
+  }
+
   void send(nlohmann::json msg) { requests_.try_send(asio::error_code{}, std::move(msg)); }
 
   std::optional<nlohmann::json> tryReceive() {
@@ -107,11 +113,47 @@ TEST_F(ServerTest, ProcessMultipleRequests) {
   EXPECT_EQ((*response2)["response"], "CloseDoc");
 }
 
-TEST_F(ServerTest, UnknownRequestReturnsError) {
-  send({{"request", "Bogus"}, {"params", nlohmann::json::object()}});
+TEST_F(ServerTest, RunProcessesRequestsThenStopsOnShutdown) {
+  send({{"request", "OpenDoc"}, {"params", {{"path", "f.fl"}, {"content", "hello"}}}});
+  send({{"request", "Shutdown"}, {"params", nlohmann::json::object()}});
+
+  runAll();
+
+  EXPECT_EQ(db_->setFileContentsCalls.size(), 1);
+
+  auto r1 = tryReceive();
+  ASSERT_TRUE(r1.has_value());
+  EXPECT_EQ((*r1)["response"], "OpenDoc");
+
+  auto r2 = tryReceive();
+  ASSERT_TRUE(r2.has_value());
+  EXPECT_EQ((*r2)["response"], "Shutdown");
+}
+
+TEST_F(ServerTest, RunStopsImmediatelyOnShutdown) {
+  send({{"request", "Shutdown"}, {"params", nlohmann::json::object()}});
+
+  runAll();
+
+  auto response = tryReceive();
+  ASSERT_TRUE(response.has_value());
+  EXPECT_EQ((*response)["response"], "Shutdown");
+}
+
+TEST_F(ServerTest, ShutdownReturnsResponse) {
+  send({{"request", "Shutdown"}, {"params", nlohmann::json::object()}});
   processAll();
 
   auto response = tryReceive();
   ASSERT_TRUE(response.has_value());
-  EXPECT_TRUE(response->contains("error"));
+  EXPECT_EQ((*response)["response"], "Shutdown");
+  EXPECT_EQ((*response)["result"], nlohmann::json::object());
+}
+
+TEST_F(ServerTest, UnknownRequestIsIgnored) {
+  send({{"request", "Bogus"}, {"params", nlohmann::json::object()}});
+  processAll();
+
+  auto response = tryReceive();
+  EXPECT_FALSE(response.has_value());
 }

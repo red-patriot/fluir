@@ -1,7 +1,10 @@
 #include "server.hpp"
 
+#include <format>
+
 #include <asio/use_awaitable.hpp>
 
+#include "bytecode/version.hpp"
 #include "lsp/api/lifecycle.hpp"
 #include "lsp/json_serialize.hpp"
 
@@ -27,6 +30,11 @@ namespace fluir::lsp {
 
   std::optional<nlohmann::json> Server::dispatch(const nlohmann::json& msg) {
     auto name = msg.at("request").get<std::string>();
+
+    if (name == "Init") {
+      auto version = std::format("{}.{}.{}", CURRENT_VERSION.major, CURRENT_VERSION.minor, CURRENT_VERSION.patch);
+      return nlohmann::json{{"response", name}, {"result", toJson(api::InitResponse{.version = version})}};
+    }
 
     if (name == "OpenDoc") {
       auto req = fromJson<api::OpenDocRequest>(msg.at("params"));

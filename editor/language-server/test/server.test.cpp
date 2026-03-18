@@ -150,6 +150,16 @@ TEST_F(ServerTest, ShutdownReturnsResponse) {
   EXPECT_EQ((*response)["result"], nlohmann::json::object());
 }
 
+TEST_F(ServerTest, InitReturnsVersion) {
+  send({{"request", "Init"}, {"params", nlohmann::json::object()}});
+  processAll();
+
+  auto response = tryReceive();
+  ASSERT_TRUE(response.has_value());
+  EXPECT_EQ((*response)["response"], "Init");
+  EXPECT_EQ((*response)["result"]["version"], "0.3.0");
+}
+
 TEST_F(ServerTest, UnknownRequestIsIgnored) {
   send({{"request", "Bogus"}, {"params", nlohmann::json::object()}});
   processAll();

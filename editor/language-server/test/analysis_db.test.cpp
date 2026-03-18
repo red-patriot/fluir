@@ -69,3 +69,48 @@ INSTANTIATE_TEST_SUITE_P(TestInMemoryHandlesDiagnostics,
                          TestInMemoryHandlesDiagnostics,
                          ::testing::ValuesIn(fluir::test::getTestPrograms("syntax_error")),
                          fluir::test::filePathName);
+
+// --- allSymbols tests ---
+
+TEST(TestAllSymbols, UnknownFileReturnsNullopt) {
+  fluir::CompilerOptions opts{.developerOptions = {.suppressVersionErrors = true}};
+  fluir::lsp::InMemoryDB uut{opts};
+
+  auto result = uut.allSymbols(fs::path("/nonexistent/file.fl"));
+  EXPECT_FALSE(result.has_value());
+}
+
+TEST_P(TestInMemoryTypeChecking, AllSymbolsReturnsNonEmptyVector) {
+  const auto& testFile = GetParam();
+  auto contents = fluir::test::readContents(testFile);
+
+  fluir::lsp::InMemoryDB uut{testOptions_};
+  uut.setFileContents(testFile, std::move(contents));
+
+  auto result = uut.allSymbols(testFile);
+  ASSERT_TRUE(result.has_value());
+  EXPECT_FALSE(result->empty());
+
+  for (const auto& tagged : *result) {
+    EXPECT_FALSE(tagged.id.empty());
+    EXPECT_FALSE(tagged.symbol.name.empty());
+  }
+}
+
+using TestAllSymbolsSyntaxError = TestInMemoryHandlesDiagnostics;
+
+TEST_P(TestAllSymbolsSyntaxError, AllSymbolsReturnsValueForKnownFile) {
+  const auto& testFile = GetParam();
+  auto contents = fluir::test::readContents(testFile);
+
+  fluir::lsp::InMemoryDB uut{testOptions_};
+  uut.setFileContents(testFile, std::move(contents));
+
+  auto result = uut.allSymbols(testFile);
+  ASSERT_TRUE(result.has_value());
+}
+
+INSTANTIATE_TEST_SUITE_P(TestAllSymbolsSyntaxError,
+                         TestAllSymbolsSyntaxError,
+                         ::testing::ValuesIn(fluir::test::getTestPrograms("syntax_error")),
+                         fluir::test::filePathName);

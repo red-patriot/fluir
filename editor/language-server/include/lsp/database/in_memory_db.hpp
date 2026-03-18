@@ -24,6 +24,7 @@ namespace fluir::lsp {
 
     std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file) override;
     std::optional<api::Symbol> symbolAt(const std::filesystem::path& file, FullID target) override;
+    std::optional<std::vector<api::TaggedSymbol>> allSymbols(const std::filesystem::path& file) override;
 
    private:
     struct FileState {

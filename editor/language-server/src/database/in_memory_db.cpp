@@ -205,4 +205,23 @@ namespace fluir::lsp {
     return std::nullopt;
   }
 
+  std::optional<std::vector<api::TaggedSymbol>> InMemoryDB::allSymbols(const std::filesystem::path& file) {
+    if (!files_.contains(file)) {
+      return std::nullopt;
+    }
+
+    const auto& fileState = files_.at(file);
+    std::vector<api::TaggedSymbol> result;
+
+    for (const auto& [declId, declInfo] : fileState.declarations) {
+      result.push_back(api::TaggedSymbol{.id = {declId}, .symbol = declInfo.symbol});
+
+      for (const auto& [symbolId, symbol] : declInfo.symbols) {
+        result.push_back(api::TaggedSymbol{.id = {declId, symbolId}, .symbol = symbol});
+      }
+    }
+
+    return result;
+  }
+
 }  // namespace fluir::lsp

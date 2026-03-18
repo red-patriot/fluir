@@ -29,6 +29,10 @@ class FakeDatabase : public fluir::lsp::LanguageDatabase {
   std::optional<fluir::lsp::api::Symbol> symbolAt(const std::filesystem::path&, fluir::FullID) override {
     return std::nullopt;
   }
+
+  std::optional<std::vector<fluir::lsp::api::TaggedSymbol>> allSymbols(const std::filesystem::path&) override {
+    return std::nullopt;
+  }
 };
 
 class ServerTest : public ::testing::Test {

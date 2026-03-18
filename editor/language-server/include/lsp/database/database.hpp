@@ -27,6 +27,8 @@ namespace fluir::lsp {
     virtual std::span<const api::ModuleDiagnostic> diagnostics(const std::filesystem::path& file) = 0;
     /** Gets the symbol at the given file and ID */
     virtual std::optional<api::Symbol> symbolAt(const std::filesystem::path& file, FullID target) = 0;
+    /** Gets all symbols in the given file */
+    virtual std::optional<std::vector<api::TaggedSymbol>> allSymbols(const std::filesystem::path& file) = 0;
     // TODO: Implement these:
     /** Gets the body completions at the given file and ID */
     // virtual api::CompletionPossibilities completionsInBody(const std::filesystem::path& file, FullID target) = 0;

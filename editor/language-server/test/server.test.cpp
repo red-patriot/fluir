@@ -1,5 +1,7 @@
 #include "server.hpp"
 
+#include <set>
+
 #include <asio.hpp>
 #include <asio/co_spawn.hpp>
 #include <asio/detached.hpp>
@@ -19,6 +21,7 @@ class FakeDatabase : public fluir::lsp::LanguageDatabase {
   std::vector<std::filesystem::path> invalidateCalls;
 
   void setFileContents(std::filesystem::path file, std::string contents) override {
+    openedFiles.insert(file);
     setFileContentsCalls.push_back({std::move(file), std::move(contents)});
   }
 
@@ -30,9 +33,17 @@ class FakeDatabase : public fluir::lsp::LanguageDatabase {
     return std::nullopt;
   }
 
-  std::optional<std::vector<fluir::lsp::api::TaggedSymbol>> allSymbols(const std::filesystem::path&) override {
+  std::optional<std::vector<fluir::lsp::api::TaggedSymbol>> allSymbols(const std::filesystem::path& file) override {
+    if (openedFiles.contains(file)) {
+      std::vector<fluir::lsp::api::TaggedSymbol> result;
+      result.push_back(fluir::lsp::api::TaggedSymbol{
+        .id = {1, 2, 3}, .symbol = {.name = "x", .detail = std::nullopt, .outType = "Int", .inType = std::nullopt}});
+      return result;
+    }
     return std::nullopt;
   }
+
+  std::set<std::filesystem::path> openedFiles;
 };
 
 class ServerTest : public ::testing::Test {
@@ -162,6 +173,33 @@ TEST_F(ServerTest, InitReturnsVersion) {
   ASSERT_TRUE(response.has_value());
   EXPECT_EQ((*response)["response"], "Init");
   EXPECT_EQ((*response)["result"]["version"], "0.3.0");
+}
+
+TEST_F(ServerTest, SymbolsReturnsSymbols) {
+  send({{"request", "OpenDoc"}, {"params", {{"path", "f.fl"}, {"content", "hello"}}}});
+  processAll();
+  tryReceive();  // discard OpenDoc response
+
+  send({{"request", "Symbols"}, {"params", {{"path", "f.fl"}}}});
+  processAll();
+
+  auto response = tryReceive();
+  ASSERT_TRUE(response.has_value());
+  EXPECT_EQ((*response)["response"], "Symbols");
+  ASSERT_TRUE((*response)["result"]["symbols"].is_array());
+  EXPECT_EQ((*response)["result"]["symbols"].size(), 1);
+  EXPECT_EQ((*response)["result"]["symbols"][0]["symbol"]["name"], "x");
+}
+
+TEST_F(ServerTest, SymbolsForUnknownFileReturnsEmptySymbols) {
+  send({{"request", "Symbols"}, {"params", {{"path", "unknown.fl"}}}});
+  processAll();
+
+  auto response = tryReceive();
+  ASSERT_TRUE(response.has_value());
+  EXPECT_EQ((*response)["response"], "Symbols");
+  ASSERT_TRUE((*response)["result"]["symbols"].is_array());
+  EXPECT_EQ((*response)["result"]["symbols"].size(), 0);
 }
 
 TEST_F(ServerTest, UnknownRequestIsIgnored) {

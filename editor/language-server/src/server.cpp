@@ -5,6 +5,7 @@
 #include <asio/use_awaitable.hpp>
 
 #include "bytecode/version.hpp"
+#include "lsp/api/language.hpp"
 #include "lsp/api/lifecycle.hpp"
 #include "lsp/json_serialize.hpp"
 
@@ -48,6 +49,12 @@ namespace fluir::lsp {
       return nlohmann::json{{"response", name}, {"result", resp}};
     }
 
+    if (name == "Symbols") {
+      auto req = fromJson<api::SymbolRequest>(msg.at("params"));
+      auto resp = symbols(req);
+      return nlohmann::json{{"response", name}, {"result", resp}};
+    }
+
     if (name == "Shutdown") {
       return nlohmann::json{{"response", name}, {"result", toJson(api::ShutdownResponse{})}};
     }
@@ -63,6 +70,14 @@ namespace fluir::lsp {
   nlohmann::json Server::closeDoc(const api::CloseDocRequest& req) {
     db_->invalidate(req.path);
     return toJson(api::CloseDocResponse{});
+  }
+
+  nlohmann::json Server::symbols(const api::SymbolRequest& req) {
+    auto result = db_->allSymbols(req.path);
+    if (!result) {
+      return toJson(api::Symbols{});
+    }
+    return toJson(api::Symbols{.symbols = std::move(*result)});
   }
 
 }  // namespace fluir::lsp

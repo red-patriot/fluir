@@ -7,6 +7,7 @@
 #include <nlohmann/json.hpp>
 
 #include "lsp/api/document.hpp"
+#include "lsp/api/language.hpp"
 #include "lsp/channel.hpp"
 #include "lsp/database/database.hpp"
 
@@ -26,6 +27,7 @@ namespace fluir::lsp {
     std::optional<nlohmann::json> dispatch(const nlohmann::json& msg);
     nlohmann::json openDoc(const api::OpenDocRequest& req);
     nlohmann::json closeDoc(const api::CloseDocRequest& req);
+    nlohmann::json symbols(const api::SymbolRequest& req);
 
     std::unique_ptr<LanguageDatabase> db_; /**< The underlying database for intelligence */
     Channel& requests_;                    /**< The channel to receive requests */

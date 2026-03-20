@@ -7,6 +7,7 @@
 #include <string>
 
 #include <asio.hpp>
+#include <asio/experimental/awaitable_operators.hpp>
 #include <nlohmann/json.hpp>
 
 #include "lsp/channel.hpp"
@@ -16,24 +17,34 @@ namespace fluir::lsp {
   template <typename T>
   concept AsyncReadStream = requires(T& stream, asio::mutable_buffer buf) { stream.async_read_some(buf); };
 
+  template <typename T>
+  concept AsyncWriteStream =
+    requires(T& stream, asio::const_buffer buf, asio::use_awaitable_t<> token) { stream.async_write_some(buf, token); };
+
   /**
-   * Reads the wire protocol (LENGTH: <hex>\r\n + JSON body) from a stream
-   * and feeds parsed JSON into a Channel.
+   * Bidirectional wire-protocol interface.
+   * Reads incoming LENGTH-framed JSON from the stream into the receive channel,
+   * and writes outgoing JSON from the send channel onto the stream.
    */
-  template <AsyncReadStream Stream>
+  template <typename Stream>
+    requires AsyncReadStream<Stream> && AsyncWriteStream<Stream>
   class NetworkInterface {
    public:
-    NetworkInterface(Stream& stream, Channel& output) : stream_(stream), output_(output) { }
+    NetworkInterface(Stream& stream, Channel& incoming, Channel& send) :
+      stream_(stream), incoming_(incoming), send_(send) { }
 
     asio::awaitable<void> run() {
+      using namespace asio::experimental::awaitable_operators;
+      co_await (receiveLoop() || sendLoop());
+    }
+
+   private:
+    asio::awaitable<void> receiveLoop() {
       try {
         while (true) {
           auto line = co_await readLine();
 
-          // Validate header format: "LENGTH: <hex>\r\n"
-          // readLine strips \r\n, so we expect "LENGTH: <hex>"
           if (line.rfind("LENGTH: ", 0) != 0) {
-            // TODO: log malformed header
             continue;
           }
 
@@ -42,7 +53,6 @@ namespace fluir::lsp {
           try {
             bodyLength = std::stoull(hexStr, nullptr, 16);
           } catch (...) {
-            // TODO: log invalid hex in header
             continue;
           }
 
@@ -52,11 +62,10 @@ namespace fluir::lsp {
           try {
             msg = nlohmann::json::parse(body);
           } catch (...) {
-            // TODO: log invalid JSON
             continue;
           }
 
-          co_await output_.async_send(asio::error_code{}, std::move(msg), asio::use_awaitable);
+          co_await incoming_.async_send(asio::error_code{}, std::move(msg), asio::use_awaitable);
         }
       } catch (const asio::system_error& e) {
         if (e.code() == asio::error::eof) {
@@ -66,7 +75,21 @@ namespace fluir::lsp {
       }
     }
 
-   private:
+    asio::awaitable<void> sendLoop() {
+      try {
+        while (true) {
+          auto msg = co_await send_.async_receive(asio::use_awaitable);
+          std::string body = msg.dump();
+          std::ostringstream header;
+          header << "LENGTH: " << std::hex << body.size() << "\r\n";
+          std::string frame = header.str() + body;
+          co_await asio::async_write(stream_, asio::buffer(frame), asio::use_awaitable);
+        }
+      } catch (const asio::system_error&) {
+        co_return;
+      }
+    }
+
     asio::awaitable<std::string> readLine() {
       while (true) {
         auto pos = buffer_.find("\r\n");
@@ -95,7 +118,8 @@ namespace fluir::lsp {
     }
 
     Stream& stream_;
-    Channel& output_;
+    Channel& incoming_;
+    Channel& send_;
     std::string buffer_;
   };
 

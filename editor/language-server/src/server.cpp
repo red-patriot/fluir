@@ -3,6 +3,7 @@
 #include <format>
 
 #include <asio/use_awaitable.hpp>
+#include <spdlog/spdlog.h>
 
 #include "bytecode/version.hpp"
 #include "lsp/api/language.hpp"
@@ -31,6 +32,7 @@ namespace fluir::lsp {
 
   std::optional<nlohmann::json> Server::dispatch(const nlohmann::json& msg) {
     auto name = msg.at("request").get<std::string>();
+    spdlog::info("Received request: {}", name);
 
     if (name == "Init") {
       auto version = std::format("{}.{}.{}", CURRENT_VERSION.major, CURRENT_VERSION.minor, CURRENT_VERSION.patch);
@@ -59,6 +61,7 @@ namespace fluir::lsp {
       return nlohmann::json{{"response", name}, {"result", toJson(api::ShutdownResponse{})}};
     }
 
+    spdlog::error("Unrecognized command '{}'", name);
     return std::nullopt;
   }
 

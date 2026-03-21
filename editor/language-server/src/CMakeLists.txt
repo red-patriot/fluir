@@ -1,4 +1,5 @@
 find_package(nlohmann_json REQUIRED)
+find_package(spdlog REQUIRED)
 find_path(ASIO_INCLUDE_DIR NAMES asio.hpp REQUIRED)
 
 add_library(
@@ -31,6 +32,7 @@ target_link_libraries(
            nlohmann_json::nlohmann_json
            fluir::compiler
            fluir::utility
+           spdlog::spdlog
 )
 
 add_executable(fluir.lsp)

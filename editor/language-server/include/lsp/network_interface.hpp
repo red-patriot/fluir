@@ -1,7 +1,6 @@
 #ifndef FLUIR_LSP_NETWORK_INTERFACE_HPP
 #define FLUIR_LSP_NETWORK_INTERFACE_HPP
 
-#include <concepts>
 #include <cstddef>
 #include <sstream>
 #include <string>
@@ -9,6 +8,7 @@
 #include <asio.hpp>
 #include <asio/experimental/awaitable_operators.hpp>
 #include <nlohmann/json.hpp>
+#include <spdlog/spdlog.h>
 
 #include "lsp/channel.hpp"
 
@@ -49,23 +49,19 @@ namespace fluir::lsp {
           }
 
           std::string hexStr = line.substr(8);
-          std::size_t bodyLength = 0;
-          try {
-            bodyLength = std::stoull(hexStr, nullptr, 16);
-          } catch (...) {
+          auto bodyLength = tryParseLength(hexStr);
+          if (!bodyLength) {
             continue;
           }
 
-          auto body = co_await readExactly(bodyLength);
+          auto body = co_await readExactly(*bodyLength);
 
-          nlohmann::json msg;
-          try {
-            msg = nlohmann::json::parse(body);
-          } catch (...) {
+          auto msg = tryParse(body);
+          if (!msg) {
             continue;
           }
 
-          co_await incoming_.async_send(asio::error_code{}, std::move(msg), asio::use_awaitable);
+          co_await incoming_.async_send(asio::error_code{}, std::move(*msg), asio::use_awaitable);
         }
       } catch (const asio::system_error& e) {
         if (e.code() == asio::error::eof) {
@@ -109,6 +105,27 @@ namespace fluir::lsp {
       std::string result = buffer_.substr(0, n);
       buffer_.erase(0, n);
       co_return result;
+    }
+
+    static std::optional<size_t> tryParseLength(const std::string& chars) {
+      try {
+        return std::stoull(chars, nullptr, 16);
+      } catch (const std::exception& e) {
+        spdlog::error("Length could not be parsed. Got '{}', error: {}", chars, e.what());
+      }
+      return std::nullopt;
+    }
+
+    static std::optional<nlohmann::json> tryParse(std::string_view chars) {
+      try {
+        auto msg = nlohmann::json::parse(chars);
+        return msg;
+      } catch (const std::exception& e) {
+        spdlog::error("Failed to parse JSON msg: {}", e.what());
+      } catch (...) {
+        spdlog::error("Unknown error occurred when parsing JSON msg");
+      }
+      return std::nullopt;
     }
 
     asio::awaitable<void> fillBuffer() {

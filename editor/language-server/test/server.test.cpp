@@ -19,8 +19,12 @@ class FakeDatabase : public fluir::lsp::LanguageDatabase {
 
   std::vector<SetFileContentsCall> setFileContentsCalls;
   std::vector<std::filesystem::path> invalidateCalls;
+  bool throwOnSetFileContents = false;
 
   void setFileContents(std::filesystem::path file, std::string contents) override {
+    if (throwOnSetFileContents) {
+      throw std::runtime_error("database error");
+    }
     openedFiles.insert(file);
     setFileContentsCalls.push_back({std::move(file), std::move(contents)});
   }
@@ -208,4 +212,27 @@ TEST_F(ServerTest, UnknownRequestIsIgnored) {
 
   auto response = tryReceive();
   EXPECT_FALSE(response.has_value());
+}
+
+TEST_F(ServerTest, DatabaseExceptionReturnsNoResponse) {
+  db_->throwOnSetFileContents = true;
+  send({{"request", "OpenDoc"}, {"params", {{"path", "f.fl"}, {"content", "hello"}}}});
+  processAll();
+
+  auto response = tryReceive();
+  EXPECT_FALSE(response.has_value());
+}
+
+TEST_F(ServerTest, RunContinuesAfterDatabaseException) {
+  db_->throwOnSetFileContents = true;
+  send({{"request", "OpenDoc"}, {"params", {{"path", "f.fl"}, {"content", "hello"}}}});
+  send({{"request", "Shutdown"}, {"params", nlohmann::json::object()}});
+
+  runAll();
+
+  // The OpenDoc should produce no response (exception caught)
+  auto r1 = tryReceive();
+  ASSERT_TRUE(r1.has_value());
+  // The server should have continued to process Shutdown
+  EXPECT_EQ((*r1)["response"], "Shutdown");
 }

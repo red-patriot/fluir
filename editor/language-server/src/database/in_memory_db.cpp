@@ -8,6 +8,7 @@
 #include <compiler/models/ast.hpp>
 #include <compiler/models/ast/node.hpp>
 #include <compiler/types/builtin_symbols.hpp>
+#include <spdlog/spdlog.h>
 
 #include "lsp/database/compiler_diagnostics_shim.hpp"
 
@@ -122,6 +123,7 @@ namespace fluir::lsp {
   InMemoryDB::InMemoryDB(const fluir::CompilerOptions& compilerOpts) : options_(compilerOpts) { }
 
   void InMemoryDB::setFileContents(std::filesystem::path file, std::string contents) {
+    spdlog::debug("Analyzing file: {}", file.string());
     if (files_.contains(file)) {
       invalidate(file);
     }
@@ -139,16 +141,19 @@ namespace fluir::lsp {
 
     auto parseResults = fluir::parseString(compilerContext, fileState.contents);
     if (!parseResults) {
+      spdlog::warn("Parse failed for: {}", file.string());
       return;
     }
 
     auto astResults = fluir::buildGraph(compilerContext, *parseResults);
     if (!astResults) {
+      spdlog::warn("AST build failed for: {}", file.string());
       return;
     }
 
     auto typeCheckResults = fluir::typeCheck(compilerContext, std::move(*astResults));
     if (!typeCheckResults) {
+      spdlog::warn("Type check failed for: {}", file.string());
       return;
     }
 
@@ -162,6 +167,7 @@ namespace fluir::lsp {
   }
 
   void InMemoryDB::invalidate(const std::filesystem::path& file) {
+    spdlog::debug("Invalidating file: {}", file.string());
     if (files_.contains(file)) {
       files_.erase(file);
     }
@@ -169,6 +175,7 @@ namespace fluir::lsp {
 
   std::span<const api::ModuleDiagnostic> InMemoryDB::diagnostics(const std::filesystem::path& file) {
     if (!files_.contains(file)) {
+      spdlog::warn("Diagnostics requested for unknown file: {}", file.string());
       throw std::runtime_error("Database does not contain the given file");
     }
 

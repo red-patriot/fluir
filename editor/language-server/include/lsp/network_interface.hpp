@@ -45,6 +45,7 @@ namespace fluir::lsp {
           auto line = co_await readLine();
 
           if (line.rfind("LENGTH: ", 0) != 0) {
+            spdlog::debug("Skipping non-LENGTH line: '{}'", line);
             continue;
           }
 
@@ -65,8 +66,10 @@ namespace fluir::lsp {
         }
       } catch (const asio::system_error& e) {
         if (e.code() == asio::error::eof) {
+          spdlog::info("Connection closed (EOF)");
           co_return;
         }
+        spdlog::error("Receive loop error: {}", e.what());
         throw;
       }
     }
@@ -75,13 +78,15 @@ namespace fluir::lsp {
       try {
         while (true) {
           auto msg = co_await send_.async_receive(asio::use_awaitable);
+          spdlog::debug("Sending response: {}", msg.value("response", "unknown"));
           std::string body = msg.dump();
           std::ostringstream header;
           header << "LENGTH: " << std::hex << body.size() << "\r\n";
           std::string frame = header.str() + body;
           co_await asio::async_write(stream_, asio::buffer(frame), asio::use_awaitable);
         }
-      } catch (const asio::system_error&) {
+      } catch (const asio::system_error& e) {
+        spdlog::error("Send loop error: {}", e.what());
         co_return;
       }
     }

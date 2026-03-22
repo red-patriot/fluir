@@ -16,6 +16,7 @@ add_library(fluir.liblsp STATIC)
 
 set(FLUIR_LSP_SOURCES
     "server.cpp"
+    "options.cpp"
     "database/in_memory_db.cpp"
     "database/compiler_diagnostics_shim.cpp"
 )
@@ -33,6 +34,7 @@ target_link_libraries(
            fluir::compiler
            fluir::utility
            spdlog::spdlog
+           argparse::argparse
 )
 
 add_executable(fluir.lsp)

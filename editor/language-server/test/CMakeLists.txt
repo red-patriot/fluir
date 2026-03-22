@@ -10,6 +10,7 @@ target_sources(
             "symbol_tree.test.cpp"
             "server.test.cpp"
             "network_interface.test.cpp"
+            "options.test.cpp"
 )
 
 target_include_directories(fluir.lsp.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

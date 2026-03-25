@@ -115,10 +115,10 @@ describe('createEdges', () => {
       expect(result[0].targetHandle).toBe('output-1:3-0');
     });
 
-    it('should set type to straight and animated to false', () => {
+    it('should set type to conduit and animated to false', () => {
       const result = createEdges(module);
 
-      expect(result[0].type).toBe('straight');
+      expect(result[0].type).toBe('conduit');
       expect(result[0].animated).toBe(false);
     });
 
@@ -137,7 +137,7 @@ describe('createEdges', () => {
         target: '1:3',
         sourceHandle: 'input-1:2-0',
         targetHandle: 'output-1:3-0',
-        type: 'straight',
+        type: 'conduit',
         animated: false,
         style: { strokeWidth: 2 },
       });

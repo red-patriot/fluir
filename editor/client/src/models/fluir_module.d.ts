@@ -32,6 +32,8 @@ export type BinaryOp = {
   id: number;
   location: Location;
   op: Operator;
+  inTypes?: FlType[];
+  outType?: FlType;
 };
 
 export type UnaryOp = {
@@ -39,6 +41,8 @@ export type UnaryOp = {
   id: number;
   location: Location;
   op: Operator;
+  inType?: FlType;
+  outType?: FlType;
 };
 
 export type Node = BinaryOp | UnaryOp | Constant;
@@ -63,6 +67,7 @@ export type Conduit = {
   id: number;
   input: number;
   children: (Conduit.Segment | Conduit.Output)[];
+  flType?: FlType;
 };
 
 export type FunctionDecl = {

@@ -7,8 +7,8 @@ import { ProgramActionsContext } from './ProgramActionsContext';
 import { useAppDispatch, actions } from '../../store';
 
 export default function ProgramActionsProvider({
-  children,
-}: PropsWithChildren) {
+                                                 children,
+                                               }: PropsWithChildren) {
   const dispatch = useAppDispatch();
 
   const newProgram = useNewProgram({
@@ -24,6 +24,7 @@ export default function ProgramActionsProvider({
   // Local functions
   const openProgram = useOpenProgram({
     onOpen: (response) => {
+      console.log(response);
       dispatch(actions.setModuleState(response.data));
       dispatch(actions.goToPage('module'));
     },

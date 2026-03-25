@@ -15,15 +15,15 @@ import {
   Node,
   OnDelete,
 } from '@xyflow/react';
-import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
-import { useAppSelector } from '../../store';
+import createNodes, { createEdges, nodeTypes, edgeTypes } from '../../utility/createNodes';
+import { useAppSelector } from '@/store';
 import { useProgramActions } from '../reusable/ProgramActionsContext';
 import {
   AddConduitEditRequest,
   RemoveItemEditRequest,
-} from '../../models/edit_request';
-import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
-import { toApiID } from '../../utility/idHelpers';
+} from '@/models/edit_request';
+import { ZOOM_SCALAR } from '@/hooks/useSizeStyle.ts';
+import { toApiID } from '@/utility/idHelpers.ts';
 import { ContextMenu } from 'radix-ui';
 import { move } from '@/components/flow_diagram/logic';
 
@@ -131,14 +131,14 @@ export default function ViewWindow() {
 
   if (!module) {
     return (
-      <div className='h-lvh w-lvw flex items-center justify-center'>
+      <div className="h-lvh w-lvw flex items-center justify-center">
         No module loaded
       </div>
     );
   }
 
   return (
-    <div className='grow'>
+    <div className="grow">
       <ContextMenu.Root>
         <ReactFlow
           nodes={nodes}
@@ -148,6 +148,7 @@ export default function ViewWindow() {
           onDelete={onDelete}
           edges={edges}
           onEdgesChange={onEdgesChange}
+          edgeTypes={edgeTypes}
           connectionMode={ConnectionMode.Strict}
           onConnect={onConnect}
           isValidConnection={isValidConnection}
@@ -161,7 +162,7 @@ export default function ViewWindow() {
           panOnDrag={[1]}
         >
           <Background
-            id='bg-1'
+            id="bg-1"
             variant={BackgroundVariant.Dots}
             gap={10}
             size={0.5}

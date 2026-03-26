@@ -58,6 +58,8 @@ class BinaryOperator:
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
+    inTypes: tuple[FlType, FlType] | None = None
+    outType: FlType | None = None
 
 
 @dataclass
@@ -66,6 +68,8 @@ class UnaryOperator:
     id: IDType = INVALID_ID
     location: Location = field(default_factory=Location)
     op: Operator = Operator.UNKNOWN
+    inType: FlType | None = None
+    outType: FlType | None = None
 
 
 Node = Constant | BinaryOperator | UnaryOperator
@@ -93,6 +97,7 @@ class Conduit:
     input: IDType = INVALID_ID
     index: int = 0
     children: list[Segment | Output] = field(default_factory=list)
+    flType: FlType | None = None
 
 
 @dataclass

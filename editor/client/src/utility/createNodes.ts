@@ -2,7 +2,7 @@ import FunctionDeclNode, {
   FUNC_HEADER_HEIGHT,
 } from '@/components/flow_diagram/elements/FunctionDeclNode';
 import ConstantNode from '@/components/flow_diagram/elements/ConstantNode';
-import Conduit from '@/components/flow_diagram/elements/Conduit';
+import ConduitEdge from '@/components/flow_diagram/elements/Conduit';
 import {
   BinaryOperatorNode,
   UnaryOperatorNode,
@@ -148,6 +148,9 @@ export function createEdges(module: FluirModule) {
               type: 'conduit',
               animated: false,
               style: { strokeWidth: 2 },
+              data: {
+                conduit,
+              },
             });
           }
         });
@@ -165,5 +168,5 @@ export const nodeTypes = {
 };
 
 export const edgeTypes = {
-  conduit: Conduit,
+  conduit: ConduitEdge,
 };

@@ -1,0 +1,30 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main",
+      "outType": "not_a_type"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "not_a_type Return"
+    }
+  },
+  {
+    "id": [
+      1,
+      3
+    ],
+    "symbol": {
+      "name": "I32 Constant",
+      "outType": "I32"
+    }
+  }
+]

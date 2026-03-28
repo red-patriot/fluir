@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      1
+    ],
+    "message": "Attempted to call an undefined function.: Call to undefined function 'undefined_func'.",
+    "severity": 1
+  }
+]

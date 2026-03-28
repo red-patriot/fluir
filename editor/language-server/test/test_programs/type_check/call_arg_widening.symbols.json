@@ -1,0 +1,93 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      1
+    ],
+    "symbol": {
+      "name": "I8 Constant",
+      "outType": "I8"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "I8 Constant",
+      "outType": "I8"
+    }
+  },
+  {
+    "id": [
+      1,
+      3
+    ],
+    "symbol": {
+      "inType": [
+        "I32",
+        "I32"
+      ],
+      "name": "add",
+      "outType": "I32"
+    }
+  },
+  {
+    "id": [
+      2
+    ],
+    "symbol": {
+      "inType": [
+        "I32",
+        "I32"
+      ],
+      "name": "func add",
+      "outType": "I32"
+    }
+  },
+  {
+    "id": [
+      2,
+      1
+    ],
+    "symbol": {
+      "name": "I32 Parameter"
+    }
+  },
+  {
+    "id": [
+      2,
+      2
+    ],
+    "symbol": {
+      "name": "I32 Parameter"
+    }
+  },
+  {
+    "id": [
+      2,
+      3
+    ],
+    "symbol": {
+      "name": "I32 Return"
+    }
+  },
+  {
+    "id": [
+      2,
+      4
+    ],
+    "symbol": {
+      "name": "binary +"
+    }
+  }
+]

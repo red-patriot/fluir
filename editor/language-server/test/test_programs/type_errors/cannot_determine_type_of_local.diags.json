@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      2
+    ],
+    "message": "Cannot determine the type of a local dependency.",
+    "severity": 1
+  }
+]

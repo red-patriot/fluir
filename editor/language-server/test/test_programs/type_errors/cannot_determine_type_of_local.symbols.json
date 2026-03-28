@@ -1,0 +1,71 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      1
+    ],
+    "symbol": {
+      "name": "void_func"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "inType": [
+        "I32"
+      ],
+      "name": "takes_i32"
+    }
+  },
+  {
+    "id": [
+      1,
+      3
+    ],
+    "symbol": {
+      "inType": [
+        "I32"
+      ],
+      "name": "takes_i32"
+    }
+  },
+  {
+    "id": [
+      2
+    ],
+    "symbol": {
+      "name": "func void_func"
+    }
+  },
+  {
+    "id": [
+      3
+    ],
+    "symbol": {
+      "inType": [
+        "I32"
+      ],
+      "name": "func takes_i32"
+    }
+  },
+  {
+    "id": [
+      3,
+      1
+    ],
+    "symbol": {
+      "name": "I32 Parameter"
+    }
+  }
+]

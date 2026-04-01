@@ -57,6 +57,33 @@
   {
     "id": [
       2,
+      1
+    ],
+    "symbol": {
+      "name": "I32 Parameter"
+    }
+  },
+  {
+    "id": [
+      2,
+      2
+    ],
+    "symbol": {
+      "name": "I32 Parameter"
+    }
+  },
+  {
+    "id": [
+      2,
+      3
+    ],
+    "symbol": {
+      "name": "I32 Return"
+    }
+  },
+  {
+    "id": [
+      2,
       4
     ],
     "symbol": {

@@ -18,6 +18,9 @@ set(FLUIR_LSP_SOURCES
     "server.cpp"
     "options.cpp"
     "database/in_memory_db.cpp"
+    "database/pt_analyzer.cpp"
+    "database/pt_parser.cpp"
+    "database/pt_symbol_extractor.cpp"
     "database/compiler_diagnostics_shim.cpp"
 )
 

@@ -11,6 +11,7 @@ target_sources(
             "server.test.cpp"
             "network_interface.test.cpp"
             "options.test.cpp"
+            "pt_analyzer.test.cpp"
 )
 
 target_include_directories(fluir.lsp.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
@@ -20,6 +21,10 @@ target_link_libraries(
     PRIVATE fluir.liblsp
             GTest::gtest
             GTest::gtest_main
+)
+
+target_compile_definitions(
+    fluir.lsp.test PRIVATE "ROOT_LSP_TEST_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\""
 )
 
 include(GoogleTest)

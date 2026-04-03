@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      1
+    ],
+    "message": "There is no valid conversion from the given type to the target type.: Cannot implicitly convert 'I32' to 'U8'.",
+    "severity": 1
+  }
+]

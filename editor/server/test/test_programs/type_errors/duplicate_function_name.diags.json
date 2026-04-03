@@ -1,0 +1,9 @@
+[
+  {
+    "location": [
+      1
+    ],
+    "message": "Cannot define multiple functions with the same name.: Function 'foo' is already defined.",
+    "severity": 1
+  }
+]

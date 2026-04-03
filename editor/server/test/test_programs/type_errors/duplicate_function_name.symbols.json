@@ -1,0 +1,18 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func foo"
+    }
+  },
+  {
+    "id": [
+      2
+    ],
+    "symbol": {
+      "name": "func foo"
+    }
+  }
+]

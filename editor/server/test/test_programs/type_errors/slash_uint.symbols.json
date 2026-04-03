@@ -1,0 +1,29 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "U8 Constant",
+      "outType": "U8"
+    }
+  },
+  {
+    "id": [
+      1,
+      4
+    ],
+    "symbol": {
+      "name": "unary /"
+    }
+  }
+]

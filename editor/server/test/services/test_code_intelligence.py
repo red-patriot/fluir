@@ -31,14 +31,14 @@ from editor.services.intelligence import IntelligenceService
 @pytest.mark.parametrize(
     "expected",
     [
-        Completion(short_name="binary +", kind=Kind.OPERATOR),
-        Completion(short_name="binary -", kind=Kind.OPERATOR),
-        Completion(short_name="binary *", kind=Kind.OPERATOR),
-        Completion(short_name="binary /", kind=Kind.OPERATOR),
-        Completion(short_name="unary +", kind=Kind.OPERATOR),
-        Completion(short_name="unary -", kind=Kind.OPERATOR),
-        Completion(short_name="unary ++", kind=Kind.OPERATOR),
-        Completion(short_name="unary --", kind=Kind.OPERATOR),
+        Completion(short_name="+ (binary)", kind=Kind.OPERATOR),
+        Completion(short_name="- (binary)", kind=Kind.OPERATOR),
+        Completion(short_name="* (binary)", kind=Kind.OPERATOR),
+        Completion(short_name="/ (binary)", kind=Kind.OPERATOR),
+        Completion(short_name="+ (unary)", kind=Kind.OPERATOR),
+        Completion(short_name="- (unary)", kind=Kind.OPERATOR),
+        Completion(short_name="++ (unary)", kind=Kind.OPERATOR),
+        Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
     ],
 )
 def test_operator_completions(expected: Completion) -> None:
@@ -57,5 +57,30 @@ def test_operator_completions(expected: Completion) -> None:
     uut = IntelligenceService()
     uut.add_module(program, path)
     actual = uut.get_completions([1], path)
+
+    assert expected in actual
+
+
+def test_function_def_completion_at_top_level() -> None:
+    expected = Completion(
+        short_name="function",
+        kind=Kind.FUNCTION_DEF,
+        description="Define a new function here",
+    )
+    path = Path("fake/path/to/program.fl")
+
+    program = Program(  # Empty function
+        declarations=[
+            Function(
+                name="main",
+                id=1,
+            )
+        ]
+    )
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_completions([], path)
 
     assert expected in actual

@@ -25,7 +25,7 @@ def test_forwards_completions_request_on_post() -> None:
     client = _make_app(mock_service)
 
     response = client.post(
-        "/api/intelligence/",
+        "/api/intelligence/completions",
         json={"block_id": [1, 2], "path": "/fake/path.fl"},
     )
 
@@ -48,7 +48,7 @@ def test_returns_completions_as_json() -> None:
     client = _make_app(mock_service)
 
     response = client.post(
-        "/api/intelligence/",
+        "/api/intelligence/completions",
         json={"block_id": [], "path": "/fake/path.fl"},
     )
 
@@ -67,7 +67,7 @@ def test_returns_empty_list_when_no_completions() -> None:
     client = _make_app(mock_service)
 
     response = client.post(
-        "/api/intelligence/",
+        "/api/intelligence/completions",
         json={"block_id": [1], "path": "/fake/path.fl"},
     )
 

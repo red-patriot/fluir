@@ -17,7 +17,7 @@ class IntelligenceController(Controller):
 
     @override
     def register(self, app: FastAPI) -> None:
-        app.post("/api/intelligence")(self.completions)
+        app.post("/api/intelligence/completions")(self.completions)
 
     def completions(self, request: CompletionRequest) -> list[Completion]:
         """Handles requests for completions"""

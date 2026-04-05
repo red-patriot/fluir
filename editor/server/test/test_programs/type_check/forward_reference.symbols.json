@@ -1,93 +1,76 @@
 [
   {
-    "id": [
-      1
-    ],
-    "symbol": {
-      "name": "func main"
+    "id": [1],
+    "info": {
+      "inputs": null,
+      "outputs": null
     }
   },
   {
-    "id": [
-      1,
-      1
-    ],
-    "symbol": {
-      "name": "I32 Constant",
-      "outType": "I32"
+    "id": [1, 1],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      1,
-      2
-    ],
-    "symbol": {
-      "name": "I32 Constant",
-      "outType": "I32"
+    "id": [1, 2],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      1,
-      3
-    ],
-    "symbol": {
-      "inType": [
-        "I32",
-        "I32"
+    "id": [1, 3],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I32"},
+        {"expected_type": "I32", "provided_type": "I32"}
       ],
-      "name": "add",
-      "outType": "I32"
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      2
-    ],
-    "symbol": {
-      "inType": [
-        "I32",
-        "I32"
+    "id": [2],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": null},
+        {"expected_type": "I32", "provided_type": null}
       ],
-      "name": "func add",
-      "outType": "I32"
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      2,
-      1
-    ],
-    "symbol": {
-      "name": "I32 Parameter"
+    "id": [2, 1],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      2,
-      2
-    ],
-    "symbol": {
-      "name": "I32 Parameter"
+    "id": [2, 2],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
     }
   },
   {
-    "id": [
-      2,
-      3
-    ],
-    "symbol": {
-      "name": "I32 Return"
+    "id": [2, 3],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I32"}
+      ],
+      "outputs": null
     }
   },
   {
-    "id": [
-      2,
-      4
-    ],
-    "symbol": {
-      "name": "binary +"
+    "id": [2, 4],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I32"},
+        {"expected_type": "I32", "provided_type": "I32"}
+      ],
+      "outputs": ["I32"]
     }
   }
 ]

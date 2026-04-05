@@ -1,7 +1,9 @@
 from pathlib import Path
 
 _TEST_PROGRAMS_DIR: Path = Path(__file__).resolve().parents[3] / "test_programs"
-_INTERNAL_PROGRAMS_DIR: Path = Path(__file__).parent / "test_programs"
+_INTERNAL_PROGRAMS_DIR: Path = (
+    Path(__file__).parents[1] / "test" / "test_programs"
+)
 
 
 def get_test_programs(
@@ -39,9 +41,15 @@ def file_path_name(path: Path) -> str:
     return path.stem
 
 
-def get_golden_file_path(relative: str | Path) -> Path:
-    """Gets the absolute path given a path relative to test_programs/."""
-    absolute = _INTERNAL_PROGRAMS_DIR / relative
+def get_golden_file_path(relative: str | Path, extension: str) -> Path:
+    """Gets the absolute path to a golden file in the internal test_programs/.
+
+    Takes a relative path (e.g. type_check/func_call_simple.fl) and an
+    extension (e.g. ".json"), replaces the original extension with
+    the given one, and returns the absolute path.
+    """
+    path = Path(relative).with_suffix(f"{extension}")
+    absolute = _INTERNAL_PROGRAMS_DIR / path
     if not absolute.is_file():
-        raise RuntimeError(f"Expected a filepath, got {relative}")
+        raise RuntimeError(f"Expected a filepath, got {absolute}")
     return absolute

@@ -5,7 +5,6 @@ import { useEditProgram, useRedo, useUndo } from '@/hooks/useEditProgram.ts';
 import { useSaveFileAs } from '@/hooks/useSaveProgram.ts';
 import { ProgramActionsContext } from './ProgramActionsContext';
 import { useAppDispatch, actions } from '@/store';
-import { useProgramIntelligence } from '@/hooks/useProgramIntelligence';
 import { AxiosError } from 'axios';
 
 export default function ProgramActionsProvider({
@@ -67,14 +66,6 @@ export default function ProgramActionsProvider({
     onError,
   });
 
-  const { getCompletions } = useProgramIntelligence({
-    handleCompletions: (response) => {
-      // TODO
-      console.log(response);
-    },
-    onError,
-  });
-
   return (
     <ProgramActionsContext.Provider
       value={{
@@ -84,7 +75,6 @@ export default function ProgramActionsProvider({
         saveProgramAs,
         undoEdit,
         redoEdit,
-        getCompletions,
       }}
     >
       {children}

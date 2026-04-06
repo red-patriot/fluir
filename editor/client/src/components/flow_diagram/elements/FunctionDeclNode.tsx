@@ -8,8 +8,6 @@ import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { useMemo } from 'react';
 import { gray } from '@radix-ui/colors';
 import { useDialogContext } from '@/components/flow_diagram/dialog';
-import { useProgramActions } from '@/components/reusable/ProgramActionsContext.tsx';
-import { toApiID } from '@/utility/idHelpers.ts';
 
 export type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -22,7 +20,6 @@ export default function FunctionDeclNode({
                                            data: { decl, fullID },
                                          }: NodeProps<FunctionDeclNode>) {
   const { screenToFlowPosition } = useReactFlow();
-  const { getCompletions } = useProgramActions();
   const { openCreateNodeDialog } = useDialogContext();
   const minWidth = useMemo(() => {
     const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
@@ -39,7 +36,6 @@ export default function FunctionDeclNode({
   }, [decl.nodes]);
 
   const onBodyContextMenu = (event: React.MouseEvent) => {
-    getCompletions(toApiID(fullID), ''); // TODO: add the actual path here
     const clickCoord = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,

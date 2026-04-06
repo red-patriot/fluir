@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { SERVER_API } from '../api';
+import { SERVER_API } from '@/api';
 import { CompletionRequest } from '@/models/intelligence_request';
 
 import axios, { AxiosResponse, AxiosError } from 'axios';

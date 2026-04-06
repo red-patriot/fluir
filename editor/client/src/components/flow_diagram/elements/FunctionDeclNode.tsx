@@ -8,6 +8,8 @@ import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { useMemo } from 'react';
 import { gray } from '@radix-ui/colors';
 import { useDialogContext } from '@/components/flow_diagram/dialog';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext.tsx';
+import { toApiID } from '@/utility/idHelpers.ts';
 
 export type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -17,9 +19,10 @@ export type FunctionDeclNode = Node<
 export const FUNC_HEADER_HEIGHT = 0;
 
 export default function FunctionDeclNode({
-  data: { decl, fullID },
-}: NodeProps<FunctionDeclNode>) {
+                                           data: { decl, fullID },
+                                         }: NodeProps<FunctionDeclNode>) {
   const { screenToFlowPosition } = useReactFlow();
+  const { getCompletions } = useProgramActions();
   const { openCreateNodeDialog } = useDialogContext();
   const minWidth = useMemo(() => {
     const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
@@ -36,6 +39,7 @@ export default function FunctionDeclNode({
   }, [decl.nodes]);
 
   const onBodyContextMenu = (event: React.MouseEvent) => {
+    getCompletions(toApiID(fullID), ''); // TODO: add the actual path here
     const clickCoord = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
@@ -53,17 +57,17 @@ export default function FunctionDeclNode({
 
   return (
     <Flex
-      width='100%'
-      height='100%'
-      direction='column'
+      width="100%"
+      height="100%"
+      direction="column"
       style={{ borderColor: gray.gray3, borderWidth: 1 }}
     >
       <Box>
         <DeclHeader
           name={decl.name}
-          variant='solid'
+          variant="solid"
         >
-          <Flex className='grow' />
+          <Flex className="grow" />
           <DragHandle />
         </DeclHeader>
         <XYResizeHandle
@@ -73,12 +77,12 @@ export default function FunctionDeclNode({
         />
       </Box>
       <Badge
-        className='grow'
-        variant='soft'
-        color='gray'
+        className="grow"
+        variant="soft"
+        color="gray"
         onContextMenu={onBodyContextMenu}
       >
-        <Flex className='grow ' />
+        <Flex className="grow " />
       </Badge>
     </Flex>
   );

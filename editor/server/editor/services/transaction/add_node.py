@@ -10,19 +10,7 @@ from editor.services.transaction.base import TransactionBase
 from editor.services.transaction.remove import RemoveItem
 from editor.utility.next_id import next_id
 
-_AddOption = Literal[
-    "BinaryOperator",
-    "UnaryOperator",
-    "F64",
-    "I8",
-    "I16",
-    "I32",
-    "I64",
-    "U8",
-    "U16",
-    "U32",
-    "U64",
-]
+_AddOption = Literal["call", "constant", "operator"]
 
 
 class AddNode(BaseModel, TransactionBase):
@@ -30,6 +18,8 @@ class AddNode(BaseModel, TransactionBase):
     parent: QualifiedID
     new_type: _AddOption
     new_location: elements.Location
+    # Optional additional parameters to use when constructing the node
+    data: dict[str, str] = {}
     _inserted: IDType | None = None
 
     @override
@@ -41,42 +31,35 @@ class AddNode(BaseModel, TransactionBase):
         new_id = next_id(decl)
 
         match self.new_type:
-            case "F64":
+            case "constant":
+                fl_type = elements.FlType(self.data["type"])
+                value = "0.0" if fl_type == elements.FlType.F64 else "0"
                 decl.nodes.append(
                     elements.Constant(
                         id=new_id,
                         location=self.new_location,
-                        value="0.0",
-                        flType=elements.FlType.F64,
+                        value=value,
+                        flType=fl_type,
                     )
                 )
-            case "I8" | "I16" | "I32" | "I64" | "U8" | "U16" | "U32" | "U64":
-                decl.nodes.append(
-                    elements.Constant(
-                        id=new_id,
-                        location=self.new_location,
-                        value="0",
-                        flType=elements.FlType(self.new_type),
-                    )
-                )
-            case "BinaryOperator":
-                decl.nodes.append(
-                    elements.BinaryOperator(
-                        id=new_id,
-                        location=self.new_location,
-                        # TODO: Accept the operator as an input?
-                        op=elements.Operator.PLUS,
-                    )
-                )
-            case "UnaryOperator":
-                decl.nodes.append(
-                    elements.UnaryOperator(
-                        id=new_id,
-                        location=self.new_location,
-                        # TODO: Accept the operator as an input?
-                        op=elements.Operator.PLUS,
-                    )
-                )
+            case "operator":
+                match self.data["arity"]:
+                    case "binary":
+                        decl.nodes.append(
+                            elements.BinaryOperator(
+                                id=new_id,
+                                location=self.new_location,
+                                op=elements.Operator.PLUS,
+                            )
+                        )
+                    case "unary":
+                        decl.nodes.append(
+                            elements.UnaryOperator(
+                                id=new_id,
+                                location=self.new_location,
+                                op=elements.Operator.PLUS,
+                            )
+                        )
         self._inserted = new_id
         return original
 

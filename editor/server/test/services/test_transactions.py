@@ -471,10 +471,11 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="F64",
+                new_type="constant",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),
+                data={"type": "F64"},
             ),
         ),
         *(
@@ -487,10 +488,11 @@ def test_add_conduit_removes_duplicate_targets(
                 ),
                 AddNode(
                     parent=[2],
-                    new_type=elem,  # type: ignore
+                    new_type="constant",
                     new_location=elements.Location(
                         x=2, y=2, z=0, width=5, height=5
                     ),
+                    data={"type": elem},
                 ),
             )
             for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
@@ -503,8 +505,9 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="BinaryOperator",
+                new_type="operator",
                 new_location=elements.Location(15, 2, 1, 5, 5),
+                data={"arity": "binary"},
             ),
         ),
         (
@@ -515,8 +518,9 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="UnaryOperator",
+                new_type="operator",
                 new_location=elements.Location(2, 7, 0, 7, 7),
+                data={"arity": "unary"},
             ),
         ),
     ],

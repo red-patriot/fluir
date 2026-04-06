@@ -59,9 +59,10 @@ export function NodeOutput({ fullID, count = 1 }: NodeInOutProps) {
 
         return (
           <Handle
+            key={`input-${fullID}-${i}`}
             position={Position.Right}
             type='source'
-            id={`input-${fullID}-0`}
+            id={`input-${fullID}-${i}`}
             style={{
               translate: `25% ${position}%`,
               backgroundColor: gray.gray10,

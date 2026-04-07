@@ -1,4 +1,4 @@
-import { Flex, Code, Card, TextField, Box, Separator } from '@radix-ui/themes';
+import { Flex, Code, Card, TextField, Box, Separator, Theme } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
   useDialogContext,
@@ -116,46 +116,49 @@ export default function CreateNodeDialog({
     >
       <Dialog.Trigger />
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed top-0 left-0 size-full bg-gray-400 opacity-30" />
-        <Dialog.Content
-          className="fixed"
-          style={{
-            top: where.y,
-            left: where.x,
-          }}
-        >
-          <VisuallyHidden.Root>
-            <Dialog.Title>Create New Node</Dialog.Title>
-            <Dialog.Description>Create a New Node</Dialog.Description>
-          </VisuallyHidden.Root>
-          <Flex
-            direction="column"
-            p="1"
-            style={{ background: slate.slate7, borderRadius: 2 }}
+        <Theme accentColor="blue" grayColor="gray" panelBackground="solid" radius="none" appearance="dark">
+
+          <Dialog.Overlay className="fixed top-0 left-0 size-full bg-gray-400 opacity-30" />
+          <Dialog.Content
+            className="fixed"
+            style={{
+              top: where.y,
+              left: where.x,
+            }}
           >
-            <Box width="lg">
-              <TextField.Root color="gray" variant="surface" placeholder="Search…" size="1"
-                              onChange={onSearchChange}
-                              onKeyDown={onKeyDown}>
-                <TextField.Slot>
-                  <MagnifyingGlassIcon height="16" width="16" />
-                </TextField.Slot>
-              </TextField.Root>
-              <Separator />
-            </Box>
-            {filteredOptions.map((completion, i) => (
-              <div key={`add-option-${i}`}>
-                <CreateNodeDialogOption
-                  aria-label={`add-option-${completion.short_name}`}
-                  completion={completion}
-                  onSelectOption={onClick}
-                  selected={i === selectedIndex}
-                  onHover={() => setSelectedIndex(i)}
-                />
-              </div>
-            ))}
-          </Flex>
-        </Dialog.Content>
+            <VisuallyHidden.Root>
+              <Dialog.Title>Create New Node</Dialog.Title>
+              <Dialog.Description>Create a New Node</Dialog.Description>
+            </VisuallyHidden.Root>
+            <Flex
+              direction="column"
+              p="1"
+              style={{ background: slate.slate12, borderRadius: 2 }}
+            >
+              <Box width="lg">
+                <TextField.Root color="gray" variant="surface" placeholder="Search…" size="1"
+                                onChange={onSearchChange}
+                                onKeyDown={onKeyDown}>
+                  <TextField.Slot>
+                    <MagnifyingGlassIcon height="16" width="16" />
+                  </TextField.Slot>
+                </TextField.Root>
+                <Separator />
+              </Box>
+              {filteredOptions.map((completion, i) => (
+                <div key={`add-option-${i}`}>
+                  <CreateNodeDialogOption
+                    aria-label={`add-option-${completion.short_name}`}
+                    completion={completion}
+                    onSelectOption={onClick}
+                    selected={i === selectedIndex}
+                    onHover={() => setSelectedIndex(i)}
+                  />
+                </div>
+              ))}
+            </Flex>
+          </Dialog.Content>
+        </Theme>
       </Dialog.Portal>
     </Dialog.Root>
   );

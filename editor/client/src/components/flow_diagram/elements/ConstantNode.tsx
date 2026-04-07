@@ -39,9 +39,9 @@ const UINT_PARAMS: ConstantParams = {
 };
 
 export default function ConstantNode({
-  data: { constant, fullID },
-  selected,
-}: NodeProps<ConstantNode>) {
+                                       data: { constant, fullID },
+                                       selected,
+                                     }: NodeProps<ConstantNode>) {
   const { editProgram } = useProgramActions();
 
   const updateValue = updateConstant(editProgram, fullID);
@@ -49,8 +49,8 @@ export default function ConstantNode({
   const params = constant.flType?.startsWith('F')
     ? FLOAT_PARAMS
     : constant.flType?.startsWith('I')
-    ? INT_PARAMS
-    : UINT_PARAMS;
+      ? INT_PARAMS
+      : UINT_PARAMS;
 
   const doEdit = editWithInputField({
     validate: params.validate,
@@ -59,17 +59,17 @@ export default function ConstantNode({
 
   return (
     <Flex
-      direction='row'
-      height='100%'
-      align='center'
+      direction="row"
+      height="100%"
+      align="center"
       style={{ backgroundColor: params.color }}
     >
       <Flex
-        direction='column'
-        height='100%'
+        direction="column"
+        height="100%"
       >
-        <Box className='grow' />
-        <p className='text-[6px] font-mono align-text-bottom'>
+        <Box className="grow" />
+        <p className="text-[6px] font-mono align-text-bottom">
           {constant.flType}
         </p>
       </Flex>

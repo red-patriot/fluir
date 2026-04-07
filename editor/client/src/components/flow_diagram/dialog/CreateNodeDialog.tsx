@@ -1,4 +1,4 @@
-import { Flex, Code } from '@radix-ui/themes';
+import { Flex, Code, TextField, Box, Separator } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
   useDialogContext,
@@ -11,6 +11,7 @@ import { AddNodeEditRequest, ConstantParams, OperatorParams } from '@/models/edi
 import { toApiID } from '@/utility/idHelpers';
 import { LIMITS } from '@/limits';
 import { Completion, CompletionKind } from '@/models/intelligence_response';
+import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
 
 interface CreateNodeDialogProps extends CreateNodeOptions {
   options: Completion[];
@@ -61,6 +62,7 @@ export default function CreateNodeDialog({
                                          }: CreateNodeDialogProps) {
   const { closeDialog } = useDialogContext();
   const { editProgram } = useProgramActions();
+  const [searchText, setSearchText] = useState('');
 
   const onClick = (selection: Completion) => {
 
@@ -106,16 +108,30 @@ export default function CreateNodeDialog({
             p="1"
             style={{ background: slate.slate7, borderRadius: 2 }}
           >
-            {
-              options.map((completion, i) =>
-                <div>
-
+            <Box width="lg">
+              <TextField.Root color="gray" variant="surface" placeholder="Search…" size="1"
+                              onChange={(e) => setSearchText(e.target.value)}>
+                <TextField.Slot>
+                  <MagnifyingGlassIcon height="16" width="16" />
+                </TextField.Slot>
+              </TextField.Root>
+              <Separator />
+            </Box>
+            {options
+              .filter((c) =>
+                c.short_name
+                  .toLowerCase()
+                  .startsWith(searchText.toLowerCase()),
+              )
+              .map((completion, i) => (
+                <div key={`add-option-${i}`}>
                   <CreateNodeDialogOption
                     aria-label={`add-option-${completion.short_name}`}
-                    key={`add-option-${i}`}
-                    completion={completion} onSelectOption={onClick} />
-                </div>,
-              )}
+                    completion={completion}
+                    onSelectOption={onClick}
+                  />
+                </div>
+              ))}
           </Flex>
         </Dialog.Content>
       </Dialog.Portal>

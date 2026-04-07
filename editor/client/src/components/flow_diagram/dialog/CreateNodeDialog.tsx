@@ -62,8 +62,6 @@ export default function CreateNodeDialog({
   const { closeDialog } = useDialogContext();
   const { editProgram } = useProgramActions();
 
-  const [hovered, setHovered] = useState('');
-
   const onClick = (selection: Completion) => {
 
 
@@ -110,21 +108,42 @@ export default function CreateNodeDialog({
           >
             {
               options.map((completion, i) =>
-                <Code
-                  aria-label={`add-option-${completion.short_name}`}
-                  key={`add-option-${i}`}
-                  variant={hovered == completion.short_name ? 'outline' : 'ghost'}
-                  color="blue"
-                  onMouseOver={() => setHovered(completion.short_name)}
-                  onClick={() => onClick(completion)}
-                  className="cursor-pointer"
-                >
-                  {completion.short_name}
-                </Code>,
+                <div>
+
+                  <CreateNodeDialogOption
+                    aria-label={`add-option-${completion.short_name}`}
+                    key={`add-option-${i}`}
+                    completion={completion} onSelectOption={onClick} />
+                </div>,
               )}
           </Flex>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+  );
+}
+
+interface CreateNodeDialogOptionProps extends React.HTMLProps<HTMLElement> {
+  completion: Completion;
+  onSelectOption: (selection: Completion) => void;
+}
+
+export function CreateNodeDialogOption({
+                                         completion,
+                                         onSelectOption,
+                                       }: CreateNodeDialogOptionProps) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <Code
+      color="blue"
+      variant={hovered ? 'outline' : 'ghost'}
+      onMouseOver={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => onSelectOption(completion)}
+      className="cursor-pointer"
+    >
+      {completion.short_name}
+    </Code>
   );
 }

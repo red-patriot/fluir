@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from editor.models.elements import Program
+from editor.models.elements import FlType, Program
 from editor.models.id import QualifiedID
 from editor.models.lsp.completion import Completion, Kind
 
@@ -26,7 +26,7 @@ class IntelligenceService:
         if len(block_id) == 0:
             # Top level provides definition completions
             return self._toplevel_options()
-        return self._builtin_operators()
+        return self._builtin_operators() + self._constants()
 
     def _toplevel_options(self) -> list[Completion]:
         return [
@@ -48,4 +48,9 @@ class IntelligenceService:
             Completion(short_name="- (unary)", kind=Kind.OPERATOR),
             Completion(short_name="++ (unary)", kind=Kind.OPERATOR),
             Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
+        ]
+
+    def _constants(self) -> list[Completion]:
+        return [
+            Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType
         ]

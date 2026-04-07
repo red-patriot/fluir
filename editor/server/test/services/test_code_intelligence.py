@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from editor.models import Function, Program
+from editor.models.elements import FlType
 from editor.models.lsp.completion import Completion, Kind
 from editor.services.intelligence import IntelligenceService
 
@@ -43,6 +44,30 @@ from editor.services.intelligence import IntelligenceService
 )
 def test_operator_completions(expected: Completion) -> None:
     """Tests that completions provide builtin operators"""
+    path = Path("fake/path/to/program.fl")
+
+    program = Program(  # Empty function
+        declarations=[
+            Function(
+                name="main",
+                id=1,
+            )
+        ]
+    )
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+    actual = uut.get_completions([1], path)
+
+    assert expected in actual
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType],
+)
+def test_constant_completions(expected: Completion) -> None:
+    """Tests that completions provide constants for all FlType values"""
     path = Path("fake/path/to/program.fl")
 
     program = Program(  # Empty function

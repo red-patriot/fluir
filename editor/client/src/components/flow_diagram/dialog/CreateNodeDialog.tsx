@@ -1,4 +1,4 @@
-import { Flex, Code, TextField, Box, Separator } from '@radix-ui/themes';
+import { Flex, Code, Card, TextField, Box, Separator } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
   useDialogContext,
@@ -63,6 +63,31 @@ export default function CreateNodeDialog({
   const { closeDialog } = useDialogContext();
   const { editProgram } = useProgramActions();
   const [searchText, setSearchText] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+
+  const filteredOptions = options.filter((c) =>
+    c.short_name.toLowerCase().startsWith(searchText.toLowerCase()),
+  );
+
+  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchText(e.target.value);
+    setSelectedIndex(-1);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        Math.min(prev + 1, filteredOptions.length - 1),
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      onClick(filteredOptions[selectedIndex]);
+    }
+  };
 
   const onClick = (selection: Completion) => {
 
@@ -110,28 +135,25 @@ export default function CreateNodeDialog({
           >
             <Box width="lg">
               <TextField.Root color="gray" variant="surface" placeholder="Search…" size="1"
-                              onChange={(e) => setSearchText(e.target.value)}>
+                              onChange={onSearchChange}
+                              onKeyDown={onKeyDown}>
                 <TextField.Slot>
                   <MagnifyingGlassIcon height="16" width="16" />
                 </TextField.Slot>
               </TextField.Root>
               <Separator />
             </Box>
-            {options
-              .filter((c) =>
-                c.short_name
-                  .toLowerCase()
-                  .startsWith(searchText.toLowerCase()),
-              )
-              .map((completion, i) => (
-                <div key={`add-option-${i}`}>
-                  <CreateNodeDialogOption
-                    aria-label={`add-option-${completion.short_name}`}
-                    completion={completion}
-                    onSelectOption={onClick}
-                  />
-                </div>
-              ))}
+            {filteredOptions.map((completion, i) => (
+              <div key={`add-option-${i}`}>
+                <CreateNodeDialogOption
+                  aria-label={`add-option-${completion.short_name}`}
+                  completion={completion}
+                  onSelectOption={onClick}
+                  selected={i === selectedIndex}
+                  onHover={() => setSelectedIndex(i)}
+                />
+              </div>
+            ))}
           </Flex>
         </Dialog.Content>
       </Dialog.Portal>
@@ -142,24 +164,27 @@ export default function CreateNodeDialog({
 interface CreateNodeDialogOptionProps extends React.HTMLProps<HTMLElement> {
   completion: Completion;
   onSelectOption: (selection: Completion) => void;
+  selected?: boolean;
+  onHover: () => void;
 }
 
 export function CreateNodeDialogOption({
                                          completion,
                                          onSelectOption,
+                                         selected = false,
+                                         onHover,
                                        }: CreateNodeDialogOptionProps) {
-  const [hovered, setHovered] = useState(false);
-
   return (
-    <Code
-      color="blue"
-      variant={hovered ? 'outline' : 'ghost'}
-      onMouseOver={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={() => onSelectOption(completion)}
+    <Card
+      onMouseOver={onHover}
       className="cursor-pointer"
+      onClick={() => onSelectOption(completion)}
     >
-      {completion.short_name}
-    </Code>
+      <Code
+        color={selected ? 'blue' : 'gray'}
+      >
+        {completion.short_name}
+      </Code>
+    </Card>
   );
 }

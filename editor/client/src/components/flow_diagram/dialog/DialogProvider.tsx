@@ -9,14 +9,16 @@ import {
 } from '@/components/flow_diagram/dialog/DialogContext';
 import CreateNodeDialog from '@/components/flow_diagram/dialog/CreateNodeDialog';
 import { toApiID } from '@/utility/idHelpers.ts';
+import { Completion } from '@/models/intelligence_response';
 
 export default function DialogProvider({ children }: PropsWithChildren) {
   const program = useAppSelector((state) => state.program.path);
   const [dialogState, setDialogState] = useState<DialogState>({ active: null });
+  const [completions, setCompletions] = useState<Completion[]>([]);
   const { getCompletions } = useProgramIntelligence({
     handleCompletions: (response) => {
-      // TODO
       console.log(response);
+      setCompletions(response.data);
     },
     onError: (error) => {
       // TODO: Better error handling
@@ -38,7 +40,8 @@ export default function DialogProvider({ children }: PropsWithChildren) {
   return (
     <DialogContext.Provider value={{ closeDialog, openCreateNodeDialog }}>
       {dialogState.active === 'create_node' && (
-        <CreateNodeDialog {...(dialogState.data as CreateNodeOptions)} />
+        <CreateNodeDialog {...(dialogState.data as CreateNodeOptions)}
+                          options={completions} />
       )}
       {children}
     </DialogContext.Provider>

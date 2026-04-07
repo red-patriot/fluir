@@ -40,13 +40,29 @@ export type AddConduitEditRequest = {
   target: string; // "output-QualifiedID-index"
 };
 
-export type NodeOptions = 'F64' | 'BinaryOperator' | 'UnaryOperator';
+export type NodeOptions =
+  'call'
+  | 'constant'
+  | 'operator';
+
+export type ConstantParams = {
+  discriminator: 'constant';
+  type: 'F64' | 'I8' | 'I16' | 'I32' | 'I64' | 'U8' | 'U16' | 'U32' | 'U64';
+  value: string | undefined;
+}
+
+export type OperatorParams = {
+  discriminator: 'operator';
+  arity: 'binary' | 'unary';
+  op: string | undefined;
+}
+
 
 export type AddNodeEditRequest = {
   discriminator: 'add_node';
   parent: number[];
-  new_type: NodeOptions;
   new_location: Location;
+  params: ConstantParams | OperatorParams;
 };
 
 export type RemoveItemEditRequest = {

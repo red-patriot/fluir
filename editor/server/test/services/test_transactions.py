@@ -1,6 +1,7 @@
 import copy
 
 import pytest
+from pydantic import ValidationError
 
 from editor.models import FlType, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
@@ -9,7 +10,9 @@ from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
     AddNode,
+    ConstantParams,
     MoveElement,
+    OperatorParams,
     RemoveItem,
     RenameDeclaration,
     ResizeElement,
@@ -471,11 +474,10 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="constant",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),
-                data={"type": "F64"},
+                params=ConstantParams(type=FlType.F64),
             ),
         ),
         *(
@@ -488,11 +490,10 @@ def test_add_conduit_removes_duplicate_targets(
                 ),
                 AddNode(
                     parent=[2],
-                    new_type="constant",
                     new_location=elements.Location(
                         x=2, y=2, z=0, width=5, height=5
                     ),
-                    data={"type": elem},
+                    params=ConstantParams(type=FlType(elem)),
                 ),
             )
             for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
@@ -505,9 +506,8 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="operator",
                 new_location=elements.Location(15, 2, 1, 5, 5),
-                data={"arity": "binary"},
+                params=OperatorParams(arity="binary"),
             ),
         ),
         (
@@ -518,9 +518,73 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="operator",
                 new_location=elements.Location(2, 7, 0, 7, 7),
-                data={"arity": "unary"},
+                params=OperatorParams(arity="unary"),
+            ),
+        ),
+        # Constant with explicit value
+        (
+            elements.Constant(
+                id=6,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="42",
+                flType=FlType.I32,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 2, 0, 5, 5),
+                params=ConstantParams(type=FlType.I32, value="42"),
+            ),
+        ),
+        (
+            elements.Constant(
+                id=6,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="3.14",
+                flType=FlType.F64,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 2, 0, 5, 5),
+                params=ConstantParams(type=FlType.F64, value="3.14"),
+            ),
+        ),
+        # Operator with explicit op
+        (
+            elements.BinaryOperator(
+                id=6,
+                location=elements.Location(15, 2, 1, 5, 5),
+                op=elements.Operator.STAR,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(15, 2, 1, 5, 5),
+                params=OperatorParams(arity="binary", op="*"),
+            ),
+        ),
+        (
+            elements.UnaryOperator(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 7),
+                op=elements.Operator.MINUS_MINUS,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=OperatorParams(arity="unary", op="--"),
+            ),
+        ),
+        # Operator with UNKNOWN op defaults to PLUS
+        (
+            elements.BinaryOperator(
+                id=6,
+                location=elements.Location(15, 2, 1, 5, 5),
+                op=elements.Operator.PLUS,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(15, 2, 1, 5, 5),
+                params=OperatorParams(arity="binary", op=" "),
             ),
         ),
     ],
@@ -544,34 +608,30 @@ def test_add_node(
     assert original == actual
 
 
-@pytest.mark.parametrize(
-    "input",
-    [
-        AddNode(
+def test_add_node_missing_params_fails() -> None:
+    with pytest.raises(ValidationError):
+        AddNode(  # type: ignore[call-arg]
             parent=[2],
-            new_type="operator",
             new_location=elements.Location(2, 7, 0, 7, 7),
-        ),
-        AddNode(
-            parent=[2],
-            new_type="operator",
-            new_location=elements.Location(2, 7, 0, 7, 7),
-            data={"arity": "not_valid"},
-        ),
-        AddNode(
-            parent=[2],
-            new_type="constant",
-            new_location=elements.Location(x=2, y=2, z=0, width=5, height=5),
-        ),
-    ],
-)
-def test_add_node_with_bad_data_fails(
-    input: AddNode,
+        )
+
+
+def test_add_node_invalid_arity_fails() -> None:
+    with pytest.raises(ValidationError):
+        OperatorParams(arity="not_valid")  # type: ignore[arg-type]
+
+
+def test_add_node_with_invalid_op_fails(
     basic_program: Program,
     editor: ModuleEditor,
 ) -> None:
+    uut = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=OperatorParams(arity="binary", op="invalid"),
+    )
     with pytest.raises(BadEdit):
-        editor.edit(input)
+        editor.edit(uut)
 
 
 def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:

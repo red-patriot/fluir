@@ -544,6 +544,36 @@ def test_add_node(
     assert original == actual
 
 
+@pytest.mark.parametrize(
+    "input",
+    [
+        AddNode(
+            parent=[2],
+            new_type="operator",
+            new_location=elements.Location(2, 7, 0, 7, 7),
+        ),
+        AddNode(
+            parent=[2],
+            new_type="operator",
+            new_location=elements.Location(2, 7, 0, 7, 7),
+            data={"arity": "not_valid"},
+        ),
+        AddNode(
+            parent=[2],
+            new_type="constant",
+            new_location=elements.Location(x=2, y=2, z=0, width=5, height=5),
+        ),
+    ],
+)
+def test_add_node_with_bad_data_fails(
+    input: AddNode,
+    basic_program: Program,
+    editor: ModuleEditor,
+) -> None:
+    with pytest.raises(BadEdit):
+        editor.edit(input)
+
+
 def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)

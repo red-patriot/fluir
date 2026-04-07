@@ -32,36 +32,46 @@ class AddNode(BaseModel, TransactionBase):
 
         match self.new_type:
             case "constant":
-                fl_type = elements.FlType(self.data["type"])
-                value = "0.0" if fl_type == elements.FlType.F64 else "0"
-                decl.nodes.append(
-                    elements.Constant(
-                        id=new_id,
-                        location=self.new_location,
-                        value=value,
-                        flType=fl_type,
-                    )
-                )
+                decl.nodes.append(self._make_constant(new_id))
             case "operator":
-                match self.data["arity"]:
-                    case "binary":
-                        decl.nodes.append(
-                            elements.BinaryOperator(
-                                id=new_id,
-                                location=self.new_location,
-                                op=elements.Operator.PLUS,
-                            )
-                        )
-                    case "unary":
-                        decl.nodes.append(
-                            elements.UnaryOperator(
-                                id=new_id,
-                                location=self.new_location,
-                                op=elements.Operator.PLUS,
-                            )
-                        )
+                decl.nodes.append(self._make_operator(new_id))
         self._inserted = new_id
         return original
+
+    def _make_constant(self, new_id: IDType) -> elements.Constant:
+        if "type" not in self.data:
+            raise BadEdit("'constant' node data requires a 'type' element")
+        if not isinstance(self.data["type"], str):
+            raise BadEdit("'constant' node data['type'] must be a string")
+        fl_type = elements.FlType(self.data["type"])
+        value = "0.0" if fl_type == elements.FlType.F64 else "0"
+        return elements.Constant(
+            id=new_id,
+            location=self.new_location,
+            value=value,
+            flType=fl_type,
+        )
+
+    def _make_operator(
+        self, new_id: IDType
+    ) -> elements.BinaryOperator | elements.UnaryOperator:
+        if "arity" not in self.data:
+            raise BadEdit("'operator' node data requires a 'arity' element")
+        match self.data["arity"]:
+            case "binary":
+                return elements.BinaryOperator(
+                    id=new_id,
+                    location=self.new_location,
+                    op=elements.Operator.PLUS,
+                )
+            case "unary":
+                return elements.UnaryOperator(
+                    id=new_id,
+                    location=self.new_location,
+                    op=elements.Operator.PLUS,
+                )
+            case arity:
+                raise BadEdit(f"Unknown arity: {arity}")
 
     @override
     def undo(self, original: Program) -> Program:

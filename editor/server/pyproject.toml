@@ -24,6 +24,9 @@ build = [
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["editor*"]
+
 [tool.ruff]
 line-length = 80
 indent-width = 4

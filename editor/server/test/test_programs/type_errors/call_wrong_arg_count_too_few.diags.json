@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      2
+    ],
+    "message": "Attempted to call a function with the wrong number of arguments: Function 'add' expects 2 argument(s), but 1 were provided.",
+    "severity": 1
+  }
+]

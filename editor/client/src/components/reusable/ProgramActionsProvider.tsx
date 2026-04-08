@@ -1,24 +1,27 @@
 import { PropsWithChildren } from 'react';
-import { useNewProgram } from '../../hooks/useNewProgram';
-import { useOpenProgram } from '../../hooks/useOpenProgram';
-import { useEditProgram, useRedo, useUndo } from '../../hooks/useEditProgram';
-import { useSaveFileAs } from '../../hooks/useSaveProgram';
+import { useNewProgram } from '@/hooks/useNewProgram.ts';
+import { useOpenProgram } from '@/hooks/useOpenProgram.ts';
+import { useEditProgram, useRedo, useUndo } from '@/hooks/useEditProgram.ts';
+import { useSaveFileAs } from '@/hooks/useSaveProgram.ts';
 import { ProgramActionsContext } from './ProgramActionsContext';
-import { useAppDispatch, actions } from '../../store';
+import { useAppDispatch, actions } from '@/store';
+import { AxiosError } from 'axios';
 
 export default function ProgramActionsProvider({
-  children,
-}: PropsWithChildren) {
+                                                 children,
+                                               }: PropsWithChildren) {
   const dispatch = useAppDispatch();
+  const onError = (error: AxiosError) => {
+    // TODO: Better handling here
+    console.log(error);
+  };
 
   const newProgram = useNewProgram({
     onOpen: (response) => {
       dispatch(actions.setModuleState(response.data));
       dispatch(actions.goToPage('module'));
     },
-    onError: (error) => {
-      console.log(error);
-    },
+    onError,
   });
 
   // Local functions
@@ -27,9 +30,7 @@ export default function ProgramActionsProvider({
       dispatch(actions.setModuleState(response.data));
       dispatch(actions.goToPage('module'));
     },
-    onError: (error) => {
-      console.log(error);
-    },
+    onError,
   });
 
   const editProgram = useEditProgram({
@@ -37,9 +38,7 @@ export default function ProgramActionsProvider({
       console.log(response);
       dispatch(actions.setModuleState(response.data));
     },
-    onError: (error) => {
-      console.log(error);
-    },
+    onError,
   });
 
   const undoEdit = useUndo({
@@ -47,9 +46,7 @@ export default function ProgramActionsProvider({
       console.log(response);
       dispatch(actions.setModuleState(response.data));
     },
-    onError: (error) => {
-      console.log(error);
-    },
+    onError,
   });
 
   const redoEdit = useRedo({
@@ -57,9 +54,7 @@ export default function ProgramActionsProvider({
       console.log(response);
       dispatch(actions.setModuleState(response.data));
     },
-    onError: (error) => {
-      console.log(error);
-    },
+    onError,
   });
 
   const saveProgramAs = useSaveFileAs({
@@ -68,10 +63,7 @@ export default function ProgramActionsProvider({
       dispatch(actions.setModuleState(response.data));
       console.log(response);
     },
-    onError: (error) => {
-      // TODO: Better handling here
-      console.log(error);
-    },
+    onError,
   });
 
   return (

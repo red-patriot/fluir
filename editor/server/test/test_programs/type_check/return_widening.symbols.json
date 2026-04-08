@@ -1,0 +1,25 @@
+[
+  {
+    "id": [1],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
+    }
+  },
+  {
+    "id": [1, 2],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I8"}
+      ],
+      "outputs": null
+    }
+  },
+  {
+    "id": [1, 3],
+    "info": {
+      "inputs": null,
+      "outputs": ["I8"]
+    }
+  }
+]

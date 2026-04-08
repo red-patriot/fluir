@@ -1,0 +1,39 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      1
+    ],
+    "symbol": {
+      "name": "I64 Constant",
+      "outType": "I64"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "U8 Constant",
+      "outType": "U8"
+    }
+  },
+  {
+    "id": [
+      1,
+      3
+    ],
+    "symbol": {
+      "name": "binary +"
+    }
+  }
+]

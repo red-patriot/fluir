@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      2
+    ],
+    "message": "Attempted to call a function with the wrong number of arguments: Function 'no_args' expects 0 argument(s), but 1 were provided.",
+    "severity": 1
+  }
+]

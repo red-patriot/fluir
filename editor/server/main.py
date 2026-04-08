@@ -4,9 +4,10 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from editor.controllers import ModuleController
+from editor.controllers import IntelligenceController, ModuleController
 from editor.repository.fluir_file import XMLFileManager
 from editor.services import ModuleEditor
+from editor.services.intelligence import IntelligenceService
 
 
 def _setup_server() -> FastAPI:
@@ -33,6 +34,9 @@ def main() -> None:
 
     module_controller = ModuleController(ModuleEditor(XMLFileManager()))
     module_controller.register(app)
+
+    intelligence_controller = IntelligenceController(IntelligenceService())
+    intelligence_controller.register(app)
 
     _run_server(app)
 

@@ -1,0 +1,52 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      1
+    ],
+    "symbol": {
+      "name": "I32 Constant",
+      "outType": "I32"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "inType": [
+        "U8"
+      ],
+      "name": "takes_u8"
+    }
+  },
+  {
+    "id": [
+      2
+    ],
+    "symbol": {
+      "inType": [
+        "U8"
+      ],
+      "name": "func takes_u8"
+    }
+  },
+  {
+    "id": [
+      2,
+      1
+    ],
+    "symbol": {
+      "name": "U8 Parameter"
+    }
+  }
+]

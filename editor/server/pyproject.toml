@@ -24,6 +24,9 @@ build = [
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = ["editor*"]
+
 [tool.ruff]
 line-length = 80
 indent-width = 4
@@ -32,6 +35,9 @@ indent-width = 4
 quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+pythonpath = ["test_utils"]
 
 [tool.mypy]
 strict = true

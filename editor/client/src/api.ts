@@ -8,4 +8,5 @@ export const SERVER_API = {
   undo: BASE_URL + '/api/module/undo/',
   redo: BASE_URL + '/api/module/redo/',
   saveAs: BASE_URL + '/api/module/save/',
+  completions: BASE_URL + '/api/intelligence/completions/',
 };

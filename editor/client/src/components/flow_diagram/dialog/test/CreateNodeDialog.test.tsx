@@ -203,4 +203,45 @@ describe('CreateNodeDialog', () => {
       params: { discriminator: 'constant', type: 'int' },
     });
   });
+
+  // Scroll area
+
+  it('renders options inside a scroll area', () => {
+    const manyOptions: Completion[] = [
+      { short_name: 'op1 binary', kind: 'operator', description: 'Op1' },
+      { short_name: 'op2 binary', kind: 'operator', description: 'Op2' },
+      { short_name: 'op3 binary', kind: 'operator', description: 'Op3' },
+      { short_name: 'op4 binary', kind: 'operator', description: 'Op4' },
+      { short_name: 'op5 binary', kind: 'operator', description: 'Op5' },
+      { short_name: 'op6 binary', kind: 'operator', description: 'Op6' },
+      { short_name: 'op7 binary', kind: 'operator', description: 'Op7' },
+      { short_name: 'op8 binary', kind: 'operator', description: 'Op8' },
+    ];
+
+    render(
+      <CreateNodeDialog {...defaultProps} options={manyOptions} />,
+    );
+
+    const scrollViewport = document.querySelector(
+      '[data-radix-scroll-area-viewport]',
+    );
+    expect(scrollViewport).not.toBeNull();
+
+    for (const opt of manyOptions) {
+      expect(screen.getByText(opt.short_name)).toBeInTheDocument();
+    }
+  });
+
+  it('renders all options when fewer than max visible', () => {
+    render(<CreateNodeDialog {...defaultProps} />);
+
+    expect(screen.getByText('+ binary')).toBeInTheDocument();
+    expect(screen.getByText('- unary')).toBeInTheDocument();
+    expect(screen.getByText('int')).toBeInTheDocument();
+
+    const scrollViewport = document.querySelector(
+      '[data-radix-scroll-area-viewport]',
+    );
+    expect(scrollViewport).not.toBeNull();
+  });
 });

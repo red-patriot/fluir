@@ -1,4 +1,4 @@
-import { Flex, Code, Card, TextField, Box, Separator, Theme } from '@radix-ui/themes';
+import { Flex, Code, Card, TextField, Box, Separator, Theme, ScrollArea } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
   useDialogContext,
@@ -145,17 +145,23 @@ export default function CreateNodeDialog({
                 </TextField.Root>
                 <Separator />
               </Box>
-              {filteredOptions.map((completion, i) => (
-                <div key={`add-option-${i}`}>
-                  <CreateNodeDialogOption
-                    aria-label={`add-option-${completion.short_name}`}
-                    completion={completion}
-                    onSelectOption={onClick}
-                    selected={i === selectedIndex}
-                    onHover={() => setSelectedIndex(i)}
-                  />
-                </div>
-              ))}
+              <ScrollArea
+                type="auto"
+                scrollbars="vertical"
+                style={{ maxHeight: 200 }}
+              >
+                {filteredOptions.map((completion, i) => (
+                  <div key={`add-option-${i}`}>
+                    <CreateNodeDialogOption
+                      aria-label={`add-option-${completion.short_name}`}
+                      completion={completion}
+                      onSelectOption={onClick}
+                      selected={i === selectedIndex}
+                      onHover={() => setSelectedIndex(i)}
+                    />
+                  </div>
+                ))}
+              </ScrollArea>
             </Flex>
           </Dialog.Content>
         </Theme>

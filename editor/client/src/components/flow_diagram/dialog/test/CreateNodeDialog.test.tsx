@@ -24,7 +24,7 @@ const mockOptions: Completion[] = [
 
 const defaultProps = {
   parentID: '1:2',
-  parentLocation: { x: 10, y: 20, z: 0 },
+  parentLocation: { x: 10, y: 20, z: 0, width: 100, height: 100 },
   clickedLocation: { x: 50, y: 60 },
   where: { x: 100, y: 200 },
   options: mockOptions,

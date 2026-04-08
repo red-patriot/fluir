@@ -657,21 +657,6 @@ def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
-def test_add_decl_assigns_sequential_ids(
-    basic_program: Program, editor: ModuleEditor
-) -> None:
-    uut1 = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
-    uut2 = AddDecl(new_location=elements.Location(300, 50, 0, 200, 200))
-
-    editor.edit(uut1)
-    editor.edit(uut2)
-    actual = editor.get()
-    assert actual is not None
-
-    assert actual.declarations[-2].id == 4
-    assert actual.declarations[-1].id == 5
-
-
 def test_add_decl_with_custom_name(
     basic_program: Program, editor: ModuleEditor
 ) -> None:

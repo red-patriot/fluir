@@ -1,4 +1,4 @@
-import { Flex, Code, Card, TextField, Box, Separator, Theme, ScrollArea } from '@radix-ui/themes';
+import { Flex, Code, TextField, Box, Separator, Theme, ScrollArea, Badge } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
   useDialogContext,
@@ -120,7 +120,7 @@ export default function CreateNodeDialog({
 
           <Dialog.Overlay className="fixed top-0 left-0 size-full bg-gray-400 opacity-30" />
           <Dialog.Content
-            className="fixed"
+            className="fixed w-100"
             style={{
               top: where.y,
               left: where.x,
@@ -135,8 +135,8 @@ export default function CreateNodeDialog({
               p="1"
               style={{ background: slate.slate12, borderRadius: 2 }}
             >
-              <Box width="lg">
-                <TextField.Root color="gray" variant="surface" placeholder="Search…" size="1"
+              <Box>
+                <TextField.Root color="gray" variant="surface" placeholder="Search…" size="3"
                                 onChange={onSearchChange}
                                 onKeyDown={onKeyDown}>
                   <TextField.Slot>
@@ -151,7 +151,7 @@ export default function CreateNodeDialog({
                 style={{ maxHeight: 200 }}
               >
                 {filteredOptions.map((completion, i) => (
-                  <div key={`add-option-${i}`}>
+                  <div key={`add-option-${i}`} className="p-0.5">
                     <CreateNodeDialogOption
                       aria-label={`add-option-${completion.short_name}`}
                       completion={completion}
@@ -184,16 +184,21 @@ export function CreateNodeDialogOption({
                                          onHover,
                                        }: CreateNodeDialogOptionProps) {
   return (
-    <Card
-      onMouseOver={onHover}
-      className="cursor-pointer"
-      onClick={() => onSelectOption(completion)}
+    <Badge color={selected ? 'blue' : 'gray'}
+           onMouseOver={onHover}
+           className="cursor-pointer w-full"
+           onClick={() => onSelectOption(completion)}
     >
-      <Code
-        color={selected ? 'blue' : 'gray'}
-      >
-        {completion.short_name}
-      </Code>
-    </Card>
+      <Flex direction="row" align="center" gap="2" p="2" className="w-full justify-between">
+        <Code
+          size="5"
+          color="gray"
+        >
+          {completion.short_name}
+        </Code>
+        {/* TODO: Update the Box to contain a visual of the element to be added?*/}
+        <Box />
+      </Flex>
+    </Badge>
   );
 }

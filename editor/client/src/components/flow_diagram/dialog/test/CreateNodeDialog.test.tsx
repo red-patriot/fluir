@@ -71,12 +71,12 @@ describe('CreateNodeDialog', () => {
     await userEvent.type(input, '{ArrowDown}');
     // The first option should now be selected (blue color)
     const firstOption = screen.getByText('+ binary');
-    expect(firstOption).toHaveAttribute('data-accent-color', 'blue');
+    expect(firstOption.parentElement!.closest('[data-accent-color]')).toHaveAttribute('data-accent-color', 'blue');
 
     // Type to change search — selection should reset
     await userEvent.type(input, 'i');
     const intOption = screen.getByText('int');
-    expect(intOption).toHaveAttribute('data-accent-color', 'gray');
+    expect(intOption.parentElement!.closest('[data-accent-color]')).toHaveAttribute('data-accent-color', 'gray');
   });
 
   // Keyboard navigation
@@ -86,17 +86,17 @@ describe('CreateNodeDialog', () => {
     const input = screen.getByPlaceholderText('Search…');
 
     await userEvent.type(input, '{ArrowDown}');
-    expect(screen.getByText('+ binary')).toHaveAttribute(
+    expect(screen.getByText('+ binary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'blue',
     );
 
     await userEvent.type(input, '{ArrowDown}');
-    expect(screen.getByText('- unary')).toHaveAttribute(
+    expect(screen.getByText('- unary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'blue',
     );
-    expect(screen.getByText('+ binary')).toHaveAttribute(
+    expect(screen.getByText('+ binary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'gray',
     );
@@ -108,14 +108,14 @@ describe('CreateNodeDialog', () => {
 
     // Move down twice, then up twice
     await userEvent.type(input, '{ArrowDown}{ArrowDown}{ArrowUp}');
-    expect(screen.getByText('+ binary')).toHaveAttribute(
+    expect(screen.getByText('+ binary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'blue',
     );
 
     // ArrowUp again should stay at 0
     await userEvent.type(input, '{ArrowUp}');
-    expect(screen.getByText('+ binary')).toHaveAttribute(
+    expect(screen.getByText('+ binary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'blue',
     );
@@ -130,15 +130,15 @@ describe('CreateNodeDialog', () => {
       input,
       '{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}{ArrowDown}',
     );
-    expect(screen.getByText('int')).toHaveAttribute(
+    expect(screen.getByText('int').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'blue',
     );
-    expect(screen.getByText('+ binary')).toHaveAttribute(
+    expect(screen.getByText('+ binary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'gray',
     );
-    expect(screen.getByText('- unary')).toHaveAttribute(
+    expect(screen.getByText('- unary').parentElement!.closest('[data-accent-color]')).toHaveAttribute(
       'data-accent-color',
       'gray',
     );
@@ -160,7 +160,7 @@ describe('CreateNodeDialog', () => {
     const intOption = screen.getByText('int');
 
     await userEvent.hover(intOption);
-    expect(intOption).toHaveAttribute('data-accent-color', 'blue');
+    expect(intOption.parentElement!.closest('[data-accent-color]')).toHaveAttribute('data-accent-color', 'blue');
   });
 
   it('clicking an option calls editProgram and closeDialog', async () => {

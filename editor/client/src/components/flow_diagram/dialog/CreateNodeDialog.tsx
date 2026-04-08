@@ -7,7 +7,12 @@ import { Dialog, VisuallyHidden } from 'radix-ui';
 import { slate } from '@radix-ui/colors';
 import { useState } from 'react';
 import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
-import { AddNodeEditRequest, ConstantParams, OperatorParams } from '@/models/edit_request';
+import {
+  AddNodeEditRequest,
+  AddDeclEditRequest,
+  ConstantParams,
+  OperatorParams,
+} from '@/models/edit_request';
 import { toApiID } from '@/utility/idHelpers';
 import { LIMITS } from '@/limits';
 import { Completion, CompletionKind } from '@/models/intelligence_response';
@@ -90,21 +95,36 @@ export default function CreateNodeDialog({
   };
 
   const onClick = (selection: Completion) => {
-
-
-    const request: AddNodeEditRequest = {
-      discriminator: 'add_node',
-      parent: toApiID(parentID),
-      new_location: {
-        x: clickedLocation.x - parentLocation.x,
-        y: clickedLocation.y - parentLocation.y,
-        z: parentLocation.z + 1,
-        width: extractWidth(selection.kind),
-        height: extractHeight(selection.kind),
-      },
-      params: extractParameters(selection),
-    };
-    editProgram(request);
+    // TODO: Refactor this component to not require this unfortunate hack
+    if (selection.kind === 'function') {
+      const request: AddDeclEditRequest = {
+        discriminator: 'add_decl',
+        new_location: {
+          x: clickedLocation.x - parentLocation.x,
+          y: clickedLocation.y - parentLocation.y,
+          z: parentLocation.z + 1,
+          // TODO: Get some better values for this?
+          width: 40,
+          height: 30,
+        },
+        params: { discriminator: 'function' },
+      };
+      editProgram(request);
+    } else {
+      const request: AddNodeEditRequest = {
+        discriminator: 'add_node',
+        parent: toApiID(parentID),
+        new_location: {
+          x: clickedLocation.x - parentLocation.x,
+          y: clickedLocation.y - parentLocation.y,
+          z: parentLocation.z + 1,
+          width: extractWidth(selection.kind),
+          height: extractHeight(selection.kind),
+        },
+        params: extractParameters(selection),
+      };
+      editProgram(request);
+    }
     closeDialog();
   };
 

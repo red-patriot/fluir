@@ -27,6 +27,7 @@ export default function DialogProvider({ children }: PropsWithChildren) {
   });
 
   const closeDialog = () => {
+    setCompletions([]);
     setDialogState({ active: null, data: undefined });
   };
 

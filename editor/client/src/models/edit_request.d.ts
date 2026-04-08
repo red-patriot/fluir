@@ -57,13 +57,23 @@ export type OperatorParams = {
   op: string | undefined;
 }
 
-
 export type AddNodeEditRequest = {
   discriminator: 'add_node';
   parent: number[];
   new_location: Location;
   params: ConstantParams | OperatorParams;
 };
+
+export type CreateFunctionParams = {
+  discriminator: 'function';
+  name?: string;
+};
+
+export type AddDeclEditRequest = {
+  discriminator: 'add_decl';
+  new_location: Location;
+  params: CreateFunctionParams;
+}
 
 export type RemoveItemEditRequest = {
   target: number[];
@@ -77,6 +87,7 @@ type EditRequest =
   | UpdateOperatorEditRequest
   | AddConduitEditRequest
   | AddNodeEditRequest
+  | AddDeclEditRequest
   | RemoveItemEditRequest;
 
 export default EditRequest;

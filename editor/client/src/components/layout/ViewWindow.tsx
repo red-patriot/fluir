@@ -16,16 +16,17 @@ import {
   OnDelete,
 } from '@xyflow/react';
 import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
-import { useAppSelector } from '../../store';
+import { useAppSelector } from '@/store';
 import { useProgramActions } from '../reusable/ProgramActionsContext';
 import {
   AddConduitEditRequest,
   RemoveItemEditRequest,
-} from '../../models/edit_request';
-import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
-import { toApiID } from '../../utility/idHelpers';
+} from '@/models/edit_request';
+import { ZOOM_SCALAR } from '@/hooks/useSizeStyle.ts';
+import { toApiID } from '@/utility/idHelpers.ts';
 import { ContextMenu } from 'radix-ui';
 import { move } from '@/components/flow_diagram/logic';
+import { useDialogContext } from '@/components/flow_diagram/dialog';
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -34,7 +35,8 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 export default function ViewWindow() {
   const module = useAppSelector((state) => state.program.module);
   const { editProgram } = useProgramActions();
-  const { getNodes, getEdges } = useReactFlow();
+  const { getNodes, getEdges, screenToFlowPosition } = useReactFlow();
+  const { openCreateNodeDialog } = useDialogContext();
 
   const [nodes, setNodes] = useState(
     createNodes(module ? module : { declarations: [] }),
@@ -131,14 +133,14 @@ export default function ViewWindow() {
 
   if (!module) {
     return (
-      <div className='h-lvh w-lvw flex items-center justify-center'>
+      <div className="h-lvh w-lvw flex items-center justify-center">
         No module loaded
       </div>
     );
   }
 
   return (
-    <div className='grow'>
+    <div className="grow">
       <ContextMenu.Root>
         <ReactFlow
           nodes={nodes}
@@ -159,9 +161,25 @@ export default function ViewWindow() {
           snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
           snapToGrid
           panOnDrag={[1]}
+          onContextMenu={(event: React.MouseEvent) => {
+            event.stopPropagation();
+            const clickCoord = screenToFlowPosition({
+              x: event.clientX,
+              y: event.clientY,
+            });
+            clickCoord.x /= ZOOM_SCALAR;
+            clickCoord.y /= ZOOM_SCALAR;
+
+            openCreateNodeDialog({
+              clickedLocation: clickCoord,
+              parentID: '',
+              parentLocation: { x: 0, y: 0, z: 0, width: 0, height: 0 },
+              where: { x: event.clientX, y: event.clientY },
+            });
+          }}
         >
           <Background
-            id='bg-1'
+            id="bg-1"
             variant={BackgroundVariant.Dots}
             gap={10}
             size={0.5}

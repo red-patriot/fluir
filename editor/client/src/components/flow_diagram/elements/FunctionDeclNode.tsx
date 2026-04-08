@@ -36,6 +36,7 @@ export default function FunctionDeclNode({
   }, [decl.nodes]);
 
   const onBodyContextMenu = (event: React.MouseEvent) => {
+    event.stopPropagation();
     const clickCoord = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,

@@ -11,3 +11,8 @@ def next_id(decl: elements.Declaration) -> IDType:
             return max(max_node_id, max_conduit_id) + 1
         case _:
             raise TypeError(f"Unsupported declaration type: {type(decl)}")
+
+
+def next_decl_id(program: elements.Program) -> IDType:
+    max_id = max((decl.id for decl in program.declarations), default=0)
+    return max(max_id, 0) + 1

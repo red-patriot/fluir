@@ -9,8 +9,10 @@ from editor.models.elements import find_element
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
+    AddDecl,
     AddNode,
     ConstantParams,
+    FunctionParams,
     MoveElement,
     OperatorParams,
     RemoveItem,
@@ -632,6 +634,68 @@ def test_add_node_with_invalid_op_fails(
     )
     with pytest.raises(BadEdit):
         editor.edit(uut)
+
+
+def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations.append(
+        elements.Function(
+            id=4,
+            name="new_function",
+            location=elements.Location(50, 50, 0, 200, 200),
+        )
+    )
+
+    uut = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_add_decl_assigns_sequential_ids(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    uut1 = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
+    uut2 = AddDecl(new_location=elements.Location(300, 50, 0, 200, 200))
+
+    editor.edit(uut1)
+    editor.edit(uut2)
+    actual = editor.get()
+    assert actual is not None
+
+    assert actual.declarations[-2].id == 4
+    assert actual.declarations[-1].id == 5
+
+
+def test_add_decl_with_custom_name(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations.append(
+        elements.Function(
+            id=4,
+            name="my_func",
+            location=elements.Location(50, 50, 0, 200, 200),
+        )
+    )
+
+    uut = AddDecl(
+        new_location=elements.Location(50, 50, 0, 200, 200),
+        params=FunctionParams(name="my_func"),
+    )
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
 
 
 def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:

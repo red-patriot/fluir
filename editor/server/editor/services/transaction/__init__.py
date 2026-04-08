@@ -1,4 +1,5 @@
 from editor.services.transaction.add_conduit import AddConduit
+from editor.services.transaction.add_decl import AddDecl, FunctionParams
 from editor.services.transaction.add_node import (
     AddNode,
     ConstantParams,
@@ -20,6 +21,7 @@ type EditTransaction = (
     | UpdateOperator
     | AddConduit
     | AddNode
+    | AddDecl
     | RemoveItem
 )
 
@@ -33,6 +35,8 @@ __all__ = [
     "UpdateOperator",
     "AddConduit",
     "AddNode",
+    "AddDecl",
+    "FunctionParams",
     "ConstantParams",
     "OperatorParams",
     "RemoveItem",

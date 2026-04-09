@@ -103,21 +103,9 @@ class Parameter:
 
 
 @dataclass
-class InputBlock:
-    location: Location = field(default_factory=Location)
-    elements: list[Parameter] = field(default_factory=list)
-
-
-@dataclass
 class Return:
     id: IDType = INVALID_ID
     flType: FlType | None = None
-
-
-@dataclass
-class OutputBlock:
-    location: Location = field(default_factory=Location)
-    elements: list[Return] = field(default_factory=list)
 
 
 @dataclass
@@ -128,8 +116,8 @@ class Function:
     location: Location = field(default_factory=Location)
     nodes: Nodes = field(default_factory=list)
     conduits: list[Conduit] = field(default_factory=list)
-    input: InputBlock | None = None
-    output: OutputBlock | None = None
+    inputs: list[Parameter] = field(default_factory=list)
+    outputs: list[Return] = field(default_factory=list)
 
 
 Declaration = Function

@@ -9,10 +9,8 @@ from editor.models import (
     FlType,
     Function,
     Header,
-    InputBlock,
     Location,
     Operator,
-    OutputBlock,
     Parameter,
     Program,
     Return,
@@ -438,13 +436,10 @@ _TEST_DATA = [
                     name="add",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    input=InputBlock(
-                        location=Location(0, 30, 0, 10, 30),
-                        elements=[
-                            Parameter(name="a", id=2, flType=FlType.I32),
-                            Parameter(name="b", id=3, flType=FlType.I32),
-                        ],
-                    ),
+                    inputs=[
+                        Parameter(name="a", id=2, flType=FlType.I32),
+                        Parameter(name="b", id=3, flType=FlType.I32),
+                    ],
                 )
             ],
             Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
@@ -459,7 +454,7 @@ _TEST_DATA = [
     </version>
   </header>
   <function name="add" id="1" x="10" y="10" z="3" w="100" h="100">
-    <input x="0" y="30" z="0" w="10" h="30">
+    <input>
       <param name="a" id="2" type="I32"/>
       <param name="b" id="3" type="I32"/>
     </input>
@@ -475,12 +470,9 @@ _TEST_DATA = [
                     name="getVal",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    output=OutputBlock(
-                        location=Location(100, 24, 0, 10, 7),
-                        elements=[
-                            Return(id=4, flType=FlType.F64),
-                        ],
-                    ),
+                    outputs=[
+                        Return(id=4, flType=FlType.F64),
+                    ],
                 )
             ],
             Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
@@ -495,7 +487,7 @@ _TEST_DATA = [
     </version>
   </header>
   <function name="getVal" id="1" x="10" y="10" z="3" w="100" h="100">
-    <output x="100" y="24" z="0" w="10" h="7">
+    <output>
       <return id="4" type="F64"/>
     </output>
     <body/>
@@ -510,20 +502,14 @@ _TEST_DATA = [
                     name="transform",
                     location=Location(10, 10, 3, 100, 100),
                     id=1,
-                    input=InputBlock(
-                        location=Location(0, 30, 0, 10, 30),
-                        elements=[
-                            Parameter(name="x", id=2, flType=FlType.F64),
-                        ],
-                    ),
-                    output=OutputBlock(
-                        location=Location(100, 24, 0, 10, 7),
-                        elements=[
-                            Return(id=3, flType=FlType.F64),
-                            Return(id=4, flType=FlType.I32),
-                        ],
-                    ),
-                )
+                    inputs=[
+                        Parameter(name="x", id=2, flType=FlType.F64),
+                    ],
+                    outputs=[
+                        Return(id=3, flType=FlType.F64),
+                        Return(id=4, flType=FlType.I32),
+                    ],
+                ),
             ],
             Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
         ),
@@ -537,10 +523,10 @@ _TEST_DATA = [
     </version>
   </header>
   <function name="transform" id="1" x="10" y="10" z="3" w="100" h="100">
-    <input x="0" y="30" z="0" w="10" h="30">
+    <input>
       <param name="x" id="2" type="F64"/>
     </input>
-    <output x="100" y="24" z="0" w="10" h="7">
+    <output>
       <return id="3" type="F64"/>
       <return id="4" type="I32"/>
     </output>
@@ -564,4 +550,4 @@ def test_repository_writes_file(
     with open(path, "r") as file:
         actual = file.read()
 
-    assert expected == actual
+    assert actual == expected

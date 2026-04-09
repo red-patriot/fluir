@@ -10,8 +10,11 @@ from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
     AddDecl,
+    AddDeclInterface,
     AddNode,
     ConstantParams,
+    DeclParameterParams,
+    DeclReturnParams,
     FunctionParams,
     MoveElement,
     OperatorParams,
@@ -698,6 +701,82 @@ def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
+def test_add_func_parameter(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].inputs = [
+        elements.Parameter(name="new_param", id=1, flType=FlType.U8),
+    ]
+
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="new_param"),
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_add_multiple_func_parameter(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].inputs = [
+        elements.Parameter(name="new_param", id=1, flType=FlType.U8),
+        elements.Parameter(name="other_param", id=2, flType=FlType.U32),
+    ]
+
+    uut1 = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="new_param"),
+    )
+    uut2 = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U32,
+        params=DeclParameterParams(name="other_param"),
+    )
+
+    editor.edit(uut1)
+    editor.edit(uut2)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+
+def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].outputs = [
+        elements.Return(id=1, flType=FlType.U64)
+    ]
+
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U64,
+        params=DeclReturnParams(),
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
 def test_remove_node_with_conduits(
     basic_program: Program, editor: ModuleEditor
 ) -> None:
@@ -737,6 +816,110 @@ def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
     expected.declarations[1].conduits.pop(0)
 
     uut = RemoveItem(target=[2, 5])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_input(basic_program: Program, editor: ModuleEditor) -> None:
+    basic_program.declarations[1].inputs.append(
+        elements.Parameter(name="x", id=10, flType=FlType.F64)
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].inputs = []
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_input_with_conduits(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    basic_program.declarations[1].inputs.append(
+        elements.Parameter(name="x", id=10, flType=FlType.F64)
+    )
+    basic_program.declarations[1].conduits.append(
+        elements.Conduit(
+            id=11,
+            input=10,
+            children=[elements.Conduit.Output(target=1, index=0)],
+        )
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].inputs = []
+    expected.declarations[1].conduits = [
+        c for c in expected.declarations[1].conduits if c.id != 11
+    ]
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_output(basic_program: Program, editor: ModuleEditor) -> None:
+    basic_program.declarations[1].outputs.append(
+        elements.Return(id=10, flType=FlType.F64)
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].outputs = []
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_output_with_conduits(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    basic_program.declarations[1].outputs.append(
+        elements.Return(id=10, flType=FlType.F64)
+    )
+    basic_program.declarations[1].conduits.append(
+        elements.Conduit(
+            id=11,
+            input=1,
+            children=[elements.Conduit.Output(target=10, index=0)],
+        )
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].outputs = []
+    expected.declarations[1].conduits = [
+        c for c in expected.declarations[1].conduits if c.id != 11
+    ]
+
+    uut = RemoveItem(target=[2, 10])
     editor.edit(uut)
     actual = editor.get()
 

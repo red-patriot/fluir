@@ -10,7 +10,9 @@ from editor.services.transaction.base import TransactionBase
 
 class RemoveItem(BaseModel, TransactionBase):
     target: QualifiedID
-    _removed_item: elements.Item | None = None
+    _removed_item: (
+        elements.Item | elements.Parameter | elements.Return | None
+    ) = None
     _removed_conduits: list[elements.Conduit] = []
 
     @override
@@ -57,6 +59,20 @@ class RemoveItem(BaseModel, TransactionBase):
                         self._removed_item = conduit
                         break
 
+            # Check if it's an input
+            if self._removed_item is None:
+                for input_ in parent.inputs:
+                    if input_.id == element_id:
+                        self._removed_item = input_
+                        break
+
+            # Check if it's a return
+            if self._removed_item is None:
+                for output in parent.outputs:
+                    if output.id == element_id:
+                        self._removed_item = output
+                        break
+
             if self._removed_item is None:
                 raise BadEdit(f"Element {element_id} not found")
 
@@ -79,6 +95,12 @@ class RemoveItem(BaseModel, TransactionBase):
                 conduit
                 for conduit in parent.conduits
                 if conduit.id != element_id
+            ]
+            parent.inputs = [
+                input_ for input_ in parent.inputs if input_.id != element_id
+            ]
+            parent.outputs = [
+                output for output in parent.outputs if output.id != element_id
             ]
             # Remove any conduits connected to this node
             parent.conduits = [
@@ -115,6 +137,10 @@ class RemoveItem(BaseModel, TransactionBase):
                 parent.nodes.append(self._removed_item)
             elif isinstance(self._removed_item, elements.Conduit):
                 parent.conduits.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Parameter):
+                parent.inputs.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Return):
+                parent.outputs.append(self._removed_item)
 
             # Restore any conduits that were removed due to connections
             for conduit in self._removed_conduits:

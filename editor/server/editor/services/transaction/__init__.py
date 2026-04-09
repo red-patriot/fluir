@@ -1,5 +1,10 @@
 from editor.services.transaction.add_conduit import AddConduit
 from editor.services.transaction.add_decl import AddDecl, FunctionParams
+from editor.services.transaction.add_decl_interface import (
+    AddDeclInterface,
+    DeclParameterParams,
+    DeclReturnParams,
+)
 from editor.services.transaction.add_node import (
     AddNode,
     ConstantParams,
@@ -22,6 +27,7 @@ type EditTransaction = (
     | AddConduit
     | AddNode
     | AddDecl
+    | AddDeclInterface
     | RemoveItem
 )
 
@@ -36,6 +42,9 @@ __all__ = [
     "AddConduit",
     "AddNode",
     "AddDecl",
+    "AddDeclInterface",
+    "DeclParameterParams",
+    "DeclReturnParams",
     "FunctionParams",
     "ConstantParams",
     "OperatorParams",

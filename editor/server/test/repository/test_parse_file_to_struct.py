@@ -9,9 +9,13 @@ from editor.models import (
     FlType,
     Function,
     Header,
+    InputBlock,
     Location,
     Operator,
+    OutputBlock,
+    Parameter,
     Program,
+    Return,
     UnaryOperator,
     Version,
 )
@@ -506,6 +510,124 @@ _TEST_DATA = [
     </fluir>
     """,
     ),
+    (
+        Program(
+            [
+                Function(
+                    name="add",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    input=InputBlock(
+                        location=Location(0, 30, 0, 10, 30),
+                        elements=[
+                            Parameter(name="a", id=2, flType=FlType.I32),
+                            Parameter(name="b", id=3, flType=FlType.I32),
+                        ],
+                    ),
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="add" id="1" x="10" y="10" z="3" w="100" h="100">
+            <input x="0" y="30" z="0" w="10" h="30">
+                <param name="a" id="2" type="I32"/>
+                <param name="b" id="3" type="I32"/>
+            </input>
+            <body/>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="getVal",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    output=OutputBlock(
+                        location=Location(100, 24, 0, 10, 7),
+                        elements=[
+                            Return(id=4, flType=FlType.F64),
+                        ],
+                    ),
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="getVal" id="1" x="10" y="10" z="3" w="100" h="100">
+            <output x="100" y="24" z="0" w="10" h="7">
+                <return id="4" type="F64"/>
+            </output>
+            <body/>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="transform",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    input=InputBlock(
+                        location=Location(0, 30, 0, 10, 30),
+                        elements=[
+                            Parameter(name="x", id=2, flType=FlType.F64),
+                        ],
+                    ),
+                    output=OutputBlock(
+                        location=Location(100, 24, 0, 10, 7),
+                        elements=[
+                            Return(id=3, flType=FlType.F64),
+                            Return(id=4, flType=FlType.I32),
+                        ],
+                    ),
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="transform" id="1" x="10" y="10" z="3" w="100" h="100">
+            <input x="0" y="30" z="0" w="10" h="30">
+                <param name="x" id="2" type="F64"/>
+            </input>
+            <output x="100" y="24" z="0" w="10" h="7">
+                <return id="3" type="F64"/>
+                <return id="4" type="I32"/>
+            </output>
+            <body/>
+        </function>
+    </fluir>
+    """,
+    ),
 ]
 
 
@@ -520,6 +642,9 @@ _TEST_DATA = [
         "branching_conduits",
         "int_constants",
         "uint_constants",
+        "function_with_input_only",
+        "function_with_output_only",
+        "function_with_input_and_output",
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:

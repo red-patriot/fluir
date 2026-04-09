@@ -20,7 +20,13 @@ from editor.models import (
     Program,
     UnaryOperator,
 )
-from editor.models.elements import Header
+from editor.models.elements import (
+    Header,
+    InputBlock,
+    OutputBlock,
+    Parameter,
+    Return,
+)
 from editor.models.version import Version
 from editor.repository.interface.file_manager import FileManager
 
@@ -90,6 +96,16 @@ class _XMLReader:
     def _declaration(self, element: Any) -> _DeclarationPair:
         nodes: Nodes = []
         conduits: list[Conduit] = []
+        input_block: InputBlock | None = None
+        output_block: OutputBlock | None = None
+
+        input_element = element.find("input")
+        if input_element is not None:
+            input_block = self._input_block(input_element)
+
+        output_element = element.find("output")
+        if output_element is not None:
+            output_block = self._output_block(output_element)
 
         def handle_child(
             id_and_item: tuple[IDType, Any], items: list[Any]
@@ -110,7 +126,46 @@ class _XMLReader:
             location=self._location(element),
             nodes=nodes,
             conduits=conduits,
+            input=input_block,
+            output=output_block,
         )
+
+    def _input_block(self, element: Any) -> InputBlock:
+        params: list[Parameter] = []
+        for child in element.iterchildren():
+            if child.tag == "param":
+                params.append(
+                    Parameter(
+                        name=str(child.get("name")),
+                        id=self._id(child),
+                        flType=self._type_from_attribute(child),
+                    )
+                )
+        return InputBlock(
+            location=self._location(element),
+            elements=params,
+        )
+
+    def _output_block(self, element: Any) -> OutputBlock:
+        returns: list[Return] = []
+        for child in element.iterchildren():
+            if child.tag == "return":
+                returns.append(
+                    Return(
+                        id=self._id(child),
+                        flType=self._type_from_attribute(child),
+                    )
+                )
+        return OutputBlock(
+            location=self._location(element),
+            elements=returns,
+        )
+
+    def _type_from_attribute(self, element: Any) -> FlType | None:
+        type_str: str | None = element.get("type")
+        if type_str is None:
+            return None
+        return FlType(type_str)
 
     def _node(self, element: Any) -> _NodePair:
         match element.tag:
@@ -269,11 +324,60 @@ class _XMLWriter:
                 "h": str(declaration.location.height),
             },
         )
+        if declaration.input is not None:
+            self._input_block(declaration.input, decl_element)
+        if declaration.output is not None:
+            self._output_block(declaration.output, decl_element)
         body_element = etree.SubElement(decl_element, "body")
         for node in declaration.nodes:
             self._node(node, body_element)
         for conduit in declaration.conduits:
             self._conduit(conduit, body_element)
+
+    def _input_block(
+        self, input_block: InputBlock, parent: etree._Element
+    ) -> None:
+        input_element = etree.SubElement(
+            parent,
+            "input",
+            attrib={
+                "x": str(input_block.location.x),
+                "y": str(input_block.location.y),
+                "z": str(input_block.location.z),
+                "w": str(input_block.location.width),
+                "h": str(input_block.location.height),
+            },
+        )
+        for param in input_block.elements:
+            attrib: dict[str, str] = {
+                "name": param.name,
+                "id": str(param.id),
+            }
+            if param.flType is not None:
+                attrib["type"] = str(param.flType)
+            etree.SubElement(input_element, "param", attrib=attrib)
+
+    def _output_block(
+        self, output_block: OutputBlock, parent: etree._Element
+    ) -> None:
+        output_element = etree.SubElement(
+            parent,
+            "output",
+            attrib={
+                "x": str(output_block.location.x),
+                "y": str(output_block.location.y),
+                "z": str(output_block.location.z),
+                "w": str(output_block.location.width),
+                "h": str(output_block.location.height),
+            },
+        )
+        for ret in output_block.elements:
+            attrib: dict[str, str] = {
+                "id": str(ret.id),
+            }
+            if ret.flType is not None:
+                attrib["type"] = str(ret.flType)
+            etree.SubElement(output_element, "return", attrib=attrib)
 
     def _node(self, node: Node, parent: etree._Element) -> None:
         match node.discriminator:

@@ -1,4 +1,4 @@
-import { Location, Operator } from './fluir_module';
+import { FlType, Location, Operator } from './fluir_module';
 
 export type MoveEditRequest = {
   discriminator: 'move';
@@ -63,6 +63,22 @@ export type AddNodeEditRequest = {
   new_location: Location;
   params: ConstantParams | OperatorParams;
 };
+
+export type DeclParameterParams = {
+  discriminator: 'parameter';
+  name: string;
+}
+
+export type DeclReturnParams = {
+  discriminator: 'return';
+}
+
+export type AddDeclInterfaceEditRequest = {
+  discriminator: 'add_decl_interface';
+  parent: number[];
+  flType: FlType;
+  params: DeclParameterParams | DeclReturnParams;
+}
 
 export type CreateFunctionParams = {
   discriminator: 'function';

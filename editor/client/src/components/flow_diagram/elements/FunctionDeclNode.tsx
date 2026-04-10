@@ -64,6 +64,11 @@ export default function FunctionDeclNode({
           name={decl.name}
           variant="solid"
           fullID={fullID}
+          onContextMenu={(event: React.MouseEvent) => {
+            event.stopPropagation();
+            // TODO: Fill this out here!
+            console.log('context menu');
+          }}
         >
           <DragHandle />
         </DeclHeader>

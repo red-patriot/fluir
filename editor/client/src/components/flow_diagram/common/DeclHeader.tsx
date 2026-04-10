@@ -1,4 +1,3 @@
-import React from 'react';
 import { amber } from '@radix-ui/colors';
 import { Flex } from '@radix-ui/themes';
 import { ValueDisplay } from './ValueDisplay';
@@ -11,6 +10,7 @@ interface DeclHeaderProps {
   name: string;
   variant?: 'solid' | 'ghost';
   fullID: string;
+  onContextMenu?: (event: React.MouseEvent) => void;
 }
 
 
@@ -18,6 +18,7 @@ export default function DeclHeader({
                                      name,
                                      children,
                                      fullID,
+                                     onContextMenu,
                                    }: React.PropsWithChildren<DeclHeaderProps>) {
   const { editProgram } = useProgramActions();
   const updateName = renameDeclaration(editProgram, fullID);
@@ -35,6 +36,7 @@ export default function DeclHeader({
       style={{
         background: amber.amber8,
       }}
+      onContextMenu={onContextMenu}
     >
       <ValueDisplay fullID={fullID} value={name} renderEdit={doEdit} />
       {children}

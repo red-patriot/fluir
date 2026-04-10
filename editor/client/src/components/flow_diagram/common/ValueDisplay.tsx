@@ -25,10 +25,10 @@ export function ValueDisplay({ fullID, value, renderEdit }: ValueDisplayProps) {
 
   return (
     <Code
-      color='gray'
-      variant='solid'
-      size='2'
-      className='grow ml-0.25 overflow-hidden text-ellipsis whitespace-nowrap'
+      color="gray"
+      variant="solid"
+      size="2"
+      className="grow m-0.25 overflow-hidden text-ellipsis whitespace-nowrap"
     >
       {renderEdit && isEditing ? (
         renderEdit(fullID, value, stopEditing)

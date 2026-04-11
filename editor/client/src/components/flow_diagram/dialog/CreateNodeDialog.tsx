@@ -1,11 +1,7 @@
-import { Flex, Code, TextField, Box, Separator, Theme, ScrollArea, Badge } from '@radix-ui/themes';
+import { Flex, Code, Box, Badge } from '@radix-ui/themes';
 import {
   CreateNodeOptions,
-  useDialogContext,
 } from '@/components/flow_diagram/dialog/DialogContext';
-import { Dialog, VisuallyHidden } from 'radix-ui';
-import { slate } from '@radix-ui/colors';
-import { useState } from 'react';
 import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 import {
   AddNodeEditRequest,
@@ -16,7 +12,7 @@ import {
 import { toApiID } from '@/utility/idHelpers';
 import { LIMITS } from '@/limits';
 import { Completion, CompletionKind } from '@/models/intelligence_response';
-import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
+import CoreDialog, { OptionProps } from './CoreDialog';
 
 interface CreateNodeDialogProps extends CreateNodeOptions {
   options: Completion[];
@@ -65,36 +61,8 @@ export default function CreateNodeDialog({
                                            where,
                                            options,
                                          }: CreateNodeDialogProps) {
-  const { closeDialog } = useDialogContext();
   const { editProgram } = useProgramActions();
-  const [searchText, setSearchText] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(-1);
-
-  const filteredOptions = options.filter((c) =>
-    c.short_name.toLowerCase().startsWith(searchText.toLowerCase()),
-  );
-
-  const onSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchText(e.target.value);
-    setSelectedIndex(-1);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) =>
-        Math.min(prev + 1, filteredOptions.length - 1),
-      );
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => Math.max(prev - 1, 0));
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
-      e.preventDefault();
-      onClick(filteredOptions[selectedIndex]);
-    }
-  };
-
-  const onClick = (selection: Completion) => {
+  const onSelect = (selection: Completion) => {
     // TODO: Refactor this component to not require this unfortunate hack
     if (selection.kind === 'function') {
       const request: AddDeclEditRequest = {
@@ -125,89 +93,39 @@ export default function CreateNodeDialog({
       };
       editProgram(request);
     }
-    closeDialog();
+  };
+
+  const renderOption = ({ data, highlighted }: OptionProps<Completion>) => {
+    return (
+      <CreateNodeDialogOption
+        completion={data}
+        selected={highlighted} />
+    );
   };
 
   return (
-    <Dialog.Root
-      open
-      modal
-      onOpenChange={() => closeDialog()}
-    >
-      <Dialog.Trigger />
-      <Dialog.Portal>
-        <Theme accentColor="blue" grayColor="gray" panelBackground="solid" radius="none" appearance="dark">
-
-          <Dialog.Overlay className="fixed top-0 left-0 size-full bg-gray-400 opacity-30" />
-          <Dialog.Content
-            className="fixed w-100"
-            style={{
-              top: where.y,
-              left: where.x,
-            }}
-          >
-            <VisuallyHidden.Root>
-              <Dialog.Title>Create New Node</Dialog.Title>
-              <Dialog.Description>Create a New Node</Dialog.Description>
-            </VisuallyHidden.Root>
-            <Flex
-              direction="column"
-              p="1"
-              style={{ background: slate.slate12, borderRadius: 2 }}
-            >
-              <Box>
-                <TextField.Root color="gray" variant="surface" placeholder="Search…" size="3"
-                                onChange={onSearchChange}
-                                onKeyDown={onKeyDown}>
-                  <TextField.Slot>
-                    <MagnifyingGlassIcon height="16" width="16" />
-                  </TextField.Slot>
-                </TextField.Root>
-                <Separator />
-              </Box>
-              <ScrollArea
-                type="auto"
-                scrollbars="vertical"
-                style={{ maxHeight: 200 }}
-              >
-                {filteredOptions.map((completion, i) => (
-                  <div key={`add-option-${i}`} className="p-0.5">
-                    <CreateNodeDialogOption
-                      aria-label={`add-option-${completion.short_name}`}
-                      completion={completion}
-                      onSelectOption={onClick}
-                      selected={i === selectedIndex}
-                      onHover={() => setSelectedIndex(i)}
-                    />
-                  </div>
-                ))}
-              </ScrollArea>
-            </Flex>
-          </Dialog.Content>
-        </Theme>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <CoreDialog
+      where={where}
+      options={options}
+      optionToString={(o) => o.short_name}
+      onSelect={onSelect}
+      renderOption={renderOption}
+    />
   );
 }
 
 interface CreateNodeDialogOptionProps extends React.HTMLProps<HTMLElement> {
   completion: Completion;
-  onSelectOption: (selection: Completion) => void;
   selected?: boolean;
-  onHover: () => void;
 }
 
 export function CreateNodeDialogOption({
                                          completion,
-                                         onSelectOption,
                                          selected = false,
-                                         onHover,
                                        }: CreateNodeDialogOptionProps) {
   return (
     <Badge color={selected ? 'blue' : 'gray'}
-           onMouseOver={onHover}
            className="cursor-pointer w-full"
-           onClick={() => onSelectOption(completion)}
     >
       <Flex direction="row" align="center" gap="2" p="2" className="w-full justify-between">
         <Code

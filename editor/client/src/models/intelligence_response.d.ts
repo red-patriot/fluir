@@ -9,3 +9,5 @@ export type Completion = {
   kind: CompletionKind;
   description: string;
 };
+
+export type TypesResponse = string[];

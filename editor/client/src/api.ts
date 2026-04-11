@@ -9,4 +9,5 @@ export const SERVER_API = {
   redo: BASE_URL + '/api/module/redo/',
   saveAs: BASE_URL + '/api/module/save/',
   completions: BASE_URL + '/api/intelligence/completions/',
+  types: BASE_URL + '/api/intelligence/types/',
 };

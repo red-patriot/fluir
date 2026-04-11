@@ -16,8 +16,7 @@ export default function DialogProvider({ children }: PropsWithChildren) {
   const [dialogState, setDialogState] = useState<DialogState>({ active: null });
   const [completions, setCompletions] = useState<Completion[]>([]);
   const { getCompletions } = useProgramIntelligence({
-    handleCompletions: (response) => {
-      console.log(response);
+    handleResponse: (response) => {
       setCompletions(response.data);
     },
     onError: (error) => {

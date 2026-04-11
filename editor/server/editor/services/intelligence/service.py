@@ -28,6 +28,10 @@ class IntelligenceService:
             return self._toplevel_options()
         return self._builtin_operators() + self._constants()
 
+    def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
+        """Return a list of types visible at the given location in the given program path"""
+        return self._builtin_types()
+
     def _toplevel_options(self) -> list[Completion]:
         return [
             Completion(
@@ -54,3 +58,6 @@ class IntelligenceService:
         return [
             Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType
         ]
+
+    def _builtin_types(self) -> list[str]:
+        return [t for t in FlType]

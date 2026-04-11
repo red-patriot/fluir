@@ -86,6 +86,30 @@ def test_constant_completions(expected: Completion) -> None:
     assert expected in actual
 
 
+@pytest.mark.parametrize(
+    "expected",
+    [t.value for t in FlType],
+)
+def test_builtin_types(expected: str) -> None:
+    """Tests that get_types provides all builtin FlType values"""
+    path = Path("fake/path/to/program.fl")
+
+    program = Program(
+        declarations=[
+            Function(
+                name="main",
+                id=1,
+            )
+        ]
+    )
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+    actual = uut.get_types([1], path)
+
+    assert expected in actual
+
+
 def test_function_def_completion_at_top_level() -> None:
     expected = Completion(
         short_name="function",

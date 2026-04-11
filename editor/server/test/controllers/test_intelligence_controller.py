@@ -73,3 +73,36 @@ def test_returns_empty_list_when_no_completions() -> None:
 
     assert response.status_code == 200
     assert response.json() == []
+
+
+def test_forwards_types_request_on_post() -> None:
+    mock_service = MagicMock(spec=IntelligenceService)
+    mock_service.get_types.return_value = ["I32", "F64"]
+
+    client = _make_app(mock_service)
+
+    response = client.post(
+        "/api/intelligence/types",
+        json={"block_id": [1, 2], "path": "/fake/path.fl"},
+    )
+
+    assert response.status_code == 200
+    mock_service.get_types.assert_called_with([1, 2], Path("/fake/path.fl"))
+
+
+def test_returns_types_as_json() -> None:
+    mock_service = MagicMock(spec=IntelligenceService)
+    mock_service.get_types.return_value = ["I32", "F64"]
+
+    client = _make_app(mock_service)
+
+    response = client.post(
+        "/api/intelligence/types",
+        json={"block_id": [1], "path": "/fake/path.fl"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    assert data[0] == "I32"
+    assert data[1] == "F64"

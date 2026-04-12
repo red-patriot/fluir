@@ -14,7 +14,7 @@ export type FunctionDeclNode = Node<
   'function'
 >;
 
-export const FUNC_HEADER_HEIGHT = 0;
+export const FUNC_HEADER_HEIGHT = 5;
 
 export default function FunctionDeclNode({
                                            data: { decl, fullID },

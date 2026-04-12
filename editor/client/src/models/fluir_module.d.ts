@@ -65,6 +65,17 @@ export type Conduit = {
   children: (Conduit.Segment | Conduit.Output)[];
 };
 
+export type FunctionParameter = {
+  id: number;
+  name: string;
+  flType: FlType;
+}
+
+export type FunctionReturn = {
+  id: number;
+  flType: FlType;
+}
+
 export type FunctionDecl = {
   discriminator: 'function';
   name: string;
@@ -72,6 +83,8 @@ export type FunctionDecl = {
   location: Location;
   nodes: Node[];
   conduits: Conduit[];
+  inputs: FunctionParameter[];
+  outputs: FunctionReturn[];
 };
 
 export type Declaration = FunctionDecl;

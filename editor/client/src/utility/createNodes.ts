@@ -6,6 +6,8 @@ import {
   BinaryOperatorNode,
   UnaryOperatorNode,
 } from '@/components/flow_diagram/elements/OperatorNode';
+import FunctionParameterNode from '@/components/flow_diagram/elements/FunctionParameterNode.tsx';
+import FunctionReturnNode from '@/components/flow_diagram/elements/FunctionReturnNode.tsx';
 import FluirModule, {
   BinaryOp,
   Constant,
@@ -20,6 +22,8 @@ import { Edge, Node as FlowNode, CoordinateExtent } from '@xyflow/react';
 function fullId(parentId: string | undefined, id: number): string {
   return parentId ? `${parentId}:${id}` : `${id}`;
 }
+
+const PARAM_BLOCK_HEIGHT = 5;
 
 function addNodes(
   nodes: FlowNode[],
@@ -51,6 +55,48 @@ function addNodes(
           fullID: id,
         },
         dragHandle: '.dragHandle__custom',
+      });
+      decl.inputs.forEach((param, index) => {
+        const paramID = fullId(id, param.id);
+        nodes.push({
+          type: 'parameter',
+          id: fullId(id, param.id),
+          parentId: id,
+          extent: extent,
+          position: {
+            x: 0 * ZOOM_SCALAR,
+            y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+          },
+          width: 12 * ZOOM_SCALAR,
+          height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+          data: {
+            funcID: id,
+            fullID: paramID,
+            parameter: param,
+          },
+          dragHandle: '.dragHandle__custom',
+        });
+      });
+      decl.outputs.forEach((ret, index) => {
+        const retID = fullId(id, ret.id);
+        nodes.push({
+          type: 'return_',
+          id: retID,
+          parentId: id,
+          extent: extent,
+          position: {
+            x: (decl.location.width - 12) * ZOOM_SCALAR,
+            y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+          },
+          width: 12 * ZOOM_SCALAR,
+          height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+          data: {
+            funcID: id,
+            fullID: retID,
+            return_: ret,
+          },
+          dragHandle: '.dragHandle__custom',
+        });
       });
       decl.nodes.forEach((node) => {
         addNodes(nodes, node, id, childrenExtent);
@@ -158,6 +204,8 @@ export function createEdges(module: FluirModule) {
 
 export const nodeTypes = {
   function: FunctionDeclNode,
+  parameter: FunctionParameterNode,
+  return_: FunctionReturnNode,
   constant: ConstantNode,
   binary: BinaryOperatorNode,
   unary: UnaryOperatorNode,

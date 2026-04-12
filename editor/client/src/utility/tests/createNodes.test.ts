@@ -4,6 +4,8 @@ import FluirModule, {
   BinaryOp,
   UnaryOp,
   FunctionDecl,
+  FunctionParameter,
+  FunctionReturn,
   Constant,
   Operator,
 } from '../../models/fluir_module';
@@ -607,6 +609,238 @@ describe('createNodes', () => {
         expect(result[1].parentId).toBe('123');
         expect(result[1].data.fullID).toBe('123:456');
       });
+    });
+  });
+
+  describe('with function parameters and returns', () => {
+    it('should emit no parameter or return nodes when inputs and outputs are empty', () => {
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [],
+        conduits: [],
+        inputs: [],
+        outputs: [],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].type).toBe('function');
+    });
+
+    it('should create a parameter node with correct shape', () => {
+      const parameter: FunctionParameter = {
+        id: 10,
+        name: 'a',
+        flType: 'I32',
+      };
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [],
+        conduits: [],
+        inputs: [parameter],
+        outputs: [],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(2);
+      expect(result[1]).toEqual({
+        type: 'parameter',
+        id: '1:10',
+        parentId: '1',
+        extent: undefined,
+        position: {
+          x: 0,
+          y: 5 * ZOOM_SCALAR,
+        },
+        width: 12 * ZOOM_SCALAR,
+        height: 5 * ZOOM_SCALAR,
+        data: {
+          funcID: '1',
+          fullID: '1:10',
+          parameter: parameter,
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+    });
+
+    it('should stack multiple parameters vertically by index', () => {
+      const params: FunctionParameter[] = [
+        { id: 11, name: 'a', flType: 'I32' },
+        { id: 12, name: 'b', flType: 'F64' },
+        { id: 13, name: 'c', flType: 'U8' },
+      ];
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [],
+        conduits: [],
+        inputs: params,
+        outputs: [],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(4);
+      expect(result[1].id).toBe('1:11');
+      expect(result[1].position.y).toBe(1 * 5 * ZOOM_SCALAR);
+      expect(result[2].id).toBe('1:12');
+      expect(result[2].position.y).toBe(2 * 5 * ZOOM_SCALAR);
+      expect(result[3].id).toBe('1:13');
+      expect(result[3].position.y).toBe(3 * 5 * ZOOM_SCALAR);
+      // x should always be 0 for parameters
+      expect(result[1].position.x).toBe(0);
+      expect(result[2].position.x).toBe(0);
+      expect(result[3].position.x).toBe(0);
+    });
+
+    it('should create a return node with correct shape', () => {
+      const ret: FunctionReturn = {
+        id: 20,
+        flType: 'F64',
+      };
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 80, height: 100 },
+        nodes: [],
+        conduits: [],
+        inputs: [],
+        outputs: [ret],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(2);
+      expect(result[1]).toEqual({
+        type: 'return_',
+        id: '1:20',
+        parentId: '1',
+        extent: undefined,
+        position: {
+          x: (80 - 5) * ZOOM_SCALAR,
+          y: 5 * ZOOM_SCALAR,
+        },
+        width: 5 * ZOOM_SCALAR,
+        height: 5 * ZOOM_SCALAR,
+        data: {
+          funcID: '1',
+          fullID: '1:20',
+          return_: ret,
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+    });
+
+    it('should stack multiple returns vertically by index at right edge', () => {
+      const returns: FunctionReturn[] = [
+        { id: 21, flType: 'I32' },
+        { id: 22, flType: 'F64' },
+      ];
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 80, height: 100 },
+        nodes: [],
+        conduits: [],
+        inputs: [],
+        outputs: returns,
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(3);
+      expect(result[1].id).toBe('1:21');
+      expect(result[1].position.y).toBe(1 * 5 * ZOOM_SCALAR);
+      expect(result[1].position.x).toBe((80 - 5) * ZOOM_SCALAR);
+      expect(result[2].id).toBe('1:22');
+      expect(result[2].position.y).toBe(2 * 5 * ZOOM_SCALAR);
+      expect(result[2].position.x).toBe((80 - 5) * ZOOM_SCALAR);
+    });
+
+    it('should emit parameters before returns before nested nodes', () => {
+      const parameter: FunctionParameter = {
+        id: 30,
+        name: 'a',
+        flType: 'I32',
+      };
+      const ret: FunctionReturn = {
+        id: 40,
+        flType: 'I32',
+      };
+      const nestedConstant: Constant = {
+        discriminator: 'constant',
+        id: 50,
+        location: { x: 20, y: 30, z: 0, width: 80, height: 40 },
+        flType: 'I32',
+        value: '7',
+      };
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [nestedConstant],
+        conduits: [],
+        inputs: [parameter],
+        outputs: [ret],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(4);
+      expect(result[0].type).toBe('function');
+      expect(result[1].type).toBe('parameter');
+      expect(result[1].id).toBe('1:30');
+      expect(result[2].type).toBe('return_');
+      expect(result[2].id).toBe('1:40');
+      expect(result[3].type).toBe('constant');
+      expect(result[3].id).toBe('1:50');
+    });
+
+    it('should use parameter and return ids (not array index) for qualified IDs', () => {
+      const params: FunctionParameter[] = [
+        { id: 7, name: 'a', flType: 'I32' },
+        { id: 3, name: 'b', flType: 'I32' },
+      ];
+      const returns: FunctionReturn[] = [
+        { id: 9, flType: 'I32' },
+        { id: 4, flType: 'I32' },
+      ];
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [],
+        conduits: [],
+        inputs: params,
+        outputs: returns,
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result[1].id).toBe('1:7');
+      expect(result[2].id).toBe('1:3');
+      expect(result[3].id).toBe('1:9');
+      expect(result[4].id).toBe('1:4');
     });
   });
 });

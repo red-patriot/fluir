@@ -12,7 +12,7 @@ import FluirModule, {
   BinaryOp,
   Constant,
   Declaration,
-  FunctionDecl,
+  FunctionDecl, FunctionParameter, FunctionReturn,
   Node,
   UnaryOp,
 } from '@/models/fluir_module';
@@ -56,48 +56,12 @@ function addNodes(
         },
         dragHandle: '.dragHandle__custom',
       });
-      decl.inputs.forEach((param, index) => {
-        const paramID = fullId(id, param.id);
-        nodes.push({
-          type: 'parameter',
-          id: fullId(id, param.id),
-          parentId: id,
-          extent: extent,
-          position: {
-            x: 0 * ZOOM_SCALAR,
-            y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
-          },
-          width: 12 * ZOOM_SCALAR,
-          height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
-          data: {
-            funcID: id,
-            fullID: paramID,
-            parameter: param,
-          },
-          dragHandle: '.dragHandle__custom',
-        });
-      });
-      decl.outputs.forEach((ret, index) => {
-        const retID = fullId(id, ret.id);
-        nodes.push({
-          type: 'return_',
-          id: retID,
-          parentId: id,
-          extent: extent,
-          position: {
-            x: (decl.location.width - 5) * ZOOM_SCALAR,
-            y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
-          },
-          width: 5 * ZOOM_SCALAR,
-          height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
-          data: {
-            funcID: id,
-            fullID: retID,
-            return_: ret,
-          },
-          dragHandle: '.dragHandle__custom',
-        });
-      });
+      decl.inputs.forEach(
+        addFunctionParameterNode(nodes, id, extent),
+      );
+      decl.outputs.forEach(
+        addFunctionReturnNode(nodes, id, decl, extent),
+      );
       decl.nodes.forEach((node) => {
         addNodes(nodes, node, id, childrenExtent);
       });
@@ -160,6 +124,54 @@ function addNodes(
       });
       break;
   }
+}
+
+function addFunctionParameterNode(nodes: FlowNode[], funcID: string, extent?: 'parent' | CoordinateExtent) {
+  return (param: FunctionParameter, index: number) => {
+    const paramID = fullId(funcID, param.id);
+    nodes.push({
+      type: 'parameter',
+      id: fullId(funcID, param.id),
+      parentId: funcID,
+      extent: extent,
+      position: {
+        x: 0 * ZOOM_SCALAR,
+        y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+      },
+      width: 12 * ZOOM_SCALAR,
+      height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+      data: {
+        funcID: funcID,
+        fullID: paramID,
+        parameter: param,
+      },
+      dragHandle: '.dragHandle__custom',
+    });
+  };
+}
+
+function addFunctionReturnNode(nodes: FlowNode[], funcID: string, decl: FunctionDecl, extent?: 'parent' | CoordinateExtent) {
+  return (ret: FunctionReturn, index: number) => {
+    const retID = fullId(funcID, ret.id);
+    nodes.push({
+      type: 'return_',
+      id: retID,
+      parentId: funcID,
+      extent: extent,
+      position: {
+        x: (decl.location.width - 5) * ZOOM_SCALAR,
+        y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+      },
+      width: 5 * ZOOM_SCALAR,
+      height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
+      data: {
+        funcID: funcID,
+        fullID: retID,
+        return_: ret,
+      },
+      dragHandle: '.dragHandle__custom',
+    });
+  };
 }
 
 export default function createNodes(module: FluirModule) {

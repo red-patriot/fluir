@@ -5,6 +5,7 @@ import { editWithInputField } from '@/components/flow_diagram/common/InputField.
 import { validateDeclName } from '@/components/flow_diagram/logic/validateEdit';
 import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
 import { renameDeclaration } from '@/components/flow_diagram/logic/updateNode.ts';
+import ElementTag from '@/components/flow_diagram/common/ElementTag.tsx';
 
 interface DeclHeaderProps {
   name: string;
@@ -38,6 +39,7 @@ export default function DeclHeader({
       }}
       onContextMenu={onContextMenu}
     >
+      <ElementTag name="function" />
       <ValueDisplay fullID={fullID} value={name} renderEdit={doEdit} />
       {children}
     </Flex>

@@ -1,9 +1,10 @@
 import { FunctionParameter } from '@/models/fluir_module';
 import { type Node, NodeProps } from '@xyflow/react';
-import { Flex, Box } from '@radix-ui/themes';
-import { slate } from '@radix-ui/colors';
+import { Flex } from '@radix-ui/themes';
+import { amber } from '@radix-ui/colors';
 import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay.tsx';
 import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut.tsx';
+import ElementTag from '@/components/flow_diagram/common/ElementTag.tsx';
 
 type FunctionParameterNode = Node<{
   funcID: string;
@@ -17,17 +18,11 @@ export default function FunctionParameterNode({ data: { fullID, parameter } }: N
     direction="row"
     height="100%"
     align="center"
-    style={{ backgroundColor: slate.slate11 }}
+    style={{
+      backgroundColor: amber.amber8,
+    }}
   >
-    <Flex
-      direction="column"
-      height="100%"
-    >
-      <Box className="grow" />
-      <p className="text-[6px] font-mono align-text-bottom">
-        IN
-      </p>
-    </Flex>
+    <ElementTag name={parameter.flType ?? ''} />
     <ValueDisplay
       fullID={fullID}
       value={parameter.name}

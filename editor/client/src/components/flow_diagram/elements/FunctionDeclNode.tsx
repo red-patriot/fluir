@@ -6,7 +6,7 @@ import DragHandle from '@/components/flow_diagram/common/DragHandle';
 import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
 import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
 import { useMemo } from 'react';
-import { gray } from '@radix-ui/colors';
+import { amber } from '@radix-ui/colors';
 import { useDialogContext } from '@/components/flow_diagram/dialog';
 
 export type FunctionDeclNode = Node<
@@ -57,7 +57,7 @@ export default function FunctionDeclNode({
       width="100%"
       height="100%"
       direction="column"
-      style={{ borderColor: gray.gray3, borderWidth: 1 }}
+      style={{ borderColor: amber.amber8, borderWidth: 1 }}
     >
       <Flex className="w-full" direction="row">
         <DeclHeader

@@ -1,4 +1,4 @@
-import { Flex, Box } from '@radix-ui/themes';
+import { Flex } from '@radix-ui/themes';
 import { purple, pink } from '@radix-ui/colors';
 import { Node, NodeProps } from '@xyflow/react';
 import { Constant } from '@/models/fluir_module';
@@ -15,6 +15,7 @@ import {
   validateUint,
 } from '@/components/flow_diagram/logic/validateEdit';
 import { editWithInputField } from '@/components/flow_diagram/common/InputField';
+import ElementTag from '@/components/flow_diagram/common/ElementTag';
 
 type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
 
@@ -64,15 +65,7 @@ export default function ConstantNode({
       align="center"
       style={{ backgroundColor: params.color }}
     >
-      <Flex
-        direction="column"
-        height="100%"
-      >
-        <Box className="grow" />
-        <p className="text-[6px] font-mono align-text-bottom">
-          {constant.flType}
-        </p>
-      </Flex>
+      <ElementTag name={constant.flType ?? ''} />
       <ValueDisplay
         fullID={fullID}
         value={constant.value || ''}

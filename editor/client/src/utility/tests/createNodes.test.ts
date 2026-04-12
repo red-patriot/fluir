@@ -45,6 +45,8 @@ describe('createNodes', () => {
         location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
         nodes: [constant],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       module.declarations = [func];
@@ -91,6 +93,8 @@ describe('createNodes', () => {
         location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
         nodes: [constant],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -120,6 +124,8 @@ describe('createNodes', () => {
         location: { x: 0, y: 0, z: 0, width: 300, height: 300 },
         nodes: [binary],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -166,6 +172,8 @@ describe('createNodes', () => {
           op: op,
         })),
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -197,6 +205,8 @@ describe('createNodes', () => {
         location: { x: 0, y: 0, z: 0, width: 500, height: 500 },
         nodes: [unary],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -238,6 +248,8 @@ describe('createNodes', () => {
         name: 'testFunction',
         nodes: [],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -287,6 +299,8 @@ describe('createNodes', () => {
         name: 'complexFunction',
         nodes: [nestedConstant, nestedBinary],
         conduits: [],
+        inputs: [],
+        outputs: [],
       };
 
       const module: FluirModule = {
@@ -390,6 +404,8 @@ describe('createNodes', () => {
           name: 'mixedFunction',
           nodes: [constant, binary, unary],
           conduits: [],
+          inputs: [],
+          outputs: [],
         };
 
         const module: FluirModule = {
@@ -414,6 +430,8 @@ describe('createNodes', () => {
           name: 'function1',
           nodes: [],
           conduits: [],
+          inputs: [],
+          outputs: [],
         };
 
         const func2: FunctionDecl = {
@@ -423,6 +441,8 @@ describe('createNodes', () => {
           name: 'function2',
           nodes: [],
           conduits: [],
+          inputs: [],
+          outputs: [],
         };
 
         const module: FluirModule = {
@@ -457,6 +477,8 @@ describe('createNodes', () => {
               name: 'testFunction',
               nodes: [constant],
               conduits: [],
+              inputs: [],
+              outputs: [],
             },
           ],
         };
@@ -486,6 +508,8 @@ describe('createNodes', () => {
               name: 'testFunction',
               nodes: [constant],
               conduits: [],
+              inputs: [],
+              outputs: [],
             },
           ],
         };
@@ -515,6 +539,8 @@ describe('createNodes', () => {
               name: 'testFunction',
               nodes: [constant],
               conduits: [],
+              inputs: [],
+              outputs: [],
             },
           ],
         };
@@ -539,6 +565,8 @@ describe('createNodes', () => {
               name: 'testFunction',
               nodes: [],
               conduits: [],
+              inputs: [],
+              outputs: [],
             },
           ],
         };
@@ -564,6 +592,8 @@ describe('createNodes', () => {
           name: 'test',
           nodes: [nestedConstant],
           conduits: [],
+          inputs: [],
+          outputs: [],
         };
 
         const module: FluirModule = {

@@ -85,10 +85,10 @@ function addNodes(
           parentId: id,
           extent: extent,
           position: {
-            x: (decl.location.width - 12) * ZOOM_SCALAR,
+            x: (decl.location.width - 5) * ZOOM_SCALAR,
             y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
           },
-          width: 12 * ZOOM_SCALAR,
+          width: 5 * ZOOM_SCALAR,
           height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
           data: {
             funcID: id,

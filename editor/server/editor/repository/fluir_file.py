@@ -7,6 +7,7 @@ from lxml.objectify import ObjectifiedElement, fromstring
 from editor.models import (
     INVALID_ID,
     BinaryOperator,
+    Call,
     Conduit,
     Constant,
     Declaration,
@@ -167,6 +168,8 @@ class _XMLReader:
                 return self._unary(element)
             case "constant":
                 return self._constant(element)
+            case "call":
+                return self._call(element)
         return (INVALID_ID, Constant())
 
     def _conduit(self, element: Any) -> _ConduitPair:
@@ -227,6 +230,28 @@ class _XMLReader:
             location=self._location(element),
             flType=self._type(next(element.iterchildren(), None)),
             value=self._value(next(element.iterchildren(), None)),
+        )
+
+    def _call(self, element: Any) -> _NodePair:
+        id = self._id(element)
+        indexed_args: list[tuple[int, str]] = []
+        returns = False
+        for child in element.iterchildren():
+            if child.tag == "arg":
+                indexed_args.append(
+                    (int(child.get("index")), str(child.get("name")))
+                )
+            elif child.tag == "return":
+                # TODO: Handle multiple returns
+                returns = True
+        indexed_args.sort(key=lambda pair: pair[0])
+        arguments = [name for _, name in indexed_args]
+        return id, Call(
+            id=id,
+            location=self._location(element),
+            target=str(element.get("target")),
+            arguments=arguments,
+            returns=returns,
         )
 
     def _value(self, element: Any) -> str:

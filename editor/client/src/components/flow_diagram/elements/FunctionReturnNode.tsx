@@ -13,7 +13,6 @@ type FunctionReturnNode = Node<{
 
 
 export default function FunctionReturnNode({ data: { fullID, return_ } }: NodeProps<FunctionReturnNode>) {
-  console.log(fullID);
   return (
     <Flex
       direction="row"

@@ -4,6 +4,7 @@ import pytest
 
 from editor.models import (
     BinaryOperator,
+    Call,
     Conduit,
     Constant,
     FlType,
@@ -614,6 +615,157 @@ _TEST_DATA = [
     </fluir>
     """,
     ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(0, 0, 0, 100, 100),
+                    id=1,
+                    nodes=[
+                        Constant(
+                            id=1,
+                            location=Location(0, 0, 0, 5, 5),
+                            value="10",
+                            flType=FlType.I32,
+                        ),
+                        Constant(
+                            id=2,
+                            location=Location(0, 20, 0, 5, 5),
+                            value="20",
+                            flType=FlType.I32,
+                        ),
+                        Call(
+                            id=3,
+                            location=Location(30, 10, 0, 12, 12),
+                            target="add",
+                            arguments=["a", "b"],
+                            returns=True,
+                        ),
+                    ],
+                    conduits=[
+                        Conduit(
+                            id=4,
+                            input=1,
+                            children=[Conduit.Output(target=3, index=1)],
+                        ),
+                        Conduit(
+                            id=5,
+                            input=2,
+                            children=[Conduit.Output(target=3, index=2)],
+                        ),
+                    ],
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+            <body>
+                <constant id="1" x="0" y="0" z="0" w="5" h="5">
+                    <i32>10</i32>
+                </constant>
+                <constant id="2" x="0" y="20" z="0" w="5" h="5">
+                    <i32>20</i32>
+                </constant>
+                <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
+                    <return index="0"/>
+                    <arg name="a" index="1"/>
+                    <arg name="b" index="2"/>
+                </call>
+                <conduit id="4" input="1"><output target="3" index="1"/></conduit>
+                <conduit id="5" input="2"><output target="3" index="2"/></conduit>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(0, 0, 0, 100, 100),
+                    id=1,
+                    nodes=[
+                        Call(
+                            id=2,
+                            location=Location(5, 5, 0, 12, 12),
+                            target="doStuff",
+                            arguments=[],
+                            returns=False,
+                        ),
+                    ],
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+            <body>
+                <call target="doStuff" id="2" x="5" y="5" z="0" w="12" h="12"/>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(0, 0, 0, 100, 100),
+                    id=1,
+                    nodes=[
+                        Call(
+                            id=2,
+                            location=Location(5, 5, 0, 12, 12),
+                            target="reorder",
+                            arguments=["first", "second", "third"],
+                            returns=False,
+                        ),
+                    ],
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+            <body>
+                <call target="reorder" id="2" x="5" y="5" z="0" w="12" h="12">
+                    <arg name="third" index="2"/>
+                    <arg name="first" index="0"/>
+                    <arg name="second" index="1"/>
+                </call>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
 ]
 
 
@@ -631,6 +783,9 @@ _TEST_DATA = [
         "function_with_input_only",
         "function_with_output_only",
         "function_with_input_and_output",
+        "function_call",
+        "function_call_no_args_no_returns",
+        "function_call_args_out_of_order",
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:

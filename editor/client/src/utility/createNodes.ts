@@ -10,6 +10,7 @@ import FunctionParameterNode from '@/components/flow_diagram/elements/FunctionPa
 import FunctionReturnNode from '@/components/flow_diagram/elements/FunctionReturnNode.tsx';
 import FluirModule, {
   BinaryOp,
+  Call,
   Constant,
   Declaration,
   FunctionDecl, FunctionParameter, FunctionReturn,
@@ -18,6 +19,7 @@ import FluirModule, {
 } from '@/models/fluir_module';
 import { ZOOM_SCALAR } from '../hooks/useSizeStyle';
 import { Edge, Node as FlowNode, CoordinateExtent } from '@xyflow/react';
+import CallNode from '@/components/flow_diagram/elements/CallNode.tsx';
 
 function fullId(parentId: string | undefined, id: number): string {
   return parentId ? `${parentId}:${id}` : `${id}`;
@@ -123,6 +125,26 @@ function addNodes(
         dragHandle: '.dragHandle__custom',
       });
       break;
+    case 'call':
+      const fullID = fullId(parentId, item.id);
+      nodes.push({
+        type: 'call',
+        id: fullID,
+        parentId: parentId,
+        extent: extent,
+        position: {
+          x: item.location.x * ZOOM_SCALAR,
+          y: item.location.y * ZOOM_SCALAR,
+        },
+        width: item.location.width * ZOOM_SCALAR,
+        height: item.location.height * ZOOM_SCALAR,
+        data: {
+          call: item as Call,
+          fullID: fullID,
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+      break;
   }
 }
 
@@ -221,4 +243,5 @@ export const nodeTypes = {
   constant: ConstantNode,
   binary: BinaryOperatorNode,
   unary: UnaryOperatorNode,
+  call: CallNode,
 };

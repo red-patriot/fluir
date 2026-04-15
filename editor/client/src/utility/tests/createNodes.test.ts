@@ -8,6 +8,7 @@ import FluirModule, {
   FunctionReturn,
   Constant,
   Operator,
+  Call,
 } from '../../models/fluir_module';
 import { ZOOM_SCALAR } from '../../hooks/useSizeStyle';
 import { FUNC_HEADER_HEIGHT } from '@/components/flow_diagram/elements/FunctionDeclNode';
@@ -241,6 +242,83 @@ describe('createNodes', () => {
     });
   });
 
+  describe('with call nodes', () => {
+    it('should create call node with correct properties', () => {
+      const call: Call = {
+        discriminator: 'call',
+        id: 8,
+        target: 'otherFunc',
+        location: { x: 120, y: 160, z: 0, width: 90, height: 60 },
+        arguments: ['a', 'b'],
+        returns: true,
+      };
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 400, height: 400 },
+        nodes: [call],
+        conduits: [],
+        inputs: [],
+        outputs: [],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result).toHaveLength(2);
+      expect(result[1]).toEqual({
+        type: 'call',
+        id: '1:8',
+        parentId: '1',
+        extent: [
+          [0, FUNC_HEADER_HEIGHT * ZOOM_SCALAR],
+          [400 * ZOOM_SCALAR, 400 * ZOOM_SCALAR],
+        ],
+        position: {
+          x: 120 * ZOOM_SCALAR,
+          y: 160 * ZOOM_SCALAR,
+        },
+        width: 90 * ZOOM_SCALAR,
+        height: 60 * ZOOM_SCALAR,
+        data: {
+          call: call,
+          fullID: '1:8',
+        },
+        dragHandle: '.dragHandle__custom',
+      });
+    });
+
+    it('should pass the Call object by reference on data.call', () => {
+      const call: Call = {
+        discriminator: 'call',
+        id: 9,
+        target: 'doThing',
+        location: { x: 0, y: 0, z: 0, width: 50, height: 50 },
+        arguments: ['x'],
+        returns: false,
+      };
+
+      const func: FunctionDecl = {
+        discriminator: 'function',
+        name: 'testFunc',
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 200, height: 200 },
+        nodes: [call],
+        conduits: [],
+        inputs: [],
+        outputs: [],
+      };
+
+      const result = createNodes({ declarations: [func] });
+
+      expect(result[1].data.call).toBe(call);
+      expect(result[1].data.call.target).toBe('doThing');
+      expect(result[1].data.call.arguments).toEqual(['x']);
+      expect(result[1].data.call.returns).toBe(false);
+    });
+  });
+
   describe('with function nodes', () => {
     it('should create function node with no nested nodes', () => {
       const func: FunctionDecl = {
@@ -399,12 +477,21 @@ describe('createNodes', () => {
           op: '-',
         };
 
+        const call: Call = {
+          discriminator: 'call',
+          id: 5,
+          target: 'helper',
+          location: { x: 150, y: 150, z: 0, width: 80, height: 50 },
+          arguments: [],
+          returns: true,
+        };
+
         const func: FunctionDecl = {
           discriminator: 'function',
           id: 4,
           location: { x: 150, y: 150, z: 0, width: 300, height: 250 },
           name: 'mixedFunction',
-          nodes: [constant, binary, unary],
+          nodes: [constant, binary, unary, call],
           conduits: [],
           inputs: [],
           outputs: [],
@@ -416,12 +503,19 @@ describe('createNodes', () => {
 
         const result = createNodes(module);
 
-        expect(result).toHaveLength(4); // function + 3 nodes
+        expect(result).toHaveLength(5); // function + 4 nodes
         expect(result[0].type).toBe('function');
         expect(result[1].type).toBe('constant');
         expect(result[2].type).toBe('binary');
         expect(result[3].type).toBe('unary');
-        expect(result.map((n) => n.id)).toEqual(['4', '4:1', '4:2', '4:3']);
+        expect(result[4].type).toBe('call');
+        expect(result.map((n) => n.id)).toEqual([
+          '4',
+          '4:1',
+          '4:2',
+          '4:3',
+          '4:5',
+        ]);
       });
 
       it('should handle multiple functions', () => {

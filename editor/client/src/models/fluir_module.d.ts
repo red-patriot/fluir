@@ -41,7 +41,16 @@ export type UnaryOp = {
   op: Operator;
 };
 
-export type Node = BinaryOp | UnaryOp | Constant;
+export type Call = {
+  discriminator: 'call';
+  target: string;
+  id: number;
+  location: Location;
+  arguments: string[];
+  returns: boolean;
+}
+
+export type Node = BinaryOp | UnaryOp | Constant | Call;
 
 export namespace Conduit {
   export type Output = {

@@ -1,5 +1,5 @@
 import { amber } from '@radix-ui/colors';
-import { Flex } from '@radix-ui/themes';
+import { Flex, ContextMenu } from '@radix-ui/themes';
 import { ValueDisplay } from './ValueDisplay';
 import { editWithInputField } from '@/components/flow_diagram/common/InputField.tsx';
 import { validateDeclName } from '@/components/flow_diagram/logic/validateEdit';
@@ -30,18 +30,26 @@ export default function DeclHeader({
   });
 
   return (
-    <Flex
-      direction="row"
-      align="center"
-      className="w-full"
-      style={{
-        background: amber.amber8,
-      }}
-      onContextMenu={onContextMenu}
-    >
-      <ElementTag name="function" />
-      <ValueDisplay fullID={fullID} value={name} renderEdit={doEdit} />
-      {children}
-    </Flex>
+    <ContextMenu.Root>
+      <ContextMenu.Trigger>
+        <Flex
+          direction="row"
+          align="center"
+          className="w-full"
+          style={{
+            background: amber.amber8,
+          }}
+          onContextMenu={onContextMenu}
+        >
+          <ElementTag name="fn" />
+          <ValueDisplay fullID={fullID} value={name} renderEdit={doEdit} />
+          {children}
+        </Flex>
+      </ContextMenu.Trigger>
+      <ContextMenu.Content>
+        <ContextMenu.Item onClick={() => console.log("TODO PARAM")}>Add Parameter</ContextMenu.Item>
+        <ContextMenu.Item onClick={() => console.log("TODO RETURN")}>Add Return</ContextMenu.Item>
+      </ContextMenu.Content>
+    </ContextMenu.Root>
   );
 }

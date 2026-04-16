@@ -10,8 +10,7 @@ export interface CreateNodeOptions {
 }
 
 export interface DialogState {
-  active: null | 'create_node';
-  data?: CreateNodeOptions;
+  active: CreateNodeOptions | null;
 }
 
 export interface DialogActions {

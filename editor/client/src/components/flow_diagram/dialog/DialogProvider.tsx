@@ -27,21 +27,20 @@ export default function DialogProvider({ children }: PropsWithChildren) {
 
   const closeDialog = () => {
     setCompletions([]);
-    setDialogState({ active: null, data: undefined });
+    setDialogState({ active: null });
   };
 
   const openCreateNodeDialog = (opts: CreateNodeOptions) => {
     // In theory, it shouldn't be possible from here that program is undefined...
     // TODO: maybe handle that case better?
     getCompletions(toApiID(opts.parentID), program || '');
-    setDialogState({ active: 'create_node', data: opts });
+    setDialogState({ active: opts });
   };
 
   return (
     <DialogContext.Provider value={{ closeDialog, openCreateNodeDialog }}>
-      {dialogState.active === 'create_node' && (
-        <CreateNodeDialog {...(dialogState.data as CreateNodeOptions)}
-                          options={completions} />
+      {dialogState.active && (
+        <CreateNodeDialog {...dialogState.active} options={completions} />
       )}
       {children}
     </DialogContext.Provider>

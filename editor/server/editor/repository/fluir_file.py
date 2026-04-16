@@ -390,6 +390,8 @@ class _XMLWriter:
                 self._unary(cast(UnaryOperator, node), parent)
             case "constant":
                 self._constant(cast(Constant, node), parent)
+            case "call":
+                self._call(cast(Call, node), parent)
 
     def _binary(self, node: BinaryOperator, parent: etree._Element) -> None:
         binary_element = etree.SubElement(
@@ -437,6 +439,30 @@ class _XMLWriter:
         assert node.flType is not None
         assert node.value is not None
         self._literal(node.flType, node.value, constant_element)
+
+    def _call(self, node: Call, parent: etree._Element) -> None:
+        call_element = etree.SubElement(
+            parent,
+            "call",
+            attrib={
+                "target": node.target,
+                "id": str(node.id),
+                "x": str(node.location.x),
+                "y": str(node.location.y),
+                "z": str(node.location.z),
+                "w": str(node.location.width),
+                "h": str(node.location.height),
+            },
+        )
+        if node.returns:
+            etree.SubElement(call_element, "return", attrib={"index": "0"})
+        start = 1 if node.returns else 0
+        for index, name in enumerate(node.arguments, start=start):
+            etree.SubElement(
+                call_element,
+                "arg",
+                attrib={"name": name, "index": str(index)},
+            )
 
     def _literal(
         self, type_: FlType, value: str, parent: etree._Element

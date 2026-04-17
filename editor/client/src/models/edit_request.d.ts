@@ -104,6 +104,7 @@ type EditRequest =
   | AddConduitEditRequest
   | AddNodeEditRequest
   | AddDeclEditRequest
+  | AddDeclInterfaceEditRequest
   | RemoveItemEditRequest;
 
 export default EditRequest;

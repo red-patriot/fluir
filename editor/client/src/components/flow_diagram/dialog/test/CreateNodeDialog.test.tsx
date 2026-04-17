@@ -36,6 +36,7 @@ function renderDialog(props: typeof defaultProps = defaultProps) {
   const dialogActions: DialogActions = {
     closeDialog: mockCloseDialog,
     openCreateNodeDialog: mockOpenCreateNodeDialog,
+    openTypeOptionsDialog: vi.fn(),
   };
 
   const programActions: ProgramActions = {

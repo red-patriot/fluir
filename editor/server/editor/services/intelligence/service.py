@@ -9,12 +9,14 @@ class IntelligenceService:
     """A Service to provide intelligence for Fluir modules"""
 
     def __init__(self) -> None:
-        pass
+        self._function_names: dict[Path, set[str]] = {}
 
     # TODO: Add other capabilities here
 
     def add_module(self, program: Program, path: Path) -> None:
-        pass
+        self._function_names[path] = {
+            decl.name for decl in program.declarations
+        }
 
     def remove_module(self, path: Path) -> None:
         pass
@@ -26,7 +28,11 @@ class IntelligenceService:
         if len(block_id) == 0:
             # Top level provides definition completions
             return self._toplevel_options()
-        return self._builtin_operators() + self._constants()
+        return (
+            self._builtin_operators()
+            + self._constants()
+            + self._function_completions(path)
+        )
 
     def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
         """Return a list of types visible at the given location in the given program path"""
@@ -52,6 +58,13 @@ class IntelligenceService:
             Completion(short_name="- (unary)", kind=Kind.OPERATOR),
             Completion(short_name="++ (unary)", kind=Kind.OPERATOR),
             Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
+        ]
+
+    def _function_completions(self, path: Path) -> list[Completion]:
+        # TODO: Add documentation when that is implemented
+        return [
+            Completion(short_name=name, kind=Kind.FUNCTION_DEF)
+            for name in self._function_names.get(path, set())
         ]
 
     def _constants(self) -> list[Completion]:

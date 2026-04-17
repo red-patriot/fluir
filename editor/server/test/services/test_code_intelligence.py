@@ -29,6 +29,16 @@ from editor.services.intelligence import IntelligenceService
 #     assert uut.get_diagnostics(program) == expected_diagnostics
 
 
+@pytest.fixture
+def program() -> Program:
+    return Program(
+        declarations=[
+            Function(name=f"func_{letter}", id=i)
+            for i, letter in enumerate("abcde", start=1)
+        ]
+    )
+
+
 @pytest.mark.parametrize(
     "expected",
     [
@@ -42,18 +52,9 @@ from editor.services.intelligence import IntelligenceService
         Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
     ],
 )
-def test_operator_completions(expected: Completion) -> None:
+def test_operator_completions(expected: Completion, program: Program) -> None:
     """Tests that completions provide builtin operators"""
     path = Path("fake/path/to/program.fl")
-
-    program = Program(  # Empty function
-        declarations=[
-            Function(
-                name="main",
-                id=1,
-            )
-        ]
-    )
 
     uut = IntelligenceService()
     uut.add_module(program, path)
@@ -66,18 +67,9 @@ def test_operator_completions(expected: Completion) -> None:
     "expected",
     [Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType],
 )
-def test_constant_completions(expected: Completion) -> None:
+def test_constant_completions(expected: Completion, program: Program) -> None:
     """Tests that completions provide constants for all FlType values"""
     path = Path("fake/path/to/program.fl")
-
-    program = Program(  # Empty function
-        declarations=[
-            Function(
-                name="main",
-                id=1,
-            )
-        ]
-    )
 
     uut = IntelligenceService()
     uut.add_module(program, path)
@@ -90,18 +82,9 @@ def test_constant_completions(expected: Completion) -> None:
     "expected",
     [t.value for t in FlType],
 )
-def test_builtin_types(expected: str) -> None:
+def test_builtin_types(expected: str, program: Program) -> None:
     """Tests that get_types provides all builtin FlType values"""
     path = Path("fake/path/to/program.fl")
-
-    program = Program(
-        declarations=[
-            Function(
-                name="main",
-                id=1,
-            )
-        ]
-    )
 
     uut = IntelligenceService()
     uut.add_module(program, path)
@@ -110,7 +93,7 @@ def test_builtin_types(expected: str) -> None:
     assert expected in actual
 
 
-def test_function_def_completion_at_top_level() -> None:
+def test_function_def_completion_at_top_level(program: Program) -> None:
     expected = Completion(
         short_name="function",
         kind=Kind.FUNCTION_DEF,
@@ -118,18 +101,24 @@ def test_function_def_completion_at_top_level() -> None:
     )
     path = Path("fake/path/to/program.fl")
 
-    program = Program(  # Empty function
-        declarations=[
-            Function(
-                name="main",
-                id=1,
-            )
-        ]
-    )
-
     uut = IntelligenceService()
     uut.add_module(program, path)
 
     actual = uut.get_completions([], path)
 
     assert expected in actual
+
+
+def test_completion_includes_other_functions(program: Program) -> None:
+    """Tests that the completion includes other functions visible from the provided one"""
+    path = Path("fake/path/to/program.fl")
+    expecteds = ("func_b", "func_c", "func_d", "func_e")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_completions([1], path)
+
+    for func_name in expecteds:
+        expected = Completion(short_name=func_name, kind=Kind.FUNCTION_DEF)
+        assert expected in actual

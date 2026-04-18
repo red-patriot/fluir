@@ -23,6 +23,7 @@ class AddDecl(BaseModel, TransactionBase):
     @override
     def do(self, original: Program) -> Program:
         new_id = next_decl_id(original)
+        # TODO: Prevent duplicate names
         name = (
             self.params.name if self.params.name is not None else "new_function"
         )

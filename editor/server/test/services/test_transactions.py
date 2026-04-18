@@ -24,6 +24,7 @@ from editor.services.transaction import (
     UpdateConstant,
     UpdateOperator,
 )
+from editor.services.transaction.add_node import CallParams
 
 
 @pytest.fixture
@@ -89,6 +90,18 @@ def basic_program() -> Program:
                         input=3,
                         children=[elements.Conduit.Output(target=2, index=0)],
                     )
+                ],
+            ),
+            elements.Function(
+                name="xyzzy",
+                location=elements.Location(410, 10, 2, 100, 100),
+                id=4,
+                inputs=[
+                    elements.Parameter(name="a", id=1, flType=FlType.I32),
+                    elements.Parameter(name="b", id=2, flType=FlType.I32),
+                ],
+                outputs=[
+                    elements.Return(id=3, flType=FlType.I32),
                 ],
             ),
         ]
@@ -592,6 +605,50 @@ def test_add_conduit_removes_duplicate_targets(
                 params=OperatorParams(arity="binary", op=" "),
             ),
         ),
+        (
+            elements.Call(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 7),
+                target="xyzzy",
+                arguments=["a", "b"],
+                returns=True,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=CallParams(target="xyzzy"),
+            ),
+        ),
+        # Calling an unknown function adds its name and empty args/return
+        (
+            elements.Call(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 7),
+                target="unknown",
+                arguments=[],
+                returns=False,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=CallParams(target="unknown"),
+            ),
+        ),
+        # Calling missing a target name adds a placeholder
+        (
+            elements.Call(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 7),
+                target="???",
+                arguments=[],
+                returns=False,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=CallParams(),
+            ),
+        ),
     ],
 )
 def test_add_node(
@@ -644,7 +701,7 @@ def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
     expected = copy.deepcopy(basic_program)
     expected.declarations.append(
         elements.Function(
-            id=4,
+            id=5,
             name="new_function",
             location=elements.Location(50, 50, 0, 200, 200),
         )
@@ -667,7 +724,7 @@ def test_add_decl_with_custom_name(
     expected = copy.deepcopy(basic_program)
     expected.declarations.append(
         elements.Function(
-            id=4,
+            id=5,
             name="my_func",
             location=elements.Location(50, 50, 0, 200, 200),
         )
@@ -798,9 +855,9 @@ def test_remove_node_with_conduits(
 def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
-    expected.declarations.pop(2)
+    expected.declarations.pop()
 
-    uut = RemoveItem(target=[3])
+    uut = RemoveItem(target=[4])
     editor.edit(uut)
     actual = editor.get()
 

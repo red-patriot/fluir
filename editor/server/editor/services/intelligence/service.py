@@ -67,7 +67,7 @@ class IntelligenceService:
     def _function_completions(self, path: Path) -> list[Completion]:
         # TODO: Add documentation when that is implemented
         return [
-            Completion(short_name=name, kind=Kind.FUNCTION_DEF)
+            Completion(short_name=name, kind=Kind.CALL)
             for name in self._function_names.get(path, set())
         ]
 

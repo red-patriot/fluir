@@ -6,36 +6,42 @@ import ElementTag from '@/components/flow_diagram/common/ElementTag.tsx';
 import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay.tsx';
 import DragHandle from '@/components/flow_diagram/common/DragHandle.tsx';
 import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut.tsx';
-import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle.tsx';
+import { HorizontalResizeHandle } from '@/components/flow_diagram/common/ResizeHandle.tsx';
+import { ZOOM_SCALAR } from '@/hooks/useSizeStyle.ts';
+import { LIMITS } from '@/limits.ts';
 
 export type CallNode = Node<{
-  call: Call,
-  fullID: string,
-}>
+  call: Call;
+  fullID: string;
+}>;
 
-export default function CallNode({ data: { call, fullID } }: NodeProps<CallNode>) {
-  return <Flex
-    direction="column"
-    height="100%"
-    align="center"
-    style={{ backgroundColor: sky.sky11 }}
-  >
-    <Flex direction="row" className="w-full">
-      <ElementTag name="fn" />
-      <ValueDisplay fullID={fullID} value={call.target} />
-      <DragHandle />
+export default function CallNode({
+                                   data: { call, fullID },
+                                   selected,
+                                 }: NodeProps<CallNode>) {
+  return (
+    <Flex
+      direction="column"
+      height="100%"
+      align="center"
+      style={{ backgroundColor: sky.sky11 }}
+    >
+      <Flex direction="row" className="w-full">
+        <ElementTag name="fn" />
+        <ValueDisplay fullID={fullID} value={call.target} />
+        <DragHandle />
+      </Flex>
+      <Flex direction="column" className="w-full">
+        {call.arguments.map((arg, index) => (
+          <CallArgumentNode arg={arg} callID={fullID} index={index} />
+        ))}
+      </Flex>
+      {call.returns && <NodeOutput fullID={fullID} count={1} />}
+      {selected && (
+        <HorizontalResizeHandle fullID={fullID} minWidth={LIMITS.call.width.min * ZOOM_SCALAR} />
+      )}
     </Flex>
-    <Flex direction="column" className="w-full">
-      {
-
-        call.arguments.map((arg, index) => <CallArgumentNode arg={arg} callID={fullID} index={index} />)
-      }
-    </Flex>
-    {call.returns &&
-      <NodeOutput fullID={fullID} count={1} />
-    }
-    <XYResizeHandle fullID={fullID} />
-  </Flex>;
+  );
 }
 
 interface CallArgumentProps {
@@ -50,7 +56,7 @@ function CallArgumentNode({ arg, callID, index }: CallArgumentProps) {
       <Handle
         position={Position.Left}
         type="target"
-        id={`output-${callID}-${index+1}`}
+        id={`output-${callID}-${index + 1}`}
         style={{
           backgroundColor: gray.gray10,
           top: '50%',

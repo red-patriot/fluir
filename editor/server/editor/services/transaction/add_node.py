@@ -117,6 +117,9 @@ class AddNode(BaseModel, TransactionBase):
             # TODO: Handle multiple returns
             returns = len(target.outputs) == 1
 
+        # Make space for each arg
+        self.new_location.height = 5 * len(args) + 5
+
         return elements.Call(
             id=new_id,
             location=self.new_location,

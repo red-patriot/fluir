@@ -1,18 +1,17 @@
-import { Flex, Code, Box, Badge } from '@radix-ui/themes';
-import {
-  CreateNodeOptions,
-} from '@/components/flow_diagram/dialog/DialogContext';
-import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
+import { Flex, Code, Box, Badge } from "@radix-ui/themes";
+import { CreateNodeOptions } from "@/components/flow_diagram/dialog/DialogContext";
+import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
 import {
   AddNodeEditRequest,
   AddDeclEditRequest,
   ConstantParams,
   OperatorParams,
-} from '@/models/edit_request';
-import { toApiID } from '@/utility/idHelpers';
-import { LIMITS } from '@/limits';
-import { Completion, CompletionKind } from '@/models/intelligence_response';
-import CoreDialog, { OptionProps } from './CoreDialog';
+  CallParams,
+} from "@/models/edit_request";
+import { toApiID } from "@/utility/idHelpers";
+import { LIMITS } from "@/limits";
+import { Completion, CompletionKind } from "@/models/intelligence_response";
+import CoreDialog, { OptionProps } from "./CoreDialog";
 
 interface CreateNodeDialogProps extends CreateNodeOptions {
   options: Completion[];
@@ -20,53 +19,59 @@ interface CreateNodeDialogProps extends CreateNodeOptions {
 
 function extractWidth(kind: CompletionKind) {
   // TODO: Handle calls
-  return kind === 'operator'
+  return kind === "operator"
     ? LIMITS.operator.width.min
     : LIMITS.constant.width.min;
 }
 
 function extractHeight(kind: CompletionKind) {
-  return kind === 'operator'
+  return kind === "operator"
     ? LIMITS.operator.height.min
     : LIMITS.constant.height.min;
 }
 
-function extractParameters(completion: Completion): ConstantParams | OperatorParams {
+function extractParameters(
+  completion: Completion,
+): ConstantParams | OperatorParams | CallParams {
   switch (completion.kind) {
-    case 'constant':
+    case "constant":
       return {
-        discriminator: 'constant',
+        discriminator: "constant",
         type: completion.short_name,
         // TODO: Add some way to handle the value
       } as ConstantParams;
-    case 'operator':
-      const opInfo = completion.short_name.split(' ');
+    case "operator":
+      const opInfo = completion.short_name.split(" ");
       const op = opInfo[0];
-      const arity = opInfo[1].includes('b') ? 'binary' : 'unary';
+      const arity = opInfo[1].includes("b") ? "binary" : "unary";
       return {
-        discriminator: 'operator',
+        discriminator: "operator",
         arity,
         op,
       } as OperatorParams;
-    case 'call':
-      throw new Error('Not implemented');
+    case "call":
+      return {
+        discriminator: "call",
+        target: completion.short_name,
+      } as CallParams;
   }
-  throw new Error('Invalid completion kind');
+  throw new Error("Invalid completion kind");
 }
 
 export default function CreateNodeDialog({
-                                           parentID,
-                                           parentLocation,
-                                           clickedLocation,
-                                           where,
-                                           options,
-                                         }: CreateNodeDialogProps) {
+  parentID,
+  parentLocation,
+  clickedLocation,
+  where,
+  options,
+}: CreateNodeDialogProps) {
   const { editProgram } = useProgramActions();
   const onSelect = (selection: Completion) => {
+    console.log(selection);
     // TODO: Refactor this component to not require this unfortunate hack
-    if (selection.kind === 'function') {
+    if (selection.kind === "function") {
       const request: AddDeclEditRequest = {
-        discriminator: 'add_decl',
+        discriminator: "add_decl",
         new_location: {
           x: clickedLocation.x - parentLocation.x,
           y: clickedLocation.y - parentLocation.y,
@@ -75,12 +80,12 @@ export default function CreateNodeDialog({
           width: 40,
           height: 30,
         },
-        params: { discriminator: 'function' },
+        params: { discriminator: "function" },
       };
       editProgram(request);
     } else {
       const request: AddNodeEditRequest = {
-        discriminator: 'add_node',
+        discriminator: "add_node",
         parent: toApiID(parentID),
         new_location: {
           x: clickedLocation.x - parentLocation.x,
@@ -96,11 +101,7 @@ export default function CreateNodeDialog({
   };
 
   const renderOption = ({ data, highlighted }: OptionProps<Completion>) => {
-    return (
-      <CreateNodeDialogOption
-        completion={data}
-        selected={highlighted} />
-    );
+    return <CreateNodeDialogOption completion={data} selected={highlighted} />;
   };
 
   return (
@@ -120,18 +121,19 @@ interface CreateNodeDialogOptionProps extends React.HTMLProps<HTMLElement> {
 }
 
 export function CreateNodeDialogOption({
-                                         completion,
-                                         selected = false,
-                                       }: CreateNodeDialogOptionProps) {
+  completion,
+  selected = false,
+}: CreateNodeDialogOptionProps) {
   return (
-    <Badge color={selected ? 'blue' : 'gray'}
-           className="cursor-pointer w-full"
-    >
-      <Flex direction="row" align="center" gap="2" p="2" className="w-full justify-between">
-        <Code
-          size="5"
-          color="gray"
-        >
+    <Badge color={selected ? "blue" : "gray"} className="cursor-pointer w-full">
+      <Flex
+        direction="row"
+        align="center"
+        gap="2"
+        p="2"
+        className="w-full justify-between"
+      >
+        <Code size="5" color="gray">
           {completion.short_name}
         </Code>
         {/* TODO: Update the Box to contain a visual of the element to be added?*/}

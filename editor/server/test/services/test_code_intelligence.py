@@ -122,3 +122,37 @@ def test_completion_includes_other_functions(program: Program) -> None:
     for func_name in expecteds:
         expected = Completion(short_name=func_name, kind=Kind.FUNCTION_DEF)
         assert expected in actual
+
+
+def test_get_completions_returns_empty_for_unknown_path() -> None:
+    """Tests that completions are empty when the path has not been added"""
+    uut = IntelligenceService()
+
+    assert uut.get_completions([], Path("unknown.fl")) == []
+    assert uut.get_completions([1], Path("unknown.fl")) == []
+
+
+def test_get_types_returns_empty_for_unknown_path() -> None:
+    """Tests that types are empty when the path has not been added"""
+    uut = IntelligenceService()
+
+    assert uut.get_types([1], Path("unknown.fl")) == []
+
+
+def test_remove_module_clears_completions(program: Program) -> None:
+    """Tests that remove_module drops a previously added path"""
+    path = Path("fake/path/to/program.fl")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+    uut.remove_module(path)
+
+    assert uut.get_completions([1], path) == []
+    assert uut.get_types([1], path) == []
+
+
+def test_remove_module_is_noop_for_unknown_path() -> None:
+    """Tests that remove_module does not raise when the path is unknown"""
+    uut = IntelligenceService()
+
+    uut.remove_module(Path("never/added.fl"))

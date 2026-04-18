@@ -19,12 +19,14 @@ class IntelligenceService:
         }
 
     def remove_module(self, path: Path) -> None:
-        pass
+        self._function_names.pop(path, None)
 
     def get_completions(
         self, block_id: QualifiedID, path: Path
     ) -> list[Completion]:
         """Return a list of available completions at the given location in the given program path"""
+        if path not in self._function_names:
+            return []
         if len(block_id) == 0:
             # Top level provides definition completions
             return self._toplevel_options()
@@ -36,6 +38,8 @@ class IntelligenceService:
 
     def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
         """Return a list of types visible at the given location in the given program path"""
+        if path not in self._function_names:
+            return []
         return self._builtin_types()
 
     def _toplevel_options(self) -> list[Completion]:

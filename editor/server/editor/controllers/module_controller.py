@@ -4,9 +4,9 @@ from typing import Annotated, override
 from fastapi import Body, FastAPI, HTTPException
 
 from editor.controllers.interface.controller import Controller
-from editor.models import Program
 from editor.models.module_requests import OpenRequest, SaveRequest
 from editor.models.module_responses import ProgramStatus
+from editor.services.intelligence import IntelligenceService
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import EditTransaction
 
@@ -14,8 +14,18 @@ from editor.services.transaction import EditTransaction
 class ModuleController(Controller):
     """Controller for all module requests"""
 
-    def __init__(self, editor: ModuleEditor) -> None:
+    def __init__(
+        self, editor: ModuleEditor, intelligence: IntelligenceService
+    ) -> None:
         self._editor = editor
+        self._intelligence = intelligence
+
+    def _refresh_intelligence(self) -> None:
+        """Reloads the given module to refresh intelligence"""
+        program = self._editor.get()
+        path = self._editor.get_path()
+        if program is not None and path is not None:
+            self._intelligence.add_module(program, path)
 
     def _make_status(self, saved: bool) -> ProgramStatus:
         program = self._editor.get()
@@ -54,16 +64,21 @@ class ModuleController(Controller):
         program = self._editor.get()
         if not program:
             raise HTTPException(404, "The requested program does not exist")
+        self._refresh_intelligence()
         return self._make_status(saved=True)
 
     def close(self) -> None:
         """Handles requests to close the current program"""
+        path = self._editor.get_path()
         self._editor.close()
+        if path is not None:
+            self._intelligence.remove_module(path)
 
     def edit(
         self, request: Annotated[EditTransaction, Body()]
     ) -> ProgramStatus:
         self._editor.edit(request)
+        self._refresh_intelligence()
 
         return self._make_status(saved=False)
 

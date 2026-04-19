@@ -2,7 +2,6 @@
     FunctionDecl(main)
     at(x10, y10, z3, w100, h100)
     input
-        at(x0, y30, z0, w10, h30)
         2:
             Param(in1)
             index 0
@@ -12,7 +11,6 @@
             index 1
             type i32
     output
-        at(x0, y24, z0, w10, h7)
         4:
             Return
             type u8

@@ -72,7 +72,6 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::FunctionDecl::InputBlock& input) {
     out_ << formatIndented("input\n");
     FLUIR_SCOPED_INDENT;
-    out_ << doPrint(input.location);
     for (const auto& param : input.parameters) {
       (*this)(param);
     }
@@ -81,7 +80,6 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::FunctionDecl::OutputBlock& output) {
     out_ << formatIndented("output\n");
     FLUIR_SCOPED_INDENT;
-    out_ << doPrint(output.location);
     if (output.ret) {
       (*this)(*output.ret);
     }

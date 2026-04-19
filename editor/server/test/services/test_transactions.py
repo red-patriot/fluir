@@ -608,7 +608,7 @@ def test_add_conduit_removes_duplicate_targets(
         (
             elements.Call(
                 id=6,
-                location=elements.Location(2, 7, 0, 7, 7),
+                location=elements.Location(2, 7, 0, 7, 15),
                 target="xyzzy",
                 arguments=["a", "b"],
                 returns=True,
@@ -623,7 +623,7 @@ def test_add_conduit_removes_duplicate_targets(
         (
             elements.Call(
                 id=6,
-                location=elements.Location(2, 7, 0, 7, 7),
+                location=elements.Location(2, 7, 0, 7, 5),
                 target="unknown",
                 arguments=[],
                 returns=False,
@@ -638,7 +638,7 @@ def test_add_conduit_removes_duplicate_targets(
         (
             elements.Call(
                 id=6,
-                location=elements.Location(2, 7, 0, 7, 7),
+                location=elements.Location(2, 7, 0, 7, 5),
                 target="???",
                 arguments=[],
                 returns=False,

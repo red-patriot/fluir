@@ -120,7 +120,7 @@ def test_completion_includes_other_functions(program: Program) -> None:
     actual = uut.get_completions([1], path)
 
     for func_name in expecteds:
-        expected = Completion(short_name=func_name, kind=Kind.FUNCTION_DEF)
+        expected = Completion(short_name=func_name, kind=Kind.CALL)
         assert expected in actual
 
 

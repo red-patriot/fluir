@@ -130,8 +130,12 @@ namespace fluir {
     frames_.reserve(FUNCTION_DEPTH);
     std::ranges::fill(*stack_, code::Value{});
 
-    // TODO: Be smarter about loading the entry point
-    createFlStartup(0);
+    auto mainIt = std::ranges::find(code_->chunks, "main", &code::Chunk::name);
+    if (mainIt == code_->chunks.end()) {
+      throw VirtualMachineError{"No 'main' function found in bytecode"};
+    }
+
+    createFlStartup(static_cast<size_t>(std::distance(code_->chunks.begin(), mainIt)));
     initCall(&flStartup_, stack_->data());
   }
 

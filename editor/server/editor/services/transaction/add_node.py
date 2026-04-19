@@ -23,8 +23,14 @@ class OperatorParams(BaseModel):
     op: str | None = None
 
 
+class CallParams(BaseModel):
+    discriminator: Literal["call"] = "call"
+    target: str | None = None
+
+
 type NodeParams = Annotated[
-    ConstantParams | OperatorParams, Field(discriminator="discriminator")
+    ConstantParams | OperatorParams | CallParams,
+    Field(discriminator="discriminator"),
 ]
 
 
@@ -48,6 +54,8 @@ class AddNode(BaseModel, TransactionBase):
                 decl.nodes.append(self._make_constant(new_id))
             case OperatorParams():
                 decl.nodes.append(self._make_operator(new_id))
+            case CallParams():
+                decl.nodes.append(self._make_call(new_id, original))
         self._inserted = new_id
         return original
 
@@ -94,6 +102,33 @@ class AddNode(BaseModel, TransactionBase):
         if op == elements.Operator.UNKNOWN:
             return elements.Operator.PLUS
         return op
+
+    def _make_call(self, new_id: IDType, original: Program) -> elements.Call:
+        assert isinstance(self.params, CallParams)
+        if not self.params.target:
+            raise BadEdit("call target is required")
+        target_name = self.params.target
+        targets = [
+            decl for decl in original.declarations if decl.name == target_name
+        ]
+        args = []
+        returns = False
+        if len(targets) == 1:
+            target = targets[0]
+            args = [param.name for param in target.inputs]
+            # TODO: Handle multiple returns
+            returns = len(target.outputs) == 1
+
+        # Make space for each arg
+        self.new_location.height = 5 * len(args) + 5
+
+        return elements.Call(
+            id=new_id,
+            location=self.new_location,
+            target=target_name,
+            arguments=args,
+            returns=returns,
+        )
 
     @override
     def undo(self, original: Program) -> Program:

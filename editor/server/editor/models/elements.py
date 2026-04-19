@@ -68,7 +68,17 @@ class UnaryOperator:
     op: Operator = Operator.UNKNOWN
 
 
-Node = Constant | BinaryOperator | UnaryOperator
+@dataclass
+class Call:
+    discriminator: Literal["call"] = "call"
+    target: str = ""
+    id: IDType = INVALID_ID
+    location: Location = field(default_factory=Location)
+    arguments: list[str] = field(default_factory=list)
+    returns: bool = False  # TODO: For now, indicates if there is a return value, in the future, add multiple return values
+
+
+Node = Constant | BinaryOperator | UnaryOperator | Call
 Nodes = list[Node]
 
 
@@ -96,6 +106,19 @@ class Conduit:
 
 
 @dataclass
+class Parameter:
+    name: str = ""
+    id: IDType = INVALID_ID
+    flType: FlType | None = None
+
+
+@dataclass
+class Return:
+    id: IDType = INVALID_ID
+    flType: FlType | None = None
+
+
+@dataclass
 class Function:
     discriminator: Literal["function"] = "function"
     name: str = ""
@@ -103,6 +126,8 @@ class Function:
     location: Location = field(default_factory=Location)
     nodes: Nodes = field(default_factory=list)
     conduits: list[Conduit] = field(default_factory=list)
+    inputs: list[Parameter] = field(default_factory=list)
+    outputs: list[Return] = field(default_factory=list)
 
 
 Declaration = Function
@@ -145,8 +170,10 @@ def _find_impl(
                     return None
                 case "constant":
                     return None
+                case "call":
+                    return None
                 case _:
-                    return Never
+                    assert Never
     return None
 
 

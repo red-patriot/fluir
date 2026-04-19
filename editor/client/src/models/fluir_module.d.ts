@@ -41,7 +41,16 @@ export type UnaryOp = {
   op: Operator;
 };
 
-export type Node = BinaryOp | UnaryOp | Constant;
+export type Call = {
+  discriminator: 'call';
+  target: string;
+  id: number;
+  location: Location;
+  arguments: string[];
+  returns: boolean;
+}
+
+export type Node = BinaryOp | UnaryOp | Constant | Call;
 
 export namespace Conduit {
   export type Output = {
@@ -65,6 +74,17 @@ export type Conduit = {
   children: (Conduit.Segment | Conduit.Output)[];
 };
 
+export type FunctionParameter = {
+  id: number;
+  name: string;
+  flType: FlType;
+}
+
+export type FunctionReturn = {
+  id: number;
+  flType: FlType;
+}
+
 export type FunctionDecl = {
   discriminator: 'function';
   name: string;
@@ -72,6 +92,8 @@ export type FunctionDecl = {
   location: Location;
   nodes: Node[];
   conduits: Conduit[];
+  inputs: FunctionParameter[];
+  outputs: FunctionReturn[];
 };
 
 export type Declaration = FunctionDecl;

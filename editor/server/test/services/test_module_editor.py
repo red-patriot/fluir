@@ -407,6 +407,43 @@ def test_undo_max_size(basic_program: Program) -> None:
     assert not uut.can_undo()
 
 
+def test_undo_stack_cap_drops_oldest(basic_program: Program) -> None:
+    """When the undo stack exceeds its cap, the OLDEST entry should be
+    evicted, not the newest — otherwise the most recent edit is lost
+    immediately after being pushed."""
+    uut = ModuleEditor(stack_max=2)
+    uut.open_module(basic_program)
+
+    # Three distinct move edits — each is individually undoable.
+    actions = [
+        transaction.MoveElement(target=[3, 3], x=6, y=90),
+        transaction.MoveElement(target=[3, 3], x=7, y=91),
+        transaction.MoveElement(target=[3, 3], x=8, y=92),
+    ]
+    for action in actions:
+        uut.edit(action)
+
+    # After all three edits, the element should be at (8, 92).
+    after_edits = uut.get()
+    assert after_edits is not None
+    assert after_edits.declarations[0].nodes[1].location.x == 8
+    assert after_edits.declarations[0].nodes[1].location.y == 92
+
+    # The stack is capped at 2. Undoing twice should back out the two
+    # most recent edits — which means the element ends up at the
+    # coordinates set by the FIRST edit (6, 90). If the cap is
+    # implemented incorrectly (dropping the newest), only two undos
+    # are possible but they'd land us somewhere else.
+    uut.undo()
+    uut.undo()
+    assert not uut.can_undo()
+
+    state = uut.get()
+    assert state is not None
+    assert state.declarations[0].nodes[1].location.x == 6
+    assert state.declarations[0].nodes[1].location.y == 90
+
+
 def test_redo_max_size(basic_program: Program) -> None:
     uut = ModuleEditor(stack_max=10)
     uut.open_module(basic_program)

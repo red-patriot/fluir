@@ -1,5 +1,6 @@
 from editor.models.elements import (
     BinaryOperator,
+    Call,
     Conduit,
     Constant,
     Declaration,
@@ -10,7 +11,9 @@ from editor.models.elements import (
     Node,
     Nodes,
     Operator,
+    Parameter,
     Program,
+    Return,
     UnaryOperator,
 )
 from editor.models.id import INVALID_ID, IDType, QualifiedID
@@ -20,6 +23,7 @@ __all__ = [
     "INVALID_ID",
     "IDType",
     "BinaryOperator",
+    "Call",
     "Conduit",
     "Constant",
     "Declaration",
@@ -29,8 +33,10 @@ __all__ = [
     "Node",
     "Nodes",
     "Operator",
+    "Parameter",
     "Program",
     "QualifiedID",
+    "Return",
     "UnaryOperator",
     "Header",
     "Version",

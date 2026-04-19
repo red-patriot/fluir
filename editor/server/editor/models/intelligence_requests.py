@@ -7,3 +7,9 @@ from editor.models.id import QualifiedID
 class CompletionRequest:
     block_id: QualifiedID
     path: str
+
+
+@dataclass
+class TypesRequest:
+    block_id: QualifiedID
+    path: str

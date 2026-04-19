@@ -1,24 +1,24 @@
-import { useReactFlow, type Node, type NodeProps } from '@xyflow/react';
-import { FunctionDecl } from '@/models/fluir_module';
-import { Box, Flex, Badge } from '@radix-ui/themes';
-import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
-import DragHandle from '@/components/flow_diagram/common/DragHandle';
-import DeclHeader from '@/components/flow_diagram/common/DeclHeader';
-import { XYResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
-import { useMemo } from 'react';
-import { gray } from '@radix-ui/colors';
-import { useDialogContext } from '@/components/flow_diagram/dialog';
+import { useReactFlow, type Node, type NodeProps } from "@xyflow/react";
+import { FunctionDecl } from "@/models/fluir_module";
+import { Flex, Badge } from "@radix-ui/themes";
+import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
+import DragHandle from "@/components/flow_diagram/common/DragHandle";
+import DeclHeader from "@/components/flow_diagram/common/DeclHeader";
+import { XYResizeHandle } from "@/components/flow_diagram/common/ResizeHandle";
+import { useMemo } from "react";
+import { amber } from "@radix-ui/colors";
+import { useDialogContext } from "@/components/flow_diagram/dialog";
 
 export type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
-  'function'
+  "function"
 >;
 
-export const FUNC_HEADER_HEIGHT = 0;
+export const FUNC_HEADER_HEIGHT = 5;
 
 export default function FunctionDeclNode({
-                                           data: { decl, fullID },
-                                         }: NodeProps<FunctionDeclNode>) {
+  data: { decl, fullID },
+}: NodeProps<FunctionDeclNode>) {
   const { screenToFlowPosition } = useReactFlow();
   const { openCreateNodeDialog } = useDialogContext();
   const minWidth = useMemo(() => {
@@ -36,6 +36,7 @@ export default function FunctionDeclNode({
   }, [decl.nodes]);
 
   const onBodyContextMenu = (event: React.MouseEvent) => {
+    event.stopPropagation();
     const clickCoord = screenToFlowPosition({
       x: event.clientX,
       y: event.clientY,
@@ -56,14 +57,19 @@ export default function FunctionDeclNode({
       width="100%"
       height="100%"
       direction="column"
-      style={{ borderColor: gray.gray3, borderWidth: 1 }}
+      style={{ borderColor: amber.amber8, borderWidth: 1 }}
     >
-      <Box>
+      <Flex className="w-full" direction="row">
         <DeclHeader
-          name={decl.name}
+          decl={decl}
           variant="solid"
+          fullID={fullID}
+          onContextMenu={(event: React.MouseEvent) => {
+            event.stopPropagation();
+            // TODO: Fill this out here!
+            console.log("context menu");
+          }}
         >
-          <Flex className="grow" />
           <DragHandle />
         </DeclHeader>
         <XYResizeHandle
@@ -71,7 +77,7 @@ export default function FunctionDeclNode({
           minWidth={minWidth}
           minHeight={minHeight}
         />
-      </Box>
+      </Flex>
       <Badge
         className="grow"
         variant="soft"

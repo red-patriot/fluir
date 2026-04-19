@@ -4,17 +4,20 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import CreateNodeDialog from '@/components/flow_diagram/dialog/CreateNodeDialog';
 import { Completion } from '@/models/intelligence_response';
+import { LIMITS } from '@/limits';
+import {
+  DialogContext,
+  DialogActions,
+} from '@/components/flow_diagram/dialog/DialogContext';
+import {
+  ProgramActionsContext,
+  ProgramActions,
+} from '@/components/reusable/ProgramActionsContext';
+import { mockActions } from '@/utility/testProgramActions';
 
 const mockCloseDialog = vi.fn();
+const mockOpenCreateNodeDialog = vi.fn();
 const mockEditProgram = vi.fn();
-
-vi.mock('@/components/flow_diagram/dialog/DialogContext', () => ({
-  useDialogContext: () => ({ closeDialog: mockCloseDialog }),
-}));
-
-vi.mock('@/components/reusable/ProgramActionsContext', () => ({
-  useProgramActions: () => ({ editProgram: mockEditProgram }),
-}));
 
 const mockOptions: Completion[] = [
   { short_name: '+ binary', kind: 'operator', description: 'Add' },
@@ -30,6 +33,27 @@ const defaultProps = {
   options: mockOptions,
 };
 
+function renderDialog(props: typeof defaultProps = defaultProps) {
+  const dialogActions: DialogActions = {
+    closeDialog: mockCloseDialog,
+    openCreateNodeDialog: mockOpenCreateNodeDialog,
+    openTypeOptionsDialog: vi.fn(),
+  };
+
+  const programActions: ProgramActions = {
+    ...mockActions,
+    editProgram: mockEditProgram,
+  };
+
+  return render(
+    <DialogContext.Provider value={dialogActions}>
+      <ProgramActionsContext.Provider value={programActions}>
+        <CreateNodeDialog {...props} />
+      </ProgramActionsContext.Provider>
+    </DialogContext.Provider>,
+  );
+}
+
 describe('CreateNodeDialog', () => {
   afterEach(() => {
     cleanup();
@@ -39,14 +63,14 @@ describe('CreateNodeDialog', () => {
   // Rendering
 
   it('renders all options when no search text entered', () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     expect(screen.getByText('+ binary')).toBeInTheDocument();
     expect(screen.getByText('- unary')).toBeInTheDocument();
     expect(screen.getByText('int')).toBeInTheDocument();
   });
 
   it('renders the search input with placeholder', () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     expect(
       screen.getByPlaceholderText('Search…'),
     ).toBeInTheDocument();
@@ -55,7 +79,7 @@ describe('CreateNodeDialog', () => {
   // Search filtering
 
   it('filters options by search text (case-insensitive startsWith)', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
     await userEvent.type(input, 'INT');
     expect(screen.getByText('int')).toBeInTheDocument();
@@ -64,7 +88,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('resets selection index when search text changes', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
 
     // Arrow down to select first option
@@ -82,7 +106,7 @@ describe('CreateNodeDialog', () => {
   // Keyboard navigation
 
   it('ArrowDown moves selection down through filtered options', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
 
     await userEvent.type(input, '{ArrowDown}');
@@ -103,7 +127,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('ArrowUp moves selection up and stops at 0', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
 
     // Move down twice, then up twice
@@ -122,7 +146,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('ArrowDown stops at last option', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
 
     // Press ArrowDown more times than there are options
@@ -145,7 +169,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('Enter on a selected option calls editProgram and closeDialog', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const input = screen.getByPlaceholderText('Search…');
 
     await userEvent.type(input, '{ArrowDown}{Enter}');
@@ -156,7 +180,7 @@ describe('CreateNodeDialog', () => {
   // Mouse interaction
 
   it('hovering an option highlights it', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const intOption = screen.getByText('int');
 
     await userEvent.hover(intOption);
@@ -164,7 +188,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('clicking an option calls editProgram and closeDialog', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const intOption = screen.getByText('int');
 
     await userEvent.click(intOption);
@@ -175,7 +199,7 @@ describe('CreateNodeDialog', () => {
   // Request construction
 
   it('builds correct request for an operator completion', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const option = screen.getByText('+ binary');
 
     await userEvent.click(option);
@@ -192,7 +216,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('builds correct request for a constant completion', async () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
     const option = screen.getByText('int');
 
     await userEvent.click(option);
@@ -201,6 +225,29 @@ describe('CreateNodeDialog', () => {
       parent: [1, 2],
       new_location: { x: 40, y: 40, z: 1, width: 12, height: 5 },
       params: { discriminator: 'constant', type: 'int' },
+    });
+  });
+
+  it('builds correct request for a call completion', async () => {
+    const callOptions: Completion[] = [
+      { short_name: 'myFunc', kind: 'call', description: '' },
+    ];
+
+    renderDialog({ ...defaultProps, options: callOptions });
+    const option = screen.getByText('myFunc');
+
+    await userEvent.click(option);
+    expect(mockEditProgram).toHaveBeenCalledWith({
+      discriminator: 'add_node',
+      parent: [1, 2],
+      new_location: {
+        x: 40,
+        y: 40,
+        z: 1,
+        width: LIMITS.call.width.min,
+        height: LIMITS.call.height.min,
+      },
+      params: { discriminator: 'call', target: 'myFunc' },
     });
   });
 
@@ -218,9 +265,7 @@ describe('CreateNodeDialog', () => {
       { short_name: 'op8 binary', kind: 'operator', description: 'Op8' },
     ];
 
-    render(
-      <CreateNodeDialog {...defaultProps} options={manyOptions} />,
-    );
+    renderDialog({ ...defaultProps, options: manyOptions });
 
     const scrollViewport = document.querySelector(
       '[data-radix-scroll-area-viewport]',
@@ -233,7 +278,7 @@ describe('CreateNodeDialog', () => {
   });
 
   it('renders all options when fewer than max visible', () => {
-    render(<CreateNodeDialog {...defaultProps} />);
+    renderDialog();
 
     expect(screen.getByText('+ binary')).toBeInTheDocument();
     expect(screen.getByText('- unary')).toBeInTheDocument();

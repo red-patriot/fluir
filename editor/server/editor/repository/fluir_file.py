@@ -7,6 +7,7 @@ from lxml.objectify import ObjectifiedElement, fromstring
 from editor.models import (
     INVALID_ID,
     BinaryOperator,
+    Call,
     Conduit,
     Constant,
     Declaration,
@@ -20,7 +21,11 @@ from editor.models import (
     Program,
     UnaryOperator,
 )
-from editor.models.elements import Header
+from editor.models.elements import (
+    Header,
+    Parameter,
+    Return,
+)
 from editor.models.version import Version
 from editor.repository.interface.file_manager import FileManager
 
@@ -90,6 +95,16 @@ class _XMLReader:
     def _declaration(self, element: Any) -> _DeclarationPair:
         nodes: Nodes = []
         conduits: list[Conduit] = []
+        input_block: list[Parameter] = []
+        output_block: list[Return] = []
+
+        input_element = element.find("input")
+        if input_element is not None:
+            input_block = self._input_block(input_element)
+
+        output_element = element.find("output")
+        if output_element is not None:
+            output_block = self._output_block(output_element)
 
         def handle_child(
             id_and_item: tuple[IDType, Any], items: list[Any]
@@ -110,7 +125,40 @@ class _XMLReader:
             location=self._location(element),
             nodes=nodes,
             conduits=conduits,
+            inputs=input_block,
+            outputs=output_block,
         )
+
+    def _input_block(self, element: Any) -> list[Parameter]:
+        params: list[Parameter] = []
+        for child in element.iterchildren():
+            if child.tag == "param":
+                params.append(
+                    Parameter(
+                        name=str(child.get("name")),
+                        id=self._id(child),
+                        flType=self._type_from_attribute(child),
+                    )
+                )
+        return params
+
+    def _output_block(self, element: Any) -> list[Return]:
+        returns: list[Return] = []
+        for child in element.iterchildren():
+            if child.tag == "return":
+                returns.append(
+                    Return(
+                        id=self._id(child),
+                        flType=self._type_from_attribute(child),
+                    )
+                )
+        return returns
+
+    def _type_from_attribute(self, element: Any) -> FlType | None:
+        type_str: str | None = element.get("type")
+        if type_str is None:
+            return None
+        return FlType(type_str)
 
     def _node(self, element: Any) -> _NodePair:
         match element.tag:
@@ -120,6 +168,8 @@ class _XMLReader:
                 return self._unary(element)
             case "constant":
                 return self._constant(element)
+            case "call":
+                return self._call(element)
         return (INVALID_ID, Constant())
 
     def _conduit(self, element: Any) -> _ConduitPair:
@@ -180,6 +230,28 @@ class _XMLReader:
             location=self._location(element),
             flType=self._type(next(element.iterchildren(), None)),
             value=self._value(next(element.iterchildren(), None)),
+        )
+
+    def _call(self, element: Any) -> _NodePair:
+        id = self._id(element)
+        indexed_args: list[tuple[int, str]] = []
+        returns = False
+        for child in element.iterchildren():
+            if child.tag == "arg":
+                indexed_args.append(
+                    (int(child.get("index")), str(child.get("name")))
+                )
+            elif child.tag == "return":
+                # TODO: Handle multiple returns
+                returns = True
+        indexed_args.sort(key=lambda pair: pair[0])
+        arguments = [name for _, name in indexed_args]
+        return id, Call(
+            id=id,
+            location=self._location(element),
+            target=str(element.get("target")),
+            arguments=arguments,
+            returns=returns,
         )
 
     def _value(self, element: Any) -> str:
@@ -269,11 +341,46 @@ class _XMLWriter:
                 "h": str(declaration.location.height),
             },
         )
+        if declaration.inputs:
+            self._input_block(declaration.inputs, decl_element)
+        if declaration.outputs:
+            self._output_block(declaration.outputs, decl_element)
         body_element = etree.SubElement(decl_element, "body")
         for node in declaration.nodes:
             self._node(node, body_element)
         for conduit in declaration.conduits:
             self._conduit(conduit, body_element)
+
+    def _input_block(
+        self, inputs: list[Parameter], parent: etree._Element
+    ) -> None:
+        input_element = etree.SubElement(
+            parent,
+            "input",
+        )
+        for param in inputs:
+            attrib: dict[str, str] = {
+                "name": param.name,
+                "id": str(param.id),
+            }
+            if param.flType is not None:
+                attrib["type"] = str(param.flType)
+            etree.SubElement(input_element, "param", attrib=attrib)
+
+    def _output_block(
+        self, outputs: list[Return], parent: etree._Element
+    ) -> None:
+        output_element = etree.SubElement(
+            parent,
+            "output",
+        )
+        for ret in outputs:
+            attrib: dict[str, str] = {
+                "id": str(ret.id),
+            }
+            if ret.flType is not None:
+                attrib["type"] = str(ret.flType)
+            etree.SubElement(output_element, "return", attrib=attrib)
 
     def _node(self, node: Node, parent: etree._Element) -> None:
         match node.discriminator:
@@ -283,6 +390,8 @@ class _XMLWriter:
                 self._unary(cast(UnaryOperator, node), parent)
             case "constant":
                 self._constant(cast(Constant, node), parent)
+            case "call":
+                self._call(cast(Call, node), parent)
 
     def _binary(self, node: BinaryOperator, parent: etree._Element) -> None:
         binary_element = etree.SubElement(
@@ -330,6 +439,30 @@ class _XMLWriter:
         assert node.flType is not None
         assert node.value is not None
         self._literal(node.flType, node.value, constant_element)
+
+    def _call(self, node: Call, parent: etree._Element) -> None:
+        call_element = etree.SubElement(
+            parent,
+            "call",
+            attrib={
+                "target": node.target,
+                "id": str(node.id),
+                "x": str(node.location.x),
+                "y": str(node.location.y),
+                "z": str(node.location.z),
+                "w": str(node.location.width),
+                "h": str(node.location.height),
+            },
+        )
+        if node.returns:
+            etree.SubElement(call_element, "return", attrib={"index": "0"})
+        start = 1 if node.returns else 0
+        for index, name in enumerate(node.arguments, start=start):
+            etree.SubElement(
+                call_element,
+                "arg",
+                attrib={"name": name, "index": str(index)},
+            )
 
     def _literal(
         self, type_: FlType, value: str, parent: etree._Element

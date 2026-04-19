@@ -32,10 +32,14 @@ def _run_server(app: FastAPI) -> None:
 def main() -> None:
     app = _setup_server()
 
-    module_controller = ModuleController(ModuleEditor(XMLFileManager()))
+    intelligence = IntelligenceService()
+
+    module_controller = ModuleController(
+        ModuleEditor(XMLFileManager()), intelligence
+    )
     module_controller.register(app)
 
-    intelligence_controller = IntelligenceController(IntelligenceService())
+    intelligence_controller = IntelligenceController(intelligence)
     intelligence_controller.register(app)
 
     _run_server(app)

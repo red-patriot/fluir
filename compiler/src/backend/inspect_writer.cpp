@@ -75,11 +75,22 @@ namespace fluir {
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH:
+        case code::Instruction::MULTIPOP:
         case code::Instruction::GET_VAL:
         case code::Instruction::SET_VAL:
+        case code::Instruction::CAST_IU:
+        case code::Instruction::CAST_UI:
+        case code::Instruction::CAST_FI:
+        case code::Instruction::CAST_FU:
         case code::Instruction::CAST_WIDTH:
+        case code::Instruction::RESERVE:
           emitInstructionWithArg(os, *i, *(i + 1));
           ++i;
+          break;
+        case code::Instruction::CALL:
+          emitInstruction(os, *i++);
+          emitLongArg(os, *i, *(i + 1), *(i + 2), *(i + 3));
+          i += 3;
           break;
         default:
           emitInstruction(os, *i);
@@ -94,4 +105,9 @@ namespace fluir {
   void InspectWriter::emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg) {
     os << formatIndented("{} x{:X}\n", instructionNames[instruction], arg);
   }
+
+  void InspectWriter::emitLongArg(std::ostream& os, uint8_t arg0, uint8_t arg1, uint8_t arg2, uint8_t arg3) {
+    os << formatIndented("x{:X} x{:X} x{:X} x{:X}\n", arg0, arg1, arg2, arg3);
+  }
+
 }  // namespace fluir

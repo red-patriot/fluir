@@ -329,13 +329,13 @@ TEST(TestInspectWriter, WriteCastInstructions) {
   std::string expected = R"(I0120030000000000000000
 CHUNK main
   CONSTANTS x0
-  CODE xF
-    ICAST_IU
-    ICAST_UI
+  CODE x13
+    ICAST_IU x1
+    ICAST_UI x2
     ICAST_IF
     ICAST_UF
-    ICAST_FU
-    ICAST_FI
+    ICAST_FU x4
+    ICAST_FI x8
     ICAST_WIDTH x1
     ICAST_WIDTH x2
     ICAST_WIDTH x4
@@ -346,11 +346,15 @@ CHUNK main
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
                                                            .code = {fc::CAST_IU,
+                                                                    0x1,
                                                                     fc::CAST_UI,
+                                                                    0x2,
                                                                     fc::CAST_IF,
                                                                     fc::CAST_UF,
                                                                     fc::CAST_FU,
+                                                                    0x4,
                                                                     fc::CAST_FI,
+                                                                    0x8,
                                                                     fc::CAST_WIDTH,
                                                                     0x01,
                                                                     fc::CAST_WIDTH,

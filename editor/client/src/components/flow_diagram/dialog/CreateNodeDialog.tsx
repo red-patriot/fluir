@@ -18,16 +18,29 @@ interface CreateNodeDialogProps extends CreateNodeOptions {
 }
 
 function extractWidth(kind: CompletionKind) {
-  // TODO: Handle calls
-  return kind === "operator"
-    ? LIMITS.operator.width.min
-    : LIMITS.constant.width.min;
+  switch (kind) {
+    case "operator":
+      return LIMITS.operator.width.min;
+    case "call":
+      return LIMITS.call.width.min;
+    case "constant":
+      return LIMITS.constant.width.min;
+    case "function":
+      return LIMITS.constant.width.min;
+  }
 }
 
 function extractHeight(kind: CompletionKind) {
-  return kind === "operator"
-    ? LIMITS.operator.height.min
-    : LIMITS.constant.height.min;
+  switch (kind) {
+    case "operator":
+      return LIMITS.operator.height.min;
+    case "call":
+      return LIMITS.call.height.min;
+    case "constant":
+      return LIMITS.constant.height.min;
+    case "function":
+      return LIMITS.constant.height.min;
+  }
 }
 
 function extractParameters(

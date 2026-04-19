@@ -134,4 +134,4 @@ class ModuleEditor:
         """Pushes an action onto the undo stack"""
         self._undo_stack.append(action)
         if len(self._undo_stack) > self._stack_max:
-            self._undo_stack.pop()
+            self._undo_stack.pop(0)

@@ -33,6 +33,11 @@ class AddDeclInterface(BaseModel, TransactionBase):
         decl = find_element(self.parent, original)
         if not isinstance(decl, elements.Function):
             raise BadEdit("Can only add interface elements to a function")
+        if (
+            isinstance(self.params, DeclParameterParams)
+            and not self.params.name
+        ):
+            raise BadEdit("Parameter name cannot be empty")
         new_id = next_id(decl)
 
         match self.params:

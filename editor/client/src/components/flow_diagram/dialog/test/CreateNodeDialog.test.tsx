@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import CreateNodeDialog from '@/components/flow_diagram/dialog/CreateNodeDialog';
 import { Completion } from '@/models/intelligence_response';
+import { LIMITS } from '@/limits';
 import {
   DialogContext,
   DialogActions,
@@ -224,6 +225,29 @@ describe('CreateNodeDialog', () => {
       parent: [1, 2],
       new_location: { x: 40, y: 40, z: 1, width: 12, height: 5 },
       params: { discriminator: 'constant', type: 'int' },
+    });
+  });
+
+  it('builds correct request for a call completion', async () => {
+    const callOptions: Completion[] = [
+      { short_name: 'myFunc', kind: 'call', description: '' },
+    ];
+
+    renderDialog({ ...defaultProps, options: callOptions });
+    const option = screen.getByText('myFunc');
+
+    await userEvent.click(option);
+    expect(mockEditProgram).toHaveBeenCalledWith({
+      discriminator: 'add_node',
+      parent: [1, 2],
+      new_location: {
+        x: 40,
+        y: 40,
+        z: 1,
+        width: LIMITS.call.width.min,
+        height: LIMITS.call.height.min,
+      },
+      params: { discriminator: 'call', target: 'myFunc' },
     });
   });
 

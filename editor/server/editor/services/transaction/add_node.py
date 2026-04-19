@@ -105,7 +105,9 @@ class AddNode(BaseModel, TransactionBase):
 
     def _make_call(self, new_id: IDType, original: Program) -> elements.Call:
         assert isinstance(self.params, CallParams)
-        target_name = self.params.target if self.params.target else "???"
+        if not self.params.target:
+            raise BadEdit("call target is required")
+        target_name = self.params.target
         targets = [
             decl for decl in original.declarations if decl.name == target_name
         ]

@@ -634,21 +634,6 @@ def test_add_conduit_removes_duplicate_targets(
                 params=CallParams(target="unknown"),
             ),
         ),
-        # Calling missing a target name adds a placeholder
-        (
-            elements.Call(
-                id=6,
-                location=elements.Location(2, 7, 0, 7, 5),
-                target="???",
-                arguments=[],
-                returns=False,
-            ),
-            AddNode(
-                parent=[2],
-                new_location=elements.Location(2, 7, 0, 7, 7),
-                params=CallParams(),
-            ),
-        ),
     ],
 )
 def test_add_node(
@@ -681,6 +666,21 @@ def test_add_node_missing_params_fails() -> None:
 def test_add_node_invalid_arity_fails() -> None:
     with pytest.raises(ValidationError):
         OperatorParams(arity="not_valid")  # type: ignore[arg-type]
+
+
+def test_add_call_node_without_target_raises(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """Adding a Call node with no target should raise BadEdit rather
+    than silently inserting a placeholder '???' target."""
+    uut = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=CallParams(),
+    )
+
+    with pytest.raises(BadEdit):
+        uut.do(basic_program)
 
 
 def test_add_node_with_invalid_op_fails(
@@ -809,6 +809,51 @@ def test_add_multiple_func_parameter(
 
     assert actual is not None
     assert actual == expected
+
+
+def test_add_decl_interface_raises_if_target_is_not_a_decl(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """AddDeclInterface should reject a parent that points to a node
+    inside a function rather than the function itself."""
+    # [2, 1] points to the BinaryOperator inside function bar, not bar.
+    uut = AddDeclInterface(
+        parent=[2, 1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="x"),
+    )
+
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+def test_add_decl_interface_raises_if_decl_does_not_exist(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """AddDeclInterface should surface find_element's lookup error when
+    the parent ID does not resolve to any element."""
+    uut = AddDeclInterface(
+        parent=[9999],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="x"),
+    )
+
+    with pytest.raises(elements.IdentifierError):
+        editor.edit(uut)
+
+
+def test_add_parameter_with_empty_name_raises(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """A parameter must have a non-empty name."""
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name=""),
+    )
+
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
 
 
 def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:

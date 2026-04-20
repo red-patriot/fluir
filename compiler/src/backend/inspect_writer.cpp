@@ -24,7 +24,8 @@ namespace fluir {
     writeConstants(chunk.constants, os);
     os << formatIndented("CODE x{:X}\n", chunk.code.size());
     writeCode(chunk.code, os);
-    os << formatIndented("INOUT x{:X}\n", chunk.inOutCount);
+    os << formatIndented("IN x{:X}\n", chunk.inCount);
+    os << formatIndented("OUT x{:X}\n", chunk.outCount);
   }
 
   void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {

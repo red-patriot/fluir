@@ -30,10 +30,8 @@ namespace fluir {
   void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
-    current_.inOutCount = static_cast<std::uint8_t>(func.parameters.size());
-    if (func.returnValue) {
-      ++current_.inOutCount;
-    }
+    current_.inCount = static_cast<std::uint8_t>(func.parameters.size());
+    current_.outCount = func.returnValue ? 1 : 0;
 
     // TODO: Handle parameters
     auto& [slots, returnCount] = pushScope();

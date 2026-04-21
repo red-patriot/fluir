@@ -11,9 +11,12 @@ TEST(TestVMFunctionCalls, HandlesCallWithoutParamsWithReturn) {
 
   fluir::code::ByteCode code{
     .header = {.entryOffset = 0},
-    .chunks = {
-      fc::Chunk{.name = "main", .code = {RESERVE, 1, CALL, 0, 0, 0, 1, EXIT}, .constants = {}},
-      fc::Chunk{.name = "getVal", .code = {PUSH, 0, SET_VAL, 0, POP, RETURN}, .constants = {4_i32}, .inOutCount = 1}}};
+    .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, CALL, 0, 0, 0, 1, EXIT}, .constants = {}},
+               fc::Chunk{.name = "getVal",
+                         .code = {PUSH, 0, SET_VAL, 0, POP, RETURN},
+                         .constants = {4_i32},
+                         .inCount = 0,
+                         .outCount = 1}}};
 
   fluir::VirtualMachine uut;
 
@@ -29,7 +32,8 @@ TEST(TestVMFunctionCalls, HandlesCallWithParamsWithReturn) {
                                         fc::Chunk{.name = "add",
                                                   .code = {GET_VAL, 1, GET_VAL, 2, I64_ADD, SET_VAL, 0, POP, RETURN},
                                                   .constants = {},
-                                                  .inOutCount = 3}}};
+                                                  .inCount = 2,
+                                                  .outCount = 1}}};
 
   fluir::VirtualMachine uut;
 
@@ -38,9 +42,10 @@ TEST(TestVMFunctionCalls, HandlesCallWithParamsWithReturn) {
 }
 
 TEST(TestVMFunctionCalls, HandlesCallWithoutParamsWithoutReturn) {
-  fluir::code::ByteCode code{.header = {.entryOffset = 0},
-                             .chunks = {fc::Chunk{.name = "main", .code = {CALL, 0, 0, 0, 1, EXIT}, .constants = {}},
-                                        fc::Chunk{.name = "noop", .code = {RETURN}, .constants = {}, .inOutCount = 0}}};
+  fluir::code::ByteCode code{
+    .header = {.entryOffset = 0},
+    .chunks = {fc::Chunk{.name = "main", .code = {CALL, 0, 0, 0, 1, EXIT}, .constants = {}},
+               fc::Chunk{.name = "noop", .code = {RETURN}, .constants = {}, .inCount = 0, .outCount = 0}}};
 
   fluir::VirtualMachine uut;
 
@@ -53,12 +58,12 @@ TEST(TestVMFunctionCalls, HandlesCallWithParamsWithoutReturn) {
     .header = {.entryOffset = 0},
     .chunks = {
       fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, CALL, 0, 0, 0, 1, EXIT}, .constants = {3_i32, 7_i32}},
-      fc::Chunk{.name = "sink", .code = {RETURN}, .constants = {}, .inOutCount = 2}}};
+      fc::Chunk{.name = "sink", .code = {RETURN}, .constants = {}, .inCount = 2, .outCount = 0}}};
 
   fluir::VirtualMachine uut;
 
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(2u, uut.viewStack().size());
+  EXPECT_TRUE(uut.viewStack().empty());
 }
 
 TEST(TestVMFunctionCalls, HandlesDeepCallStack) {
@@ -66,31 +71,28 @@ TEST(TestVMFunctionCalls, HandlesDeepCallStack) {
     .header = {.entryOffset = 0},
     .chunks = {
       fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, CALL, 0, 0, 0, 1, EXIT}, .constants = {0_i32}},
+      fc::Chunk{.name = "f1",
+                .code = {RESERVE, 1, GET_VAL, 1, PUSH, 0, I64_ADD, CALL, 0, 0, 0, 2, SET_VAL, 0, POP, RETURN},
+                .constants = {10_i32},
+                .inCount = 1,
+                .outCount = 1},
+      fc::Chunk{.name = "f2",
+                .code = {RESERVE, 1, GET_VAL, 1, PUSH, 0, I64_ADD, CALL, 0, 0, 0, 3, SET_VAL, 0, POP, RETURN},
+                .constants = {10_i32},
+                .inCount = 1,
+                .outCount = 1},
+      fc::Chunk{.name = "f3",
+                .code = {RESERVE, 1, GET_VAL, 1, PUSH, 0, I64_ADD, CALL, 0, 0, 0, 4, SET_VAL, 0, POP, RETURN},
+                .constants = {10_i32},
+                .inCount = 1,
+                .outCount = 1},
+      fc::Chunk{.name = "f4",
+                .code = {RESERVE, 1, GET_VAL, 1, PUSH, 0, I64_ADD, CALL, 0, 0, 0, 5, SET_VAL, 0, POP, RETURN},
+                .constants = {10_i32},
+                .inCount = 1,
+                .outCount = 1},
       fc::Chunk{
-        .name = "f1",
-        .code =
-          {GET_VAL, 1, PUSH, 0, I64_ADD, RESERVE, 1, GET_VAL, 0, CALL, 0, 0, 0, 2, GET_VAL, 1, SET_VAL, 0, RETURN},
-        .constants = {10_i32},
-        .inOutCount = 2},
-      fc::Chunk{
-        .name = "f2",
-        .code =
-          {GET_VAL, 1, PUSH, 0, I64_ADD, RESERVE, 1, GET_VAL, 0, CALL, 0, 0, 0, 3, GET_VAL, 1, SET_VAL, 0, RETURN},
-        .constants = {10_i32},
-        .inOutCount = 2},
-      fc::Chunk{
-        .name = "f3",
-        .code =
-          {GET_VAL, 1, PUSH, 0, I64_ADD, RESERVE, 1, GET_VAL, 0, CALL, 0, 0, 0, 4, GET_VAL, 1, SET_VAL, 0, RETURN},
-        .constants = {10_i32},
-        .inOutCount = 2},
-      fc::Chunk{
-        .name = "f4",
-        .code =
-          {GET_VAL, 1, PUSH, 0, I64_ADD, RESERVE, 1, GET_VAL, 0, CALL, 0, 0, 0, 5, GET_VAL, 1, SET_VAL, 0, RETURN},
-        .constants = {10_i32},
-        .inOutCount = 2},
-      fc::Chunk{.name = "f5", .code = {GET_VAL, 1, SET_VAL, 0, POP, RETURN}, .constants = {}, .inOutCount = 2}}};
+        .name = "f5", .code = {GET_VAL, 1, SET_VAL, 0, POP, RETURN}, .constants = {}, .inCount = 1, .outCount = 1}}};
 
   fluir::VirtualMachine uut;
 

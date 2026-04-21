@@ -39,7 +39,8 @@ x0D
 IF64_MUL
 IPOP
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",
@@ -90,7 +91,8 @@ IF64_DEC
 IF64_NEG
 IF64_AFF
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",
@@ -128,7 +130,8 @@ II64_DEC
 II64_NEG
 II64_AFF
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",
@@ -165,7 +168,8 @@ IU64_INC
 IU64_DEC
 IU64_AFF
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",
@@ -197,7 +201,8 @@ VI32 x345
 VI16 x542
 VI8  x1
 CODE x00
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -223,7 +228,8 @@ VU32 x345
 VU16 x542
 VU8  x1
 CODE x00
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -253,7 +259,8 @@ IPUSH x02
 IF64_ADD
 IPOP
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 CHUNK foo
 CONSTANTS x01 VF64 3.5
 CODE x0A
@@ -264,7 +271,8 @@ IPUSH x00
 IPOP
 IPOP
 IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode
     expected{
@@ -328,7 +336,8 @@ CHUNK foo
     IF64_NEG
     IPOP
     IEXIT
-  INOUT x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
@@ -369,7 +378,8 @@ CHUNK foo
     ICAST_WIDTH x4
     ICAST_WIDTH x8
     IEXIT
-  INOUT x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
                                  .chunks = {fluir::code::Chunk{.name = "foo",
@@ -415,7 +425,8 @@ CHUNK foo
     IPOP
     IPOP
     IEXIT
-  INOUT x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
@@ -442,7 +453,8 @@ CHUNK pops
     IPUSH x0
     IMULTIPOP x2
     IEXIT
-  INOUT x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
@@ -464,11 +476,13 @@ CHUNK junk
   CONSTANTS x1
     VF64 7.0
   CODE x0
-  INOUT x3
+  IN x2
+  OUT x1
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-    .chunks = {fluir::code::Chunk{.name = "junk", .code = {}, .constants = {7.000000000000_f64}, .inOutCount = 3}}};
+    .chunks = {
+      fluir::code::Chunk{.name = "junk", .code = {}, .constants = {7.000000000000_f64}, .inCount = 2, .outCount = 1}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 

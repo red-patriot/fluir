@@ -135,7 +135,15 @@ namespace fluir {
     }
 
     createFlStartup(static_cast<size_t>(std::distance(code_->chunks.begin(), mainIt)));
-    initCall(&flStartup_, stack_->data());
+    CallFrame initFrame{
+      .chunk = &flStartup_,
+      .returnAddress = ip_,
+      .basePtr = stack_->data(),
+      .stackEnd = stack_->data(),
+    };
+    ip_ = flStartup_.code.data();
+    frames_.emplace_back(initFrame);
+    currentFrame_ = &frames_.back();
   }
 
   ExecResult VirtualMachine::run() {
@@ -328,7 +336,7 @@ namespace fluir {
           {
             auto calleeIndex = readQuadWord();
             auto callee = &code_->chunks.at(calleeIndex);
-            auto offset = callee->inOutCount;
+            auto offset = callee->inCount + callee->outCount;
             auto basePtr = currentFrame_->stackEnd - offset;
             initCall(callee, basePtr);
             break;
@@ -367,7 +375,8 @@ namespace fluir {
                                  EXIT,
                                },
                              .constants = {},
-                             .inOutCount = 0};
+                             .inCount = 0,
+                             .outCount = 0};
   }
 
   code::Value& VirtualMachine::stackTop() { return *(currentFrame_->stackEnd - 1); }
@@ -391,13 +400,15 @@ namespace fluir {
   }
 
   void VirtualMachine::initCall(code::Chunk const* callee, code::Value* basePtr) {
+    // Offset the top of the current frame by the number of parameters
+    // passed, since the callee will pop them off itself as it runs
+    currentFrame_->stackEnd -= callee->inCount;
     CallFrame frame{
       .chunk = callee,
       .returnAddress = ip_,
       .basePtr = basePtr,
-      .stackEnd = basePtr + callee->inOutCount,
+      .stackEnd = basePtr + callee->inCount + callee->outCount,
     };
-
     ip_ = callee->code.data();
     frames_.emplace_back(std::move(frame));
     currentFrame_ = &frames_.back();

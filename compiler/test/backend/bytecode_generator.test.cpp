@@ -792,7 +792,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                                  fc::I64_ADD,
                                                  fc::SET_VAL,
                                                  0x0,
-                                                 fc::POP,
+                                                 fc::MULTIPOP,  // Pop off the returned temporary
+                                                 0x01,
                                                  fc::MULTIPOP,
                                                  0x2,
                                                  fc::Instruction::RETURN,
@@ -906,7 +907,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
                                                  0x0,
                                                  fc::Instruction::SET_VAL,
                                                  0x0,
-                                                 fc::Instruction::POP,
+                                                 fc::Instruction::MULTIPOP,  // Pop off the returned temporary
+                                                 0x01,
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {12_i32},

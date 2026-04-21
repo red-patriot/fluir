@@ -46,12 +46,17 @@ namespace fluir {
       slots.insert({param.id, slots.size()});
     }
     for (const auto& node : func.statements) {
-      auto beforeSlotsCount = slots.size();
       recursivelyGenerate(*node);
-      if (slots.size() == beforeSlotsCount) {
-        // Each top level node will leave a value on the stack,
-        // so pop it off iff it was not added as a new local variable
+      if (!slots.contains(node->id())) {
+        // Each top level node will leave a value on the stack,so
+        // pop it off iff it was not saved as a new local variable
         emitByte(Instruction::POP);
+      }
+      // If the value is the return value, discard it
+      // HACK: Use a multipop 1 instruction to suppress printing the
+      // value until that temp behavior is removed
+      if (func.returnValue && func.returnValue->id == node->id()) {
+        emitBytes(Instruction::MULTIPOP, 1);
       }
     }
     popScope();

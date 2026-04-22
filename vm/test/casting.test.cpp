@@ -579,3 +579,305 @@ INSTANTIATE_TEST_SUITE_P(
           fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_FU, WIDTH_64}, .constants = {9223372036854775808.0_f64}}},
     tuple{0_u64,  /// This case wraps around to 0 because of FP epsilon funsies
           fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_FU, WIDTH_64}, .constants = {18446744073709551615.0_f64}}}));
+
+// ============================================================================
+// CAST_WIDTH — change integer width while preserving signedness
+// ============================================================================
+
+// ---- Signed widen ----------------------------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  I8_WIDTH_I16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_i8}}},
+    tuple{127_i16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {127_i8}}},
+    tuple{50_i16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {50_i8}}},
+    tuple{
+      fc::Value{static_cast<fc::I16>(-128)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {fc::Value{static_cast<fc::I8>(-128)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I16>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {fc::Value{static_cast<fc::I8>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I8_WIDTH_I32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_i8}}},
+    tuple{127_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {127_i8}}},
+    tuple{
+      fc::Value{static_cast<fc::I32>(-128)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {fc::Value{static_cast<fc::I8>(-128)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I32>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {fc::Value{static_cast<fc::I8>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I8_WIDTH_I64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_i8}}},
+    tuple{127_i64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {127_i8}}},
+    tuple{
+      fc::Value{static_cast<fc::I64>(-128)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {fc::Value{static_cast<fc::I8>(-128)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I64>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {fc::Value{static_cast<fc::I8>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I16_WIDTH_I32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_i16}}},
+    tuple{32767_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {32767_i16}}},
+    tuple{fc::Value{static_cast<fc::I32>(-32768)},
+          fc::Chunk{.name = "main",
+                    .code = {PUSH, 0, CAST_WIDTH, WIDTH_32},
+                    .constants = {fc::Value{static_cast<fc::I16>(-32768)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I32>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {fc::Value{static_cast<fc::I16>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I16_WIDTH_I64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_i16}}},
+    tuple{32767_i64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {32767_i16}}},
+    tuple{fc::Value{static_cast<fc::I64>(-32768)},
+          fc::Chunk{.name = "main",
+                    .code = {PUSH, 0, CAST_WIDTH, WIDTH_64},
+                    .constants = {fc::Value{static_cast<fc::I16>(-32768)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I64>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {fc::Value{static_cast<fc::I16>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I32_WIDTH_I64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_i32}}},
+    tuple{2147483647_i64,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {2147483647_i32}}},
+    tuple{fc::Value{static_cast<fc::I64>(-2147483648)},
+          fc::Chunk{.name = "main",
+                    .code = {PUSH, 0, CAST_WIDTH, WIDTH_64},
+                    .constants = {fc::Value{static_cast<fc::I32>(-2147483648)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I64>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {fc::Value{static_cast<fc::I32>(-1)}}}}));
+
+// ---- Signed narrow (truncation) --------------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  I64_WIDTH_I32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_i64}}},
+    tuple{fc::Value{static_cast<fc::I32>(-1)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {9223372036854775807_i64}}},
+    tuple{fc::Value{static_cast<fc::I32>(-727379968)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {1000000000000_i64}}},
+    tuple{
+      fc::Value{static_cast<fc::I32>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {fc::Value{static_cast<fc::I64>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I64_WIDTH_I16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_i64}}},
+    tuple{fc::Value{static_cast<fc::I16>(-1)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {9223372036854775807_i64}}},
+    tuple{
+      fc::Value{static_cast<fc::I16>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {fc::Value{static_cast<fc::I64>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I64_WIDTH_I8,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_i64}}},
+    tuple{fc::Value{static_cast<fc::I8>(-1)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {9223372036854775807_i64}}},
+    tuple{
+      fc::Value{static_cast<fc::I8>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {fc::Value{static_cast<fc::I64>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I32_WIDTH_I16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_i32}}},
+    tuple{fc::Value{static_cast<fc::I16>(-1)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {2147483647_i32}}},
+    tuple{fc::Value{static_cast<fc::I16>(-31072)},
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {100000_i32}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I32_WIDTH_I8,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_i32}}},
+    tuple{0_i8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {256_i32}}},
+    tuple{
+      127_i8,
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {fc::Value{static_cast<fc::I32>(-129)}}}},
+    tuple{
+      fc::Value{static_cast<fc::I8>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {fc::Value{static_cast<fc::I32>(-1)}}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  I16_WIDTH_I8,
+  TestCasting,
+  ::testing::Values(tuple{0_i8,
+                          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_i16}}},
+                    tuple{fc::Value{static_cast<fc::I8>(-1)},
+                          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {32767_i16}}},
+                    tuple{fc::Value{static_cast<fc::I8>(-1)},
+                          fc::Chunk{.name = "main",
+                                    .code = {PUSH, 0, CAST_WIDTH, WIDTH_8},
+                                    .constants = {fc::Value{static_cast<fc::I16>(-1)}}}}));
+
+// ---- Signed same-width (identity) ------------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  I32_WIDTH_I32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_i32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_i32}}},
+    tuple{2147483647_i32,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {2147483647_i32}}},
+    tuple{
+      fc::Value{static_cast<fc::I32>(-1)},
+      fc::Chunk{
+        .name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {fc::Value{static_cast<fc::I32>(-1)}}}}));
+
+// ---- Unsigned widen (zero-extension) ---------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  U8_WIDTH_U16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_u8}}},
+    tuple{128_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {128_u8}}},
+    tuple{255_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {255_u8}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U8_WIDTH_U32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_u8}}},
+    tuple{128_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {128_u8}}},
+    tuple{255_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {255_u8}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U8_WIDTH_U64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_u8}}},
+    tuple{128_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {128_u8}}},
+    tuple{255_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {255_u8}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U16_WIDTH_U32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_u16}}},
+    tuple{32768_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {32768_u16}}},
+    tuple{65535_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {65535_u16}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U16_WIDTH_U64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_u16}}},
+    tuple{32768_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {32768_u16}}},
+    tuple{65535_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {65535_u16}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U32_WIDTH_U64,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u64, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {0_u32}}},
+    tuple{2147483648_u64,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {2147483648_u32}}},
+    tuple{4294967295_u64,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_64}, .constants = {4294967295_u32}}}));
+
+// ---- Unsigned narrow (truncation) ------------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  U64_WIDTH_U32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_u64}}},
+    tuple{4294967295_u32,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {18446744073709551615_u64}}},
+    tuple{3567587328_u32,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {1000000000000_u64}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U64_WIDTH_U16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_u64}}},
+    tuple{
+      65535_u16,
+      fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {18446744073709551615_u64}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U64_WIDTH_U8,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_u64}}},
+    tuple{255_u8,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {18446744073709551615_u64}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U32_WIDTH_U16,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {0_u32}}},
+    tuple{65535_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {4294967295_u32}}},
+    tuple{34464_u16, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_16}, .constants = {100000_u32}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U32_WIDTH_U8,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_u32}}},
+    tuple{255_u8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {4294967295_u32}}}));
+
+INSTANTIATE_TEST_SUITE_P(
+  U16_WIDTH_U8,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {0_u16}}},
+    tuple{255_u8, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_8}, .constants = {65535_u16}}}));
+
+// ---- Unsigned same-width (identity) ----------------------------------------
+
+INSTANTIATE_TEST_SUITE_P(
+  U32_WIDTH_U32,
+  TestCasting,
+  ::testing::Values(
+    tuple{0_u32, fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {0_u32}}},
+    tuple{4294967295_u32,
+          fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_WIDTH, WIDTH_32}, .constants = {4294967295_u32}}}));

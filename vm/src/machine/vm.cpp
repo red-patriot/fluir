@@ -307,6 +307,32 @@ namespace fluir {
             pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
           break;
+        case CAST_WIDTH:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stackTop();
+            popStack();
+            code::PrimitiveType _;
+            switch (toCast.type()) {
+              case code::PrimitiveType::I8:
+              case code::PrimitiveType::I16:
+              case code::PrimitiveType::I32:
+              case code::PrimitiveType::I64:
+                pushStack(
+                  utility::narrowI(utility::widenI(toCast, _), static_cast<code::PrimitiveType>(code::SIGNED | width)));
+                break;
+              case code::PrimitiveType::U8:
+              case code::PrimitiveType::U16:
+              case code::PrimitiveType::U32:
+              case code::PrimitiveType::U64:
+                pushStack(utility::narrowU(utility::widenU(toCast, _),
+                                           static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+                break;
+              default:
+                throw VirtualMachineError{"CAST_WIDTH EXPECTS AN INT OR UINT"};
+            }
+          }
+          break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the

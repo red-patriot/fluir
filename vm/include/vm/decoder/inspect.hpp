@@ -11,7 +11,7 @@ namespace fluir {
     // Literals
     HEX_LITERAL, FLOAT_LITERAL, IDENTIFIER,
     // Sections
-    CHUNK, CODE, CONSTANTS, INOUT,
+    CHUNK, CODE, CONSTANTS, IN, OUT,
     // Data Types
 #define FLUIR_TYPE_TOKEN(type, concrete) TYPE_## type,
     FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_TOKEN)
@@ -47,7 +47,8 @@ namespace fluir {
     void chunk();
     std::vector<code::Value> constants();
     std::vector<uint8_t> code();
-    std::uint8_t inOut();
+    std::uint8_t inCount();
+    std::uint8_t outCount();
     Token identifier();
     Token number();
 

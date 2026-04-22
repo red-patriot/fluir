@@ -30,10 +30,8 @@ namespace fluir {
   void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
-    current_.inOutCount = static_cast<std::uint8_t>(func.parameters.size());
-    if (func.returnValue) {
-      ++current_.inOutCount;
-    }
+    current_.inCount = static_cast<std::uint8_t>(func.parameters.size());
+    current_.outCount = func.returnValue ? 1 : 0;
 
     // TODO: Handle parameters
     auto& [slots, returnCount] = pushScope();
@@ -48,12 +46,17 @@ namespace fluir {
       slots.insert({param.id, slots.size()});
     }
     for (const auto& node : func.statements) {
-      auto beforeSlotsCount = slots.size();
       recursivelyGenerate(*node);
-      if (slots.size() == beforeSlotsCount) {
-        // Each top level node will leave a value on the stack,
-        // so pop it off iff it was not added as a new local variable
+      if (!slots.contains(node->id())) {
+        // Each top level node will leave a value on the stack,so
+        // pop it off iff it was not saved as a new local variable
         emitByte(Instruction::POP);
+      }
+      // If the value is the return value, discard it
+      // HACK: Use a multipop 1 instruction to suppress printing the
+      // value until that temp behavior is removed
+      if (func.returnValue && func.returnValue->id == node->id()) {
+        emitBytes(Instruction::MULTIPOP, 1);
       }
     }
     popScope();

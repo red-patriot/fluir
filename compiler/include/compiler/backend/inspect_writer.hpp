@@ -18,6 +18,7 @@ namespace fluir {
 
     void emitInstruction(std::ostream& os, uint8_t instruction);
     void emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg);
+    void emitLongArg(std::ostream& os, uint8_t arg0, uint8_t arg1, uint8_t arg2, uint8_t arg3);
   };
 }  // namespace fluir
 

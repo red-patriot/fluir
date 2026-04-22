@@ -6,52 +6,51 @@
 #include <iostream>
 #include <stack>
 
+#include "vm/debug.hpp"
 #include "vm/exceptions.hpp"
 #include "vm/utility/narrow_widen.hpp"
 #include "vm/utility/operations.hpp"
 
 namespace fluir {
-  namespace {
-    // TODO: Remove this later
-    // This code is just for debugging purposes until the rest of the
-    // language is implemented
-    std::ostream& operator<<(std::ostream& os, const code::Value& value) {
-      switch (value.type()) {
-        case code::PrimitiveType::EMPTY:
-          os << "<NULL>";
-          break;
-        case code::PrimitiveType::F64:
-          os << "(F64)" << value.asF64();
-          break;
-        case code::PrimitiveType::I8:
-          os << "(I8)" << value.asI8();
-          break;
-        case code::PrimitiveType::I16:
-          os << "(I16)" << value.asI16();
-          break;
-        case code::PrimitiveType::I32:
-          os << "(I32)" << value.asI32();
-          break;
-        case code::PrimitiveType::I64:
-          os << "(I64)" << value.asI64();
-          break;
-        case code::PrimitiveType::U8:
-          os << "(U8)" << value.asU8();
-          break;
-        case code::PrimitiveType::U16:
-          os << "(U16)" << value.asU16();
-          break;
-        case code::PrimitiveType::U32:
-          os << "(U32)" << value.asU32();
-          break;
-        case code::PrimitiveType::U64:
-          os << "(U64)" << value.asU64();
-          break;
-      }
-
-      return os;
+  // TODO: Remove this later
+  // This code is just for debugging purposes until the rest of the
+  // language is implemented
+  std::ostream& operator<<(std::ostream& os, const code::Value& value) {
+    switch (value.type()) {
+      case code::PrimitiveType::EMPTY:
+        os << "<NULL>";
+        break;
+      case code::PrimitiveType::F64:
+        os << "(F64)" << value.asF64();
+        break;
+      case code::PrimitiveType::I8:
+        os << "(I8)" << value.asI8();
+        break;
+      case code::PrimitiveType::I16:
+        os << "(I16)" << value.asI16();
+        break;
+      case code::PrimitiveType::I32:
+        os << "(I32)" << value.asI32();
+        break;
+      case code::PrimitiveType::I64:
+        os << "(I64)" << value.asI64();
+        break;
+      case code::PrimitiveType::U8:
+        os << "(U8)" << value.asU8();
+        break;
+      case code::PrimitiveType::U16:
+        os << "(U16)" << value.asU16();
+        break;
+      case code::PrimitiveType::U32:
+        os << "(U32)" << value.asU32();
+        break;
+      case code::PrimitiveType::U64:
+        os << "(U64)" << value.asU64();
+        break;
     }
-  }  // namespace
+
+    return os;
+  }
 
   template <typename Op>
   void VirtualMachine::floatBinary() {
@@ -130,9 +129,21 @@ namespace fluir {
     frames_.reserve(FUNCTION_DEPTH);
     std::ranges::fill(*stack_, code::Value{});
 
-    // TODO: Be smarter about loading the entry point
-    createFlStartup(0);
-    initCall(&flStartup_, stack_->data());
+    auto mainIt = std::ranges::find(code_->chunks, "main", &code::Chunk::name);
+    if (mainIt == code_->chunks.end()) {
+      throw VirtualMachineError{"No 'main' function found in bytecode"};
+    }
+
+    createFlStartup(static_cast<size_t>(std::distance(code_->chunks.begin(), mainIt)));
+    CallFrame initFrame{
+      .chunk = &flStartup_,
+      .returnAddress = ip_,
+      .basePtr = stack_->data(),
+      .stackEnd = stack_->data(),
+    };
+    ip_ = flStartup_.code.data();
+    frames_.emplace_back(initFrame);
+    currentFrame_ = &frames_.back();
   }
 
   ExecResult VirtualMachine::run() {
@@ -140,8 +151,12 @@ namespace fluir {
 
     using enum code::Instruction;
     for (;;) {
-      std::uint8_t instruction = EXIT;
-      switch (instruction = FLUIR_READ_BYTE()) {
+      std::uint8_t instruction = FLUIR_READ_BYTE();
+#if FLUIR_ENABLE_DEBUGGING
+      debug::printInstruction(instruction);
+      debug::printStack(std::span{stack_->data(), currentFrame_->stackEnd});
+#endif
+      switch (instruction) {
         case PUSH:
           {
             uint8_t index = FLUIR_READ_BYTE();
@@ -292,6 +307,32 @@ namespace fluir {
             pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
           }
           break;
+        case CAST_WIDTH:
+          {
+            auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
+            auto toCast = stackTop();
+            popStack();
+            code::PrimitiveType _;
+            switch (toCast.type()) {
+              case code::PrimitiveType::I8:
+              case code::PrimitiveType::I16:
+              case code::PrimitiveType::I32:
+              case code::PrimitiveType::I64:
+                pushStack(
+                  utility::narrowI(utility::widenI(toCast, _), static_cast<code::PrimitiveType>(code::SIGNED | width)));
+                break;
+              case code::PrimitiveType::U8:
+              case code::PrimitiveType::U16:
+              case code::PrimitiveType::U32:
+              case code::PrimitiveType::U64:
+                pushStack(utility::narrowU(utility::widenU(toCast, _),
+                                           static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+                break;
+              default:
+                throw VirtualMachineError{"CAST_WIDTH EXPECTS AN INT OR UINT"};
+            }
+          }
+          break;
         case POP:
           // TODO: Remove this later
           // This code is just for debugging purposes until the rest of the
@@ -321,7 +362,7 @@ namespace fluir {
           {
             auto calleeIndex = readQuadWord();
             auto callee = &code_->chunks.at(calleeIndex);
-            auto offset = callee->inOutCount;
+            auto offset = callee->inCount + callee->outCount;
             auto basePtr = currentFrame_->stackEnd - offset;
             initCall(callee, basePtr);
             break;
@@ -360,7 +401,8 @@ namespace fluir {
                                  EXIT,
                                },
                              .constants = {},
-                             .inOutCount = 0};
+                             .inCount = 0,
+                             .outCount = 0};
   }
 
   code::Value& VirtualMachine::stackTop() { return *(currentFrame_->stackEnd - 1); }
@@ -384,13 +426,15 @@ namespace fluir {
   }
 
   void VirtualMachine::initCall(code::Chunk const* callee, code::Value* basePtr) {
+    // Offset the top of the current frame by the number of parameters
+    // passed, since the callee will pop them off itself as it runs
+    currentFrame_->stackEnd -= callee->inCount;
     CallFrame frame{
       .chunk = callee,
       .returnAddress = ip_,
       .basePtr = basePtr,
-      .stackEnd = basePtr,
+      .stackEnd = basePtr + callee->inCount + callee->outCount,
     };
-
     ip_ = callee->code.data();
     frames_.emplace_back(std::move(frame));
     currentFrame_ = &frames_.back();

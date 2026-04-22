@@ -22,7 +22,8 @@ CODE x0A
 IPUSH x00 IPUSH x02
 IF64_ADD IPUSH x0D IF64_DIV
 IPOP IEXIT
-INOUT x0
+IN x0
+OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                                  .chunks = {fluir::code::Chunk{.name = "main",

@@ -91,7 +91,7 @@ namespace fluir::fe {
       // TODO: Support multiple return values
       auto returnedNode = getDependency(pt_.output->ret->id, 0);
       auto write =
-        ast::createDependency<ast::LocalWrite>(std::move(fullID), std::move(returnedNode), pt_.output->location);
+        ast::createDependency<ast::LocalWrite>(std::move(fullID), std::move(returnedNode), fluir::FlowGraphLocation{});
       graph_.emplace_back(std::move(write));
     }
 

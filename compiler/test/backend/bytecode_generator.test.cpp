@@ -792,13 +792,15 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                                  fc::I64_ADD,
                                                  fc::SET_VAL,
                                                  0x0,
-                                                 fc::POP,
+                                                 fc::MULTIPOP,  // Pop off the returned temporary
+                                                 0x01,
                                                  fc::MULTIPOP,
                                                  0x2,
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {},
-                                             .inOutCount = 3}}};
+                                             .inCount = 2,
+                                             .outCount = 1}}};
 
   input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
@@ -851,7 +853,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {},
-                                             .inOutCount = 1}}};
+                                             .inCount = 1,
+                                             .outCount = 0}}};
 
   input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
@@ -904,11 +907,13 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
                                                  0x0,
                                                  fc::Instruction::SET_VAL,
                                                  0x0,
-                                                 fc::Instruction::POP,
+                                                 fc::Instruction::MULTIPOP,  // Pop off the returned temporary
+                                                 0x01,
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {12_i32},
-                                             .inOutCount = 1}}};
+                                             .inCount = 0,
+                                             .outCount = 1}}};
 
   input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
@@ -944,30 +949,31 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
 
   fc::ByteCode expected{
     .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {fc::Chunk{.name = "main",
-                         .code =
-                           {
-                             fc::RESERVE,
-                             0x01,
-                             fc::CALL,
-                             0x00,
-                             0x00,
-                             0x00,
-                             0x01,
-                             fc::Instruction::POP,
-                             fc::RESERVE,
-                             0x01,
-                             fc::CALL,
-                             0x00,
-                             0x00,
-                             0x00,
-                             0x02,
-                             fc::Instruction::POP,
-                             fc::Instruction::RETURN,
-                           },
-                         .constants = {}},
-               fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .constants = {}, .inOutCount = 1},
-               fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .constants = {}, .inOutCount = 1}}};
+    .chunks = {
+      fc::Chunk{.name = "main",
+                .code =
+                  {
+                    fc::RESERVE,
+                    0x01,
+                    fc::CALL,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x01,
+                    fc::Instruction::POP,
+                    fc::RESERVE,
+                    0x01,
+                    fc::CALL,
+                    0x00,
+                    0x00,
+                    0x00,
+                    0x02,
+                    fc::Instruction::POP,
+                    fc::Instruction::RETURN,
+                  },
+                .constants = {}},
+      fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .constants = {}, .inCount = 0, .outCount = 1},
+      fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .constants = {}, .inCount = 0, .outCount = 1}}};
 
   input = prepare(std::move(input));
   auto actual = fluir::generateCode(ctx_, input);
@@ -1010,7 +1016,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {},
-                                             .inOutCount = 3},
+                                             .inCount = 2,
+                                             .outCount = 1},
                                    fc::Chunk{.name = "main",
                                              .code =
                                                {

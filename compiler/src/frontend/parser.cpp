@@ -234,7 +234,6 @@ namespace fluir {
 
   pt::FunctionDecl::InputBlock Parser::funcInputs(Element* section) {
     static constexpr std::string_view paramTag = "param";
-    auto location = parseLocation(section);
     std::vector<pt::FunctionDecl::Parameter> parameters;
     std::unordered_set<std::string> paramNames;
     int idx = 0;
@@ -255,7 +254,7 @@ namespace fluir {
       };
     }
 
-    return pt::FunctionDecl::InputBlock{location, std::move(parameters)};
+    return pt::FunctionDecl::InputBlock{std::move(parameters)};
   }
 
   pt::FunctionDecl::Parameter Parser::funcParameter(Element* element, int index) {
@@ -269,7 +268,6 @@ namespace fluir {
 
   pt::FunctionDecl::OutputBlock Parser::funcOutputs(Element* section) {
     static constexpr std::string_view returnTag = "return";
-    auto location = parseLocation(section);
     std::optional<pt::FunctionDecl::Return> ret;
 
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
@@ -285,7 +283,7 @@ namespace fluir {
       };
     }
 
-    return pt::FunctionDecl::OutputBlock{location, std::move(ret)};
+    return pt::FunctionDecl::OutputBlock{std::move(ret)};
   }
 
   pt::FunctionDecl::Return Parser::funcReturn(Element* element) {

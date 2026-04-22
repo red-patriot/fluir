@@ -110,14 +110,12 @@ namespace fluir::pt {
     };
 
     struct InputBlock {
-      FlowGraphLocation location;
       std::vector<Parameter> parameters;
 
       friend bool operator==(const InputBlock&, const InputBlock&) = default;
     };
 
     struct OutputBlock {
-      FlowGraphLocation location;
       std::optional<Return> ret;
 
       friend bool operator==(const OutputBlock&, const OutputBlock&) = default;

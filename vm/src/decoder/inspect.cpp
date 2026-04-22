@@ -65,11 +65,15 @@ namespace fluir {
     auto name = scanNext();
     auto constantBlock = constants();
     auto codeBlock = code();
-    auto inOutCount = inOut();
+    auto inCountVal = inCount();
+    auto outCountVal = outCount();
     // TODO: Check for errors
 
-    code_.chunks.push_back(code::Chunk{
-      .name = std::string{name.source}, .code = codeBlock, .constants = constantBlock, .inOutCount = inOutCount});
+    code_.chunks.push_back(code::Chunk{.name = std::string{name.source},
+                                       .code = codeBlock,
+                                       .constants = constantBlock,
+                                       .inCount = inCountVal,
+                                       .outCount = outCountVal});
   }
 
   std::vector<code::Value> InspectDecoder::constants() {
@@ -98,8 +102,15 @@ namespace fluir {
     return code;
   }
 
-  std::uint8_t InspectDecoder::inOut() {
-    [[maybe_unused]] auto inOutSection = scanNext();
+  std::uint8_t InspectDecoder::inCount() {
+    [[maybe_unused]] auto inSection = scanNext();
+    auto rawCount = scanNext();
+    auto count = toUnsignedInteger(rawCount);
+    return static_cast<std::uint8_t>(count);
+  }
+
+  std::uint8_t InspectDecoder::outCount() {
+    [[maybe_unused]] auto outSection = scanNext();
     auto rawCount = scanNext();
     auto count = toUnsignedInteger(rawCount);
     return static_cast<std::uint8_t>(count);
@@ -175,7 +186,8 @@ namespace fluir {
                                      {{"CHUNK", TokenType::CHUNK},
                                       {"CODE", TokenType::CODE},
                                       {"CONSTANTS", TokenType::CONSTANTS},
-                                      {"INOUT", TokenType::INOUT},
+                                      {"IN", TokenType::IN},
+                                      {"OUT", TokenType::OUT},
 #define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
                                       FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
 #undef FLUIR_INSTRUCTION_BRANCHES

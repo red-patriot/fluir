@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, override
+from typing import Annotated, Final, override
 
 from fastapi import Body, FastAPI, HTTPException
 
@@ -9,6 +9,8 @@ from editor.models.module_responses import ProgramStatus
 from editor.services.intelligence import IntelligenceService
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import EditTransaction
+
+_UNNAMED_PATH: Final = Path("")
 
 
 class ModuleController(Controller):
@@ -24,8 +26,11 @@ class ModuleController(Controller):
         """Reloads the given module to refresh intelligence"""
         program = self._editor.get()
         path = self._editor.get_path()
-        if program is not None and path is not None:
-            self._intelligence.add_module(program, path)
+        if program is not None:
+            if path is None:
+                self._intelligence.add_module(program, _UNNAMED_PATH)
+            else:
+                self._intelligence.add_module(program, path)
 
     def _make_status(self, saved: bool) -> ProgramStatus:
         program = self._editor.get()
@@ -53,6 +58,7 @@ class ModuleController(Controller):
 
     def new(self) -> ProgramStatus:
         self._editor.new_module()
+        self._refresh_intelligence()
         program = self._editor.get()
         if not program:
             raise HTTPException(404, "Could not create a new module")
@@ -99,6 +105,10 @@ class ModuleController(Controller):
         if len(request.path) == 0:
             self._editor.save_file()
         else:
+            old_path = self._editor.get_path()
+            old_path = _UNNAMED_PATH if old_path is None else old_path
             self._editor.save_file(Path(request.path))
+            self._refresh_intelligence()
+            self._intelligence.remove_module(old_path)
 
         return self._make_status(saved=True)

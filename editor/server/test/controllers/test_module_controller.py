@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from editor.controllers.module_controller import ModuleController
 from editor.models import Function, Program
-from editor.models.module_requests import OpenRequest
+from editor.models.module_requests import OpenRequest, SaveRequest
 from editor.models.version import FLUIR_CURRENT_VERSION as VERS
 from editor.services.intelligence import IntelligenceService
 from editor.services.module_editor import ModuleEditor

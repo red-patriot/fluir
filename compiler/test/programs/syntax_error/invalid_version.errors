@@ -1,1 +1,1 @@
-[ERROR] on line 5 of 'invalid_version.fl': Expected a version number, got 'junk'.
+ERROR_CANNOT_PARSE_ELEMENT_TEXT

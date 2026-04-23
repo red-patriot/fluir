@@ -1,0 +1,30 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main",
+      "outType": "U8"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "U8 Return"
+    }
+  },
+  {
+    "id": [
+      1,
+      3
+    ],
+    "symbol": {
+      "name": "I64 Constant",
+      "outType": "I64"
+    }
+  }
+]

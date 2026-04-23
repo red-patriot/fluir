@@ -1,0 +1,16 @@
+Function(1): 'main'
+  UnaryOp(6): ++
+    Call(3): 'APlusB'
+      Arg(1):
+        ConstantI32(2): 80
+      Arg(2):
+        ConstantI32(1): 120
+Function(2): 'APlusB'
+  Parameters:
+    2: 'A'
+    3: 'B'
+  Return: 4
+  LocalWrite(4)
+    BinaryOp(5): +
+      LocalRead(2): 2
+      LocalRead(3): 3

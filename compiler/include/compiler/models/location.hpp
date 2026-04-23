@@ -11,6 +11,19 @@ namespace fluir {
 
     friend bool operator==(const FlowGraphLocation&, const FlowGraphLocation&) = default;
   };
+
+  struct Coordinate {
+    int x;
+    int y;
+    int z;
+    friend bool operator==(const Coordinate&, const Coordinate&) = default;
+  };
+
+  struct Size {
+    int width;
+    int height;
+    friend bool operator==(const Size&, const Size&) = default;
+  };
 }  // namespace fluir
 
 #endif

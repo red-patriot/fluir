@@ -8,3 +8,6 @@
 .idea/
 
 **/test_results.xml
+
+# Misc utility files
+CLAUDE.md

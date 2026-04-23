@@ -1,17 +1,20 @@
 #include "compiler/types/symbol_table.hpp"
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <iterator>
 
 namespace fluir::types {
   SymbolTable::SymbolTable() : types_({{ID_INVALID, Type{""}}}), typeNames_({{"", ID_INVALID}}) { }
 
   TypeID SymbolTable::addType(Type t) {
-    auto [id, added] = typeNames_.try_emplace(t.name(), static_cast<TypeID>(typeNames_.size()));
+    auto [it, added] = typeNames_.try_emplace(t.name(), nextTypeID_);
     if (added) {
-      types_.insert({id->second, std::move(t)});
+      types_.insert({nextTypeID_, std::move(t)});
+      nextTypeID_ = static_cast<TypeID>(static_cast<std::uint64_t>(nextTypeID_) + 1);
     }
-    return id->second;
+    return it->second;
   }
 
   TypeID SymbolTable::getTypeID(const std::string& name) const {
@@ -150,4 +153,74 @@ namespace fluir::types {
     return std::ranges::find_if(options, [&](const Conversion& candidate) { return candidate.to == to; }) !=
            options.end();
   }
+
+  void SymbolTable::pushScope() { localScopes_.emplace(); }
+  void SymbolTable::popScope() {
+    if (!localScopes_.empty()) {
+      localScopes_.pop();
+    }
+  }
+
+  bool SymbolTable::addLocalVariable(ID id, TypeID type) {
+    if (id == INVALID_ID) {
+      return false;
+    }
+    auto& localScope = localScopes_.top();
+    auto& variables = localScope.variables;
+    variables.insert({id, type});
+    return true;
+  }
+
+  TypeID SymbolTable::getLocalVariableType(ID id) const {
+    auto& localScope = localScopes_.top();
+    auto& variables = localScope.variables;
+    if (id == INVALID_ID || !variables.contains(id)) {
+      return TypeID::ID_INVALID;
+    }
+
+    return variables.at(id);
+  }
+
+  TypeID SymbolTable::registerFunctionType(const FunctionType& func) {
+    auto [it, added] = functionTypeIDs_.try_emplace(func, nextTypeID_);
+    if (added) {
+      functionTypes_.emplace(nextTypeID_, func);
+      nextTypeID_ = static_cast<TypeID>(static_cast<std::uint64_t>(nextTypeID_) + 1);
+    }
+    return it->second;
+  }
+
+  TypeID SymbolTable::addFunction(std::string name, FunctionType func) {
+    const TypeID typeID = registerFunctionType(func);
+    auto [it, inserted] = functionNames_.emplace(std::move(name), typeID);
+    if (!inserted) {
+      return ID_INVALID;
+    }
+    return typeID;
+  }
+
+  FunctionType const* SymbolTable::getFunctionType(TypeID id) const {
+    auto it = functionTypes_.find(id);
+    if (it == functionTypes_.end()) {
+      return nullptr;
+    }
+    return &it->second;
+  }
+
+  FunctionType const* SymbolTable::getFunctionType(const std::string& name) const {
+    auto it = functionNames_.find(name);
+    if (it == functionNames_.end()) {
+      return nullptr;
+    }
+    return &functionTypes_.at(it->second);
+  }
+
+  TypeID SymbolTable::getFunctionTypeID(const std::string& name) const {
+    auto it = functionNames_.find(name);
+    if (it == functionNames_.end()) {
+      return ID_INVALID;
+    }
+    return it->second;
+  }
+
 }  // namespace fluir::types

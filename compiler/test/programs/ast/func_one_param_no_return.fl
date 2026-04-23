@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <header>
+        <version>
+            <major>0</major>
+            <minor>0</minor>
+            <patch>0</patch>
+        </version>
+    </header>
+    <function name="useOneParam" id="1" x="0" y="0" z="0" w="59" h="42">
+        <input x="0" y="30" z="0" w="10" h="30">
+            <param name="a" id="2" type="f64"/>
+        </input>
+        <body>
+            <binary id="3" x="36" y="25" z="1" w="8" h="5" operator="+"/>
+            <conduit id="4" input="2">
+                <output target="3" index="0"/>
+            </conduit>
+            <conduit id="5" input="2">
+                <output target="3" index="1"/>
+            </conduit>
+        </body>
+    </function>
+</fluir>

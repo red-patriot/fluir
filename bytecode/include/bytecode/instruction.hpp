@@ -9,6 +9,9 @@ namespace fluir::code {
   code(EXIT)                             \
   code(PUSH)                             \
   code(POP)                              \
+  code(MULTIPOP)                         \
+  code(GET_VAL)                          \
+  code(SET_VAL)                          \
   code(F64_ADD)                          \
   code(F64_SUB)                          \
   code(F64_MUL)                          \
@@ -38,7 +41,10 @@ namespace fluir::code {
   code(CAST_UF)                          \
   code(CAST_FI)                          \
   code(CAST_FU)                          \
-  code(CAST_WIDTH)
+  code(CAST_WIDTH)                       \
+  code(CALL)                             \
+  code(RETURN)                           \
+  code(RESERVE)
 
   // clang-format
 

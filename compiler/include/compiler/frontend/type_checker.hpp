@@ -1,12 +1,12 @@
 #ifndef FLUIR_COMPILER_FRONTEND_TYPE_CHECKER_HPP
 #define FLUIR_COMPILER_FRONTEND_TYPE_CHECKER_HPP
 
-#include "compiler/models/asg.hpp"
+#include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
 
 namespace fluir {
-  Results<asg::ASG> typeCheck(Context& ctx, asg::ASG graph);
-  Results<asg::Declaration> checkDeclType(Context& ctx, asg::Declaration decl);
+  Results<ast::AST> typeCheck(Context& ctx, ast::AST graph);
+  Results<ast::Declaration> checkDeclType(Context& ctx, ast::Declaration decl);
 }  // namespace fluir
 
 #endif

@@ -16,6 +16,8 @@ CHUNK main
   CONSTANTS x0
   CODE x1
     IEXIT
+  IN x0
+  OUT x0
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 1, .minor = 12, .patch = 17, .entryOffset = 255},
@@ -52,6 +54,8 @@ CHUNK bar
     IF64_NEG
     IPOP
     IEXIT
+  IN x0
+  OUT x0
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 24, .minor = 6, .patch = 16, .entryOffset = 5},
@@ -105,6 +109,8 @@ CHUNK bar
     IF64_ADD
     IPOP
     IEXIT
+  IN x0
+  OUT x0
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 4, .minor = 7, .patch = 17, .entryOffset = 15},
@@ -157,6 +163,8 @@ CHUNK main
     IF64_INC
     IF64_DEC
     IEXIT
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
@@ -197,6 +205,8 @@ CHUNK main
     II64_INC
     II64_DEC
     IEXIT
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
@@ -236,6 +246,8 @@ CHUNK main
     IU64_INC
     IU64_DEC
     IEXIT
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
@@ -270,6 +282,8 @@ CHUNK main
     VI16 x542
     VI8  x1
   CODE x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{
     .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -298,6 +312,8 @@ CHUNK main
     VU16 x542
     VU8  x1
   CODE x0
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{
     .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
@@ -321,27 +337,33 @@ TEST(TestInspectWriter, WriteCastInstructions) {
   std::string expected = R"(I0120030000000000000000
 CHUNK main
   CONSTANTS x0
-  CODE xF
-    ICAST_IU
-    ICAST_UI
+  CODE x13
+    ICAST_IU x1
+    ICAST_UI x2
     ICAST_IF
     ICAST_UF
-    ICAST_FU
-    ICAST_FI
+    ICAST_FU x4
+    ICAST_FI x8
     ICAST_WIDTH x1
     ICAST_WIDTH x2
     ICAST_WIDTH x4
     ICAST_WIDTH x8
     IEXIT
+  IN x0
+  OUT x0
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
                                                            .code = {fc::CAST_IU,
+                                                                    0x1,
                                                                     fc::CAST_UI,
+                                                                    0x2,
                                                                     fc::CAST_IF,
                                                                     fc::CAST_UF,
                                                                     fc::CAST_FU,
+                                                                    0x4,
                                                                     fc::CAST_FI,
+                                                                    0x8,
                                                                     fc::CAST_WIDTH,
                                                                     0x01,
                                                                     fc::CAST_WIDTH,

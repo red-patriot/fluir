@@ -9,14 +9,20 @@ export interface CreateNodeOptions {
   where: { x: number; y: number };
 }
 
+export interface TypeDialogOptions {
+  parentID: string;
+  where: { x: number; y: number };
+  onAccept: (type: string) => void;
+}
+
 export interface DialogState {
-  active: null | 'create_node';
-  data?: CreateNodeOptions;
+  active: CreateNodeOptions | TypeDialogOptions | null;
 }
 
 export interface DialogActions {
   closeDialog: () => void;
   openCreateNodeDialog: (opts: CreateNodeOptions) => void;
+  openTypeOptionsDialog: (opts: TypeDialogOptions) => void;
 }
 
 export const DialogContext = createContext<DialogActions | undefined>(

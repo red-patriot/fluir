@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <header>
+        <version>
+            <major>0</major>
+            <minor>0</minor>
+            <patch>0</patch>
+        </version>
+    </header>
+    <function name="getConst" id="1" x="0" y="0" z="0" w="59" h="42">
+        <output x="100" y="24" z="0" w="10" h="7">
+            <return id="2" type="f64"/>
+        </output>
+        <body>
+            <constant id="3" x="13" y="16" z="1" w="12" h="5">
+                <f64>42.0</f64>
+            </constant>
+            <conduit id="4" input="3">
+                <output target="2" index="0"/>
+            </conduit>
+        </body>
+    </function>
+</fluir>

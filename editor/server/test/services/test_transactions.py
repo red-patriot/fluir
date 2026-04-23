@@ -1,6 +1,7 @@
 import copy
 
 import pytest
+from pydantic import ValidationError
 
 from editor.models import FlType, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
@@ -8,14 +9,22 @@ from editor.models.elements import find_element
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddConduit,
+    AddDecl,
+    AddDeclInterface,
     AddNode,
+    ConstantParams,
+    DeclParameterParams,
+    DeclReturnParams,
+    FunctionParams,
     MoveElement,
+    OperatorParams,
     RemoveItem,
     RenameDeclaration,
     ResizeElement,
     UpdateConstant,
     UpdateOperator,
 )
+from editor.services.transaction.add_node import CallParams
 
 
 @pytest.fixture
@@ -81,6 +90,18 @@ def basic_program() -> Program:
                         input=3,
                         children=[elements.Conduit.Output(target=2, index=0)],
                     )
+                ],
+            ),
+            elements.Function(
+                name="xyzzy",
+                location=elements.Location(410, 10, 2, 100, 100),
+                id=4,
+                inputs=[
+                    elements.Parameter(name="a", id=1, flType=FlType.I32),
+                    elements.Parameter(name="b", id=2, flType=FlType.I32),
+                ],
+                outputs=[
+                    elements.Return(id=3, flType=FlType.I32),
                 ],
             ),
         ]
@@ -471,10 +492,10 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="F64",
                 new_location=elements.Location(
                     x=2, y=2, z=0, width=5, height=5
                 ),
+                params=ConstantParams(type=FlType.F64),
             ),
         ),
         *(
@@ -487,10 +508,10 @@ def test_add_conduit_removes_duplicate_targets(
                 ),
                 AddNode(
                     parent=[2],
-                    new_type=elem,  # type: ignore
                     new_location=elements.Location(
                         x=2, y=2, z=0, width=5, height=5
                     ),
+                    params=ConstantParams(type=FlType(elem)),
                 ),
             )
             for elem in ["I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64"]
@@ -503,8 +524,8 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="BinaryOperator",
                 new_location=elements.Location(15, 2, 1, 5, 5),
+                params=OperatorParams(arity="binary"),
             ),
         ),
         (
@@ -515,8 +536,102 @@ def test_add_conduit_removes_duplicate_targets(
             ),
             AddNode(
                 parent=[2],
-                new_type="UnaryOperator",
                 new_location=elements.Location(2, 7, 0, 7, 7),
+                params=OperatorParams(arity="unary"),
+            ),
+        ),
+        # Constant with explicit value
+        (
+            elements.Constant(
+                id=6,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="42",
+                flType=FlType.I32,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 2, 0, 5, 5),
+                params=ConstantParams(type=FlType.I32, value="42"),
+            ),
+        ),
+        (
+            elements.Constant(
+                id=6,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="3.14",
+                flType=FlType.F64,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 2, 0, 5, 5),
+                params=ConstantParams(type=FlType.F64, value="3.14"),
+            ),
+        ),
+        # Operator with explicit op
+        (
+            elements.BinaryOperator(
+                id=6,
+                location=elements.Location(15, 2, 1, 5, 5),
+                op=elements.Operator.STAR,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(15, 2, 1, 5, 5),
+                params=OperatorParams(arity="binary", op="*"),
+            ),
+        ),
+        (
+            elements.UnaryOperator(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 7),
+                op=elements.Operator.MINUS_MINUS,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=OperatorParams(arity="unary", op="--"),
+            ),
+        ),
+        # Operator with UNKNOWN op defaults to PLUS
+        (
+            elements.BinaryOperator(
+                id=6,
+                location=elements.Location(15, 2, 1, 5, 5),
+                op=elements.Operator.PLUS,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(15, 2, 1, 5, 5),
+                params=OperatorParams(arity="binary", op=" "),
+            ),
+        ),
+        (
+            elements.Call(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 15),
+                target="xyzzy",
+                arguments=["a", "b"],
+                returns=True,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=CallParams(target="xyzzy"),
+            ),
+        ),
+        # Calling an unknown function adds its name and empty args/return
+        (
+            elements.Call(
+                id=6,
+                location=elements.Location(2, 7, 0, 7, 5),
+                target="unknown",
+                arguments=[],
+                returns=False,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(2, 7, 0, 7, 7),
+                params=CallParams(target="unknown"),
             ),
         ),
     ],
@@ -540,6 +655,94 @@ def test_add_node(
     assert original == actual
 
 
+def test_add_node_missing_params_fails() -> None:
+    with pytest.raises(ValidationError):
+        AddNode(  # type: ignore[call-arg]
+            parent=[2],
+            new_location=elements.Location(2, 7, 0, 7, 7),
+        )
+
+
+def test_add_node_invalid_arity_fails() -> None:
+    with pytest.raises(ValidationError):
+        OperatorParams(arity="not_valid")  # type: ignore[arg-type]
+
+
+def test_add_call_node_without_target_raises(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """Adding a Call node with no target should raise BadEdit rather
+    than silently inserting a placeholder '???' target."""
+    uut = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=CallParams(),
+    )
+
+    with pytest.raises(BadEdit):
+        uut.do(basic_program)
+
+
+def test_add_node_with_invalid_op_fails(
+    basic_program: Program,
+    editor: ModuleEditor,
+) -> None:
+    uut = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=OperatorParams(arity="binary", op="invalid"),
+    )
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations.append(
+        elements.Function(
+            id=5,
+            name="new_function",
+            location=elements.Location(50, 50, 0, 200, 200),
+        )
+    )
+
+    uut = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_add_decl_with_custom_name(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations.append(
+        elements.Function(
+            id=5,
+            name="my_func",
+            location=elements.Location(50, 50, 0, 200, 200),
+        )
+    )
+
+    uut = AddDecl(
+        new_location=elements.Location(50, 50, 0, 200, 200),
+        params=FunctionParams(name="my_func"),
+    )
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
 def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -550,6 +753,127 @@ def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
     actual = editor.get()
 
     assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_add_func_parameter(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].inputs = [
+        elements.Parameter(name="new_param", id=1, flType=FlType.U8),
+    ]
+
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="new_param"),
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_add_multiple_func_parameter(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].inputs = [
+        elements.Parameter(name="new_param", id=1, flType=FlType.U8),
+        elements.Parameter(name="other_param", id=2, flType=FlType.U32),
+    ]
+
+    uut1 = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="new_param"),
+    )
+    uut2 = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U32,
+        params=DeclParameterParams(name="other_param"),
+    )
+
+    editor.edit(uut1)
+    editor.edit(uut2)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+
+def test_add_decl_interface_raises_if_target_is_not_a_decl(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """AddDeclInterface should reject a parent that points to a node
+    inside a function rather than the function itself."""
+    # [2, 1] points to the BinaryOperator inside function bar, not bar.
+    uut = AddDeclInterface(
+        parent=[2, 1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="x"),
+    )
+
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+def test_add_decl_interface_raises_if_decl_does_not_exist(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """AddDeclInterface should surface find_element's lookup error when
+    the parent ID does not resolve to any element."""
+    uut = AddDeclInterface(
+        parent=[9999],
+        flType=FlType.U8,
+        params=DeclParameterParams(name="x"),
+    )
+
+    with pytest.raises(elements.IdentifierError):
+        editor.edit(uut)
+
+
+def test_add_parameter_with_empty_name_raises(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    """A parameter must have a non-empty name."""
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U8,
+        params=DeclParameterParams(name=""),
+    )
+
+    with pytest.raises(BadEdit):
+        editor.edit(uut)
+
+
+def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[0].outputs = [
+        elements.Return(id=1, flType=FlType.U64)
+    ]
+
+    uut = AddDeclInterface(
+        parent=[1],
+        flType=FlType.U64,
+        params=DeclReturnParams(),
+    )
+
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
 
     actual = uut.undo(actual)
     assert original == actual
@@ -576,9 +900,9 @@ def test_remove_node_with_conduits(
 def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
-    expected.declarations.pop(2)
+    expected.declarations.pop()
 
-    uut = RemoveItem(target=[3])
+    uut = RemoveItem(target=[4])
     editor.edit(uut)
     actual = editor.get()
 
@@ -594,6 +918,110 @@ def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
     expected.declarations[1].conduits.pop(0)
 
     uut = RemoveItem(target=[2, 5])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_input(basic_program: Program, editor: ModuleEditor) -> None:
+    basic_program.declarations[1].inputs.append(
+        elements.Parameter(name="x", id=10, flType=FlType.F64)
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].inputs = []
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_input_with_conduits(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    basic_program.declarations[1].inputs.append(
+        elements.Parameter(name="x", id=10, flType=FlType.F64)
+    )
+    basic_program.declarations[1].conduits.append(
+        elements.Conduit(
+            id=11,
+            input=10,
+            children=[elements.Conduit.Output(target=1, index=0)],
+        )
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].inputs = []
+    expected.declarations[1].conduits = [
+        c for c in expected.declarations[1].conduits if c.id != 11
+    ]
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_output(basic_program: Program, editor: ModuleEditor) -> None:
+    basic_program.declarations[1].outputs.append(
+        elements.Return(id=10, flType=FlType.F64)
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].outputs = []
+
+    uut = RemoveItem(target=[2, 10])
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_remove_output_with_conduits(
+    basic_program: Program, editor: ModuleEditor
+) -> None:
+    basic_program.declarations[1].outputs.append(
+        elements.Return(id=10, flType=FlType.F64)
+    )
+    basic_program.declarations[1].conduits.append(
+        elements.Conduit(
+            id=11,
+            input=1,
+            children=[elements.Conduit.Output(target=10, index=0)],
+        )
+    )
+    editor.open_module(copy.deepcopy(basic_program))
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].outputs = []
+    expected.declarations[1].conduits = [
+        c for c in expected.declarations[1].conduits if c.id != 11
+    ]
+
+    uut = RemoveItem(target=[2, 10])
     editor.edit(uut)
     actual = editor.get()
 

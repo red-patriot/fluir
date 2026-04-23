@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      2
+    ],
+    "message": "The given name is not recognized as the name of a type.: Unrecognized type 'not_a_type' for parameter 'x'.",
+    "severity": 1
+  }
+]

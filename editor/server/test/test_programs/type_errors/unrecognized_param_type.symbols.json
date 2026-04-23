@@ -1,0 +1,22 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "inType": [
+        "not_a_type"
+      ],
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "not_a_type Parameter"
+    }
+  }
+]

@@ -106,3 +106,10 @@ TEST(TestValue, U64AccessChecksForFloat) {
 
   EXPECT_THROW(auto _ = value.asU64(), std::runtime_error);
 }
+
+TEST(TestValue, IsDefaultConstructible) {
+  fluir::code::Value value;
+
+  EXPECT_EQ(fluir::code::PrimitiveType::EMPTY, value.type());
+  EXPECT_TRUE(value.empty());
+}

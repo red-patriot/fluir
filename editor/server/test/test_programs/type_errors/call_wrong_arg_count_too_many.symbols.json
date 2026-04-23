@@ -1,0 +1,37 @@
+[
+  {
+    "id": [
+      1
+    ],
+    "symbol": {
+      "name": "func main"
+    }
+  },
+  {
+    "id": [
+      1,
+      1
+    ],
+    "symbol": {
+      "name": "I32 Constant",
+      "outType": "I32"
+    }
+  },
+  {
+    "id": [
+      1,
+      2
+    ],
+    "symbol": {
+      "name": "no_args"
+    }
+  },
+  {
+    "id": [
+      2
+    ],
+    "symbol": {
+      "name": "func no_args"
+    }
+  }
+]

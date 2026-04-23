@@ -1,103 +1,157 @@
-import { Flex, Code } from '@radix-ui/themes';
+import { Flex, Code, Box, Badge } from "@radix-ui/themes";
+import { CreateNodeOptions } from "@/components/flow_diagram/dialog/DialogContext";
+import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
 import {
-  CreateNodeOptions,
-  useDialogContext,
-} from '@/components/flow_diagram/dialog/DialogContext';
-import { Dialog, VisuallyHidden } from 'radix-ui';
-import { slate } from '@radix-ui/colors';
-import { useState } from 'react';
-import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
-import { AddNodeEditRequest, NodeOptions } from '@/models/edit_request';
-import { toApiID } from '@/utility/idHelpers';
-import { LIMITS } from '@/limits';
+  AddNodeEditRequest,
+  AddDeclEditRequest,
+  ConstantParams,
+  OperatorParams,
+  CallParams,
+} from "@/models/edit_request";
+import { toApiID } from "@/utility/idHelpers";
+import { LIMITS } from "@/limits";
+import { Completion, CompletionKind } from "@/models/intelligence_response";
+import CoreDialog, { OptionProps } from "./CoreDialog";
+
+interface CreateNodeDialogProps extends CreateNodeOptions {
+  options: Completion[];
+}
+
+function extractWidth(kind: CompletionKind) {
+  switch (kind) {
+    case "operator":
+      return LIMITS.operator.width.min;
+    case "call":
+      return LIMITS.call.width.min;
+    case "constant":
+      return LIMITS.constant.width.min;
+    case "function":
+      return LIMITS.constant.width.min;
+  }
+}
+
+function extractHeight(kind: CompletionKind) {
+  switch (kind) {
+    case "operator":
+      return LIMITS.operator.height.min;
+    case "call":
+      return LIMITS.call.height.min;
+    case "constant":
+      return LIMITS.constant.height.min;
+    case "function":
+      return LIMITS.constant.height.min;
+  }
+}
+
+function extractParameters(
+  completion: Completion,
+): ConstantParams | OperatorParams | CallParams {
+  switch (completion.kind) {
+    case "constant":
+      return {
+        discriminator: "constant",
+        type: completion.short_name,
+        // TODO: Add some way to handle the value
+      } as ConstantParams;
+    case "operator":
+      const opInfo = completion.short_name.split(" ");
+      const op = opInfo[0];
+      const arity = opInfo[1].includes("b") ? "binary" : "unary";
+      return {
+        discriminator: "operator",
+        arity,
+        op,
+      } as OperatorParams;
+    case "call":
+      return {
+        discriminator: "call",
+        target: completion.short_name,
+      } as CallParams;
+  }
+  throw new Error("Invalid completion kind");
+}
 
 export default function CreateNodeDialog({
   parentID,
   parentLocation,
   clickedLocation,
   where,
-}: CreateNodeOptions) {
-  const options = {
-    Float64: 'F64',
-    Int8: 'I8',
-    Int16: 'I16',
-    Int32: 'I32',
-    Int64: 'I64',
-    'Unsigned Int8': 'U8',
-    'Unsigned Int16': 'U16',
-    'Unsigned Int32': 'U32',
-    'Unsigned Int64': 'U64',
-    'Binary operator': 'BinaryOperator',
-    'Unary operator': 'UnaryOperator',
+  options,
+}: CreateNodeDialogProps) {
+  const { editProgram } = useProgramActions();
+  const onSelect = (selection: Completion) => {
+    console.log(selection);
+    // TODO: Refactor this component to not require this unfortunate hack
+    if (selection.kind === "function") {
+      const request: AddDeclEditRequest = {
+        discriminator: "add_decl",
+        new_location: {
+          x: clickedLocation.x - parentLocation.x,
+          y: clickedLocation.y - parentLocation.y,
+          z: parentLocation.z + 1,
+          // TODO: Get some better values for this?
+          width: 40,
+          height: 30,
+        },
+        params: { discriminator: "function" },
+      };
+      editProgram(request);
+    } else {
+      const request: AddNodeEditRequest = {
+        discriminator: "add_node",
+        parent: toApiID(parentID),
+        new_location: {
+          x: clickedLocation.x - parentLocation.x,
+          y: clickedLocation.y - parentLocation.y,
+          z: parentLocation.z + 1,
+          width: extractWidth(selection.kind),
+          height: extractHeight(selection.kind),
+        },
+        params: extractParameters(selection),
+      };
+      editProgram(request);
+    }
   };
 
-  const { closeDialog } = useDialogContext();
-  const { editProgram } = useProgramActions();
-
-  const [hovered, setHovered] = useState('');
-
-  const onClick = (selection: string) => {
-    const request: AddNodeEditRequest = {
-      discriminator: 'add_node',
-      parent: toApiID(parentID),
-      new_type: options[selection as keyof typeof options] as NodeOptions,
-      new_location: {
-        x: clickedLocation.x - parentLocation.x,
-        y: clickedLocation.y - parentLocation.y,
-        z: parentLocation.z + 1,
-        width: selection.endsWith('operator')
-          ? LIMITS.operator.width.min
-          : LIMITS.constant.width.min,
-        height: selection.endsWith('operator')
-          ? LIMITS.operator.height.min
-          : LIMITS.constant.height.min,
-      },
-    };
-    editProgram(request);
-    closeDialog();
+  const renderOption = ({ data, highlighted }: OptionProps<Completion>) => {
+    return <CreateNodeDialogOption completion={data} selected={highlighted} />;
   };
 
   return (
-    <Dialog.Root
-      open
-      modal
-      onOpenChange={() => closeDialog()}
-    >
-      <Dialog.Trigger />
-      <Dialog.Portal>
-        <Dialog.Overlay className='fixed top-0 left-0 size-full bg-gray-400 opacity-30' />
-        <Dialog.Content
-          className='fixed'
-          style={{
-            top: where.y,
-            left: where.x,
-          }}
-        >
-          <VisuallyHidden.Root>
-            <Dialog.Title>Create New Node</Dialog.Title>
-            <Dialog.Description>Create a New Node</Dialog.Description>
-          </VisuallyHidden.Root>
-          <Flex
-            direction='column'
-            p='1'
-            style={{ background: slate.slate7, borderRadius: 2 }}
-          >
-            {Object.keys(options).map((opt) => (
-              <Code
-                aria-label={`add-option-${opt}`}
-                key={`add-option-${opt}`}
-                variant={hovered == opt ? 'outline' : 'ghost'}
-                color='blue'
-                onMouseOver={() => setHovered(opt)}
-                onClick={() => onClick(opt)}
-                className='cursor-pointer'
-              >
-                {opt}
-              </Code>
-            ))}
-          </Flex>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    <CoreDialog
+      where={where}
+      options={options}
+      optionToString={(o) => o.short_name}
+      onSelect={onSelect}
+      renderOption={renderOption}
+    />
+  );
+}
+
+interface CreateNodeDialogOptionProps extends React.HTMLProps<HTMLElement> {
+  completion: Completion;
+  selected?: boolean;
+}
+
+export function CreateNodeDialogOption({
+  completion,
+  selected = false,
+}: CreateNodeDialogOptionProps) {
+  return (
+    <Badge color={selected ? "blue" : "gray"} className="cursor-pointer w-full">
+      <Flex
+        direction="row"
+        align="center"
+        gap="2"
+        p="2"
+        className="w-full justify-between"
+      >
+        <Code size="5" color="gray">
+          {completion.short_name}
+        </Code>
+        {/* TODO: Update the Box to contain a visual of the element to be added?*/}
+        <Box />
+      </Flex>
+    </Badge>
   );
 }

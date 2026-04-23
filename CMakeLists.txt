@@ -6,7 +6,7 @@ project(
     fluir
     DESCRIPTION "The Fluir data-flow programming language."
     LANGUAGES CXX
-    VERSION 0.2.0
+    VERSION 0.3.0
 )
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -32,6 +32,7 @@ option(
 create_version_files()
 
 add_subdirectory(bytecode)
+add_subdirectory(utility)
 add_subdirectory(compiler)
 add_subdirectory(vm)
 

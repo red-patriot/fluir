@@ -1,0 +1,10 @@
+[
+  {
+    "location": [
+      1,
+      4
+    ],
+    "message": "Operator overload resolution failed.: No unary / exists with operand type U8.",
+    "severity": 1
+  }
+]

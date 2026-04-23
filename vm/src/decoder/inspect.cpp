@@ -4,6 +4,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "fluir/util/macros.hpp"
+#include "fluir/util/trie.hpp"
+
 namespace fluir {
   code::ByteCode InspectDecoder::decode(const std::string_view source) {
     source_ = source;
@@ -62,10 +65,15 @@ namespace fluir {
     auto name = scanNext();
     auto constantBlock = constants();
     auto codeBlock = code();
+    auto inCountVal = inCount();
+    auto outCountVal = outCount();
     // TODO: Check for errors
 
-    code_.chunks.push_back(
-      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .constants = constantBlock});
+    code_.chunks.push_back(code::Chunk{.name = std::string{name.source},
+                                       .code = codeBlock,
+                                       .constants = constantBlock,
+                                       .inCount = inCountVal,
+                                       .outCount = outCountVal});
   }
 
   std::vector<code::Value> InspectDecoder::constants() {
@@ -92,6 +100,20 @@ namespace fluir {
     }
 
     return code;
+  }
+
+  std::uint8_t InspectDecoder::inCount() {
+    [[maybe_unused]] auto inSection = scanNext();
+    auto rawCount = scanNext();
+    auto count = toUnsignedInteger(rawCount);
+    return static_cast<std::uint8_t>(count);
+  }
+
+  std::uint8_t InspectDecoder::outCount() {
+    [[maybe_unused]] auto outSection = scanNext();
+    auto rawCount = scanNext();
+    auto count = toUnsignedInteger(rawCount);
+    return static_cast<std::uint8_t>(count);
   }
 
   Token InspectDecoder::identifier() {
@@ -160,256 +182,29 @@ namespace fluir {
   }
 
   TokenType InspectDecoder::decodeIdentifierType() {
-    switch (start_[0]) {
-      case 'C':
-        if (current_ - start_ > 1) {
-          switch (start_[1]) {
-            case 'H':
-              return checkKeyword("CHUNK", TokenType::CHUNK);
-            case 'O':
-              if (current_ - start_ > 2) {
-                switch (start_[2]) {
-                  case 'D':
-                    return checkKeyword("CODE", TokenType::CODE);
-                  case 'N':
-                    return checkKeyword("CONSTANTS", TokenType::CONSTANTS);
-                }
-              }
-          }
-        }
-        break;
-      case 'I':
-        return checkInstruction();
-        break;
-      case 'V':
-        return checkPrimitiveType();
-      case 'x':
-        return TokenType::HEX_LITERAL;
-    }
-    return TokenType::IDENTIFIER;
-  }
+    static const util::Trie keywords{TokenType::IDENTIFIER,
+                                     {{"CHUNK", TokenType::CHUNK},
+                                      {"CODE", TokenType::CODE},
+                                      {"CONSTANTS", TokenType::CONSTANTS},
+                                      {"IN", TokenType::IN},
+                                      {"OUT", TokenType::OUT},
+#define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
+                                      FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
+#undef FLUIR_INSTRUCTION_BRANCHES
+#define FLUIR_TYPE_BRANCHES(type, concrete) {FLUIR_STRINGIFY(FLUIR_CCAT(V, type)), FLUIR_CCAT(TokenType::TYPE_, type)},
+                                        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_BRANCHES)
+#undef FLUIR_TYPE_BRANCHES
+                                     }};
 
-  TokenType InspectDecoder::checkKeyword(std::string_view expected, TokenType type) {
-    std::string_view current{start_, current_};
-    if (current.size() == expected.size() && current == expected) {
-      return type;
+    std::string_view word{start_, current_};
+    TokenType tokenType;
+    if (word.starts_with('x')) {
+      tokenType = TokenType::HEX_LITERAL;
+    } else {
+      tokenType = keywords.at(word);
     }
-    return TokenType::IDENTIFIER;
-  }
 
-  TokenType InspectDecoder::checkPrimitiveType() {
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-        case 'F':
-          return checkKeyword("VF64", TokenType::TYPE_F64);
-        case 'I':
-          if (current_ - start_ > 2) {
-            switch (start_[2]) {
-              case '1':
-                return checkKeyword("VI16", TokenType::TYPE_I16);
-              case '3':
-                return checkKeyword("VI32", TokenType::TYPE_I32);
-              case '6':
-                return checkKeyword("VI64", TokenType::TYPE_I64);
-              case '8':
-                return checkKeyword("VI8", TokenType::TYPE_I8);
-            }
-          }
-          break;
-        case 'U':
-          if (current_ - start_ > 2) {
-            switch (start_[2]) {
-              case '1':
-                return checkKeyword("VU16", TokenType::TYPE_U16);
-              case '3':
-                return checkKeyword("VU32", TokenType::TYPE_U32);
-              case '6':
-                return checkKeyword("VU64", TokenType::TYPE_U64);
-              case '8':
-                return checkKeyword("VU8", TokenType::TYPE_U8);
-            }
-          }
-          break;
-      }
-    }
-    return TokenType::IDENTIFIER;
-  }
-
-  TokenType InspectDecoder::checkInstruction() {
-    if (current_ - start_ > 1) {
-      switch (start_[1]) {
-        case 'C':
-          return checkCastInstruction();
-        case 'E':
-          return checkKeyword("IEXIT", TokenType::INST_EXIT);
-        case 'F':
-          return checkFPInstruction();
-        case 'I':
-          return checkIntInstruction();
-        case 'P':
-          if (current_ - start_ > 2) {
-            switch (start_[2]) {
-              case 'O':
-                return checkKeyword("IPOP", TokenType::INST_POP);
-              case 'U':
-                return checkKeyword("IPUSH", TokenType::INST_PUSH);
-            }
-          }
-          break;
-        case 'U':
-          return checkUintInstruction();
-      }
-    }
-    return TokenType::IDENTIFIER;
-  }
-
-  TokenType InspectDecoder::checkCastInstruction() {
-    std::string_view current{start_, current_};
-    if (current.starts_with("ICAST_") && current.size() > 6) {
-      switch (current[6]) {
-        case 'F':
-          if (current.size() > 7) {
-            switch (current[7]) {
-              case 'I':
-                return checkKeyword("ICAST_FI", TokenType::INST_CAST_FI);
-              case 'U':
-                return checkKeyword("ICAST_FU", TokenType::INST_CAST_FU);
-            }
-          }
-          break;
-        case 'I':
-          if (current.size() > 7) {
-            switch (current[7]) {
-              case 'F':
-                return checkKeyword("ICAST_IF", TokenType::INST_CAST_IF);
-              case 'U':
-                return checkKeyword("ICAST_IU", TokenType::INST_CAST_IU);
-            }
-          }
-          break;
-        case 'U':
-          if (current.size() > 7) {
-            switch (current[7]) {
-              case 'F':
-                return checkKeyword("ICAST_UF", TokenType::INST_CAST_UF);
-              case 'I':
-                return checkKeyword("ICAST_UI", TokenType::INST_CAST_UI);
-            }
-          }
-          break;
-        case 'W':
-          return checkKeyword("ICAST_WIDTH", TokenType::INST_CAST_WIDTH);
-      }
-    }
-    return TokenType::IDENTIFIER;
-  }
-
-  TokenType InspectDecoder::checkFPInstruction() {
-    std::string_view current{start_, current_};
-    if (current.starts_with("IF64_") && current.size() > 5) {
-      switch (current[5]) {
-        case 'A':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'D':
-                return checkKeyword("IF64_ADD", TokenType::INST_F64_ADD);
-              case 'F':
-                return checkKeyword("IF64_AFF", TokenType::INST_F64_AFF);
-            }
-          }
-          break;
-        case 'D':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'E':
-                return checkKeyword("IF64_DEC", TokenType::INST_F64_DEC);
-              case 'I':
-                return checkKeyword("IF64_DIV", TokenType::INST_F64_DIV);
-            }
-          }
-          break;
-        case 'I':
-          return checkKeyword("IF64_INC", TokenType::INST_F64_INC);
-        case 'M':
-          return checkKeyword("IF64_MUL", TokenType::INST_F64_MUL);
-        case 'N':
-          return checkKeyword("IF64_NEG", TokenType::INST_F64_NEG);
-        case 'S':
-          return checkKeyword("IF64_SUB", TokenType::INST_F64_SUB);
-      }
-    }
-    return TokenType::IDENTIFIER;
-  }
-
-  TokenType InspectDecoder::checkIntInstruction() {
-    std::string_view current{start_, current_};
-    if (current.starts_with("II64_") && current.size() > 5) {
-      switch (current[5]) {
-        case 'A':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'D':
-                return checkKeyword("II64_ADD", TokenType::INST_I64_ADD);
-              case 'F':
-                return checkKeyword("II64_AFF", TokenType::INST_I64_AFF);
-            }
-          }
-          break;
-        case 'D':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'E':
-                return checkKeyword("II64_DEC", TokenType::INST_I64_DEC);
-              case 'I':
-                return checkKeyword("II64_DIV", TokenType::INST_I64_DIV);
-            }
-          }
-          break;
-        case 'I':
-          return checkKeyword("II64_INC", TokenType::INST_I64_INC);
-        case 'M':
-          return checkKeyword("II64_MUL", TokenType::INST_I64_MUL);
-        case 'N':
-          return checkKeyword("II64_NEG", TokenType::INST_I64_NEG);
-        case 'S':
-          return checkKeyword("II64_SUB", TokenType::INST_I64_SUB);
-      }
-    }
-    return TokenType::IDENTIFIER;
-  }
-  TokenType InspectDecoder::checkUintInstruction() {
-    std::string_view current{start_, current_};
-    if (current.starts_with("IU64_") && current.size() > 5) {
-      switch (current[5]) {
-        case 'A':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'D':
-                return checkKeyword("IU64_ADD", TokenType::INST_U64_ADD);
-              case 'F':
-                return checkKeyword("IU64_AFF", TokenType::INST_U64_AFF);
-            }
-          }
-          break;
-        case 'D':
-          if (current.size() > 6) {
-            switch (current[6]) {
-              case 'E':
-                return checkKeyword("IU64_DEC", TokenType::INST_U64_DEC);
-              case 'I':
-                return checkKeyword("IU64_DIV", TokenType::INST_U64_DIV);
-            }
-          }
-          break;
-        case 'I':
-          return checkKeyword("IU64_INC", TokenType::INST_U64_INC);
-        case 'M':
-          return checkKeyword("IU64_MUL", TokenType::INST_U64_MUL);
-        case 'S':
-          return checkKeyword("IU64_SUB", TokenType::INST_U64_SUB);
-      }
-    }
-    return TokenType::IDENTIFIER;
+    return tokenType;
   }
 
   Token InspectDecoder::createToken(TokenType type) {
@@ -490,13 +285,24 @@ namespace fluir {
     }
     auto number = toUnsignedInteger(rawConstant);
     switch (type) {
-#define FLUIR_RAW_TO_VALUE(Type, Concrete) \
-  case code::PrimitiveType::Type:          \
-    return code::Value{static_cast<Concrete>(number)};
-
-      FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_RAW_TO_VALUE)
-#undef FLUIR_RAW_TO_VALUE
+      case code::PrimitiveType::I8:
+        return code::Value{static_cast<std::int8_t>(number)};
+      case code::PrimitiveType::I16:
+        return code::Value{static_cast<std::int16_t>(number)};
+      case code::PrimitiveType::I32:
+        return code::Value{static_cast<std::int32_t>(number)};
+      case code::PrimitiveType::I64:
+        return code::Value{static_cast<std::int64_t>(number)};
+      case code::PrimitiveType::U8:
+        return code::Value{static_cast<std::uint8_t>(number)};
+      case code::PrimitiveType::U16:
+        return code::Value{static_cast<std::uint16_t>(number)};
+      case code::PrimitiveType::U32:
+        return code::Value{static_cast<std::uint32_t>(number)};
+      case code::PrimitiveType::U64:
+        return code::Value{static_cast<std::uint64_t>(number)};
+      default:
+        throw std::runtime_error{"Expected an integer type"};
     }
-    throw std::runtime_error{"Unrecognized value type."};
   }
 }  // namespace fluir

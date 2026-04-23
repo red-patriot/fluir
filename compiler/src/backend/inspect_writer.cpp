@@ -22,10 +22,10 @@ namespace fluir {
     [[maybe_unused]] auto _ = indent();
     os << formatIndented("CONSTANTS x{:X}\n", chunk.constants.size());
     writeConstants(chunk.constants, os);
-
     os << formatIndented("CODE x{:X}\n", chunk.code.size());
-
     writeCode(chunk.code, os);
+    os << formatIndented("IN x{:X}\n", chunk.inCount);
+    os << formatIndented("OUT x{:X}\n", chunk.outCount);
   }
 
   void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {
@@ -65,6 +65,9 @@ namespace fluir {
       case F64:
         os << formatIndented("VF64 {:.12f}\n", constant.asF64());
         break;
+      case EMPTY:
+        os << formatIndented("EMPTY\n");
+        break;
     }
   }
 
@@ -73,9 +76,22 @@ namespace fluir {
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
         case code::Instruction::PUSH:
+        case code::Instruction::MULTIPOP:
+        case code::Instruction::GET_VAL:
+        case code::Instruction::SET_VAL:
+        case code::Instruction::CAST_IU:
+        case code::Instruction::CAST_UI:
+        case code::Instruction::CAST_FI:
+        case code::Instruction::CAST_FU:
         case code::Instruction::CAST_WIDTH:
+        case code::Instruction::RESERVE:
           emitInstructionWithArg(os, *i, *(i + 1));
           ++i;
+          break;
+        case code::Instruction::CALL:
+          emitInstruction(os, *i++);
+          emitLongArg(os, *i, *(i + 1), *(i + 2), *(i + 3));
+          i += 3;
           break;
         default:
           emitInstruction(os, *i);
@@ -90,4 +106,9 @@ namespace fluir {
   void InspectWriter::emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg) {
     os << formatIndented("{} x{:X}\n", instructionNames[instruction], arg);
   }
+
+  void InspectWriter::emitLongArg(std::ostream& os, uint8_t arg0, uint8_t arg1, uint8_t arg2, uint8_t arg3) {
+    os << formatIndented("x{:X} x{:X} x{:X} x{:X}\n", arg0, arg1, arg2, arg3);
+  }
+
 }  // namespace fluir

@@ -1,0 +1,17 @@
+Function(1): 'withLocal'
+  Parameters:
+    2: 'a'
+    3: 'b'
+  Return: 9
+  LocalWrite(5)
+    BinaryOp(5): -
+      ConstantI32(4): 7
+      LocalRead(3): 3
+  LocalWrite(9)
+    BinaryOp(8): +
+      BinaryOp(7): +
+        LocalRead(2): 2
+        BinaryOp(6): *
+          LocalRead(6): 5
+          LocalRead(6): 5
+      LocalRead(3): 3

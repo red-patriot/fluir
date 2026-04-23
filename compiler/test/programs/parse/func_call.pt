@@ -1,0 +1,78 @@
+1:
+    FunctionDecl(main)
+    at(x10, y10, z3, w100, h100)
+    body
+        1:
+            Constant
+            at(x5, y12, z0, w5, h5)
+            I32 120
+        2:
+            Constant
+            at(x5, y3, z0, w5, h5)
+            I32 80
+        3:
+            Call(foo)
+            at(x20, y15, z0, w12, h12)
+            0: return
+            1: in1
+            2: in2
+        6:
+            Unary
+            at(x0, y50, z2, w7, h7)
+            ++
+            lhs2
+    conduits
+        4:
+            Conduit
+            in2.0
+            children
+                out3.1
+        5:
+            Conduit
+            in1.0
+            children
+                out3.2
+        7:
+            Conduit
+            in3.0
+            children
+                out6.0
+2:
+    FunctionDecl(foo)
+    at(x200, y200, z1, w100, h100)
+    input
+        2:
+            Param(in1)
+            index 0
+            type i32
+        3:
+            Param(in2)
+            index 1
+            type i32
+    output
+        4:
+            Return
+            type i32
+    body
+        5:
+            Binary
+            at(x57, y4, z2, w5, h5)
+            +
+            lhs0
+            rhs0
+    conduits
+        6:
+            Conduit
+            in2.0
+            children
+                out5.0
+        7:
+            Conduit
+            in3.0
+            children
+                out5.1
+        8:
+            Conduit
+            in5.0
+            children
+                out4.0

@@ -15,7 +15,7 @@ describe('toApiID', () => {
   });
 
   it('should handle negative numbers', () => {
-    expect(toApiID('-1:2:-3')).toEqual([-1, 2, -3]);
+    expect(() => toApiID('-1:2:-3')).toThrow();
   });
 
   it('should handle zero values', () => {
@@ -27,29 +27,29 @@ describe('toApiID', () => {
   });
 
   it('should return NaN for non-numeric strings', () => {
-    expect(toApiID('abc:def')).toEqual([NaN, NaN]);
+    expect(() => toApiID('abc:def')).toThrow();
   });
 
   it('should handle mixed valid and invalid numbers', () => {
-    expect(toApiID('1:abc:3')).toEqual([1, NaN, 3]);
+    expect(() => toApiID('1:abc:3')).toThrow();
   });
 
   it('should handle empty string', () => {
-    expect(toApiID('')).toEqual([NaN]);
+    expect(toApiID('')).toEqual([]);
   });
 
   it('should handle string with only colons', () => {
-    expect(toApiID(':')).toEqual([NaN, NaN]);
-    expect(toApiID('::')).toEqual([NaN, NaN, NaN]);
+    expect(() => toApiID(':')).toThrow();
+    expect(() => toApiID('::')).toThrow();
   });
 
   it('should handle empty segments between colons', () => {
-    expect(toApiID('1::3')).toEqual([1, NaN, 3]);
+    expect(() => toApiID('1::3')).toThrow();
   });
 
   it('should handle leading/trailing colons', () => {
-    expect(toApiID(':1:2')).toEqual([NaN, 1, 2]);
-    expect(toApiID('1:2:')).toEqual([1, 2, NaN]);
+    expect(() => toApiID(':1:2')).toThrow();
+    expect(() => toApiID('1:2:')).toThrow();
   });
 
   it('should handle whitespace in numbers', () => {

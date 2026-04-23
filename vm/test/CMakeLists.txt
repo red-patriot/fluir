@@ -4,7 +4,8 @@ add_executable(fluir.vm.test)
 
 target_sources(
     fluir.vm.test
-    PRIVATE casting.test.cpp
+    PRIVATE call.test.cpp
+            casting.test.cpp
             decoder/decode.test.cpp
             decoder/inspect.test.cpp
             primitive_ops.test.cpp

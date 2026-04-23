@@ -2,8 +2,11 @@ find_package(GTest REQUIRED)
 
 add_executable(fluir.compiler.test)
 
-set(FLUIR_UTILITY_TEST_SOURCES utility/diagnostics.test.cpp
-                               utility/pass.test.cpp
+set(FLUIR_UTILITY_TEST_SOURCES
+    utility/diagnostic/sink.test.cpp
+    utility/diagnostic/pretty_msg.test.cpp
+    utility/topological_sort.test.cpp
+    utility/options.test.cpp
 )
 
 set(FLUIR_FRONTEND_TEST_SOURCES
@@ -12,12 +15,12 @@ set(FLUIR_FRONTEND_TEST_SOURCES
     frontend/parse_number.test.cpp
     frontend/type_checker.test.cpp
     frontend/type_errors.test.cpp
+    frontend/type_check_sanity.test.cpp
 )
 
-set(FLUIR_ASG_TEST_SOURCES
-    asg/asg_errors.test.cpp
-    asg/asg_parser_integration.test.cpp
-    asg/asg.test.cpp
+set(FLUIR_AST_TEST_SOURCES
+    ast/ast_errors.test.cpp ast/ast_parser_integration.test.cpp
+    # TODO: Restore this file in a minute ast/ast.test.cpp
 )
 
 set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
@@ -29,13 +32,14 @@ set(FLUIR_TYPES_TEST_SOURCES
     types/symbol_table.test.cpp
     types/overload_resolution.test.cpp
     types/builtin_symbols.test.cpp
+    types/function_type.test.cpp
 )
 
 target_sources(
     fluir.compiler.test
     PRIVATE ${FLUIR_UTILITY_TEST_SOURCES}
             ${FLUIR_FRONTEND_TEST_SOURCES}
-            ${FLUIR_ASG_TEST_SOURCES}
+            ${FLUIR_AST_TEST_SOURCES}
             ${FLUIR_BACKEND_TEST_SOURCES}
             ${FLUIR_TYPES_TEST_SOURCES}
             scope_guard.test.cpp

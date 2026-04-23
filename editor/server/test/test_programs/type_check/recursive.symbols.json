@@ -1,0 +1,36 @@
+[
+  {
+    "id": [1],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": null}
+      ],
+      "outputs": ["I32"]
+    }
+  },
+  {
+    "id": [1, 1],
+    "info": {
+      "inputs": null,
+      "outputs": ["I32"]
+    }
+  },
+  {
+    "id": [1, 2],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I32"}
+      ],
+      "outputs": null
+    }
+  },
+  {
+    "id": [1, 3],
+    "info": {
+      "inputs": [
+        {"expected_type": "I32", "provided_type": "I32"}
+      ],
+      "outputs": ["I32"]
+    }
+  }
+]

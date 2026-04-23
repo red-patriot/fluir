@@ -2,15 +2,19 @@
 
 #include <cassert>
 #include <cstdint>
+#include <format>
+#include <ranges>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/types/traits.hpp"
+#include "compiler/utility/scope_guard.hpp"
 
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> generateCode(Context& ctx, const ast::AST& graph) {
     return BytecodeGenerator::generate(ctx, graph);
   }
 
@@ -18,33 +22,56 @@ namespace fluir {
     return writer.write(code, destination);
   }
 
-  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const asg::ASG& graph) {
+  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const ast::AST& graph) {
     BytecodeGenerator generator{ctx, graph};
     return generator.run();
   }
 
-  void BytecodeGenerator::operator()(const asg::FunctionDecl& func) {
+  void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
     current_ = code::Chunk{};
     current_.name = func.name;
+    current_.inCount = static_cast<std::uint8_t>(func.parameters.size());
+    current_.outCount = func.returnValue ? 1 : 0;
 
+    // TODO: Handle parameters
+    auto& [slots, returnCount] = pushScope();
+    if (func.returnValue) {
+      // If there is a return value, it is reserved at slot 0
+      // TODO: Support multiple return values
+      slots.insert({func.returnValue->id, 0});
+      returnCount = 1;
+    }
+    // Push parameters in order onto the stack
+    for (const auto& param : func.parameters) {
+      slots.insert({param.id, slots.size()});
+    }
     for (const auto& node : func.statements) {
       recursivelyGenerate(*node);
-      // Each top level node will leave a value on the stack, so pop it off
-      emitByte(Instruction::POP);
+      if (!slots.contains(node->id())) {
+        // Each top level node will leave a value on the stack,so
+        // pop it off iff it was not saved as a new local variable
+        emitByte(Instruction::POP);
+      }
+      // If the value is the return value, discard it
+      // HACK: Use a multipop 1 instruction to suppress printing the
+      // value until that temp behavior is removed
+      if (func.returnValue && func.returnValue->id == node->id()) {
+        emitBytes(Instruction::MULTIPOP, 1);
+      }
     }
+    popScope();
 
-    // (FOR NOW) end all functions with the EXIT instruction
-    emitByte(Instruction::EXIT);
+    emitByte(Instruction::RETURN);
     code_.chunks.push_back(std::move(current_));
   }
 
-  void BytecodeGenerator::generate(const asg::BinaryOp& node) {
+  void BytecodeGenerator::generate(const ast::BinaryOp& node) {
     recursivelyGenerate(*node.lhs());
     recursivelyGenerate(*node.rhs());
 
     // TODO: Handle user-defined ops here
     if (node.lhs()->type() != node.rhs()->type()) {
-      ctx_.diagnostics.emitInternalError("Unexpected type mismatch");
+      diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
@@ -56,11 +83,11 @@ namespace fluir {
       emitUintOperator(node.op());
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
-  void BytecodeGenerator::generate(const asg::UnaryOp& node) {
+  void BytecodeGenerator::generate(const ast::UnaryOp& node) {
     constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
 
@@ -72,11 +99,11 @@ namespace fluir {
       emitUintOperator(node.op(), IS_UNARY);
     } else {
       // TODO: Handle this case better
-      ctx_.diagnostics.emitInternalError("Unknown type encountered");
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
-  void BytecodeGenerator::generate(const asg::Constant& node) {
+  void BytecodeGenerator::generate(const ast::Constant& node) {
     auto type = node.type();
     size_t constant;
     if (type == types::ID_F64) {
@@ -98,14 +125,14 @@ namespace fluir {
     } else if (type == types::ID_U64) {
       constant = addConstant(code::Value(node.u64()));
     } else {
-      ctx_.diagnostics.emitInternalError("Unknown constant type encountered.");
+      diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
     }
     // TODO: Handle too large
     emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
   }
 
-  void BytecodeGenerator::generate(const asg::Cast& cast) {
+  void BytecodeGenerator::generate(const ast::Cast& cast) {
     recursivelyGenerate(*cast.operand());
 
     // TODO: Handle user-defined casts here
@@ -146,25 +173,97 @@ namespace fluir {
     }
   }
 
-  BytecodeGenerator::BytecodeGenerator(Context& ctx, const asg::ASG& graph) : ctx_(ctx), graph_(graph), code_{} { }
+  void BytecodeGenerator::generate(const ast::LocalWrite& write) {
+    recursivelyGenerate(*write.child());
+
+    auto& [slots, returnCount] = scopes_.top();
+    if (slots.contains(write.variable())) {
+      // LocalWrite is updating an existing value.
+      const auto slot = static_cast<std::uint8_t>(slots.at(write.variable()));
+      emitBytes(Instruction::SET_VAL, slot);
+    } else {
+      // This LocalWrite is initializing a new value, so make a new slot for it
+      const auto nextIndex = slots.size();
+      if (nextIndex >= std::numeric_limits<std::uint8_t>::max()) {
+        // TODO: Increase this limit
+        diagnostic::emitInternalError(std::format("Too many local variables defined. Only {} variables allowed.",
+                                                  std::numeric_limits<std::uint8_t>::max()));
+      }
+      slots.insert({write.variable(), nextIndex});
+    }
+  }
+  void BytecodeGenerator::generate(const ast::LocalRead& read) {
+    const auto& [slots, returnCount] = scopes_.top();
+    if (!slots.contains(read.variable())) {
+      // This shouldn't happen because it should be caught in type checking
+      diagnostic::emitInternalError(fmt::format(
+        "Expected variable {}, read by node ({}) not found.", read.variable(), fmt::join(read.fullId(), ":")));
+    }
+    const auto slot = slots.at(read.variable());
+    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(slot));
+  }
+
+  void BytecodeGenerator::generate(const ast::Call& call) {
+    auto targetType = ctx_.symbolTable.getFunctionType(call.target());
+    if (!targetType) {
+      diagnostic::emitInternalError(fmt::format("'{}' is not a function", call.target()));
+    }
+
+    if (targetType->returnType()) {
+      // Reserve space for the return value of the function if it has a return value
+      emitBytes(Instruction::RESERVE, 1);
+    }
+
+    for (auto& arg : call.arguments()) {
+      recursivelyGenerate(*arg);
+    }
+
+    // Find the function to execute
+    if (!functionIndices_.contains(call.target())) {
+      diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+    }
+    const auto index = functionIndices_.at(call.target());
+    emitByte(Instruction::CALL);
+    emitLongOperand(index);
+  }
+
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
 
   void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
+
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
     emitByte(byte2);
   }
+  void BytecodeGenerator::emitLongOperand(std::uint64_t arg) {
+    static constexpr int BYTE_SIZE = 8;
+    static constexpr int SHIFT = BYTE_SIZE * 3;
+    for (int i = 0; i != 4; ++i) {
+      // Consume the top 8 bits of the operand and emit them one by one to write into the bytecode.
+      const auto byte = static_cast<std::uint8_t>(arg >> SHIFT);
+      emitByte(byte);
+      arg <<= BYTE_SIZE;
+    }
+  }
+
   size_t BytecodeGenerator::addConstant(code::Value value) {
     if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
       return found - current_.constants.begin();
     }
     current_.constants.emplace_back(std::move(value));
     if (current_.constants.size() > UINT8_MAX) {
-      ctx_.diagnostics.emitError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
+      // TODO: Fix this limitation
+      diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
     }
     return current_.constants.size() - 1;
   }
 
   Results<code::ByteCode> BytecodeGenerator::run() {
+    for (const auto& [index, declaration] : std::views::enumerate(graph_.declarations)) {
+      // Track the indices of each function to manage calls
+      functionIndices_.insert({declaration.name, index});
+    }
+
     for (const auto& declaration : graph_.declarations) {
       (*this)(declaration);
     }
@@ -177,17 +276,36 @@ namespace fluir {
     return std::move(code_);
   }
 
-  void BytecodeGenerator::recursivelyGenerate(const asg::Node& node) {
+  void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {
     switch (node.kind()) {
-      case asg::NodeKind::BinaryOperator:
-        return generate(*node.as<asg::BinaryOp>());
-      case asg::NodeKind::UnaryOperator:
-        return generate(*node.as<asg::UnaryOp>());
-      case asg::NodeKind::Constant:
-        return generate(*node.as<asg::Constant>());
-      case asg::NodeKind::Cast:
-        return generate(*node.as<asg::Cast>());
+      case ast::NodeKind::BinaryOperator:
+        return generate(*node.as<ast::BinaryOp>());
+      case ast::NodeKind::UnaryOperator:
+        return generate(*node.as<ast::UnaryOp>());
+      case ast::NodeKind::Constant:
+        return generate(*node.as<ast::Constant>());
+      case ast::NodeKind::Cast:
+        return generate(*node.as<ast::Cast>());
+      case ast::NodeKind::LocalWrite:
+        return generate(*node.as<ast::LocalWrite>());
+      case ast::NodeKind::LocalRead:
+        return generate(*node.as<ast::LocalRead>());
+      case ast::NodeKind::Call:
+        return generate(*node.as<ast::Call>());
     }
+  }
+
+  BytecodeGenerator::Scope& BytecodeGenerator::pushScope() {
+    scopes_.emplace();
+    return scopes_.top();
+  }
+  void BytecodeGenerator::popScope() {
+    auto& currentScope = scopes_.top();
+    // Clean up the local variables from this scope before popping it
+    if (const auto toPop = static_cast<std::uint8_t>(currentScope.slots.size() - currentScope.returnCount); toPop > 0) {
+      emitBytes(Instruction::MULTIPOP, toPop);
+    }
+    scopes_.pop();
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {
@@ -220,7 +338,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -254,7 +372,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }
@@ -284,7 +402,7 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        ctx_.diagnostics.emitError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
   }

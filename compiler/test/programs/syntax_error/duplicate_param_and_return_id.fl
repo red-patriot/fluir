@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+    <header>
+        <version>
+            <major>0</major>
+            <minor>1</minor>
+            <patch>3</patch>
+        </version>
+    </header>
+    <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+        <input x="0" y="24" z="0" w="10" h="7">
+            <param id="2" name="x" type="f64"/>
+        </input>
+        <output x="100" y="24" z="0" w="10" h="7">
+            <return id="2" type="f64"/>
+        </output>
+        <body>
+        </body>
+    </function>
+</fluir>

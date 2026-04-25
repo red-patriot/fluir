@@ -9,6 +9,7 @@ import FluirModule, {
   Constant,
   Operator,
   Call,
+  Comment,
 } from "../../models/fluir_module";
 import { ZOOM_SCALAR } from "@/hooks/useSizeStyle.ts";
 import { FUNC_HEADER_HEIGHT } from "@/components/flow_diagram/elements/FunctionDeclNode";
@@ -974,6 +975,58 @@ describe("createNodes", () => {
       expect(result[2].id).toBe("1:3");
       expect(result[3].id).toBe("1:9");
       expect(result[4].id).toBe("1:4");
+    });
+  });
+
+  describe("module with comments", () => {
+    it("should return comments array for module with only comments", () => {
+      const module: FluirModule = {
+        declarations: [],
+        annotations: [
+          {
+            discriminator: "comment",
+            location: { x: 0, y: 0, z: 0, width: 0, height: 0 },
+            id: 1,
+            data: "hello!",
+          } as Comment,
+        ],
+      };
+
+      const result = createNodes(module);
+
+      expect(result.length).toEqual(1);
+      expect(result[0].type).toBe("comment");
+    });
+
+    it("should create comment node inside function decl", () => {
+      const func: FunctionDecl = {
+        discriminator: "function",
+        name: "testFunc",
+        id: 1,
+        location: { x: 0, y: 0, z: 0, width: 300, height: 300 },
+        nodes: [],
+        conduits: [],
+        inputs: [],
+        outputs: [],
+        annotations: [
+          {
+            discriminator: "comment",
+            location: { x: 0, y: 10, z: 1, width: 10, height: 10 },
+            id: 1,
+            data: "hello!",
+          },
+        ],
+      };
+
+      const module: FluirModule = {
+        declarations: [func],
+        annotations: [],
+      };
+
+      const result = createNodes(module);
+
+      expect(result).toHaveLength(2);
+      expect(result[1].type).toEqual("comment");
     });
   });
 });

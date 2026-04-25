@@ -10,9 +10,18 @@ def next_id(decl: elements.Declaration) -> IDType:
             max_conduit_id = max((c.id for c in decl.conduits), default=0)
             max_input_id = max((p.id for p in decl.inputs), default=0)
             max_output_id = max((r.id for r in decl.outputs), default=0)
+            max_annotation_id = max((a.id for a in decl.annotations), default=0)
             # TODO: Use some better way of generating IDs here?
             return (
-                max((max_node_id, max_conduit_id, max_input_id, max_output_id))
+                max(
+                    (
+                        max_node_id,
+                        max_conduit_id,
+                        max_input_id,
+                        max_output_id,
+                        max_annotation_id,
+                    )
+                )
                 + 1
             )
         case _:
@@ -20,5 +29,6 @@ def next_id(decl: elements.Declaration) -> IDType:
 
 
 def next_decl_id(program: elements.Program) -> IDType:
-    max_id = max((decl.id for decl in program.declarations), default=0)
-    return max(max_id, 0) + 1
+    max_decl_id = max((decl.id for decl in program.declarations), default=0)
+    max_annotation_id = max((a.id for a in program.annotations), default=0)
+    return max(max_decl_id, max_annotation_id, 0) + 1

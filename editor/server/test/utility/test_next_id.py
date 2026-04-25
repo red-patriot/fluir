@@ -27,3 +27,20 @@ def test_function_with_nodes_and_conduits() -> None:
     conduits = [elements.Conduit(id=2), elements.Conduit(id=5)]
     func = elements.Function(nodes=nodes, conduits=conduits)
     assert next_id(func) == 6
+
+
+def test_function_with_node_and_annotation() -> None:
+    nodes: elements.Nodes = [elements.Constant(id=2)]
+    annotations: elements.Annotations = [elements.Comment(id=5)]
+    func = elements.Function(nodes=nodes, annotations=annotations)
+    assert next_id(func) == 6
+
+
+def test_next_decl_id_includes_annotations() -> None:
+    program = elements.Program(
+        declarations=[elements.Function(id=3)],
+        annotations=[elements.Comment(id=7)],
+    )
+    from editor.utility.next_id import next_decl_id
+
+    assert next_decl_id(program) == 8

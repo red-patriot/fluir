@@ -45,7 +45,7 @@ def test_forwards_open_request_on_post(
     mock_editor: MagicMock, mock_intelligence: MagicMock
 ) -> None:
     expectedPath = "/fake/path/to/module.fl"
-    expectedData = f'{{"declarations":[],"header":{{"version":{{"MAJOR":{VERS.MAJOR},"MINOR":{VERS.MINOR},"PATCH":{VERS.PATCH}}}}}}}'
+    expectedData = f'{{"declarations":[],"header":{{"version":{{"MAJOR":{VERS.MAJOR},"MINOR":{VERS.MINOR},"PATCH":{VERS.PATCH}}}}},"annotations":[]}}'
 
     app = FastAPI()
 

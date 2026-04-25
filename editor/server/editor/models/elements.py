@@ -78,8 +78,20 @@ class Call:
     returns: bool = False  # TODO: For now, indicates if there is a return value, in the future, add multiple return values
 
 
+@dataclass
+class Comment:
+    discriminator: Literal["comment"] = "comment"
+    id: IDType = INVALID_ID
+    location: Location = field(default_factory=Location)
+    data: str = ""
+
+
 Node = Constant | BinaryOperator | UnaryOperator | Call
 Nodes = list[Node]
+
+
+Annotation = Comment
+Annotations = list[Annotation]
 
 
 @dataclass
@@ -128,6 +140,7 @@ class Function:
     conduits: list[Conduit] = field(default_factory=list)
     inputs: list[Parameter] = field(default_factory=list)
     outputs: list[Return] = field(default_factory=list)
+    annotations: Annotations = field(default_factory=list)
 
 
 Declaration = Function
@@ -143,10 +156,11 @@ class Header:
 class Program:
     declarations: Declarations = field(default_factory=list)
     header: Header = field(default_factory=Header)
+    annotations: Annotations = field(default_factory=list)
 
 
-Element = Declaration | Node
-Item = Declaration | Node | Conduit
+Element = Declaration | Node | Annotation
+Item = Declaration | Node | Conduit | Annotation
 
 
 def _find_impl(
@@ -161,9 +175,12 @@ def _find_impl(
                 return None
             match element.discriminator:
                 case "function":
-                    return _find_impl(
-                        id[1:], cast(Function, element).nodes
-                    ) or _find_impl(id[1:], cast(Function, element).conduits)
+                    func = cast(Function, element)
+                    return (
+                        _find_impl(id[1:], func.nodes)
+                        or _find_impl(id[1:], func.conduits)
+                        or _find_impl(id[1:], func.annotations)
+                    )
                 case "binary":
                     return None
                 case "unary":
@@ -171,6 +188,8 @@ def _find_impl(
                 case "constant":
                     return None
                 case "call":
+                    return None
+                case "comment":
                     return None
                 case _:
                     assert Never
@@ -181,7 +200,9 @@ def find_element(id: QualifiedID, program: Program) -> Element:
     """Find the element with the given ID in the program."""
     if len(id) == 0 or INVALID_ID in id:
         raise IdentifierError("ID is invalid")
-    found = _find_impl(id, program.declarations)
+    found = _find_impl(id, program.declarations) or _find_impl(
+        id, program.annotations
+    )
     if found is not None and not isinstance(found, Conduit):
         return found
     raise IdentifierError(
@@ -193,7 +214,9 @@ def find_item(id: QualifiedID, program: Program) -> Item:
     """Find the element or conduit with the given ID in the program."""
     if len(id) == 0 or INVALID_ID in id:
         raise IdentifierError("ID is invalid")
-    found = _find_impl(id, program.declarations)
+    found = _find_impl(id, program.declarations) or _find_impl(
+        id, program.annotations
+    )
     if found is not None:
         return found
     raise IdentifierError(

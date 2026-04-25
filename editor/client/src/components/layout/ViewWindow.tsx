@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -14,19 +14,19 @@ import {
   getOutgoers,
   Node,
   OnDelete,
-} from '@xyflow/react';
-import createNodes, { createEdges, nodeTypes } from '../../utility/createNodes';
-import { useAppSelector } from '@/store';
-import { useProgramActions } from '../reusable/ProgramActionsContext';
+} from "@xyflow/react";
+import createNodes, { createEdges, nodeTypes } from "../../utility/createNodes";
+import { useAppSelector } from "@/store";
+import { useProgramActions } from "../reusable/ProgramActionsContext";
 import {
   AddConduitEditRequest,
   RemoveItemEditRequest,
-} from '@/models/edit_request';
-import { ZOOM_SCALAR } from '@/hooks/useSizeStyle.ts';
-import { toApiID } from '@/utility/idHelpers.ts';
-import { ContextMenu } from 'radix-ui';
-import { move } from '@/components/flow_diagram/logic';
-import { useDialogContext } from '@/components/flow_diagram/dialog';
+} from "@/models/edit_request";
+import { ZOOM_SCALAR } from "@/hooks/useSizeStyle.ts";
+import { toApiID } from "@/utility/idHelpers.ts";
+import { ContextMenu } from "radix-ui";
+import { move } from "@/components/flow_diagram/logic";
+import { useDialogContext } from "@/components/flow_diagram/dialog";
 
 const defaultEdgeOptions: DefaultEdgeOptions = {
   animated: true,
@@ -39,10 +39,10 @@ export default function ViewWindow() {
   const { openCreateNodeDialog } = useDialogContext();
 
   const [nodes, setNodes] = useState(
-    createNodes(module ? module : { declarations: [] }),
+    createNodes(module ? module : { declarations: [], annotations: [] }),
   );
   const [edges, setEdges] = useState(
-    createEdges(module ? module : { declarations: [] }),
+    createEdges(module ? module : { declarations: [], annotations: [] }),
   );
 
   const onNodesChange = useCallback(
@@ -113,7 +113,7 @@ export default function ViewWindow() {
       // TODO: Right now there is no way to select conduits, so they cannot be
       // deleted. Figure out a way to handle that...
 
-      console.log('onDelete', deleted);
+      console.log("onDelete", deleted);
       if (deleted.nodes.length == 0) {
         return;
       }
@@ -127,8 +127,12 @@ export default function ViewWindow() {
   );
 
   useEffect(() => {
-    setNodes(createNodes(module ? module : { declarations: [] }));
-    setEdges(createEdges(module ? module : { declarations: [] }));
+    setNodes(
+      createNodes(module ? module : { declarations: [], annotations: [] }),
+    );
+    setEdges(
+      createEdges(module ? module : { declarations: [], annotations: [] }),
+    );
   }, [module]);
 
   if (!module) {
@@ -172,7 +176,7 @@ export default function ViewWindow() {
 
             openCreateNodeDialog({
               clickedLocation: clickCoord,
-              parentID: '',
+              parentID: "",
               parentLocation: { x: 0, y: 0, z: 0, width: 0, height: 0 },
               where: { x: event.clientX, y: event.clientY },
             });

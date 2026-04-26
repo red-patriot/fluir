@@ -21,21 +21,33 @@ class RemoveItem(BaseModel, TransactionBase):
             raise BadEdit("Cannot remove the program itself")
 
         if len(self.target) == 1:
-            # Removing a function from the program
-            # Find and store the function being removed
+            # Removing a top-level item from the program (function or comment)
             for func in original.declarations:
                 if func.id == self.target[0]:
                     self._removed_item = func
                     break
 
             if self._removed_item is None:
-                raise BadEdit(f"Function {self.target[0]} not found")
+                for annotation in original.annotations:
+                    if annotation.id == self.target[0]:
+                        self._removed_item = annotation
+                        break
 
-            original.declarations = [
-                func
-                for func in original.declarations
-                if func.id != self.target[0]
-            ]
+            if self._removed_item is None:
+                raise BadEdit(f"Element {self.target[0]} not found")
+
+            if isinstance(self._removed_item, elements.Function):
+                original.declarations = [
+                    func
+                    for func in original.declarations
+                    if func.id != self.target[0]
+                ]
+            else:
+                original.annotations = [
+                    annotation
+                    for annotation in original.annotations
+                    if annotation.id != self.target[0]
+                ]
             return original
 
         parent_id = self.target[:-1]
@@ -73,6 +85,13 @@ class RemoveItem(BaseModel, TransactionBase):
                         self._removed_item = output
                         break
 
+            # Check if it's an annotation
+            if self._removed_item is None:
+                for annotation in parent.annotations:
+                    if annotation.id == element_id:
+                        self._removed_item = annotation
+                        break
+
             if self._removed_item is None:
                 raise BadEdit(f"Element {element_id} not found")
 
@@ -102,6 +121,11 @@ class RemoveItem(BaseModel, TransactionBase):
             parent.outputs = [
                 output for output in parent.outputs if output.id != element_id
             ]
+            parent.annotations = [
+                annotation
+                for annotation in parent.annotations
+                if annotation.id != element_id
+            ]
             # Remove any conduits connected to this node
             parent.conduits = [
                 conduit
@@ -123,9 +147,14 @@ class RemoveItem(BaseModel, TransactionBase):
             raise BadEdit("Nothing to undo - no item was removed")
 
         if len(self.target) == 1:
-            # Restoring a function to the program
-            assert isinstance(self._removed_item, elements.Function)
-            original.declarations.append(self._removed_item)
+            # Restoring a top-level item to the program
+            if isinstance(self._removed_item, elements.Function):
+                original.declarations.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Comment):
+                original.annotations.append(self._removed_item)
+            else:
+                raise BadEdit("Cannot restore unsupported top-level item")
+            self._removed_item = None
             return original
 
         parent_id = self.target[:-1]
@@ -141,6 +170,8 @@ class RemoveItem(BaseModel, TransactionBase):
                 parent.inputs.append(self._removed_item)
             elif isinstance(self._removed_item, elements.Return):
                 parent.outputs.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Comment):
+                parent.annotations.append(self._removed_item)
 
             # Restore any conduits that were removed due to connections
             for conduit in self._removed_conduits:

@@ -29,13 +29,46 @@ export function ValueDisplay({ fullID, value, renderEdit }: ValueDisplayProps) {
       variant="solid"
       size="2"
       className="grow m-0.25 overflow-hidden text-ellipsis whitespace-nowrap"
+      onClick={startEditing}
     >
       {renderEdit && isEditing ? (
         renderEdit(fullID, value, stopEditing)
       ) : (
         <span
           aria-label={`${fullID}-value-display`}
-          onClick={startEditing}
+        >
+          {value}
+        </span>
+      )}
+    </Code>
+  );
+}
+
+export function MultilineValueDisplay({ fullID, value, renderEdit }: ValueDisplayProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const startEditing = () => {
+    if (renderEdit) {
+      setIsEditing(true);
+    }
+  };
+  const stopEditing = () => {
+    setIsEditing(false);
+  };
+
+  return (
+    <Code
+      color="gray"
+      variant="solid"
+      size="2"
+      className="grow w-full h-full m-0.25 wrap-normal overflow-hidden text-ellipsis"
+      onClick={startEditing}
+    >
+      {renderEdit && isEditing ? (
+        renderEdit(fullID, value, stopEditing)
+      ) : (
+        <span
+          aria-label={`${fullID}-value-display`}
         >
           {value}
         </span>

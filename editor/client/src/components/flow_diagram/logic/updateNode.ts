@@ -1,7 +1,7 @@
 import {
   UpdateConstantEditRequest,
   UpdateOperatorEditRequest,
-  RenameDeclarationEditRequest,
+  RenameDeclarationEditRequest, UpdateCommentEditRequest,
 } from '@/models/edit_request';
 import { Operator } from '@/models/fluir_module';
 import { toApiID } from '@/utility/idHelpers';
@@ -44,6 +44,22 @@ export function renameDeclaration(
       target: toApiID(fullID),
       name: new_name,
     };
+    commit(request);
+  };
+}
+
+export function updateComment(
+  commit: (request: UpdateCommentEditRequest) => void,
+  fullID: string,
+) {
+  return (new_data: string) => {
+  console.log(fullID);
+    const request: UpdateCommentEditRequest = {
+      discriminator: 'update_comment',
+      target: toApiID(fullID),
+      data: new_data,
+    };
+    console.log("REQUEST", request);
     commit(request);
   };
 }

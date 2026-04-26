@@ -35,6 +35,8 @@ namespace fluir {
     void header(Element* element);
     Version version(Element* element);
 
+    void comment(Element* element);
+
     void declaration(Element* element);
     void functionDecl(Element* element);
 
@@ -44,7 +46,7 @@ namespace fluir {
     pt::FunctionDecl::Return funcReturn(Element* element);
 
     pt::Block block(Element* element);
-    WithID<pt::Node> node(Element* element);
+    std::optional<WithID<pt::Node>> node(Element* element);
     WithID<pt::Node> constant(Element* element);
     WithID<pt::Node> binary(Element* element);
     WithID<pt::Node> unary(Element* element);

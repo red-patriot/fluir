@@ -125,6 +125,22 @@ export default function ViewWindow() {
     },
     [editProgram],
   );
+  const onContextMenu = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    const clickCoord = screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+    clickCoord.x /= ZOOM_SCALAR;
+    clickCoord.y /= ZOOM_SCALAR;
+
+    openCreateNodeDialog({
+      clickedLocation: clickCoord,
+      parentID: "",
+      parentLocation: { x: 0, y: 0, z: 0, width: 0, height: 0 },
+      where: { x: event.clientX, y: event.clientY },
+    });
+  };
 
   useEffect(() => {
     setNodes(
@@ -165,22 +181,7 @@ export default function ViewWindow() {
           snapGrid={[ZOOM_SCALAR, ZOOM_SCALAR]}
           snapToGrid
           panOnDrag={[1]}
-          onContextMenu={(event: React.MouseEvent) => {
-            event.stopPropagation();
-            const clickCoord = screenToFlowPosition({
-              x: event.clientX,
-              y: event.clientY,
-            });
-            clickCoord.x /= ZOOM_SCALAR;
-            clickCoord.y /= ZOOM_SCALAR;
-
-            openCreateNodeDialog({
-              clickedLocation: clickCoord,
-              parentID: "",
-              parentLocation: { x: 0, y: 0, z: 0, width: 0, height: 0 },
-              where: { x: event.clientX, y: event.clientY },
-            });
-          }}
+          onContextMenu={onContextMenu}
         >
           <Background
             id="bg-1"

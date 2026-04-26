@@ -29,11 +29,12 @@ class IntelligenceService:
             return []
         if len(block_id) == 0:
             # Top level provides definition completions
-            return self._toplevel_options()
+            return self._toplevel_options() + self._annotations()
         return (
             self._builtin_operators()
             + self._constants()
             + self._function_completions(path)
+            + self._annotations()
         )
 
     def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
@@ -78,3 +79,9 @@ class IntelligenceService:
 
     def _builtin_types(self) -> list[str]:
         return [t for t in FlType]
+
+    def _annotations(self) -> list[Completion]:
+        return [
+            Completion(short_name="comment", kind=Kind.COMMENT),
+            Completion(short_name="//", kind=Kind.COMMENT),
+        ]

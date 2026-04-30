@@ -10,9 +10,9 @@ namespace fluir {
   class InspectWriter : public CodeWriter, private IndentFormatter<> {
    private:
     void writeHeader(const code::Header&, std::ostream&) override;
+    void writeConstants(const std::vector<code::Value>&, std::ostream&) override;
     void writeChunk(const code::Chunk&, std::ostream&) override;
 
-    void writeConstants(const std::vector<code::Value>&, std::ostream&);
     void writeConstant(const code::Value&, std::ostream&);
     void writeCode(const code::Bytes&, std::ostream&);
 

@@ -247,15 +247,15 @@ namespace fluir {
   }
 
   size_t BytecodeGenerator::addConstant(code::Value value) {
-    if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
-      return found - current_.constants.begin();
+    if (auto found = std::ranges::find(code_.constants, value); found != code_.constants.end()) {
+      return found - code_.constants.begin();
     }
-    current_.constants.emplace_back(std::move(value));
-    if (current_.constants.size() > UINT8_MAX) {
+    code_.constants.emplace_back(std::move(value));
+    if (code_.constants.size() > UINT8_MAX) {
       // TODO: Fix this limitation
       diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
     }
-    return current_.constants.size() - 1;
+    return code_.constants.size() - 1;
   }
 
   Results<code::ByteCode> BytecodeGenerator::run() {

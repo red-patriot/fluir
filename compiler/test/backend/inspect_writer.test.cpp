@@ -12,8 +12,8 @@ using namespace fc::value_literals;
 
 TEST(TestInspectWriter, WriteEmptyProgram) {
   std::string expected = R"(I010C1100000000000000FF
+CONSTANTS x0
 CHUNK main
-  CONSTANTS x0
   CODE x1
     IEXIT
   IN x0
@@ -21,7 +21,7 @@ CHUNK main
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 1, .minor = 12, .patch = 17, .entryOffset = 255},
-                    .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}, .constants = {}}}};
+                    .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::EXIT}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -34,11 +34,11 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteSimpleProgram) {
   std::string expected = R"(I1806100000000000000005
+CONSTANTS x3
+  VF64 100.000000000000
+  VF64 3.500000000000
+  VF64 4.400000000000
 CHUNK bar
-  CONSTANTS x3
-    VF64 100.000000000000
-    VF64 3.500000000000
-    VF64 4.400000000000
   CODE x13
     IPUSH x0
     IPUSH x1
@@ -59,30 +59,29 @@ CHUNK bar
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 24, .minor = 6, .patch = 16, .entryOffset = 5},
+                    .constants = {100.0_f64, 3.5_f64, 4.4_f64},
                     .chunks = {fc::Chunk{.name = "bar",
-                                         .code =
-                                           {
-                                             fc::PUSH,
-                                             0x00,
-                                             fc::PUSH,
-                                             0x01,
-                                             fc::F64_NEG,
-                                             fc::PUSH,
-                                             0x02,
-                                             fc::F64_DIV,
-                                             fc::F64_ADD,
-                                             fc::POP,
-                                             fc::PUSH,
-                                             0x01,
-                                             fc::F64_NEG,
-                                             fc::PUSH,
-                                             0x02,
-                                             fc::F64_DIV,
-                                             fc::F64_NEG,
-                                             fc::POP,
-                                             fc::Instruction::EXIT,
-                                           },
-                                         .constants = {100.0_f64, 3.5_f64, 4.4_f64}}}};
+                                         .code = {
+                                           fc::PUSH,
+                                           0x00,
+                                           fc::PUSH,
+                                           0x01,
+                                           fc::F64_NEG,
+                                           fc::PUSH,
+                                           0x02,
+                                           fc::F64_DIV,
+                                           fc::F64_ADD,
+                                           fc::POP,
+                                           fc::PUSH,
+                                           0x01,
+                                           fc::F64_NEG,
+                                           fc::PUSH,
+                                           0x02,
+                                           fc::F64_DIV,
+                                           fc::F64_NEG,
+                                           fc::POP,
+                                           fc::Instruction::EXIT,
+                                         }}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -95,11 +94,11 @@ CHUNK bar
 
 TEST(TestInspectWriter, WriteProgramToFile) {
   std::string expected = R"(I040711000000000000000F
+CONSTANTS x3
+  VF64 102.000000000000
+  VF64 3.512300000000
+  VF64 4.460000000000
 CHUNK bar
-  CONSTANTS x3
-    VF64 102.000000000000
-    VF64 3.512300000000
-    VF64 4.460000000000
   CODE xB
     IPUSH x0
     IPUSH x1
@@ -114,22 +113,21 @@ CHUNK bar
 )";
 
   fc::ByteCode code{.header = {.filetype = '\0', .major = 4, .minor = 7, .patch = 17, .entryOffset = 15},
+                    .constants = {102.0_f64, 3.5123_f64, 4.46_f64},
                     .chunks = {fc::Chunk{.name = "bar",
-                                         .code =
-                                           {
-                                             fc::PUSH,
-                                             0x00,
-                                             fc::PUSH,
-                                             0x01,
-                                             fc::F64_NEG,
-                                             fc::PUSH,
-                                             0x02,
-                                             fc::F64_DIV,
-                                             fc::F64_ADD,
-                                             fc::POP,
-                                             fc::EXIT,
-                                           },
-                                         .constants = {102.0_f64, 3.5123_f64, 4.46_f64}}}};
+                                         .code = {
+                                           fc::PUSH,
+                                           0x00,
+                                           fc::PUSH,
+                                           0x01,
+                                           fc::F64_NEG,
+                                           fc::PUSH,
+                                           0x02,
+                                           fc::F64_DIV,
+                                           fc::F64_ADD,
+                                           fc::POP,
+                                           fc::EXIT,
+                                         }}}};
 
   auto file = std::filesystem::temp_directory_path() / "code.flc";
   {
@@ -151,8 +149,8 @@ CHUNK bar
 
 TEST(TestInspectWriter, WriteFloatInstructions) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x0
 CHUNK main
-  CONSTANTS x0
   CODE x9
     IF64_ADD
     IF64_SUB
@@ -168,19 +166,17 @@ CHUNK main
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
-                                                           .code =
-                                                             {
-                                                               fc::F64_ADD,
-                                                               fc::F64_SUB,
-                                                               fc::F64_MUL,
-                                                               fc::F64_DIV,
-                                                               fc::F64_NEG,
-                                                               fc::F64_AFF,
-                                                               fc::F64_INC,
-                                                               fc::F64_DEC,
-                                                               fc::EXIT,
-                                                             },
-                                                           .constants = {}}}};
+                                                           .code = {
+                                                             fc::F64_ADD,
+                                                             fc::F64_SUB,
+                                                             fc::F64_MUL,
+                                                             fc::F64_DIV,
+                                                             fc::F64_NEG,
+                                                             fc::F64_AFF,
+                                                             fc::F64_INC,
+                                                             fc::F64_DEC,
+                                                             fc::EXIT,
+                                                           }}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -193,8 +189,8 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteIntInstructions) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x0
 CHUNK main
-  CONSTANTS x0
   CODE x9
     II64_ADD
     II64_SUB
@@ -210,19 +206,17 @@ CHUNK main
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
-                                                           .code =
-                                                             {
-                                                               fc::I64_ADD,
-                                                               fc::I64_SUB,
-                                                               fc::I64_MUL,
-                                                               fc::I64_DIV,
-                                                               fc::I64_NEG,
-                                                               fc::I64_AFF,
-                                                               fc::I64_INC,
-                                                               fc::I64_DEC,
-                                                               fc::EXIT,
-                                                             },
-                                                           .constants = {}}}};
+                                                           .code = {
+                                                             fc::I64_ADD,
+                                                             fc::I64_SUB,
+                                                             fc::I64_MUL,
+                                                             fc::I64_DIV,
+                                                             fc::I64_NEG,
+                                                             fc::I64_AFF,
+                                                             fc::I64_INC,
+                                                             fc::I64_DEC,
+                                                             fc::EXIT,
+                                                           }}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -235,8 +229,8 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteUintInstructions) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x0
 CHUNK main
-  CONSTANTS x0
   CODE x8
     IU64_ADD
     IU64_SUB
@@ -251,18 +245,16 @@ CHUNK main
 )";
   fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
                              .chunks = {fluir::code::Chunk{.name = "main",
-                                                           .code =
-                                                             {
-                                                               fc::U64_ADD,
-                                                               fc::U64_SUB,
-                                                               fc::U64_MUL,
-                                                               fc::U64_DIV,
-                                                               fc::U64_AFF,
-                                                               fc::U64_INC,
-                                                               fc::U64_DEC,
-                                                               fc::EXIT,
-                                                             },
-                                                           .constants = {}}}};
+                                                           .code = {
+                                                             fc::U64_ADD,
+                                                             fc::U64_SUB,
+                                                             fc::U64_MUL,
+                                                             fc::U64_DIV,
+                                                             fc::U64_AFF,
+                                                             fc::U64_INC,
+                                                             fc::U64_DEC,
+                                                             fc::EXIT,
+                                                           }}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -275,24 +267,22 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteIntConstants) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x4
+  VI64 x123
+  VI32 x345
+  VI16 x542
+  VI8  x1
 CHUNK main
-  CONSTANTS x4
-    VI64 x123
-    VI32 x345
-    VI16 x542
-    VI8  x1
   CODE x0
   IN x0
   OUT x0
 )";
-  fluir::code::ByteCode code{
-    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
-    .chunks = {fluir::code::Chunk{.name = "main",
-                                  .code = {},
-                                  .constants = {fluir::code::Value{static_cast<std::int64_t>(0x123)},
-                                                fluir::code::Value{static_cast<std::int32_t>(0x345)},
-                                                fluir::code::Value{static_cast<std::int16_t>(0x542)},
-                                                fluir::code::Value{static_cast<std::int8_t>(0x1)}}}}};
+  fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                             .constants = {fluir::code::Value{static_cast<std::int64_t>(0x123)},
+                                           fluir::code::Value{static_cast<std::int32_t>(0x345)},
+                                           fluir::code::Value{static_cast<std::int16_t>(0x542)},
+                                           fluir::code::Value{static_cast<std::int8_t>(0x1)}},
+                             .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -305,24 +295,22 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteUIntConstants) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x4
+  VU64 x123
+  VU32 x345
+  VU16 x542
+  VU8  x1
 CHUNK main
-  CONSTANTS x4
-    VU64 x123
-    VU32 x345
-    VU16 x542
-    VU8  x1
   CODE x0
   IN x0
   OUT x0
 )";
-  fluir::code::ByteCode code{
-    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
-    .chunks = {fluir::code::Chunk{.name = "main",
-                                  .code = {},
-                                  .constants = {fluir::code::Value{static_cast<std::uint64_t>(0x123)},
-                                                fluir::code::Value{static_cast<std::uint32_t>(0x345)},
-                                                fluir::code::Value{static_cast<std::uint16_t>(0x542)},
-                                                fluir::code::Value{static_cast<std::uint8_t>(0x1)}}}}};
+  fluir::code::ByteCode code{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                             .constants = {fluir::code::Value{static_cast<std::uint64_t>(0x123)},
+                                           fluir::code::Value{static_cast<std::uint32_t>(0x345)},
+                                           fluir::code::Value{static_cast<std::uint16_t>(0x542)},
+                                           fluir::code::Value{static_cast<std::uint8_t>(0x1)}},
+                             .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};
@@ -335,8 +323,8 @@ CHUNK main
 
 TEST(TestInspectWriter, WriteCastInstructions) {
   std::string expected = R"(I0120030000000000000000
+CONSTANTS x0
 CHUNK main
-  CONSTANTS x0
   CODE x13
     ICAST_IU x1
     ICAST_UI x2
@@ -372,8 +360,7 @@ CHUNK main
                                                                     0x04,
                                                                     fc::CAST_WIDTH,
                                                                     0x08,
-                                                                    fc::EXIT},
-                                                           .constants = {}}}};
+                                                                    fc::EXIT}}}};
 
   std::stringstream ss;
   fluir::InspectWriter uut{};

@@ -6,6 +6,7 @@
 
 #include "code_chunk.hpp"
 #include "instruction.hpp"
+#include "value.hpp"
 
 namespace fluir::code {
   struct Header {
@@ -20,6 +21,7 @@ namespace fluir::code {
 
   struct ByteCode {
     Header header{};
+    std::vector<Value> constants{};
     std::vector<Chunk> chunks{};
   };
 }  // namespace fluir::code

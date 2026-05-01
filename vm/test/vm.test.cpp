@@ -17,9 +17,9 @@ TEST(TestVM, ExecEmptyFunction) {
 }
 
 TEST(TestVM, ExecuteSimpleAddition) {
-  fluir::code::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_ADD, EXIT}, .constants = {1.2_f64, 2.5_f64}}}};
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {1.2_f64, 2.5_f64},
+                             .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_ADD, EXIT}}}};
   double expected = 3.7;
 
   fluir::VirtualMachine uut;
@@ -29,9 +29,9 @@ TEST(TestVM, ExecuteSimpleAddition) {
 }
 
 TEST(TestVM, ExecuteSimpleSubtraction) {
-  fluir::code::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_SUB, EXIT}, .constants = {1.2_f64, 2.5_f64}}}};
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {1.2_f64, 2.5_f64},
+                             .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_SUB, EXIT}}}};
   double expected = -1.3;
 
   fluir::VirtualMachine uut;
@@ -41,9 +41,9 @@ TEST(TestVM, ExecuteSimpleSubtraction) {
 }
 
 TEST(TestVM, ExecuteSimpleMultiply) {
-  fluir::code::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_MUL, EXIT}, .constants = {1.2_f64, 2.5_f64}}}};
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {1.2_f64, 2.5_f64},
+                             .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_MUL, EXIT}}}};
   double expected = 3.0;
 
   fluir::VirtualMachine uut;
@@ -53,9 +53,9 @@ TEST(TestVM, ExecuteSimpleMultiply) {
 }
 
 TEST(TestVM, ExecuteSimpleDivide) {
-  fluir::code::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_DIV, EXIT}, .constants = {1.2_f64, 2.5_f64}}}};
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {1.2_f64, 2.5_f64},
+                             .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_DIV, EXIT}}}};
   double expected = 0.48;
 
   fluir::VirtualMachine uut;
@@ -65,10 +65,9 @@ TEST(TestVM, ExecuteSimpleDivide) {
 }
 
 TEST(TestVM, PushAndPopCorrectly) {
-  fluir::code::ByteCode code{
-    .header = {},
-    .chunks = {
-      fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_DIV, POP, EXIT}, .constants = {1.2_f64, 2.5_f64}}}};
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {1.2_f64, 2.5_f64},
+                             .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_DIV, POP, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -79,9 +78,9 @@ TEST(TestVM, PushAndPopCorrectly) {
 TEST(TestVM, AddI64) {
   std::int64_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}, .constants = {12_i64, 25_i64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i64, 25_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -92,9 +91,9 @@ TEST(TestVM, AddI64) {
 TEST(TestVM, SubtractI64) {
   std::int64_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}, .constants = {12_i64, 25_i64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i64, 25_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -105,9 +104,9 @@ TEST(TestVM, SubtractI64) {
 TEST(TestVM, MultiplyI64) {
   std::int64_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}, .constants = {2_i64, 5_i64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i64, 5_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -118,9 +117,9 @@ TEST(TestVM, MultiplyI64) {
 TEST(TestVM, DivideI64) {
   std::int64_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}, .constants = {12_i64, 4_i64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i64, 4_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -130,8 +129,8 @@ TEST(TestVM, DivideI64) {
 
 TEST(TestVM, NegateI64) {
   std::int64_t expected = -5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}, .constants = {5_i64}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i64}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -141,8 +140,8 @@ TEST(TestVM, NegateI64) {
 
 TEST(TestVM, AffirmI64) {
   std::int64_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}, .constants = {5_i64}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i64}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -153,9 +152,9 @@ TEST(TestVM, AffirmI64) {
 TEST(TestVM, AddI32) {
   std::int32_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}, .constants = {12_i32, 25_i32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i32, 25_i32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -166,9 +165,9 @@ TEST(TestVM, AddI32) {
 TEST(TestVM, SubtractI32) {
   std::int32_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}, .constants = {12_i32, 25_i32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i32, 25_i32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -179,9 +178,9 @@ TEST(TestVM, SubtractI32) {
 TEST(TestVM, MultiplyI32) {
   std::int32_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}, .constants = {2_i32, 5_i32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i32, 5_i32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -192,9 +191,9 @@ TEST(TestVM, MultiplyI32) {
 TEST(TestVM, DivideI32) {
   std::int32_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}, .constants = {12_i32, 4_i32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i32, 4_i32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -204,8 +203,8 @@ TEST(TestVM, DivideI32) {
 
 TEST(TestVM, NegateI32) {
   std::int32_t expected = -5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}, .constants = {5_i32}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -215,8 +214,8 @@ TEST(TestVM, NegateI32) {
 
 TEST(TestVM, AffirmI32) {
   std::int32_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}, .constants = {5_i32}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -227,9 +226,9 @@ TEST(TestVM, AffirmI32) {
 TEST(TestVM, AddI16) {
   std::int16_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}, .constants = {12_i16, 25_i16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i16, 25_i16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -240,9 +239,9 @@ TEST(TestVM, AddI16) {
 TEST(TestVM, SubtractI16) {
   std::int16_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}, .constants = {12_i16, 25_i16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i16, 25_i16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -253,9 +252,9 @@ TEST(TestVM, SubtractI16) {
 TEST(TestVM, MultiplyI16) {
   std::int16_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}, .constants = {2_i16, 5_i16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i16, 5_i16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -266,9 +265,9 @@ TEST(TestVM, MultiplyI16) {
 TEST(TestVM, DivideI16) {
   std::int16_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}, .constants = {12_i16, 4_i16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i16, 4_i16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -278,8 +277,8 @@ TEST(TestVM, DivideI16) {
 
 TEST(TestVM, NegateI16) {
   std::int16_t expected = -5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}, .constants = {5_i16}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i16}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -289,8 +288,8 @@ TEST(TestVM, NegateI16) {
 
 TEST(TestVM, AffirmI16) {
   std::int16_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}, .constants = {5_i16}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i16}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -301,9 +300,9 @@ TEST(TestVM, AffirmI16) {
 TEST(TestVM, AddI8) {
   std::int8_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}, .constants = {12_i8, 25_i8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i8, 25_i8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -314,9 +313,9 @@ TEST(TestVM, AddI8) {
 TEST(TestVM, SubtractI8) {
   std::int8_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}, .constants = {12_i8, 25_i8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i8, 25_i8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -327,9 +326,9 @@ TEST(TestVM, SubtractI8) {
 TEST(TestVM, MultiplyI8) {
   std::int8_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}, .constants = {2_i8, 5_i8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i8, 5_i8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -340,9 +339,9 @@ TEST(TestVM, MultiplyI8) {
 TEST(TestVM, DivideI8) {
   std::int8_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}, .constants = {12_i8, 4_i8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_i8, 4_i8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -352,8 +351,8 @@ TEST(TestVM, DivideI8) {
 
 TEST(TestVM, NegateI8) {
   std::int8_t expected = -5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}, .constants = {5_i8}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i8}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -363,8 +362,8 @@ TEST(TestVM, NegateI8) {
 
 TEST(TestVM, AffirmI8) {
   std::int8_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}, .constants = {5_i8}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_i8}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -375,9 +374,9 @@ TEST(TestVM, AffirmI8) {
 TEST(TestVM, AddU64) {
   std::uint64_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}, .constants = {12_u64, 25_u64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u64, 25_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -388,9 +387,9 @@ TEST(TestVM, AddU64) {
 TEST(TestVM, SubtractU64) {
   std::uint64_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}, .constants = {12_u64, 25_u64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u64, 25_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -401,9 +400,9 @@ TEST(TestVM, SubtractU64) {
 TEST(TestVM, MultiplyU64) {
   std::uint64_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}, .constants = {2_u64, 5_u64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u64, 5_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -414,9 +413,9 @@ TEST(TestVM, MultiplyU64) {
 TEST(TestVM, DivideU64) {
   std::uint64_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u64, 4_u64}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u64, 4_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -426,8 +425,8 @@ TEST(TestVM, DivideU64) {
 
 TEST(TestVM, AffirmU64) {
   std::uint64_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u64}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_u64}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -438,9 +437,9 @@ TEST(TestVM, AffirmU64) {
 TEST(TestVM, AddU32) {
   std::uint32_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}, .constants = {12_u32, 25_u32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u32, 25_u32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -451,9 +450,9 @@ TEST(TestVM, AddU32) {
 TEST(TestVM, SubtractU32) {
   std::uint32_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}, .constants = {12_u32, 25_u32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u32, 25_u32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -464,9 +463,9 @@ TEST(TestVM, SubtractU32) {
 TEST(TestVM, MultiplyU32) {
   std::uint32_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}, .constants = {2_u32, 5_u32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u32, 5_u32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -477,9 +476,9 @@ TEST(TestVM, MultiplyU32) {
 TEST(TestVM, DivideU32) {
   std::uint32_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u32, 4_u32}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u32, 4_u32},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -489,8 +488,8 @@ TEST(TestVM, DivideU32) {
 
 TEST(TestVM, AffirmU32) {
   std::uint32_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u32}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_u32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -501,9 +500,9 @@ TEST(TestVM, AffirmU32) {
 TEST(TestVM, AddU16) {
   std::uint16_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}, .constants = {12_u16, 25_u16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u16, 25_u16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -514,9 +513,9 @@ TEST(TestVM, AddU16) {
 TEST(TestVM, SubtractU16) {
   std::uint16_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}, .constants = {12_u16, 25_u16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u16, 25_u16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -527,9 +526,9 @@ TEST(TestVM, SubtractU16) {
 TEST(TestVM, MultiplyU16) {
   std::uint16_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}, .constants = {2_u16, 5_u16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u16, 5_u16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -540,9 +539,9 @@ TEST(TestVM, MultiplyU16) {
 TEST(TestVM, DivideU16) {
   std::uint16_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u16, 4_u16}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u16, 4_u16},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -552,8 +551,8 @@ TEST(TestVM, DivideU16) {
 
 TEST(TestVM, AffirmU16) {
   std::uint16_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u16}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_u16}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -564,9 +563,9 @@ TEST(TestVM, AffirmU16) {
 TEST(TestVM, AddU8) {
   std::uint8_t expected = 37;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}, .constants = {12_u8, 25_u8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u8, 25_u8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_ADD, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -577,9 +576,9 @@ TEST(TestVM, AddU8) {
 TEST(TestVM, SubtractU8) {
   std::uint8_t expected = -13;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}, .constants = {12_u8, 25_u8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u8, 25_u8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_SUB, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -590,9 +589,9 @@ TEST(TestVM, SubtractU8) {
 TEST(TestVM, MultiplyU8) {
   std::uint8_t expected = 10;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}, .constants = {2_u8, 5_u8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u8, 5_u8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_MUL, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -603,9 +602,9 @@ TEST(TestVM, MultiplyU8) {
 TEST(TestVM, DivideU8) {
   std::uint8_t expected = 3;
 
-  fc::ByteCode code{
-    .header = {},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}, .constants = {12_u8, 4_u8}}}};
+  fc::ByteCode code{.header = {},
+                    .constants = {12_u8, 4_u8},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -615,8 +614,8 @@ TEST(TestVM, DivideU8) {
 
 TEST(TestVM, AffirmU8) {
   std::uint8_t expected = 5;
-  fc::ByteCode code{.header = {},
-                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}, .constants = {5_u8}}}};
+  fc::ByteCode code{
+    .header = {}, .constants = {5_u8}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -628,8 +627,8 @@ TEST(TestVM, GetSetValues) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
-    .chunks = {fc::Chunk{
-      .name = "main", .code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, EXIT}, .constants = {3_i8, 3_u8}}}};
+    .constants = {3_i8, 3_u8},
+    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -641,8 +640,8 @@ TEST(TestVM, PopsMultiple) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
-    .chunks = {fc::Chunk{
-      .name = "main", .code = {PUSH, 0, PUSH, 0, PUSH, 0, PUSH, 0, MULTIPOP, 4, EXIT}, .constants = {3_i8, 3_u8}}}};
+    .constants = {3_i8, 3_u8},
+    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 0, PUSH, 0, PUSH, 0, MULTIPOP, 4, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -654,8 +653,8 @@ TEST(TestVM, GetValueReadsFromStackNotConstants) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
-    .chunks = {
-      fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 0, I64_INC, PUSH, 0, GET_VAL, 1, EXIT}, .constants = {1_i32}}}};
+    .constants = {1_i32},
+    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 0, I64_INC, PUSH, 0, GET_VAL, 1, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -665,7 +664,7 @@ TEST(TestVM, GetValueReadsFromStackNotConstants) {
 
 TEST(TestVM, HandlesReserveInstruction) {
   fluir::code::ByteCode code{
-    .header = {}, .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, EXIT}, .constants = {4_i32}}}};
+    .header = {}, .constants = {4_i32}, .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, EXIT}}}};
 
   fluir::VirtualMachine uut;
 

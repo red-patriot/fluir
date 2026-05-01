@@ -13,7 +13,6 @@ using namespace fluir::code::value_literals;
 
 TEST(TestInspectDecoder, ParsesSingleFunction) {
   std::string source = R"(I0120030000000000000000
-CHUNK main
 CONSTANTS x0D
 VF64 0.0
 VF64 1.0
@@ -28,6 +27,7 @@ VF64 9.0
 VF64 10.0
 VF64 11.0
 VF64 12.0
+CHUNK main
 CODE x0A
 IPUSH
 x00
@@ -43,33 +43,35 @@ IN x0
 OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
-                                 .chunks = {fluir::code::Chunk{.name = "main",
-                                                               .code =
-                                                                 {
-                                                                   PUSH,
-                                                                   0x00,
-                                                                   PUSH,
-                                                                   0x02,
-                                                                   F64_ADD,
-                                                                   PUSH,
-                                                                   0x0D,
-                                                                   F64_MUL,
-                                                                   POP,
-                                                                   EXIT,
-                                                                 },
-                                                               .constants = {0.0_f64,
-                                                                             1.0_f64,
-                                                                             2.0_f64,
-                                                                             3.0_f64,
-                                                                             4.0_f64,
-                                                                             5.0_f64,
-                                                                             6.0_f64,
-                                                                             7.0_f64,
-                                                                             8.0_f64,
-                                                                             9.0_f64,
-                                                                             10.0_f64,
-                                                                             11.0_f64,
-                                                                             12.0_f64}}}};
+                                 .constants = {0.0_f64,
+                                               1.0_f64,
+                                               2.0_f64,
+                                               3.0_f64,
+                                               4.0_f64,
+                                               5.0_f64,
+                                               6.0_f64,
+                                               7.0_f64,
+                                               8.0_f64,
+                                               9.0_f64,
+                                               10.0_f64,
+                                               11.0_f64,
+                                               12.0_f64},
+                                 .chunks = {fluir::code::Chunk{
+                                   .name = "main",
+                                   .code =
+                                     {
+                                       PUSH,
+                                       0x00,
+                                       PUSH,
+                                       0x02,
+                                       F64_ADD,
+                                       PUSH,
+                                       0x0D,
+                                       F64_MUL,
+                                       POP,
+                                       EXIT,
+                                     },
+                                 }}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -79,8 +81,8 @@ OUT x0
 
 TEST(TestInspectDecoder, ParsesFloatInstructions) {
   std::string source = R"(I0120030000000000000000
-CHUNK main
 CONSTANTS x00
+CHUNK main
 CODE x09
 IF64_ADD
 IF64_SUB
@@ -95,20 +97,19 @@ IN x0
 OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .constants = {},
                                  .chunks = {fluir::code::Chunk{.name = "main",
-                                                               .code =
-                                                                 {
-                                                                   F64_ADD,
-                                                                   F64_SUB,
-                                                                   F64_MUL,
-                                                                   F64_DIV,
-                                                                   F64_INC,
-                                                                   F64_DEC,
-                                                                   F64_NEG,
-                                                                   F64_AFF,
-                                                                   EXIT,
-                                                                 },
-                                                               .constants = {}}}};
+                                                               .code = {
+                                                                 F64_ADD,
+                                                                 F64_SUB,
+                                                                 F64_MUL,
+                                                                 F64_DIV,
+                                                                 F64_INC,
+                                                                 F64_DEC,
+                                                                 F64_NEG,
+                                                                 F64_AFF,
+                                                                 EXIT,
+                                                               }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -118,8 +119,8 @@ OUT x0
 
 TEST(TestInspectDecoder, ParsesIntInstructions) {
   std::string source = R"(I0120030000000000000000
-CHUNK main
 CONSTANTS x00
+CHUNK main
 CODE x09
 II64_ADD
 II64_SUB
@@ -134,20 +135,19 @@ IN x0
 OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .constants = {},
                                  .chunks = {fluir::code::Chunk{.name = "main",
-                                                               .code =
-                                                                 {
-                                                                   I64_ADD,
-                                                                   I64_SUB,
-                                                                   I64_MUL,
-                                                                   I64_DIV,
-                                                                   I64_INC,
-                                                                   I64_DEC,
-                                                                   I64_NEG,
-                                                                   I64_AFF,
-                                                                   EXIT,
-                                                                 },
-                                                               .constants = {}}}};
+                                                               .code = {
+                                                                 I64_ADD,
+                                                                 I64_SUB,
+                                                                 I64_MUL,
+                                                                 I64_DIV,
+                                                                 I64_INC,
+                                                                 I64_DEC,
+                                                                 I64_NEG,
+                                                                 I64_AFF,
+                                                                 EXIT,
+                                                               }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -157,8 +157,8 @@ OUT x0
 
 TEST(TestInspectDecoder, ParsesUintInstructions) {
   std::string source = R"(I0120030000000000000000
-CHUNK main
 CONSTANTS x00
+CHUNK main
 CODE x08
 IU64_ADD
 IU64_SUB
@@ -172,19 +172,18 @@ IN x0
 OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .constants = {},
                                  .chunks = {fluir::code::Chunk{.name = "main",
-                                                               .code =
-                                                                 {
-                                                                   U64_ADD,
-                                                                   U64_SUB,
-                                                                   U64_MUL,
-                                                                   U64_DIV,
-                                                                   U64_INC,
-                                                                   U64_DEC,
-                                                                   U64_AFF,
-                                                                   EXIT,
-                                                                 },
-                                                               .constants = {}}}};
+                                                               .code = {
+                                                                 U64_ADD,
+                                                                 U64_SUB,
+                                                                 U64_MUL,
+                                                                 U64_DIV,
+                                                                 U64_INC,
+                                                                 U64_DEC,
+                                                                 U64_AFF,
+                                                                 EXIT,
+                                                               }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -195,23 +194,24 @@ OUT x0
 TEST(TestInspectDecoder, ParsesIntConstants) {
   std::string source = R"(I0120030000000000000000
 CHUNK main
+CODE x00
+IN x0
+OUT x0
 CONSTANTS x04
 VI64 x123
 VI32 x345
 VI16 x542
 VI8  x1
-CODE x00
-IN x0
-OUT x0
 )";
-  fluir::code::ByteCode expected{
-    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
-    .chunks = {fluir::code::Chunk{.name = "main",
-                                  .code = {},
-                                  .constants = {fluir::code::Value{static_cast<std::int64_t>(0x123)},
-                                                fluir::code::Value{static_cast<std::int32_t>(0x345)},
-                                                fluir::code::Value{static_cast<std::int16_t>(0x542)},
-                                                fluir::code::Value{static_cast<std::int8_t>(0x1)}}}}};
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .constants = {fluir::code::Value{static_cast<std::int64_t>(0x123)},
+                                               fluir::code::Value{static_cast<std::int32_t>(0x345)},
+                                               fluir::code::Value{static_cast<std::int16_t>(0x542)},
+                                               fluir::code::Value{static_cast<std::int8_t>(0x1)}},
+                                 .chunks = {fluir::code::Chunk{
+                                   .name = "main",
+                                   .code = {},
+                                 }}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -221,24 +221,22 @@ OUT x0
 
 TEST(TestInspectDecoder, ParsesUIntConstants) {
   std::string source = R"(I0120030000000000000000
-CHUNK main
 CONSTANTS x04
 VU64 x123
 VU32 x345
 VU16 x542
 VU8  x1
+CHUNK main
 CODE x00
 IN x0
 OUT x0
 )";
-  fluir::code::ByteCode expected{
-    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
-    .chunks = {fluir::code::Chunk{.name = "main",
-                                  .code = {},
-                                  .constants = {fluir::code::Value{static_cast<std::uint64_t>(0x123)},
-                                                fluir::code::Value{static_cast<std::uint32_t>(0x345)},
-                                                fluir::code::Value{static_cast<std::uint16_t>(0x542)},
-                                                fluir::code::Value{static_cast<std::uint8_t>(0x1)}}}}};
+  fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+                                 .constants = {fluir::code::Value{static_cast<std::uint64_t>(0x123)},
+                                               fluir::code::Value{static_cast<std::uint32_t>(0x345)},
+                                               fluir::code::Value{static_cast<std::uint16_t>(0x542)},
+                                               fluir::code::Value{static_cast<std::uint8_t>(0x1)}},
+                                 .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -248,11 +246,11 @@ OUT x0
 
 TEST(TestInspectDecoder, ParsesMultipleFunctions) {
   std::string source = R"(I07220A000000000000001A
-CHUNK main
-CONSTANTS x0B
+CONSTANTS x0C
 VF64 0.0 VF64 1.0 VF64 2.0 VF64 3.0
 VF64 4.0 VF64 5.0 VF64 6.0 VF64 7.0
-VF64 8.0 VF64 9.0 VF64 10.0
+VF64 8.0 VF64 9.0 VF64 10.0 VF64 3.5
+CHUNK main
 CODE x07
 IPUSH x00
 IPUSH x02
@@ -262,7 +260,6 @@ IEXIT
 IN x0
 OUT x0
 CHUNK foo
-CONSTANTS x01 VF64 3.5
 CODE x0A
 IPUSH x00
 IPUSH x00
@@ -274,39 +271,36 @@ IEXIT
 IN x0
 OUT x0
 )";
-  fluir::code::ByteCode
-    expected{
-      .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-      .chunks =
-        {fluir::code::Chunk{
-           .name = "main",
-           .code =
-             {
-               PUSH,
-               0x00,
-               PUSH,
-               0x02,
-               F64_ADD,
-               POP,
-               EXIT,
-             },
-           .constants =
-             {0.0_f64, 1.0_f64, 2.0_f64, 3.0_f64, 4.0_f64, 5.0_f64, 6.0_f64, 7.0_f64, 8.0_f64, 9.0_f64, 10.0_f64}},
-         fluir::code::Chunk{.name = "foo",
-                            .code =
-                              {
-                                PUSH,
-                                0x00,
-                                PUSH,
-                                0x00,
-                                F64_SUB,
-                                PUSH,
-                                0x00,
-                                POP,
-                                POP,
-                                EXIT,
-                              },
-                            .constants = {3.5_f64}}}};
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants =
+      {0.0_f64, 1.0_f64, 2.0_f64, 3.0_f64, 4.0_f64, 5.0_f64, 6.0_f64, 7.0_f64, 8.0_f64, 9.0_f64, 10.0_f64, 3.5_f64},
+    .chunks = {fluir::code::Chunk{
+                 .name = "main",
+                 .code =
+                   {
+                     PUSH,
+                     0x00,
+                     PUSH,
+                     0x02,
+                     F64_ADD,
+                     POP,
+                     EXIT,
+                   },
+               },
+               fluir::code::Chunk{.name = "foo",
+                                  .code = {
+                                    PUSH,
+                                    0x00,
+                                    PUSH,
+                                    0x00,
+                                    F64_SUB,
+                                    PUSH,
+                                    0x00,
+                                    POP,
+                                    POP,
+                                    EXIT,
+                                  }}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -319,11 +313,11 @@ OUT x0
 
 TEST(TestInspectDecoder, DecodesUnaryInstructionsCorrectly) {
   std::string source = R"(I07220A000000000000001A
+CONSTANTS x3
+  VF64 7.654300000000
+  VF64 1.234500000000
+  VF64 6.789000000000
 CHUNK foo
-  CONSTANTS x3
-    VF64 7.654300000000
-    VF64 1.234500000000
-    VF64 6.789000000000
   CODE xF
     IPUSH x0
     IPUSH x1
@@ -341,14 +335,15 @@ CHUNK foo
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-    .chunks = {fluir::code::Chunk{
-      .name = "foo",
-      .code = {PUSH, 0x00, PUSH, 0x01, F64_AFF, F64_MUL, POP, PUSH, 0x01, PUSH, 0x02, F64_DIV, F64_NEG, POP, EXIT},
-      .constants = {
+    .constants =
+      {
         7.654300000000_f64,
         1.234500000000_f64,
         6.789000000000_f64,
-      }}}};
+      },
+    .chunks = {fluir::code::Chunk{
+      .name = "foo",
+      .code = {PUSH, 0x00, PUSH, 0x01, F64_AFF, F64_MUL, POP, PUSH, 0x01, PUSH, 0x02, F64_DIV, F64_NEG, POP, EXIT}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -361,11 +356,11 @@ CHUNK foo
 
 TEST(TestInspectDecoder, DecodesCastingInstructionsCorrectly) {
   std::string source = R"(I07220A000000000000001A
+CONSTANTS x3
+  VF64 7.654300000000
+  VF64 1.234500000000
+  VF64 6.789000000000
 CHUNK foo
-  CONSTANTS x3
-    VF64 7.654300000000
-    VF64 1.234500000000
-    VF64 6.789000000000
   CODE xF
     ICAST_IU
     ICAST_UI
@@ -382,6 +377,12 @@ CHUNK foo
   OUT x0
 )";
   fluir::code::ByteCode expected{.header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+                                 .constants =
+                                   {
+                                     7.654300000000_f64,
+                                     1.234500000000_f64,
+                                     6.789000000000_f64,
+                                   },
                                  .chunks = {fluir::code::Chunk{.name = "foo",
                                                                .code = {CAST_IU,
                                                                         CAST_UI,
@@ -397,12 +398,7 @@ CHUNK foo
                                                                         WIDTH_32,
                                                                         CAST_WIDTH,
                                                                         WIDTH_64,
-                                                                        EXIT},
-                                                               .constants = {
-                                                                 7.654300000000_f64,
-                                                                 1.234500000000_f64,
-                                                                 6.789000000000_f64,
-                                                               }}}};
+                                                                        EXIT}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -415,9 +411,9 @@ CHUNK foo
 
 TEST(TestInspectDecoder, DecodesGetSetValInstructions) {
   std::string source = R"(I07220A000000000000001A
+CONSTANTS x1
+  VF64 7.0
 CHUNK foo
-  CONSTANTS x1
-    VF64 7.0
   CODE x9
     IPUSH x0
     IGET_VAL x0
@@ -430,9 +426,8 @@ CHUNK foo
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-    .chunks = {fluir::code::Chunk{.name = "foo",
-                                  .code = {PUSH, 0x0, GET_VAL, 0x0, SET_VAL, 0x0, POP, POP, EXIT},
-                                  .constants = {7.000000000000_f64}}}};
+    .constants = {7.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "foo", .code = {PUSH, 0x0, GET_VAL, 0x0, SET_VAL, 0x0, POP, POP, EXIT}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -445,9 +440,9 @@ CHUNK foo
 
 TEST(TestInspectDecoder, DecodesMultipopInstruction) {
   std::string source = R"(I07220A000000000000001A
-CHUNK pops
-  CONSTANTS x1
+CONSTANTS x1
     VF64 7.0
+CHUNK pops
   CODE x7
     IPUSH x0
     IPUSH x0
@@ -458,8 +453,8 @@ CHUNK pops
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-    .chunks = {fluir::code::Chunk{
-      .name = "pops", .code = {PUSH, 0x0, PUSH, 0x0, MULTIPOP, 0x2, EXIT}, .constants = {7.000000000000_f64}}}};
+    .constants = {7.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "pops", .code = {PUSH, 0x0, PUSH, 0x0, MULTIPOP, 0x2, EXIT}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -472,17 +467,17 @@ CHUNK pops
 
 TEST(TestInspectDecoder, DecodesInOutCountCorrectly) {
   std::string source = R"(I07220A000000000000001A
+CONSTANTS x1
+  VF64 7.0
 CHUNK junk
-  CONSTANTS x1
-    VF64 7.0
   CODE x0
   IN x2
   OUT x1
 )";
   fluir::code::ByteCode expected{
     .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
-    .chunks = {
-      fluir::code::Chunk{.name = "junk", .code = {}, .constants = {7.000000000000_f64}, .inCount = 2, .outCount = 1}}};
+    .constants = {7.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "junk", .code = {}, .inCount = 2, .outCount = 1}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 

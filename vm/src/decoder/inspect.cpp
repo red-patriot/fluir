@@ -50,6 +50,9 @@ namespace fluir {
     while (!atEnd()) {
       Token nextToken = scanNext();
       switch (nextToken.type) {
+        case TokenType::CONSTANTS:
+          constants();
+          break;
         case TokenType::CHUNK:
           chunk();
           break;
@@ -63,21 +66,19 @@ namespace fluir {
 
   void InspectDecoder::chunk() {
     auto name = scanNext();
-    auto constantBlock = constants();
     auto codeBlock = code();
     auto inCountVal = inCount();
     auto outCountVal = outCount();
     // TODO: Check for errors
 
-    code_.chunks.push_back(code::Chunk{.name = std::string{name.source},
-                                       .code = codeBlock,
-                                       .constants = constantBlock,
-                                       .inCount = inCountVal,
-                                       .outCount = outCountVal});
+    code_.chunks.push_back(
+      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .inCount = inCountVal, .outCount = outCountVal});
   }
 
-  std::vector<code::Value> InspectDecoder::constants() {
-    [[maybe_unused]] auto constSection = scanNext();
+  void InspectDecoder::constants() {
+    if (!code_.constants.empty()) {
+      throw std::runtime_error{"Expected only one CONSTANTS section in the code."};
+    }
     auto rawCount = scanNext();
     auto count = toUnsignedInteger(rawCount);
 
@@ -86,7 +87,7 @@ namespace fluir {
       constants.push_back(decodeConstant());
     }
 
-    return constants;
+    code_.constants = std::move(constants);
   }
 
   std::vector<uint8_t> InspectDecoder::code() {

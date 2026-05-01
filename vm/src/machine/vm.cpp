@@ -160,7 +160,7 @@ namespace fluir {
         case PUSH:
           {
             uint8_t index = FLUIR_READ_BYTE();
-            const code::Value& val = currentFrame_->chunk->constants[index];
+            const code::Value& val = code_->constants[index];
             if (stackSize() >= STACK_LIMIT) {
               return ExecResult::ERROR;
             }
@@ -400,7 +400,6 @@ namespace fluir {
                                  index3,
                                  EXIT,
                                },
-                             .constants = {},
                              .inCount = 0,
                              .outCount = 0};
   }

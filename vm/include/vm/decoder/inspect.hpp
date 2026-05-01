@@ -44,8 +44,8 @@ namespace fluir {
     void decodeHeader();
     void decodeChunks();
 
+    void constants();
     void chunk();
-    std::vector<code::Value> constants();
     std::vector<uint8_t> code();
     std::uint8_t inCount();
     std::uint8_t outCount();

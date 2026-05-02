@@ -52,6 +52,10 @@ namespace fluir {
     Scope& pushScope();
     void popScope();
 
+    /** Determines if a POP instruction should be emitted after
+     * executing this node as a top-level expression */
+    bool shouldPopAfter(const ast::Node& node);
+
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);
     void emitUintOperator(const Operator op, bool unary = false);

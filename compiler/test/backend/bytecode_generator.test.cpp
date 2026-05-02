@@ -841,7 +841,7 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
                                                  0x00,
                                                  0x00,
                                                  0x01,
-                                                 fc::Instruction::POP,
+                                                 // No return => no POP instruction
                                                  fc::Instruction::RETURN,
                                                },
                                              .constants = {7_i32}},

@@ -47,7 +47,7 @@ namespace fluir {
     }
     for (const auto& node : func.statements) {
       recursivelyGenerate(*node);
-      if (!slots.contains(node->id())) {
+      if (shouldPopAfter(*node)) {
         // Each top level node will leave a value on the stack,so
         // pop it off iff it was not saved as a new local variable
         emitByte(Instruction::POP);
@@ -306,6 +306,21 @@ namespace fluir {
       emitBytes(Instruction::MULTIPOP, toPop);
     }
     scopes_.pop();
+  }
+
+  bool BytecodeGenerator::shouldPopAfter(const ast::Node& node) {
+    const auto& [slots, _] = scopes_.top();
+    if (slots.contains(node.id())) {
+      return false;
+    }
+
+    if (node.is<ast::Call>()) {
+      const auto& call = node.as<ast::Call>();
+      const auto& targetType = ctx_.symbolTable.getFunctionType(call->target());
+      return targetType->returnType().has_value();
+    }
+
+    return true;
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

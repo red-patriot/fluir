@@ -12,12 +12,26 @@ namespace fluir {
     std::string instructionNames[] = {FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TO_STR)};
 #undef FLUIR_INSTRUCTION_TO_STR
 #undef STRINGIFY
+
+    struct ConstantWriter {
+      std::string operator()(double d) const { return fmt::format("VF64 {:.12f}", d); }
+      std::string operator()(int8_t i) const { return fmt::format("VI8  x{:X}", i); }
+      std::string operator()(int16_t i) const { return fmt::format("VI16 x{:X}", i); }
+      std::string operator()(int32_t i) const { return fmt::format("VI32 x{:X}", i); }
+      std::string operator()(int64_t i) const { return fmt::format("VI64 x{:X}", i); }
+      std::string operator()(uint8_t u) const { return fmt::format("VU8  x{:X}", u); }
+      std::string operator()(uint16_t u) const { return fmt::format("VU16 x{:X}", u); }
+      std::string operator()(uint32_t u) const { return fmt::format("VU32 x{:X}", u); }
+      std::string operator()(uint64_t u) const { return fmt::format("VU64 x{:X}", u); }
+    };
   }  // namespace
 
   void InspectWriter::writeHeader(const code::Header& header, std::ostream& os) {
     os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
   }
-  void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {
+  void InspectWriter::writeConstants(const std::vector<code::Value>&, std::ostream&) { }
+
+  void InspectWriter::writeConstants(const be::ConstantsArray& constants, std::ostream& os) {
     os << fmt::format("CONSTANTS x{:X}\n", constants.size());
     [[maybe_unused]] auto _ = indent();
     for (const auto& constant : constants) {
@@ -34,40 +48,10 @@ namespace fluir {
     os << formatIndented("OUT x{:X}\n", chunk.outCount);
   }
 
-  void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {
-    using enum code::PrimitiveType;
-    switch (constant.type()) {
-      case I8:
-        os << formatIndented("VI8  x{:X}\n", constant.asI8());
-        break;
-      case I16:
-        os << formatIndented("VI16 x{:X}\n", constant.asI16());
-        break;
-      case I32:
-        os << formatIndented("VI32 x{:X}\n", constant.asI32());
-        break;
-      case I64:
-        os << formatIndented("VI64 x{:X}\n", constant.asI64());
-        break;
-      case U8:
-        os << formatIndented("VU8  x{:X}\n", constant.asU8());
-        break;
-      case U16:
-        os << formatIndented("VU16 x{:X}\n", constant.asU16());
-        break;
-      case U32:
-        os << formatIndented("VU32 x{:X}\n", constant.asU32());
-        break;
-      case U64:
-        os << formatIndented("VU64 x{:X}\n", constant.asU64());
-        break;
-      case F64:
-        os << formatIndented("VF64 {:.12f}\n", constant.asF64());
-        break;
-      case EMPTY:
-        os << formatIndented("EMPTY\n");
-        break;
-    }
+  void InspectWriter::writeConstant(const be::Constant& constant, std::ostream& os) {
+    ConstantWriter writer;
+    auto written = std::visit(writer, constant);
+    os << formatIndented("{}\n", written);
   }
 
   void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {

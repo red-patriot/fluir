@@ -4,6 +4,7 @@
 #include <ostream>
 
 #include "bytecode/byte_code.hpp"
+#include "compiler/backend/constant.hpp"
 
 namespace fluir {
   class CodeWriter {
@@ -14,6 +15,7 @@ namespace fluir {
 
     virtual void writeHeader(const code::Header&, std::ostream&) = 0;
     virtual void writeConstants(const std::vector<code::Value>&, std::ostream&) = 0;
+    virtual void writeConstants(const be::ConstantsArray&, std::ostream&) = 0;
     virtual void writeChunk(const code::Chunk&, std::ostream&) = 0;
   };
 }  // namespace fluir

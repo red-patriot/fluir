@@ -17,22 +17,21 @@ namespace fluir {
   void InspectWriter::writeHeader(const code::Header& header, std::ostream& os) {
     os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
   }
-  void InspectWriter::writeChunk(const code::Chunk& chunk, std::ostream& os) {
-    os << fmt::format("CHUNK {}\n", chunk.name);
-    [[maybe_unused]] auto _ = indent();
-    os << formatIndented("CONSTANTS x{:X}\n", chunk.constants.size());
-    writeConstants(chunk.constants, os);
-    os << formatIndented("CODE x{:X}\n", chunk.code.size());
-    writeCode(chunk.code, os);
-    os << formatIndented("IN x{:X}\n", chunk.inCount);
-    os << formatIndented("OUT x{:X}\n", chunk.outCount);
-  }
-
   void InspectWriter::writeConstants(const std::vector<code::Value>& constants, std::ostream& os) {
+    os << fmt::format("CONSTANTS x{:X}\n", constants.size());
     [[maybe_unused]] auto _ = indent();
     for (const auto& constant : constants) {
       writeConstant(constant, os);
     }
+  }
+
+  void InspectWriter::writeChunk(const code::Chunk& chunk, std::ostream& os) {
+    os << fmt::format("CHUNK {}\n", chunk.name);
+    [[maybe_unused]] auto _ = indent();
+    os << formatIndented("CODE x{:X}\n", chunk.code.size());
+    writeCode(chunk.code, os);
+    os << formatIndented("IN x{:X}\n", chunk.inCount);
+    os << formatIndented("OUT x{:X}\n", chunk.outCount);
   }
 
   void InspectWriter::writeConstant(const code::Value& constant, std::ostream& os) {

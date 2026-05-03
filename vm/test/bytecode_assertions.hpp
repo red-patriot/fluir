@@ -18,9 +18,8 @@
 
 #define EXPECT_CHUNK_CODE_EQ(expectedChunk, actualChunk) EXPECT_EQ(expectedChunk.code, actualChunk.code)
 
-#define EXPECT_CHUNK_EQ(expectedChunk, actualChunk)                    \
-  EXPECT_EQ(expectedChunk.name, actualChunk.name);                     \
-  EXPECT_BC_VALUES_EQ(expectedChunk.constants, actualChunk.constants); \
+#define EXPECT_CHUNK_EQ(expectedChunk, actualChunk) \
+  EXPECT_EQ(expectedChunk.name, actualChunk.name);  \
   EXPECT_CHUNK_CODE_EQ(expectedChunk, actualChunk)
 
 #endif

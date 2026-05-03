@@ -14,6 +14,7 @@ namespace fluir {
 
    private:
     virtual void writeHeader(const code::Header&, std::ostream&) = 0;
+    virtual void writeConstants(const std::vector<code::Value>&, std::ostream&) = 0;
     virtual void writeChunk(const code::Chunk&, std::ostream&) = 0;
   };
 }  // namespace fluir

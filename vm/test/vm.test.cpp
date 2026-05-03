@@ -1,6 +1,8 @@
 #include "vm/machine/vm.hpp"
 
 #include <array>
+#include <numeric>
+#include <ranges>
 
 #include <gtest/gtest.h>
 
@@ -671,6 +673,42 @@ TEST(TestVM, HandlesReserveInstruction) {
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_EQ(2, uut.viewStack().size());
   EXPECT_TRUE(uut.viewStack().front().empty());
+}
+
+TEST(TestVM, HandlesLotsOfConstants) {
+  std::int32_t expected = 300;
+
+  fc::ByteCode code{
+    .header = {},
+    .constants = {[=]() {
+      std::vector<fluir::code::Value> values;
+      for (std::int32_t i = 0; i <= expected; ++i) {
+        values.emplace_back(i);
+      }
+      return values;
+    }()},
+    .chunks = {fc::Chunk{.name = "main", .code = {[=]() {
+                                           std::vector<std::uint8_t> bytes;
+                                           std::int32_t i = 0;
+                                           for (; i <= UINT8_MAX; ++i) {
+                                             bytes.emplace_back(PUSH);
+                                             bytes.emplace_back(static_cast<std::uint8_t>(i));
+                                           }
+                                           for (; i != expected; ++i) {
+                                             bytes.emplace_back(QUAD_PUSH);
+                                             bytes.emplace_back(static_cast<std::uint8_t>(0));
+                                             bytes.emplace_back(static_cast<std::uint8_t>(0));
+                                             bytes.emplace_back(static_cast<std::uint8_t>(i / UINT8_MAX));
+                                             bytes.emplace_back(static_cast<std::uint8_t>(i % UINT8_MAX));
+                                           }
+                                           bytes.emplace_back(EXIT);
+                                           return bytes;
+                                         }()}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(expected, uut.viewStack().back().asI32());
 }
 
 // TODO: Tests for error cases

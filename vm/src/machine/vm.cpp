@@ -167,6 +167,16 @@ namespace fluir {
             pushStack(val);
             break;
           }
+        case QUAD_PUSH:
+          {
+            uint64_t index = readQuadWord();
+            const code::Value& val = code_->constants[index];
+            if (stackSize() >= STACK_LIMIT) {
+              return ExecResult::ERROR;
+            }
+            pushStack(val);
+            break;
+          }
         case GET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();

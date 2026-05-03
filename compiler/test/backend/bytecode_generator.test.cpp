@@ -1,5 +1,7 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
+#include <numeric>
+
 #include <gtest/gtest.h>
 
 #include "bytecode_assertions.hpp"
@@ -1092,4 +1094,53 @@ TEST_F(TestBytecodeGenerator, ConstantsAreGlobal) {
   for (int i = 0; i != 2; ++i) {
     EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
   }
+}
+
+TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
+  size_t constsCount = 257;
+  fa::AST input;
+  input.declarations.emplace_back(
+    fa::FunctionDecl{.id = 3, .name = "foo", .statements = [&]() {
+                       fa::DataFlowGraph graph;
+                       graph.reserve(constsCount);
+                       for (size_t i = 0; i != constsCount; ++i) {
+                         graph.emplace_back(std::make_unique<fa::Constant>(i, FullID{i}, fluir::FlowGraphLocation{}));
+                       }
+                       return graph;
+                     }()});
+
+  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
+                        .constants = {[&]() {
+                          std::vector<fluir::code::Value> values;
+                          values.reserve(constsCount);
+                          for (size_t i = 0; i != constsCount; ++i) {
+                            values.emplace_back(i);
+                          }
+                          return values;
+                        }()},
+                        .chunks = {
+                          fc::Chunk{.name = "foo", .code = {[]() {
+                                                     std::vector<uint8_t> bytes;
+                                                     for (size_t i = 0; i <= UINT8_MAX; ++i) {
+                                                       bytes.emplace_back(fc::PUSH);
+                                                       bytes.emplace_back(static_cast<uint8_t>(i));
+                                                       bytes.emplace_back(fc::POP);
+                                                     }
+                                                     bytes.emplace_back(fc::QUAD_PUSH);
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0x01));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(fc::POP);
+                                                     bytes.emplace_back(fc::RETURN);
+                                                     return bytes;
+                                                   }()}},
+                        }};
+
+  input = prepare(std::move(input));
+  auto actual = fluir::generateCode(ctx_, input);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_VALUES_EQ(expected.constants, actual.value().constants);
+  EXPECT_CHUNK_EQ(expected.chunks.back(), actual.value().chunks.back());
 }

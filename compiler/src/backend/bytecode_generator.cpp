@@ -128,8 +128,12 @@ namespace fluir {
       diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
     }
-    // TODO: Handle too large
-    emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
+    if (constant <= UINT8_MAX) {
+      emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
+    } else {
+      emitByte(Instruction::QUAD_PUSH);
+      emitLongOperand(constant);
+    }
   }
 
   void BytecodeGenerator::generate(const ast::Cast& cast) {
@@ -251,10 +255,6 @@ namespace fluir {
       return found - code_.constants.begin();
     }
     code_.constants.emplace_back(std::move(value));
-    if (code_.constants.size() > UINT8_MAX) {
-      // TODO: Fix this limitation
-      diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
-    }
     return code_.constants.size() - 1;
   }
 

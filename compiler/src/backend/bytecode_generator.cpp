@@ -18,10 +18,6 @@ namespace fluir {
     return BytecodeGenerator::generate(ctx, graph, writer);
   }
 
-  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination) {
-    return writer.write(code, destination);
-  }
-
   void BytecodeGenerator::generate(Context& ctx, const ast::AST& graph, CodeWriter& writer) {
     BytecodeGenerator generator{ctx, writer, graph};
     return generator.run();

@@ -30,7 +30,6 @@ namespace fluir {
     os_ << fmt::format(
       "I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
   }
-  void InspectWriter::writeConstants(const std::vector<code::Value>&) { }
 
   void InspectWriter::writeConstants(const be::ConstantsArray& constants) {
     os_ << fmt::format("CONSTANTS x{:X}\n", constants.size());

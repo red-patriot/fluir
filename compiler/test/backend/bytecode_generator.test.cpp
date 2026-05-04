@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "bytecode/primitives.hpp"
 #include "bytecode_assertions.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -14,7 +15,6 @@
 namespace fa = fluir::ast;
 namespace fc = fluir::code;
 namespace ft = fluir::types;
-using namespace fc::value_literals;
 using namespace fluir::literals_types;
 using namespace std::string_literals;
 
@@ -27,7 +27,6 @@ namespace {
 
     void writeHeader(const fluir::code::Header& in) override { header = in; }
     void writeConstants(const fluir::be::ConstantsArray& in) override { constants = in; }
-    void writeConstants(const std::vector<fluir::code::Value>&) override { }
     void writeChunk(const fluir::code::Chunk& in) override { chunks.push_back(in); }
 
     fluir::code::Header header;

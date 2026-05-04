@@ -3,14 +3,12 @@
 
 #include <stack>
 
-#include "bytecode/byte_code.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
 
 namespace fluir {
   void generateCode(Context& ctx, const ast::AST& graph, CodeWriter& writer);
-  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
 
   class BytecodeGenerator {
    public:

@@ -6,10 +6,10 @@
 
 #include <gtest/gtest.h>
 
+#include "bytecode/primitives.hpp"
 #include "compiler/backend/bytecode_generator.hpp"
 
 namespace fc = fluir::code;
-using namespace fc::value_literals;
 
 TEST(TestInspectWriter, WriteProgramheader) {
   std::string expected = "I010C1100000000000000FF\n";

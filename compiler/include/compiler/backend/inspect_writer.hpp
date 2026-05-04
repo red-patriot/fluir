@@ -12,7 +12,6 @@ namespace fluir {
     using CodeWriter::CodeWriter;
 
     void writeHeader(const code::Header&) override;
-    void writeConstants(const std::vector<code::Value>&) override;
     void writeConstants(const be::ConstantsArray&) override;
     void writeChunk(const code::Chunk&) override;
 

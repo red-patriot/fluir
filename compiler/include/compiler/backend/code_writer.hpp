@@ -9,14 +9,18 @@
 namespace fluir {
   class CodeWriter {
    public:
+    explicit CodeWriter(std::ostream&);
     virtual ~CodeWriter() = default;
 
     void write(const code::ByteCode& code, std::ostream& destination);
 
-    virtual void writeHeader(const code::Header&, std::ostream&) = 0;
-    virtual void writeConstants(const std::vector<code::Value>&, std::ostream&) = 0;
-    virtual void writeConstants(const be::ConstantsArray&, std::ostream&) = 0;
-    virtual void writeChunk(const code::Chunk&, std::ostream&) = 0;
+    virtual void writeHeader(const code::Header&) = 0;
+    virtual void writeConstants(const std::vector<code::Value>&) = 0;
+    virtual void writeConstants(const be::ConstantsArray&) = 0;
+    virtual void writeChunk(const code::Chunk&) = 0;
+
+   protected:
+    std::ostream& os_;
   };
 }  // namespace fluir
 

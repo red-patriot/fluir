@@ -17,8 +17,8 @@ TEST(TestInspectWriter, WriteProgramheader) {
   fc::Header header{.filetype = '\0', .major = 1, .minor = 12, .patch = 17, .entryOffset = 255};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeHeader(header, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeHeader(header);
 
   auto actual = ss.str();
 
@@ -35,8 +35,8 @@ TEST(TestInspectWriter, WritesConstantsSection) {
   fluir::be::ConstantsArray constants{100.0, 3.5, 4.4};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeConstants(constants, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeConstants(constants);
 
   auto actual = ss.str();
 
@@ -72,8 +72,8 @@ TEST(TestInspectWriter, WriteFloatInstructions) {
                            }};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeChunk(chunk, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
 
   auto actual = ss.str();
 
@@ -109,8 +109,8 @@ TEST(TestInspectWriter, WriteIntInstructions) {
                            }};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeChunk(chunk, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
 
   auto actual = ss.str();
 
@@ -144,8 +144,8 @@ TEST(TestInspectWriter, WriteUintInstructions) {
                            }};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeChunk(chunk, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
 
   auto actual = ss.str();
 
@@ -165,8 +165,8 @@ TEST(TestInspectWriter, WriteIntConstants) {
                                       static_cast<std::int8_t>(0x1)};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeConstants(constants, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeConstants(constants);
 
   auto actual = ss.str();
 
@@ -186,8 +186,8 @@ TEST(TestInspectWriter, WriteUIntConstants) {
                                       static_cast<std::uint8_t>(0x1)};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeConstants(constants, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeConstants(constants);
 
   auto actual = ss.str();
 
@@ -233,8 +233,8 @@ TEST(TestInspectWriter, WriteCastInstructions) {
                                     fc::EXIT}};
 
   std::stringstream ss;
-  fluir::InspectWriter uut{};
-  uut.writeChunk(chunk, ss);
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
 
   auto actual = ss.str();
 

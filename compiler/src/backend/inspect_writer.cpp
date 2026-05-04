@@ -26,35 +26,36 @@ namespace fluir {
     };
   }  // namespace
 
-  void InspectWriter::writeHeader(const code::Header& header, std::ostream& os) {
-    os << fmt::format("I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
+  void InspectWriter::writeHeader(const code::Header& header) {
+    os_ << fmt::format(
+      "I{:0>2X}{:0>2X}{:0>2X}{:0>16X}\n", header.major, header.minor, header.patch, header.entryOffset);
   }
-  void InspectWriter::writeConstants(const std::vector<code::Value>&, std::ostream&) { }
+  void InspectWriter::writeConstants(const std::vector<code::Value>&) { }
 
-  void InspectWriter::writeConstants(const be::ConstantsArray& constants, std::ostream& os) {
-    os << fmt::format("CONSTANTS x{:X}\n", constants.size());
+  void InspectWriter::writeConstants(const be::ConstantsArray& constants) {
+    os_ << fmt::format("CONSTANTS x{:X}\n", constants.size());
     [[maybe_unused]] auto _ = indent();
     for (const auto& constant : constants) {
-      writeConstant(constant, os);
+      writeConstant(constant);
     }
   }
 
-  void InspectWriter::writeChunk(const code::Chunk& chunk, std::ostream& os) {
-    os << fmt::format("CHUNK {}\n", chunk.name);
+  void InspectWriter::writeChunk(const code::Chunk& chunk) {
+    os_ << fmt::format("CHUNK {}\n", chunk.name);
     [[maybe_unused]] auto _ = indent();
-    os << formatIndented("CODE x{:X}\n", chunk.code.size());
-    writeCode(chunk.code, os);
-    os << formatIndented("IN x{:X}\n", chunk.inCount);
-    os << formatIndented("OUT x{:X}\n", chunk.outCount);
+    os_ << formatIndented("CODE x{:X}\n", chunk.code.size());
+    writeCode(chunk.code);
+    os_ << formatIndented("IN x{:X}\n", chunk.inCount);
+    os_ << formatIndented("OUT x{:X}\n", chunk.outCount);
   }
 
-  void InspectWriter::writeConstant(const be::Constant& constant, std::ostream& os) {
+  void InspectWriter::writeConstant(const be::Constant& constant) {
     ConstantWriter writer;
     auto written = std::visit(writer, constant);
-    os << formatIndented("{}\n", written);
+    os_ << formatIndented("{}\n", written);
   }
 
-  void InspectWriter::writeCode(const code::Bytes& bytes, std::ostream& os) {
+  void InspectWriter::writeCode(const code::Bytes& bytes) {
     [[maybe_unused]] auto _ = indent();
     for (auto i = bytes.begin(); i != bytes.end(); ++i) {
       switch (*i) {
@@ -68,30 +69,30 @@ namespace fluir {
         case code::Instruction::CAST_FU:
         case code::Instruction::CAST_WIDTH:
         case code::Instruction::RESERVE:
-          emitInstructionWithArg(os, *i, *(i + 1));
+          emitInstructionWithArg(*i, *(i + 1));
           ++i;
           break;
         case code::Instruction::CALL:
-          emitInstruction(os, *i++);
-          emitLongArg(os, *i, *(i + 1), *(i + 2), *(i + 3));
+          emitInstruction(*i++);
+          emitLongArg(*i, *(i + 1), *(i + 2), *(i + 3));
           i += 3;
           break;
         default:
-          emitInstruction(os, *i);
+          emitInstruction(*i);
           break;
       }
     }
   }
 
-  void InspectWriter::emitInstruction(std::ostream& os, uint8_t instruction) {
-    os << formatIndented("{}\n", instructionNames[instruction]);
+  void InspectWriter::emitInstruction(uint8_t instruction) {
+    os_ << formatIndented("{}\n", instructionNames[instruction]);
   }
-  void InspectWriter::emitInstructionWithArg(std::ostream& os, uint8_t instruction, uint8_t arg) {
-    os << formatIndented("{} x{:X}\n", instructionNames[instruction], arg);
+  void InspectWriter::emitInstructionWithArg(uint8_t instruction, uint8_t arg) {
+    os_ << formatIndented("{} x{:X}\n", instructionNames[instruction], arg);
   }
 
-  void InspectWriter::emitLongArg(std::ostream& os, uint8_t arg0, uint8_t arg1, uint8_t arg2, uint8_t arg3) {
-    os << formatIndented("x{:X} x{:X} x{:X} x{:X}\n", arg0, arg1, arg2, arg3);
+  void InspectWriter::emitLongArg(uint8_t arg0, uint8_t arg1, uint8_t arg2, uint8_t arg3) {
+    os_ << formatIndented("x{:X} x{:X} x{:X} x{:X}\n", arg0, arg1, arg2, arg3);
   }
 
 }  // namespace fluir

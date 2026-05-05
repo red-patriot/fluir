@@ -1,8 +1,7 @@
 #ifndef FLUIR_VM_UTILITY_NARROW_WIDEN_HPP
 #define FLUIR_VM_UTILITY_NARROW_WIDEN_HPP
 
-#include <bytecode/value.hpp>
-
+#include "vm/code/value.hpp"
 #include "vm/exceptions.hpp"
 
 namespace fluir::utility {

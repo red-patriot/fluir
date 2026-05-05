@@ -1,9 +1,9 @@
-#ifndef FLUIR_VALUE_H
-#define FLUIR_VALUE_H
+#ifndef FLUIR_VM_CODE_VALUE_H
+#define FLUIR_VM_CODE_VALUE_H
 
 #include <stdexcept>
 
-#include "primitives.hpp"
+#include <bytecode/primitives.hpp>
 
 namespace fluir::code {
 

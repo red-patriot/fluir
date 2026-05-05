@@ -1,4 +1,4 @@
-#include "bytecode/value.hpp"
+#include "../../include/vm/code/value.hpp"
 
 #include <cstdint>
 #include <tuple>

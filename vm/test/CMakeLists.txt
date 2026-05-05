@@ -10,6 +10,7 @@ target_sources(
             decoder/inspect.test.cpp
             primitive_ops.test.cpp
             vm.test.cpp
+            code/value.test.cpp
 )
 
 target_include_directories(fluir.vm.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

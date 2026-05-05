@@ -6,8 +6,7 @@
 #include <span>
 #include <vector>
 
-#include <bytecode/byte_code.hpp>
-
+#include "vm/code/byte_code.hpp"
 #include "vm/machine/call_frame.hpp"
 
 namespace fluir {

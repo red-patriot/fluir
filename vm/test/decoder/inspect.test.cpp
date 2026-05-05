@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "bytecode/byte_code.hpp"
 #include "bytecode_assertions.hpp"
+#include "vm/code/byte_code.hpp"
 
 using enum fluir::code::Instruction;
 using enum fluir::code::NumericWidth;

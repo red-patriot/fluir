@@ -3,18 +3,16 @@
 
 #include <stack>
 
-#include "bytecode/byte_code.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(Context& ctx, const ast::AST& graph);
-  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination);
+  void generateCode(Context& ctx, const ast::AST& graph, CodeWriter& writer);
 
   class BytecodeGenerator {
    public:
-    static Results<code::ByteCode> generate(Context& ctx, const ast::AST& graph);
+    static void generate(Context& ctx, const ast::AST& graph, CodeWriter& writer);
 
     void operator()(const ast::FunctionDecl& func);
 
@@ -29,8 +27,12 @@ namespace fluir {
    private:
     Context& ctx_;
     const ast::AST& graph_;
-    code::ByteCode code_;
-    code::Chunk current_;
+    CodeWriter& writer_;
+
+    code::Header header_;
+    be::ConstantsArray constants_;
+    std::vector<code::Chunk> chunks_;
+    code::Chunk* current_{nullptr};
     std::unordered_map<std::string_view, size_t> functionIndices_;
 
     struct Scope {
@@ -39,14 +41,14 @@ namespace fluir {
     };
     std::stack<Scope> scopes_;
 
-    explicit BytecodeGenerator(Context& ctx, const ast::AST& graph);
+    BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph);
 
     void emitByte(std::uint8_t byte);
     void emitBytes(std::uint8_t byte1, std::uint8_t byte2);
     void emitLongOperand(std::uint64_t arg);
-    size_t addConstant(code::Value value);
+    size_t addConstant(be::Constant value);
 
-    Results<code::ByteCode> run();
+    void run();
     void recursivelyGenerate(const ast::Node& node);
 
     Scope& pushScope();

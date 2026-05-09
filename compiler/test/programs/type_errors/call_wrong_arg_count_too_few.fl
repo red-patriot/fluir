@@ -24,10 +24,10 @@
     <body>
       <constant id="1" x="0" y="0" z="0" w="5" h="5"><i32>10</i32></constant>
       <call target="add" id="2" x="30" y="10" z="0" w="12" h="12">
-        <return index="0"/>
-        <arg name="a" index="1"/>
+        <return/>
+        <arg name="a"/>
       </call>
-      <conduit id="3" input="1"><output target="2" index="1"/></conduit>
+      <conduit id="3" input="1"><output target="2" index="0"/></conduit>
     </body>
   </function>
 </fluir>

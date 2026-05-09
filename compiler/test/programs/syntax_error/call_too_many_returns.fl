@@ -17,8 +17,8 @@
             h="100">
         <body>
             <call target="foo" id="2" x="20" y="15" z="0" w="12" h="12">
-                <return index="0"/>
-                <return index="0"/>
+                <return/>
+                <return/>
             </call>
         </body>
     </function>

@@ -22,22 +22,6 @@ namespace fluir {
       parent->setType(targetType);
     }
 
-    /** Determines if the given function is a builtin with special rules around type checking
-     * TODO: This will be removed/refactored once generics are implemented
-     */
-    bool isMagicBuiltin(const types::FunctionType* func) {
-      if (!func) {
-        return false;
-      }
-      // Criteria are no return and all parameters are MAGIC_ANY
-      if (!func->returnType() &&
-          std::ranges::all_of(func->parameters(), [](types::TypeID id) { return id == types::ID_MAGIC_ANY_TYPE; })) {
-        return true;
-      }
-
-      return false;
-    }
-
     bool checkType(Context& ctx, ast::Node* node) {
       if (node->type() != types::ID_INVALID) {
         // This node has already been type-checked
@@ -341,7 +325,7 @@ namespace fluir {
           const auto argType = arg->type();
           const auto expectedType = funcType->parameters()[i];
           if (argType != expectedType) {
-            if (isMagicBuiltin(funcType)) {
+            if (ctx.symbolTable.isMagicBuiltin(funcType)) {
               // Hack: Builtin functions have special internal logic that allows them to accept any input type
               // For now, this check passes magically
               // TODO: Refactor this logic once generics are implemented

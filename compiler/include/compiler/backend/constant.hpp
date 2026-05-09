@@ -2,6 +2,7 @@
 #define FLUIR_COMPILER_BACKEND_CONSTANT_HPP
 
 #include <cstdint>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -15,7 +16,8 @@ namespace fluir::be {
                                 std::uint8_t,
                                 std::uint16_t,
                                 std::uint32_t,
-                                std::uint64_t>;
+                                std::uint64_t,
+                                std::string>;
 
   /** An array of constants that forms a constants section */
   using ConstantsArray = std::vector<Constant>;

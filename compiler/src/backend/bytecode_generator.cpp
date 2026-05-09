@@ -218,13 +218,20 @@ namespace fluir {
       recursivelyGenerate(*arg);
     }
 
-    // Find the function to execute
-    if (!functionIndices_.contains(call.target())) {
-      diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+    if (ctx_.symbolTable.isMagicBuiltin(targetType)) {
+      // Emit special instructions for a builtin
+      auto call_index = addConstant(call.target());
+      emitByte(Instruction::DYN_CALL);
+      emitLongOperand(call_index);
+    } else {
+      // Find the function to execute
+      if (!functionIndices_.contains(call.target())) {
+        diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+      }
+      const auto index = functionIndices_.at(call.target());
+      emitByte(Instruction::CALL);
+      emitLongOperand(index);
     }
-    const auto index = functionIndices_.at(call.target());
-    emitByte(Instruction::CALL);
-    emitLongOperand(index);
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :

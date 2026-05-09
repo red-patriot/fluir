@@ -569,12 +569,12 @@ _TEST_DATA = [
                         Conduit(
                             id=4,
                             input=1,
-                            children=[Conduit.Output(target=3, index=1)],
+                            children=[Conduit.Output(target=3, index=0)],
                         ),
                         Conduit(
                             id=5,
                             input=2,
-                            children=[Conduit.Output(target=3, index=2)],
+                            children=[Conduit.Output(target=3, index=1)],
                         ),
                     ],
                 )
@@ -599,15 +599,15 @@ _TEST_DATA = [
         <i32>20</i32>
       </constant>
       <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
-        <return index="0"/>
-        <arg name="a" index="1"/>
-        <arg name="b" index="2"/>
+        <return/>
+        <arg name="a"/>
+        <arg name="b"/>
       </call>
       <conduit id="4" input="1">
-        <output target="3" index="1"/>
+        <output target="3" index="0"/>
       </conduit>
       <conduit id="5" input="2">
-        <output target="3" index="2"/>
+        <output target="3" index="1"/>
       </conduit>
     </body>
   </function>
@@ -683,9 +683,9 @@ _TEST_DATA = [
   <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
     <body>
       <call target="reorder" id="2" x="5" y="5" z="0" w="12" h="12">
-        <arg name="first" index="0"/>
-        <arg name="second" index="1"/>
-        <arg name="third" index="2"/>
+        <arg name="first"/>
+        <arg name="second"/>
+        <arg name="third"/>
       </call>
     </body>
   </function>

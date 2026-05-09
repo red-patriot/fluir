@@ -509,13 +509,12 @@ class _XMLWriter:
             },
         )
         if node.returns:
-            etree.SubElement(call_element, "return", attrib={"index": "0"})
-        start = 1 if node.returns else 0
-        for index, name in enumerate(node.arguments, start=start):
+            etree.SubElement(call_element, "return")
+        for name in node.arguments:
             etree.SubElement(
                 call_element,
                 "arg",
-                attrib={"name": name, "index": str(index)},
+                attrib={"name": name},
             )
 
     def _literal(

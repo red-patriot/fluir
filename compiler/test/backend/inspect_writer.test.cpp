@@ -173,6 +173,24 @@ TEST(TestInspectWriter, WriteIntConstants) {
   EXPECT_EQ(expected, actual);
 }
 
+TEST(TestInspectWriter, WriteStringConstants) {
+  using namespace std::string_literals;
+  std::string expected = R"(CONSTANTS x3
+  VSTR s00000005hElLo
+  VSTR s00000000
+  VSTR s0000000DHello, There!
+)";
+  fluir::be::ConstantsArray constants{"hElLo"s, ""s, "Hello, There!"s};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{ss};
+  uut.writeConstants(constants);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}
+
 TEST(TestInspectWriter, WriteUIntConstants) {
   std::string expected = R"(CONSTANTS x4
   VU64 x123

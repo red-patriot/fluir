@@ -74,6 +74,7 @@ namespace fluir {
           ++i;
           break;
         case code::Instruction::CALL:
+        case code::Instruction::DYN_CALL:
           emitInstruction(*i++);
           emitLongArg(*i, *(i + 1), *(i + 2), *(i + 3));
           i += 3;

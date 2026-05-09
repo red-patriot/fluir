@@ -1,5 +1,7 @@
 #include "compiler/frontend/type_checker.hpp"
 
+#include <algorithm>
+
 #include <compiler/utility/scope_guard.hpp>
 #include <fmt/format.h>
 
@@ -18,6 +20,22 @@ namespace fluir {
     void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
       slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
       parent->setType(targetType);
+    }
+
+    /** Determines if the given function is a builtin with special rules around type checking
+     * TODO: This will be removed/refactored once generics are implemented
+     */
+    bool isMagicBuiltin(const types::FunctionType* func) {
+      if (!func) {
+        return false;
+      }
+      // Criteria are no return and all parameters are MAGIC_ANY
+      if (!func->returnType() &&
+          std::ranges::all_of(func->parameters(), [](types::TypeID id) { return id == types::ID_MAGIC_ANY_TYPE; })) {
+        return true;
+      }
+
+      return false;
     }
 
     bool checkType(Context& ctx, ast::Node* node) {
@@ -323,6 +341,12 @@ namespace fluir {
           const auto argType = arg->type();
           const auto expectedType = funcType->parameters()[i];
           if (argType != expectedType) {
+            if (isMagicBuiltin(funcType)) {
+              // Hack: Builtin functions have special internal logic that allows them to accept any input type
+              // For now, this check passes magically
+              // TODO: Refactor this logic once generics are implemented
+              continue;
+            }
             if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
               ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                                ctx.currentFile,

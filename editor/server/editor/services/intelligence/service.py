@@ -5,9 +5,17 @@ from editor.models.elements import FlType, Program
 from editor.models.id import QualifiedID
 from editor.models.intelligence import FunctionSignature
 from editor.models.lsp.completion import Completion, Kind
+from editor.services.intelligence.read_interface import (
+    IntelligenceReadInterface,
+)
+from editor.services.intelligence.update_interface import (
+    IntelligenceUpdateInterface,
+)
 
 
-class IntelligenceService:
+class IntelligenceService(
+    IntelligenceReadInterface, IntelligenceUpdateInterface
+):
     """A Service to provide intelligence for Fluir modules"""
 
     def __init__(self) -> None:

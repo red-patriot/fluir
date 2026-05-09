@@ -1,5 +1,6 @@
 import copy
 from pathlib import Path
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -125,7 +126,7 @@ def editor(basic_program: Program) -> ModuleEditor:
 @pytest.fixture
 def intelligence(basic_program: Program) -> IntelligenceReadInterface:
     intelligence = IntelligenceService()
-    intelligence.add_module(basic_program, Path("/tmp/fake.fl"))
+    intelligence.add_module(basic_program, Path("/fake/path.fl"))
     return intelligence
 
 
@@ -140,7 +141,7 @@ def test_move_function(
 
     uut = MoveElement(target=[1], x=22, y=57)
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -163,7 +164,7 @@ def test_move_node(
 
     uut = MoveElement(target=[2, 3], x=6, y=90)
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -189,7 +190,7 @@ def test_move_node_raises_if_out_of_function(
     uut = MoveElement(target=[2, 3], x=x, y=y)
 
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -254,7 +255,7 @@ def test_resize_element(
         target=target, width=input["width"], height=input["height"]
     )
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -331,7 +332,7 @@ def test_resize_element_with_location(
         y=input["y"],
     )
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -352,7 +353,7 @@ def test_rename_function(
 
     uut = RenameDeclaration(target=[2], name="baz")
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -370,7 +371,7 @@ def test_rename_declaration_raises_if_target_is_not_a_decl(
     uut = RenameDeclaration(target=[2, 1], name="baz")
 
     with pytest.raises(BadEdit, match="Only a declaration may be renamed"):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -385,7 +386,7 @@ def test_edit_constant(
     expected.declarations[1].nodes[1].value = "-5.67"
 
     uut = UpdateConstant(target=[2, 2], value="-5.67")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
 
     editor.edit(uut)
 
@@ -402,7 +403,7 @@ def test_edit_constant_raises_if_not_constant(
 ) -> None:
     uut = UpdateConstant(target=[2, 1], value="-5.67")
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -424,7 +425,7 @@ def test_update_binary_operator(
     expected.declarations[1].nodes[0].op = elements.Operator(op)
 
     uut = UpdateOperator(target=[2, 1], value=op)
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
 
     editor.edit(uut)
 
@@ -452,7 +453,7 @@ def test_update_unary_operator(
     expected.declarations[2].nodes[0].op = elements.Operator(op)
 
     uut = UpdateOperator(target=[3, 2], value=op)
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
 
     editor.edit(uut)
 
@@ -471,7 +472,7 @@ def test_update_operator_raises_if_not_operator(
     with pytest.raises(
         BadEdit, match="Can only perform this update on an operator"
     ):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -493,7 +494,7 @@ def test_add_conduit_no_conflicts(
     expected.declarations[1].conduits.append(new_conduit)
 
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
 
     editor.edit(uut)
 
@@ -537,7 +538,7 @@ def test_add_conduit_removes_duplicate_targets(
     expected.declarations[1].conduits.append(new_conduit)
 
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -708,11 +709,13 @@ def test_add_node(
     input: AddNode,
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes.append(expected_node)
 
+    input.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(input)
     actual = editor.get()
 
@@ -761,8 +764,40 @@ def test_add_node_with_invalid_op_fails(
         params=OperatorParams(arity="binary", op="invalid"),
     )
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
+
+
+def test_add_call_node_can_add_builtin(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    expected_node = elements.Call(
+        id=6,
+        location=elements.Location(2, 7, 0, 7, 10),
+        target="print",
+        arguments=["object"],
+        returns=False,
+    )
+    input = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=CallParams(target="print"),
+    )
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].nodes.append(expected_node)
+
+    input.resolve(intelligence, cast(Path, editor.get_path()))
+    editor.edit(input)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = input.undo(actual)
+    assert original == actual
 
 
 def test_add_decl(
@@ -781,7 +816,7 @@ def test_add_decl(
     )
 
     uut = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -810,7 +845,7 @@ def test_add_decl_with_custom_name(
         new_location=elements.Location(50, 50, 0, 200, 200),
         params=FunctionParams(name="my_func"),
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -830,7 +865,7 @@ def test_remove_node(
     expected.declarations[1].nodes.pop(2)
 
     uut = RemoveItem(target=[2, 3])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -857,7 +892,7 @@ def test_add_func_parameter(
         params=DeclParameterParams(name="new_param"),
     )
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -911,7 +946,7 @@ def test_add_decl_interface_raises_if_target_is_not_a_decl(
     )
 
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -929,7 +964,7 @@ def test_add_decl_interface_raises_if_decl_does_not_exist(
     )
 
     with pytest.raises(elements.IdentifierError):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -946,7 +981,7 @@ def test_add_parameter_with_empty_name_raises(
     )
 
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -967,7 +1002,7 @@ def test_add_func_return(
         params=DeclReturnParams(),
     )
 
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -989,7 +1024,7 @@ def test_remove_node_with_conduits(
     expected.declarations[2].conduits.pop()
 
     uut = RemoveItem(target=[3, 3])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1009,7 +1044,7 @@ def test_remove_function(
     expected.declarations.pop()
 
     uut = RemoveItem(target=[4])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1029,7 +1064,7 @@ def test_remove_conduit(
     expected.declarations[1].conduits.pop(0)
 
     uut = RemoveItem(target=[2, 5])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1054,7 +1089,7 @@ def test_remove_input(
     expected.declarations[1].inputs = []
 
     uut = RemoveItem(target=[2, 10])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1089,7 +1124,7 @@ def test_remove_input_with_conduits(
     ]
 
     uut = RemoveItem(target=[2, 10])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1114,7 +1149,7 @@ def test_remove_output(
     expected.declarations[1].outputs = []
 
     uut = RemoveItem(target=[2, 10])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1149,7 +1184,7 @@ def test_remove_output_with_conduits(
     ]
 
     uut = RemoveItem(target=[2, 10])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1199,7 +1234,7 @@ def test_add_comment_top_level_to_empty_program(
         new_location=elements.Location(1, 2, 0, 30, 15),
         data="hello",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
     assert actual is not None
@@ -1229,7 +1264,7 @@ def test_add_comment_top_level_uses_next_decl_id(
         new_location=elements.Location(7, 8, 0, 25, 12),
         data="note",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1259,7 +1294,7 @@ def test_add_comment_in_body_uses_function_local_next_id(
         new_location=elements.Location(4, 4, 0, 10, 6),
         data="inside",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1281,7 +1316,7 @@ def test_add_comment_undo_via_editor(
         new_location=elements.Location(1, 1, 0, 10, 5),
         data="x",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     actual = editor.get()
@@ -1308,7 +1343,7 @@ def test_add_comment_redo_via_editor(
         new_location=elements.Location(1, 1, 0, 10, 5),
         data="x",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     editor.redo()
@@ -1337,7 +1372,7 @@ def test_add_comment_in_body_then_undo_redo(
         new_location=elements.Location(2, 2, 0, 8, 4),
         data="hi",
     )
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     assert editor.get() == original
@@ -1355,7 +1390,7 @@ def test_update_comment_top_level(
     expected.annotations[0].data = "edited top-level"
 
     uut = UpdateComment(target=[10], data="edited top-level")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1375,7 +1410,7 @@ def test_update_comment_in_body(
     expected.declarations[1].annotations[0].data = "edited body"
 
     uut = UpdateComment(target=[2, 20], data="edited body")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1394,7 +1429,7 @@ def test_update_comment_redo_via_editor(
     expected.annotations[0].data = "redo me"
 
     uut = UpdateComment(target=[10], data="redo me")
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     comments_editor.undo()
     comments_editor.redo()
@@ -1408,7 +1443,7 @@ def test_update_comment_raises_if_not_comment(
 ) -> None:
     uut = UpdateComment(target=[2, 1], data="nope")
     with pytest.raises(BadEdit):
-        uut.resolve(intelligence)
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -1423,7 +1458,7 @@ def test_move_top_level_comment(
     expected.annotations[0].location.y = 60
 
     uut = MoveElement(target=[10], x=50, y=60)
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1444,7 +1479,7 @@ def test_resize_in_body_comment(
     expected.declarations[1].annotations[0].location.height = 12
 
     uut = ResizeElement(target=[2, 20], width=25, height=12)
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1464,7 +1499,7 @@ def test_remove_top_level_comment(
     expected.annotations.pop(0)
 
     uut = RemoveItem(target=[10])
-    uut.resolve(intelligence)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 

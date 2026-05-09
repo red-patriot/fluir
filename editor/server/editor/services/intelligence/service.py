@@ -3,7 +3,7 @@ from pathlib import Path
 from editor.models import elements
 from editor.models.elements import FlType, Program
 from editor.models.id import QualifiedID
-from editor.models.intelligence import FunctionSignature
+from editor.models.intelligence import FunctionSignature, ParamInfo
 from editor.models.lsp.completion import Completion, Kind
 from editor.services.intelligence.read_interface import (
     IntelligenceReadInterface,
@@ -19,6 +19,7 @@ class IntelligenceService(
     """A Service to provide intelligence for Fluir modules"""
 
     def __init__(self) -> None:
+        self._builtin_functions = self._build_builtins()
         self._functions: dict[Path, dict[str, FunctionSignature]] = {}
 
     # TODO: Add other capabilities here
@@ -31,7 +32,10 @@ class IntelligenceService(
     @staticmethod
     def _get_sig(decl: elements.Function) -> FunctionSignature:
         return FunctionSignature(
-            inputs=[str(i.flType) for i in decl.inputs],
+            inputs=[
+                ParamInfo(name=i.name, flType=i.flType or "")
+                for i in decl.inputs
+            ],
             # TODO: handle multiple returns
             output=str(decl.outputs[0].flType)
             if len(decl.outputs) > 0
@@ -71,6 +75,8 @@ class IntelligenceService(
         signatures: dict[str, FunctionSignature] = self._functions.get(
             path, dict()
         )
+        if func_name in self._builtin_functions:
+            return self._builtin_functions[func_name]
         if func_name in signatures:
             return signatures[func_name]
         return None
@@ -102,7 +108,7 @@ class IntelligenceService(
         return [
             Completion(short_name=name, kind=Kind.CALL)
             for name in self._functions.get(path, dict()).keys()
-        ] + self._builtin_functions()
+        ] + self._builtin_function_completions()
 
     def _constants(self) -> list[Completion]:
         return [
@@ -118,8 +124,15 @@ class IntelligenceService(
             Completion(short_name="//", kind=Kind.COMMENT),
         ]
 
-    def _builtin_functions(self) -> list[Completion]:
+    def _builtin_function_completions(self) -> list[Completion]:
         return [
             Completion(short_name="print", kind=Kind.CALL),
             # TODO: add other builtin functions here
         ]
+
+    def _build_builtins(self) -> dict[str, FunctionSignature]:
+        return {
+            "print": FunctionSignature(
+                inputs=[ParamInfo(name="object", flType="Any")], output=None
+            )
+        }

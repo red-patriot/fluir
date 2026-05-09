@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Annotated, Final, override
+from typing import Annotated, Final, cast, override
 
 from fastapi import Body, FastAPI, HTTPException
 
@@ -83,7 +83,7 @@ class ModuleController(Controller):
     def edit(
         self, request: Annotated[EditTransaction, Body()]
     ) -> ProgramStatus:
-        request.resolve(self._intelligence)
+        request.resolve(self._intelligence, cast(Path, self._editor.get_path()))
         self._editor.edit(request)
         self._refresh_intelligence()
 

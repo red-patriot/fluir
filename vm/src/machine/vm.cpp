@@ -73,14 +73,14 @@ namespace fluir {
     popStack();
     code::I64 lhs = utility::widenI(stackTop(), typeL);
     popStack();
-    pushStack(utility::narrowI(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    pushStack(utility::narrowI(Op{}(lhs, rhs), std::max(utility::widthof(typeR), utility::widthof(typeL))));
   }
   template <typename Op>
   void VirtualMachine::intUnary() {
     code::PrimitiveType type;
     code::I64 operand = utility::widenI(stackTop(), type);
     popStack();
-    pushStack(utility::narrowI(Op{}(operand), type));
+    pushStack(utility::narrowI(Op{}(operand), utility::widthof(type)));
   }
   template <typename Op>
   void VirtualMachine::uintBinary() {
@@ -89,14 +89,14 @@ namespace fluir {
     popStack();
     code::U64 lhs = utility::widenU(stackTop(), typeL);
     popStack();
-    pushStack(utility::narrowU(Op{}(lhs, rhs), std::max(typeR, typeL)));
+    pushStack(utility::narrowU(Op{}(lhs, rhs), std::max(utility::widthof(typeR), utility::widthof(typeL))));
   }
   template <typename Op>
   void VirtualMachine::uintUnary() {
     code::PrimitiveType type;
     code::U64 operand = utility::widenU(stackTop(), type);
     popStack();
-    pushStack(utility::narrowU(Op{}(operand), type));
+    pushStack(utility::narrowU(Op{}(operand), utility::widthof(type)));
   }
 
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
@@ -265,7 +265,7 @@ namespace fluir {
             auto widened = utility::widenI(toCast, _);
             auto casted = static_cast<code::U64>(widened);
 
-            pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+            pushStack(utility::narrowU(casted, width));
           }
           break;
         case CAST_UI:
@@ -276,7 +276,7 @@ namespace fluir {
             code::PrimitiveType _;
             auto widened = utility::widenU(toCast, _);
             auto casted = static_cast<code::I64>(widened);
-            pushStack(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+            pushStack(utility::narrowI(casted, width));
           }
           break;
         case CAST_IF:
@@ -295,7 +295,7 @@ namespace fluir {
             auto toCast = stackTop();
             popStack();
             auto casted = static_cast<code::I64>(toCast.asF64());
-            pushStack(utility::narrowI(casted, static_cast<code::PrimitiveType>(code::SIGNED | width)));
+            pushStack(utility::narrowI(casted, width));
           }
           break;
         case CAST_UF:
@@ -314,7 +314,7 @@ namespace fluir {
             auto toCast = stackTop();
             popStack();
             auto casted = static_cast<code::U64>(toCast.asF64());
-            pushStack(utility::narrowU(casted, static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+            pushStack(utility::narrowU(casted, width));
           }
           break;
         case CAST_WIDTH:
@@ -328,15 +328,13 @@ namespace fluir {
               case code::PrimitiveType::I16:
               case code::PrimitiveType::I32:
               case code::PrimitiveType::I64:
-                pushStack(
-                  utility::narrowI(utility::widenI(toCast, _), static_cast<code::PrimitiveType>(code::SIGNED | width)));
+                pushStack(utility::narrowI(utility::widenI(toCast, _), width));
                 break;
               case code::PrimitiveType::U8:
               case code::PrimitiveType::U16:
               case code::PrimitiveType::U32:
               case code::PrimitiveType::U64:
-                pushStack(utility::narrowU(utility::widenU(toCast, _),
-                                           static_cast<code::PrimitiveType>(code::UNSIGNED | width)));
+                pushStack(utility::narrowU(utility::widenU(toCast, _), width));
                 break;
               default:
                 throw VirtualMachineError{"CAST_WIDTH EXPECTS AN INT OR UINT"};

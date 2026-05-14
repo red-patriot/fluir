@@ -47,6 +47,7 @@ code(U64, std::uint64_t)
     U16,
     U32,
     U64,
+    STR,
   };
 
 #define FLUIR_ALIAS(Type, Concrete) using Type = Concrete;

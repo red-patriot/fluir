@@ -113,3 +113,12 @@ TEST(TestValue, IsDefaultConstructible) {
   EXPECT_EQ(fluir::code::PrimitiveType::EMPTY, value.type());
   EXPECT_TRUE(value.empty());
 }
+
+TEST(TestValue, InitializeString) {
+  auto expected = fluir::createStaticString("expected str!");
+
+  fluir::code::Value value{expected};
+
+  ASSERT_EQ(fluir::code::PrimitiveType::STR, value.type());
+  EXPECT_EQ(expected, value.asStr());
+}

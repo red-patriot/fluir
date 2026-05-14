@@ -13,6 +13,7 @@ target_sources(
             decoder/inspect.cpp
             machine/vm.cpp
             debug.cpp
+            code/string.cpp
 )
 
 turn_up_warnings_on(fluir.libvm)

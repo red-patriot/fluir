@@ -1,6 +1,7 @@
 #include "../../include/vm/machine/vm.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
 #include <functional>
 #include <iostream>
@@ -47,6 +48,8 @@ namespace fluir {
       case code::PrimitiveType::U64:
         os << "(U64)" << value.asU64();
         break;
+      default:
+        assert(false && "TODO");
     }
 
     return os;

@@ -2,7 +2,6 @@
 #define FLUIR_VM_CODE_VALUE_H
 
 #include <stdexcept>
-#include <variant>
 
 #include <bytecode/primitives.hpp>
 
@@ -15,115 +14,184 @@ namespace fluir::code {
     friend bool operator==(const Value&, const Value&);
 
    public:
-    Value() : type_{PrimitiveType::EMPTY}, data_(std::monostate()) { }
-    explicit Value(double d) : type_{PrimitiveType::F64}, data_(d) { }
-    explicit Value(std::int8_t d) : type_{PrimitiveType::I8}, data_(d) { }
-    explicit Value(std::int16_t d) : type_{PrimitiveType::I16}, data_(d) { }
-    explicit Value(std::int32_t d) : type_{PrimitiveType::I32}, data_(d) { }
-    explicit Value(std::int64_t d) : type_{PrimitiveType::I64}, data_(d) { }
-    explicit Value(std::uint8_t d) : type_{PrimitiveType::U8}, data_(d) { }
-    explicit Value(std::uint16_t d) : type_{PrimitiveType::U16}, data_(d) { }
-    explicit Value(std::uint32_t d) : type_{PrimitiveType::U32}, data_(d) { }
-    explicit Value(std::uint64_t d) : type_{PrimitiveType::U64}, data_(d) { }
-    explicit Value(String s) : type_{PrimitiveType::STR}, data_(std::move(s)) { }
+    Value() : type_{PrimitiveType::EMPTY}, u64_{/*Just zero-out all the data*/} { }
+    explicit Value(double d) : type_{PrimitiveType::F64}, f64_(d) { }
+    explicit Value(std::int8_t d) : type_{PrimitiveType::I8}, i8_(d) { }
+    explicit Value(std::int16_t d) : type_{PrimitiveType::I16}, i16_(d) { }
+    explicit Value(std::int32_t d) : type_{PrimitiveType::I32}, i32_(d) { }
+    explicit Value(std::int64_t d) : type_{PrimitiveType::I64}, i64_(d) { }
+    explicit Value(std::uint8_t d) : type_{PrimitiveType::U8}, u8_(d) { }
+    explicit Value(std::uint16_t d) : type_{PrimitiveType::U16}, u16_(d) { }
+    explicit Value(std::uint32_t d) : type_{PrimitiveType::U32}, u32_(d) { }
+    explicit Value(std::uint64_t d) : type_{PrimitiveType::U64}, u64_(d) { }
+    explicit Value(String s) : type_{PrimitiveType::STR}, str_(std::move(s)) { }
+
+    Value(const Value& other) : type_(other.type_) {
+      if (type_ == PrimitiveType::STR) {
+        new (&str_) String(other.str_);
+      } else {
+        memcpy(&u64_, &other.u64_, sizeof(u64_));
+      }
+    }
+
+    Value& operator=(const Value& other) {
+      if (this == &other) {
+        return *this;
+      }
+      if (type_ == PrimitiveType::STR) {
+        str_.~String();
+      }
+      type_ = other.type_;
+      if (type_ == PrimitiveType::STR) {
+        new (&str_) String(other.str_);
+      } else {
+        memcpy(&u64_, &other.u64_, sizeof(u64_));
+      }
+      return *this;
+    }
+
+    Value(Value&& other) : type_(other.type_) {
+      if (type_ == PrimitiveType::STR) {
+        new (&str_) String(std::move(other.str_));
+      } else {
+        memcpy(&u64_, &other.u64_, sizeof(u64_));
+      }
+      other.type_ = PrimitiveType::EMPTY;
+    }
+    Value& operator=(Value&& other) {
+      if (this == &other) {
+        return *this;
+      }
+      if (type_ == PrimitiveType::STR) {
+        str_.~String();
+      }
+      type_ = other.type_;
+      if (type_ == PrimitiveType::STR) {
+        new (&str_) String(std::move(other.str_));
+      } else {
+        memcpy(&u64_, &other.u64_, sizeof(u64_));
+      }
+      other.type_ = PrimitiveType::EMPTY;
+      return *this;
+    }
+    ~Value() {
+      if (type_ == PrimitiveType::STR) {
+        // String has a non-trivial destructor, so call it explicitly here
+        str_.~String();
+      }
+    }
 
     [[nodiscard]] PrimitiveType type() const { return type_; }
     [[nodiscard]] bool empty() const { return type_ == PrimitiveType::EMPTY; }
 
     [[nodiscard]] double& asF64() {
       assertType(PrimitiveType::F64);
-      return std::get<F64>(data_);
+      return f64_;
     }
     [[nodiscard]] const double& asF64() const {
       assertType(PrimitiveType::F64);
-      return std::get<F64>(data_);
+      return f64_;
     }
 
     [[nodiscard]] std::int8_t& asI8() {
       assertType(PrimitiveType::I8);
-      return std::get<I8>(data_);
+      return i8_;
     }
     [[nodiscard]] const std::int8_t& asI8() const {
       assertType(PrimitiveType::I8);
-      return std::get<I8>(data_);
+      return i8_;
     }
 
     [[nodiscard]] std::int16_t& asI16() {
       assertType(PrimitiveType::I16);
-      return std::get<I16>(data_);
+      return i16_;
     }
     [[nodiscard]] const std::int16_t& asI16() const {
       assertType(PrimitiveType::I16);
-      return std::get<I16>(data_);
+      return i16_;
     }
 
     [[nodiscard]] std::int32_t& asI32() {
       assertType(PrimitiveType::I32);
-      return std::get<I32>(data_);
+      return i32_;
     }
     [[nodiscard]] const std::int32_t& asI32() const {
       assertType(PrimitiveType::I32);
-      return std::get<I32>(data_);
+      return i32_;
     }
 
     [[nodiscard]] std::int64_t& asI64() {
       assertType(PrimitiveType::I64);
-      return std::get<I64>(data_);
+      return i64_;
     }
     [[nodiscard]] const std::int64_t& asI64() const {
       assertType(PrimitiveType::I64);
-      return std::get<I64>(data_);
+      return i64_;
     }
 
     [[nodiscard]] std::uint8_t& asU8() {
       assertType(PrimitiveType::U8);
-      return std::get<U8>(data_);
+      return u8_;
     }
     [[nodiscard]] const std::uint8_t& asU8() const {
       assertType(PrimitiveType::U8);
-      return std::get<U8>(data_);
+      return u8_;
     }
 
     [[nodiscard]] std::uint16_t& asU16() {
       assertType(PrimitiveType::U16);
-      return std::get<U16>(data_);
+      return u16_;
     }
     [[nodiscard]] const std::uint16_t& asU16() const {
       assertType(PrimitiveType::U16);
-      return std::get<U16>(data_);
+      return u16_;
     }
 
     [[nodiscard]] std::uint32_t& asU32() {
       assertType(PrimitiveType::U32);
-      return std::get<U32>(data_);
+      return u32_;
     }
     [[nodiscard]] const std::uint32_t& asU32() const {
       assertType(PrimitiveType::U32);
-      return std::get<U32>(data_);
+      return u32_;
     }
 
     [[nodiscard]] std::uint64_t& asU64() {
       assertType(PrimitiveType::U64);
-      return std::get<U64>(data_);
+      return u64_;
     }
     [[nodiscard]] const std::uint64_t& asU64() const {
       assertType(PrimitiveType::U64);
-      return std::get<U64>(data_);
+      return u64_;
     }
 
     [[nodiscard]] String& asStr() {
       assertType(PrimitiveType::STR);
-      return std::get<String>(data_);
+      return str_;
     }
     [[nodiscard]] const String& asStr() const {
       assertType(PrimitiveType::STR);
-      return std::get<String>(data_);
+      return str_;
     }
 
    private:
     PrimitiveType type_{PrimitiveType::EMPTY};
 
-    std::variant<std::monostate, F64, I8, I16, I32, I64, U8, U16, U32, U64, String> data_{std::monostate{}};
+    // Use a union here over a std::variant because profiling shows it to be
+    // too slow to be convenient. Raw union avoids expensive ops in std::get
+    // and extra checking because we already track the active member (type_)
+    union {
+      F64 f64_;
+      I8 i8_;
+      I16 i16_;
+      I32 i32_;
+      I64 i64_;
+      U8 u8_;
+      U16 u16_;
+      U32 u32_;
+      U64 u64_;
+      String str_;
+    };
 
     void assertType(PrimitiveType type) const {
       if (type_ != type) {

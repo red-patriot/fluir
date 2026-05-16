@@ -262,18 +262,14 @@ class _XMLReader:
 
     def _call(self, element: Any) -> _NodePair:
         id = self._id(element)
-        indexed_args: list[tuple[int, str]] = []
+        arguments: list[str] = []
         returns = False
         for child in element.iterchildren():
             if child.tag == "arg":
-                indexed_args.append(
-                    (int(child.get("index")), str(child.get("name")))
-                )
+                arguments.append(str(child.get("name")))
             elif child.tag == "return":
                 # TODO: Handle multiple returns
                 returns = True
-        indexed_args.sort(key=lambda pair: pair[0])
-        arguments = [name for _, name in indexed_args]
         return id, Call(
             id=id,
             location=self._location(element),

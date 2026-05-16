@@ -3,10 +3,13 @@
 #include <array>
 #include <string>
 
+using namespace std::string_literals;
+
 namespace fluir::types {
   SymbolTable buildSymbolTable() {
     SymbolTable table;
     instantiateBuiltinTypes(table);
+    instantiateBuiltinFunctions(table);
     instantiateBuiltinOperators(table);
     instantiateBuiltinCasts(table);
     return table;
@@ -74,5 +77,9 @@ namespace fluir::types {
         table.addImplicitConversion(*source, *target);
       }
     }
+  }
+
+  void instantiateBuiltinFunctions(SymbolTable& table) {
+    table.addFunction("print"s, FunctionType{{TypeID::ID_MAGIC_ANY_TYPE}, std::nullopt});
   }
 }  // namespace fluir::types

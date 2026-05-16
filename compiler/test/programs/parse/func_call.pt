@@ -13,9 +13,11 @@
         3:
             Call(foo)
             at(x20, y15, z0, w12, h12)
-            0: return
-            1: in1
-            2: in2
+            out:
+                0: return
+            in:
+                0: in1
+                1: in2
         6:
             Unary
             at(x0, y50, z2, w7, h7)
@@ -26,12 +28,12 @@
             Conduit
             in2.0
             children
-                out3.1
+                out3.0
         5:
             Conduit
             in1.0
             children
-                out3.2
+                out3.1
         7:
             Conduit
             in3.0

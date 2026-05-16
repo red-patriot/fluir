@@ -32,15 +32,15 @@ namespace fluir::utility {
     throw VirtualMachineError{"EXPECTED AN INT TYPE"};
   }
 
-  inline code::Value narrowI(code::I64 val, const code::PrimitiveType& type) {
-    switch (type) {
-      case code::PrimitiveType::I8:
+  inline code::Value narrowI(code::I64 val, const code::NumericWidth& width) {
+    switch (width) {
+      case code::NumericWidth::WIDTH_8:
         return code::Value{static_cast<std::int8_t>(val)};
-      case code::PrimitiveType::I16:
+      case code::NumericWidth::WIDTH_16:
         return code::Value{static_cast<std::int16_t>(val)};
-      case code::PrimitiveType::I32:
+      case code::NumericWidth::WIDTH_32:
         return code::Value{static_cast<std::int32_t>(val)};
-      case code::PrimitiveType::I64:
+      case code::NumericWidth::WIDTH_64:
         return code::Value{val};
       default:
         break;
@@ -65,15 +65,15 @@ namespace fluir::utility {
     throw VirtualMachineError{"EXPECTED A UINT TYPE"};
   }
 
-  inline code::Value narrowU(code::U64 val, const code::PrimitiveType& type) {
-    switch (type) {
-      case code::PrimitiveType::U8:
+  inline code::Value narrowU(code::U64 val, const code::NumericWidth& width) {
+    switch (width) {
+      case code::NumericWidth::WIDTH_8:
         return code::Value{static_cast<std::uint8_t>(val)};
-      case code::PrimitiveType::U16:
+      case code::NumericWidth::WIDTH_16:
         return code::Value{static_cast<std::uint16_t>(val)};
-      case code::PrimitiveType::U32:
+      case code::NumericWidth::WIDTH_32:
         return code::Value{static_cast<std::uint32_t>(val)};
-      case code::PrimitiveType::U64:
+      case code::NumericWidth::WIDTH_64:
         return code::Value{val};
       default:
         break;

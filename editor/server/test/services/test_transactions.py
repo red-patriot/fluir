@@ -1,4 +1,6 @@
 import copy
+from pathlib import Path
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -6,6 +8,10 @@ from pydantic import ValidationError
 from editor.models import FlType, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_element
+from editor.services.intelligence import (
+    IntelligenceReadInterface,
+    IntelligenceService,
+)
 from editor.services.module_editor import ModuleEditor
 from editor.services.transaction import (
     AddComment,
@@ -117,13 +123,25 @@ def editor(basic_program: Program) -> ModuleEditor:
     return editor
 
 
-def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
+@pytest.fixture
+def intelligence(basic_program: Program) -> IntelligenceReadInterface:
+    intelligence = IntelligenceService()
+    intelligence.add_module(basic_program, Path("/fake/path.fl"))
+    return intelligence
+
+
+def test_move_function(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[0].location = elements.Location(22, 57, 3, 100, 100)
 
     uut = MoveElement(target=[1], x=22, y=57)
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -133,7 +151,11 @@ def test_move_function(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
-def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
+def test_move_node(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes[2].location = elements.Location(
@@ -142,6 +164,7 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
 
     uut = MoveElement(target=[2, 3], x=6, y=90)
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -160,12 +183,14 @@ def test_move_node(basic_program: Program, editor: ModuleEditor) -> None:
 def test_move_node_raises_if_out_of_function(
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
     x: int,
     y: int,
 ) -> None:
     uut = MoveElement(target=[2, 3], x=x, y=y)
 
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -214,6 +239,7 @@ def test_move_node_raises_if_out_of_function(
 def test_resize_element(
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
     target: QualifiedID,
     input: dict[str, int],
     expected: dict[str, int],
@@ -229,6 +255,7 @@ def test_resize_element(
         target=target, width=input["width"], height=input["height"]
     )
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -283,6 +310,7 @@ def test_resize_element(
 def test_resize_element_with_location(
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
     target: QualifiedID,
     input: dict[str, int],
     expected: dict[str, int],
@@ -304,6 +332,7 @@ def test_resize_element_with_location(
         y=input["y"],
     )
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -313,13 +342,18 @@ def test_resize_element_with_location(
     assert original == actual
 
 
-def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
+def test_rename_function(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].name = "baz"
 
     uut = RenameDeclaration(target=[2], name="baz")
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -330,21 +364,30 @@ def test_rename_function(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_rename_declaration_raises_if_target_is_not_a_decl(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     uut = RenameDeclaration(target=[2, 1], name="baz")
 
     with pytest.raises(BadEdit, match="Only a declaration may be renamed"):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
-def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
+def test_edit_constant(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     assert isinstance(expected.declarations[1].nodes[1], elements.Constant)
     expected.declarations[1].nodes[1].value = "-5.67"
 
     uut = UpdateConstant(target=[2, 2], value="-5.67")
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
+
     editor.edit(uut)
 
     actual = editor.get()
@@ -355,9 +398,12 @@ def test_edit_constant(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
-def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
+def test_edit_constant_raises_if_not_constant(
+    editor: ModuleEditor, intelligence: IntelligenceReadInterface
+) -> None:
     uut = UpdateConstant(target=[2, 1], value="-5.67")
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
@@ -366,7 +412,10 @@ def test_edit_constant_raises_if_not_constant(editor: ModuleEditor) -> None:
     ["+", "-", "*", "/"],
 )
 def test_update_binary_operator(
-    basic_program: Program, editor: ModuleEditor, op: str
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+    op: str,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -376,6 +425,8 @@ def test_update_binary_operator(
     expected.declarations[1].nodes[0].op = elements.Operator(op)
 
     uut = UpdateOperator(target=[2, 1], value=op)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
+
     editor.edit(uut)
 
     actual = editor.get()
@@ -391,7 +442,10 @@ def test_update_binary_operator(
     ["+", "-", "*", "/"],
 )
 def test_update_unary_operator(
-    basic_program: Program, editor: ModuleEditor, op: str
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+    op: str,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -399,6 +453,8 @@ def test_update_unary_operator(
     expected.declarations[2].nodes[0].op = elements.Operator(op)
 
     uut = UpdateOperator(target=[3, 2], value=op)
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
+
     editor.edit(uut)
 
     actual = editor.get()
@@ -409,16 +465,21 @@ def test_update_unary_operator(
     assert original == actual
 
 
-def test_update_operator_raises_if_not_operator(editor: ModuleEditor) -> None:
+def test_update_operator_raises_if_not_operator(
+    editor: ModuleEditor, intelligence: IntelligenceReadInterface
+) -> None:
     uut = UpdateOperator(target=[2, 2], value=elements.Operator.MINUS)
     with pytest.raises(
         BadEdit, match="Can only perform this update on an operator"
     ):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
 def test_add_conduit_no_conflicts(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -433,6 +494,8 @@ def test_add_conduit_no_conflicts(
     expected.declarations[1].conduits.append(new_conduit)
 
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
+
     editor.edit(uut)
 
     actual = editor.get()
@@ -444,7 +507,9 @@ def test_add_conduit_no_conflicts(
 
 
 def test_add_conduit_removes_duplicate_targets(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     existing_conduit = elements.Conduit(
         id=4,
@@ -473,6 +538,7 @@ def test_add_conduit_removes_duplicate_targets(
     expected.declarations[1].conduits.append(new_conduit)
 
     uut = AddConduit(target="input-2:1-0", source="output-2:2-0")
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -643,11 +709,13 @@ def test_add_node(
     input: AddNode,
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes.append(expected_node)
 
+    input.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(input)
     actual = editor.get()
 
@@ -688,6 +756,7 @@ def test_add_call_node_without_target_raises(
 def test_add_node_with_invalid_op_fails(
     basic_program: Program,
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     uut = AddNode(
         parent=[2],
@@ -695,10 +764,47 @@ def test_add_node_with_invalid_op_fails(
         params=OperatorParams(arity="binary", op="invalid"),
     )
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
-def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
+def test_add_call_node_can_add_builtin(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    expected_node = elements.Call(
+        id=6,
+        location=elements.Location(2, 7, 0, 7, 10),
+        target="print",
+        arguments=["object"],
+        returns=False,
+    )
+    input = AddNode(
+        parent=[2],
+        new_location=elements.Location(2, 7, 0, 7, 7),
+        params=CallParams(target="print"),
+    )
+
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    expected.declarations[1].nodes.append(expected_node)
+
+    input.resolve(intelligence, cast(Path, editor.get_path()))
+    editor.edit(input)
+    actual = editor.get()
+
+    assert expected == actual
+
+    actual = input.undo(actual)
+    assert original == actual
+
+
+def test_add_decl(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations.append(
@@ -710,6 +816,7 @@ def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
     )
 
     uut = AddDecl(new_location=elements.Location(50, 50, 0, 200, 200))
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -720,7 +827,9 @@ def test_add_decl(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_add_decl_with_custom_name(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -736,6 +845,7 @@ def test_add_decl_with_custom_name(
         new_location=elements.Location(50, 50, 0, 200, 200),
         params=FunctionParams(name="my_func"),
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -745,12 +855,17 @@ def test_add_decl_with_custom_name(
     assert original == actual
 
 
-def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
+def test_remove_node(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].nodes.pop(2)
 
     uut = RemoveItem(target=[2, 3])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -761,7 +876,9 @@ def test_remove_node(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_add_func_parameter(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -775,6 +892,7 @@ def test_add_func_parameter(
         params=DeclParameterParams(name="new_param"),
     )
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -814,7 +932,9 @@ def test_add_multiple_func_parameter(
 
 
 def test_add_decl_interface_raises_if_target_is_not_a_decl(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     """AddDeclInterface should reject a parent that points to a node
     inside a function rather than the function itself."""
@@ -826,11 +946,14 @@ def test_add_decl_interface_raises_if_target_is_not_a_decl(
     )
 
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
 def test_add_decl_interface_raises_if_decl_does_not_exist(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     """AddDeclInterface should surface find_element's lookup error when
     the parent ID does not resolve to any element."""
@@ -841,11 +964,14 @@ def test_add_decl_interface_raises_if_decl_does_not_exist(
     )
 
     with pytest.raises(elements.IdentifierError):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
 def test_add_parameter_with_empty_name_raises(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     """A parameter must have a non-empty name."""
     uut = AddDeclInterface(
@@ -855,10 +981,15 @@ def test_add_parameter_with_empty_name_raises(
     )
 
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
-def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:
+def test_add_func_return(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[0].outputs = [
@@ -871,6 +1002,7 @@ def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:
         params=DeclReturnParams(),
     )
 
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -882,7 +1014,9 @@ def test_add_func_return(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_remove_node_with_conduits(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -890,6 +1024,7 @@ def test_remove_node_with_conduits(
     expected.declarations[2].conduits.pop()
 
     uut = RemoveItem(target=[3, 3])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -899,12 +1034,17 @@ def test_remove_node_with_conduits(
     assert original == actual
 
 
-def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
+def test_remove_function(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations.pop()
 
     uut = RemoveItem(target=[4])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -914,12 +1054,17 @@ def test_remove_function(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
-def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
+def test_remove_conduit(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
     expected.declarations[1].conduits.pop(0)
 
     uut = RemoveItem(target=[2, 5])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -929,7 +1074,11 @@ def test_remove_conduit(basic_program: Program, editor: ModuleEditor) -> None:
     assert original == actual
 
 
-def test_remove_input(basic_program: Program, editor: ModuleEditor) -> None:
+def test_remove_input(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     basic_program.declarations[1].inputs.append(
         elements.Parameter(name="x", id=10, flType=FlType.F64)
     )
@@ -940,6 +1089,7 @@ def test_remove_input(basic_program: Program, editor: ModuleEditor) -> None:
     expected.declarations[1].inputs = []
 
     uut = RemoveItem(target=[2, 10])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -950,7 +1100,9 @@ def test_remove_input(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_remove_input_with_conduits(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     basic_program.declarations[1].inputs.append(
         elements.Parameter(name="x", id=10, flType=FlType.F64)
@@ -972,6 +1124,7 @@ def test_remove_input_with_conduits(
     ]
 
     uut = RemoveItem(target=[2, 10])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -981,7 +1134,11 @@ def test_remove_input_with_conduits(
     assert original == actual
 
 
-def test_remove_output(basic_program: Program, editor: ModuleEditor) -> None:
+def test_remove_output(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
     basic_program.declarations[1].outputs.append(
         elements.Return(id=10, flType=FlType.F64)
     )
@@ -992,6 +1149,7 @@ def test_remove_output(basic_program: Program, editor: ModuleEditor) -> None:
     expected.declarations[1].outputs = []
 
     uut = RemoveItem(target=[2, 10])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1002,7 +1160,9 @@ def test_remove_output(basic_program: Program, editor: ModuleEditor) -> None:
 
 
 def test_remove_output_with_conduits(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     basic_program.declarations[1].outputs.append(
         elements.Return(id=10, flType=FlType.F64)
@@ -1024,6 +1184,7 @@ def test_remove_output_with_conduits(
     ]
 
     uut = RemoveItem(target=[2, 10])
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1061,7 +1222,9 @@ def comments_editor(program_with_comments: Program) -> ModuleEditor:
     return editor
 
 
-def test_add_comment_top_level_to_empty_program() -> None:
+def test_add_comment_top_level_to_empty_program(
+    intelligence: IntelligenceReadInterface,
+) -> None:
     program = Program()
     editor = ModuleEditor()
     editor.open_module(copy.deepcopy(program))
@@ -1071,6 +1234,7 @@ def test_add_comment_top_level_to_empty_program() -> None:
         new_location=elements.Location(1, 2, 0, 30, 15),
         data="hello",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
     assert actual is not None
@@ -1081,7 +1245,9 @@ def test_add_comment_top_level_to_empty_program() -> None:
 
 
 def test_add_comment_top_level_uses_next_decl_id(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -1098,6 +1264,7 @@ def test_add_comment_top_level_uses_next_decl_id(
         new_location=elements.Location(7, 8, 0, 25, 12),
         data="note",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1108,7 +1275,9 @@ def test_add_comment_top_level_uses_next_decl_id(
 
 
 def test_add_comment_in_body_uses_function_local_next_id(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -1125,6 +1294,7 @@ def test_add_comment_in_body_uses_function_local_next_id(
         new_location=elements.Location(4, 4, 0, 10, 6),
         data="inside",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     actual = editor.get()
 
@@ -1135,7 +1305,9 @@ def test_add_comment_in_body_uses_function_local_next_id(
 
 
 def test_add_comment_undo_via_editor(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
 
@@ -1144,6 +1316,7 @@ def test_add_comment_undo_via_editor(
         new_location=elements.Location(1, 1, 0, 10, 5),
         data="x",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     actual = editor.get()
@@ -1152,7 +1325,9 @@ def test_add_comment_undo_via_editor(
 
 
 def test_add_comment_redo_via_editor(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     expected = copy.deepcopy(basic_program)
     expected.annotations.append(
@@ -1168,6 +1343,7 @@ def test_add_comment_redo_via_editor(
         new_location=elements.Location(1, 1, 0, 10, 5),
         data="x",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     editor.redo()
@@ -1177,7 +1353,9 @@ def test_add_comment_redo_via_editor(
 
 
 def test_add_comment_in_body_then_undo_redo(
-    basic_program: Program, editor: ModuleEditor
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(basic_program)
     expected = copy.deepcopy(basic_program)
@@ -1194,6 +1372,7 @@ def test_add_comment_in_body_then_undo_redo(
         new_location=elements.Location(2, 2, 0, 8, 4),
         data="hi",
     )
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
     editor.edit(uut)
     editor.undo()
     assert editor.get() == original
@@ -1202,13 +1381,16 @@ def test_add_comment_in_body_then_undo_redo(
 
 
 def test_update_comment_top_level(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)
     expected.annotations[0].data = "edited top-level"
 
     uut = UpdateComment(target=[10], data="edited top-level")
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1219,13 +1401,16 @@ def test_update_comment_top_level(
 
 
 def test_update_comment_in_body(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)
     expected.declarations[1].annotations[0].data = "edited body"
 
     uut = UpdateComment(target=[2, 20], data="edited body")
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1236,12 +1421,15 @@ def test_update_comment_in_body(
 
 
 def test_update_comment_redo_via_editor(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     expected = copy.deepcopy(program_with_comments)
     expected.annotations[0].data = "redo me"
 
     uut = UpdateComment(target=[10], data="redo me")
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     comments_editor.undo()
     comments_editor.redo()
@@ -1251,14 +1439,18 @@ def test_update_comment_redo_via_editor(
 
 def test_update_comment_raises_if_not_comment(
     editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     uut = UpdateComment(target=[2, 1], data="nope")
     with pytest.raises(BadEdit):
+        uut.resolve(intelligence, cast(Path, editor.get_path()))
         editor.edit(uut)
 
 
 def test_move_top_level_comment(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)
@@ -1266,6 +1458,7 @@ def test_move_top_level_comment(
     expected.annotations[0].location.y = 60
 
     uut = MoveElement(target=[10], x=50, y=60)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1276,7 +1469,9 @@ def test_move_top_level_comment(
 
 
 def test_resize_in_body_comment(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)
@@ -1284,6 +1479,7 @@ def test_resize_in_body_comment(
     expected.declarations[1].annotations[0].location.height = 12
 
     uut = ResizeElement(target=[2, 20], width=25, height=12)
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1294,13 +1490,16 @@ def test_resize_in_body_comment(
 
 
 def test_remove_top_level_comment(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)
     expected.annotations.pop(0)
 
     uut = RemoveItem(target=[10])
+    uut.resolve(intelligence, cast(Path, comments_editor.get_path()))
     comments_editor.edit(uut)
     actual = comments_editor.get()
 
@@ -1311,7 +1510,9 @@ def test_remove_top_level_comment(
 
 
 def test_remove_in_body_comment(
-    program_with_comments: Program, comments_editor: ModuleEditor
+    program_with_comments: Program,
+    comments_editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
 ) -> None:
     original = copy.deepcopy(program_with_comments)
     expected = copy.deepcopy(program_with_comments)

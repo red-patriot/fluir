@@ -407,7 +407,6 @@ namespace fluir {
     auto target = getAttribute(element, "target");
     pt::Call::Arguments arguments;
     std::optional<pt::Call::Return> return_{std::nullopt};
-    std::unordered_set<int> argIndices;
     std::unordered_set<std::string> argNames;
 
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
@@ -415,24 +414,13 @@ namespace fluir {
         std::string_view childName = child->Name();
         if (childName == "return") {
           panicIf(return_.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
-          auto indexStr = getAttribute(child, "index");
-          auto index = fe::parseNumber<int>(indexStr);
-          panicIf(!index.has_value() || index.value() != 0, child, diagnostic::Code::ERROR_WRONG_RETURN_INDEX);
           return_ = pt::Call::Return{};
         } else if (childName == "arg") {
           auto name = getAttribute(child, "name");
-          auto indexStr = getAttribute(child, "index");
-          auto index = fe::parseNumber<int>(indexStr);
-          panicIf(!index.has_value(),
-                  child,
-                  diagnostic::Code::ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
-                  "Expected an integer index on <arg>, found '{}'.",
-                  indexStr);
-          panicIf(argIndices.contains(index.value()), child, diagnostic::Code::ERROR_DUPLICATE_ARG_INDEX);
           panicIf(argNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_ARG_NAME);
-          argIndices.insert(index.value());
           argNames.insert(std::string(name));
-          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
+          auto idx = static_cast<int>(arguments.size());
+          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = idx});
         } else {
           panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element <{}> in call.", childName);
         }

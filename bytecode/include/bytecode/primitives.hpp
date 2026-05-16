@@ -38,15 +38,16 @@ code(U64, std::uint64_t)
 
   enum class PrimitiveType {
     EMPTY = 0,
-    F64 = FLOAT | WIDTH_64,
-    I8 = SIGNED | WIDTH_8,
-    I16 = SIGNED | WIDTH_16,
-    I32 = SIGNED | WIDTH_32,
-    I64 = SIGNED | WIDTH_64,
-    U8 = UNSIGNED | WIDTH_8,
-    U16 = UNSIGNED | WIDTH_16,
-    U32 = UNSIGNED | WIDTH_32,
-    U64 = UNSIGNED | WIDTH_64,
+    F64,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    U16,
+    U32,
+    U64,
+    STR,
   };
 
 #define FLUIR_ALIAS(Type, Concrete) using Type = Concrete;

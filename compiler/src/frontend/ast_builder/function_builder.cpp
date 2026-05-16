@@ -149,6 +149,9 @@ namespace fluir::fe {
           return out.target == dependentId && out.index == index;
         });
       });
+    if (dependencyPt == pt_.body.conduits.end()) {
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_MISSING_DEPENDENCY, ctx_.currentFile, currentID_);
+    }
     const auto& dependencyId = dependencyPt->second.input;
 
     // Check that the dependency index isn't already in progress

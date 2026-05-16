@@ -2,8 +2,9 @@ from pathlib import Path
 
 import pytest
 
-from editor.models import Function, Program
+from editor.models import Function, Program, elements
 from editor.models.elements import FlType
+from editor.models.intelligence import FunctionSignature, ParamInfo
 from editor.models.lsp.completion import Completion, Kind
 from editor.services.intelligence import IntelligenceService
 
@@ -33,7 +34,15 @@ from editor.services.intelligence import IntelligenceService
 def program() -> Program:
     return Program(
         declarations=[
-            Function(name=f"func_{letter}", id=i)
+            Function(
+                name=f"func_{letter}",
+                id=i,
+                inputs=[
+                    elements.Parameter(flType=FlType("I32")),
+                    elements.Parameter(flType=FlType("I32")),
+                ],
+                outputs=[elements.Return(flType=FlType("I32"))],
+            )
             for i, letter in enumerate("abcde", start=1)
         ]
     )
@@ -156,3 +165,18 @@ def test_remove_module_is_noop_for_unknown_path() -> None:
     uut = IntelligenceService()
 
     uut.remove_module(Path("never/added.fl"))
+
+
+def test_get_function_signature_returns_correct_data(program: Program) -> None:
+    """Tests that get_function_signature returns the correct signature"""
+    path = Path("fake/path/to/program.fl")
+    expected = FunctionSignature(
+        inputs=[ParamInfo(flType="I32"), ParamInfo(flType="I32")], output="I32"
+    )
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_function_signature("func_a", path)
+
+    assert expected == actual

@@ -67,6 +67,10 @@ namespace fluir::types {
     FunctionType const* getFunctionType(TypeID id) const;
     /** Returns the TypeID assigned to the named function's signature, or ID_INVALID if not registered */
     TypeID getFunctionTypeID(const std::string& name) const;
+    /** Determines if the given function is a builtin with special rules around type checking
+     * TODO: This will be removed/refactored once generics are implemented
+     */
+    bool isMagicBuiltin(const FunctionType* func);
 
    private:
     using OverloadSet =

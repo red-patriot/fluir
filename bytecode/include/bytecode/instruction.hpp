@@ -44,6 +44,7 @@ namespace fluir::code {
   code(CAST_FU)                          \
   code(CAST_WIDTH)                       \
   code(CALL)                             \
+  code(DYN_CALL)                         \
   code(RETURN)                           \
   code(RESERVE)
 

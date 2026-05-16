@@ -1,10 +1,21 @@
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 from editor.models import Program
+from editor.services.intelligence import IntelligenceReadInterface
 
 
 class TransactionBase(ABC):
     """A transaction that can be accepted from the client to edit a program"""
+
+    def resolve(
+        self, intelligence: IntelligenceReadInterface, module_path: Path
+    ) -> None:
+        """
+        Resolve data given an intelligence source. Optional to implement.
+        Always called before `do`
+        """
+        pass
 
     @abstractmethod
     def do(self, original: Program) -> Program:

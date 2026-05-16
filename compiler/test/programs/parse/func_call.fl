@@ -27,9 +27,9 @@
                 <i32>80</i32>
             </constant>
             <call target="foo" id="3" x="20" y="15" z="0" w="12" h="12">
-                <return index="0"/>
-                <arg name="in1" index="1"/>
-                <arg name="in2" index="2"/>
+                <return/>
+                <arg name="in1"/>
+                <arg name="in2"/>
             </call>
             <unary
                     id="6"
@@ -37,10 +37,10 @@
                     lhs="2"
                     operator="++"/>
             <conduit id="4" input="2">
-                <output target="3" index="1"/>
+                <output target="3" index="0"/>
             </conduit>
             <conduit id="5" input="1">
-                <output target="3" index="2"/>
+                <output target="3" index="1"/>
             </conduit>
             <conduit id="7" input="3" index="0">
                 <output target="6" index="0"/>

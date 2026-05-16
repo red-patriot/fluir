@@ -1145,3 +1145,48 @@ TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
   EXPECT_BC_VALUES_EQ(expectedConstants, writer.constants);
   EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.back());
 }
+
+TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{
+      .id = 1,
+      .name = "main",
+      .statements = {
+        []() {
+          fluir::ast::DataFlowGraph graph;
+
+          std::vector<fa::UniqueNode> args;
+          args.emplace_back(fa::createDependency<fa::Constant>(12.5, FullID{1, 2}, fluir::FlowGraphLocation{}));
+          graph.emplace_back(
+            fa::createDependency<fa::Call>("print"s, std::move(args), FullID{1, 1}, fluir::FlowGraphLocation{}));
+          return graph;
+        }(),
+      }};
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fluir::be::ConstantsArray expectedConstants{12.5, "print"s};
+  fc::Chunk expectedChunk{.name = "main",
+                          .code = {
+                            fc::PUSH,
+                            0x00,  // arg 12.5
+                            fc::DYN_CALL,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x01,
+                            fc::Instruction::RETURN,
+                          }};
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  EXPECT_EQ(writer.constants, expectedConstants);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}

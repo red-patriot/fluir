@@ -12,9 +12,9 @@
     <body>
       <constant id="1" x="0" y="0" z="0" w="5" h="5"><i32>42</i32></constant>
       <call target="no_args" id="2" x="20" y="20" z="0" w="12" h="12">
-        <arg name="x" index="1"/>
+        <arg name="x"/>
       </call>
-      <conduit id="3" input="1"><output target="2" index="1"/></conduit>
+      <conduit id="3" input="1"><output target="2" index="0"/></conduit>
     </body>
   </function>
 </fluir>

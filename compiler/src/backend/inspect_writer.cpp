@@ -1,5 +1,6 @@
 #include "compiler/backend/inspect_writer.hpp"
 
+#include <cassert>
 #include <format>
 #include <string>
 
@@ -23,6 +24,7 @@ namespace fluir {
       std::string operator()(uint16_t u) const { return fmt::format("VU16 x{:X}", u); }
       std::string operator()(uint32_t u) const { return fmt::format("VU32 x{:X}", u); }
       std::string operator()(uint64_t u) const { return fmt::format("VU64 x{:X}", u); }
+      std::string operator()(const std::string& s) const { return fmt::format("VSTR s{:0>8X}{}", s.size(), s); }
     };
   }  // namespace
 
@@ -72,6 +74,7 @@ namespace fluir {
           ++i;
           break;
         case code::Instruction::CALL:
+        case code::Instruction::DYN_CALL:
           emitInstruction(*i++);
           emitLongArg(*i, *(i + 1), *(i + 2), *(i + 3));
           i += 3;

@@ -56,7 +56,7 @@ function CallArgumentNode({ arg, callID, index }: CallArgumentProps) {
       <Handle
         position={Position.Left}
         type="target"
-        id={`output-${callID}-${index + 1}`}
+        id={`output-${callID}-${index}`}
         style={{
           backgroundColor: gray.gray10,
           top: '50%',

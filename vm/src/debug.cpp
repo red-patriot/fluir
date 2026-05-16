@@ -2,6 +2,7 @@
 
 #include <iostream>
 
+#include "vm/code/builtin.hpp"
 #include "vm/machine/vm.hpp"
 
 namespace fluir::debug {

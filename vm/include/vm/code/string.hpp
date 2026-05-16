@@ -21,6 +21,9 @@ namespace fluir {
     friend bool operator==(const String& lhs, const String& rhs) {
       return lhs.size == rhs.size && memcmp(lhs.chars.get(), rhs.chars.get(), lhs.size) == 0;
     }
+
+    /** Return a string view of this String so we can work with it more easily */
+    [[nodiscard]] std::string_view view() const { return std::string_view{chars.get(), size}; }
   };
 
   String createStaticString(const std::string_view in);

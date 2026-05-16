@@ -5,7 +5,6 @@
 #include <format>  // Use format in VM instead of fmt to reduce dependencies of the runtime
 #include <functional>
 #include <iostream>
-#include <stack>
 
 #include "vm/debug.hpp"
 #include "vm/exceptions.hpp"
@@ -13,48 +12,6 @@
 #include "vm/utility/operations.hpp"
 
 namespace fluir {
-  // TODO: Remove this later
-  // This code is just for debugging purposes until the rest of the
-  // language is implemented
-  std::ostream& operator<<(std::ostream& os, const code::Value& value) {
-    switch (value.type()) {
-      case code::PrimitiveType::EMPTY:
-        os << "<NULL>";
-        break;
-      case code::PrimitiveType::F64:
-        os << "(F64)" << value.asF64();
-        break;
-      case code::PrimitiveType::I8:
-        os << "(I8)" << value.asI8();
-        break;
-      case code::PrimitiveType::I16:
-        os << "(I16)" << value.asI16();
-        break;
-      case code::PrimitiveType::I32:
-        os << "(I32)" << value.asI32();
-        break;
-      case code::PrimitiveType::I64:
-        os << "(I64)" << value.asI64();
-        break;
-      case code::PrimitiveType::U8:
-        os << "(U8)" << value.asU8();
-        break;
-      case code::PrimitiveType::U16:
-        os << "(U16)" << value.asU16();
-        break;
-      case code::PrimitiveType::U32:
-        os << "(U32)" << value.asU32();
-        break;
-      case code::PrimitiveType::U64:
-        os << "(U64)" << value.asU64();
-        break;
-      default:
-        assert(false && "TODO");
-    }
-
-    return os;
-  }
-
   template <typename Op>
   void VirtualMachine::floatBinary() {
     double rhs = stackTop().asF64();
@@ -347,10 +304,6 @@ namespace fluir {
           }
           break;
         case POP:
-          // TODO: Remove this later
-          // This code is just for debugging purposes until the rest of the
-          // language is implemented
-          std::cout << stackTop() << '\n';
           popStack();
           break;
         case MULTIPOP:

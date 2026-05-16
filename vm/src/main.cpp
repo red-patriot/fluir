@@ -6,6 +6,7 @@
 
 #include "../include/vm/machine/vm.hpp"
 #include "bytecode/version.hpp"
+#include "vm/code/builtin.hpp"
 #include "vm/decoder/decode.hpp"
 
 bool checkVersion(const fluir::Version& codeVersion) {
@@ -36,7 +37,8 @@ int main(int argc, char** argv) {
     return -2;
   }
 
-  fluir::VirtualMachine vm;
+  // Load the builtin native functions up front
+  fluir::VirtualMachine vm{fluir::getBuiltins()};
   auto result = vm.execute(&bytecode);
   return static_cast<std::underlying_type_t<fluir::ExecResult>>(result);
 }

@@ -72,10 +72,6 @@ namespace fluir {
     void initCall(code::Chunk const* callee, code::Value* basePtr);
   };
 
-  // TODO: Remove this later
-  // This code is just for debugging purposes until the rest of the
-  // language is implemented
-  std::ostream& operator<<(std::ostream& os, const code::Value& value);
 }  // namespace fluir
 
 #endif

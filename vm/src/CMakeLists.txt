@@ -14,6 +14,7 @@ target_sources(
             machine/vm.cpp
             debug.cpp
             code/string.cpp
+            code/builtin.cpp
 )
 
 turn_up_warnings_on(fluir.libvm)

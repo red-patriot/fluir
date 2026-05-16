@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <bytecode/code_chunk.hpp>
+#include <vm/code/value.hpp>
 
 namespace fluir {
   struct CallFrame {
@@ -19,6 +20,7 @@ namespace fluir {
     (*frame.stackEnd) = std::move(value);
     ++frame.stackEnd;
   }
+  inline const code::Value& stackTop(const CallFrame& frame) { return *(frame.stackEnd - 1); }
 }  // namespace fluir
 
 #endif

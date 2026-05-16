@@ -100,3 +100,18 @@ TEST(TestVMFunctionCalls, HandlesMainWithReturn) {
 
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
 }
+
+void testFunc(fluir::CallFrame& frame) { fluir::setReturn(frame, 42_i32); }
+
+TEST(TestVMFunctionCalls, HandlesNativeCall) {
+  using namespace std::string_view_literals;
+
+  fluir::code::ByteCode code{.header = {.entryOffset = 0},
+                             .constants = {fc::Value{fluir::createStaticString("test_target")}},
+                             .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, DYN_CALL, 0, 0, 0, 0, RETURN}}}};
+
+  fluir::VirtualMachine uut{{{"test_target"sv, testFunc}}};
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(42, uut.viewStack().front().asI32());
+}

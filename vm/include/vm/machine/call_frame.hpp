@@ -13,6 +13,12 @@ namespace fluir {
     code::Value* stackEnd;
   };
 
+  inline void setReturn(CallFrame& frame, code::Value val) { *frame.basePtr = std::move(val); }
+  inline void pop(CallFrame& frame) { --frame.stackEnd; }
+  inline void push(CallFrame& frame, code::Value value) {
+    (*frame.stackEnd) = std::move(value);
+    ++frame.stackEnd;
+  }
 }  // namespace fluir
 
 #endif

@@ -102,6 +102,8 @@ namespace fluir {
     pushStack(utility::narrowU(Op{}(operand), utility::widthof(type)));
   }
 
+  VirtualMachine::VirtualMachine(NativeFunctionsMap natives) : natives_(std::move(natives)) { }
+
   ExecResult VirtualMachine::execute(code::ByteCode const* code) {
     code_ = code;
     // Reset the internal state
@@ -378,6 +380,18 @@ namespace fluir {
             initCall(callee, basePtr);
             break;
           }
+        case DYN_CALL:
+          {
+            auto calleeIndex = readQuadWord();
+            const auto& val = code_->constants.at(calleeIndex).asStr();
+            std::string_view name{val.chars.get(), val.size};
+            const auto callee = natives_.find(name);
+            if (callee == natives_.end()) {
+              throw VirtualMachineError{std::format("{} NOT FOUND", name)};
+            }
+            callee->second(*currentFrame_);
+          }
+          break;
         case RETURN:
           {
             auto returnAddress = currentFrame_->returnAddress;

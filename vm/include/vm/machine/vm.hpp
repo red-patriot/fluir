@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "vm/code/byte_code.hpp"
+#include "vm/code/native_func.hpp"
 #include "vm/machine/call_frame.hpp"
 
 namespace fluir {
@@ -21,6 +22,7 @@ namespace fluir {
     using Stack = std::array<code::Value, STACK_LIMIT>;
 
     VirtualMachine() = default;
+    explicit VirtualMachine(NativeFunctionsMap natives);
     VirtualMachine(const VirtualMachine&) = delete;
     VirtualMachine& operator=(const VirtualMachine&) = delete;
     VirtualMachine(VirtualMachine&&) = delete;
@@ -38,6 +40,7 @@ namespace fluir {
     CallFrame* currentFrame_{nullptr};
     std::unique_ptr<Stack> stack_;
     code::Chunk flStartup_;
+    NativeFunctionsMap natives_{};
 
     /** Initializes the VM state to begin running the bytecode */
     void init();

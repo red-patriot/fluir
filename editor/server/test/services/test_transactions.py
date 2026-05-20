@@ -30,6 +30,7 @@ from editor.services.transaction import (
     ResizeElement,
     UpdateComment,
     UpdateConstant,
+    UpdateFuncParam,
     UpdateOperator,
 )
 from editor.services.transaction.add_node import CallParams
@@ -1526,3 +1527,24 @@ def test_remove_in_body_comment(
 
     actual = uut.undo(actual)
     assert original == actual
+
+
+def test_update_func_param(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    undone = copy.deepcopy(basic_program)
+    done = copy.deepcopy(basic_program)
+    done.declarations[3].inputs[0].flType = FlType.I64
+
+    input = UpdateFuncParam(target=[4], index=0, type=FlType.I64)
+
+    editor.edit(input)
+    actual = editor.get()
+
+    assert done == actual
+
+    editor.undo()
+    actual = editor.get()
+    assert undone == actual

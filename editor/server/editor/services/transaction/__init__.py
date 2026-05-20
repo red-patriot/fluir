@@ -18,6 +18,9 @@ from editor.services.transaction.rename import RenameDeclaration
 from editor.services.transaction.resize import ResizeElement
 from editor.services.transaction.update_comment import UpdateComment
 from editor.services.transaction.update_constant import UpdateConstant
+from editor.services.transaction.update_decl import (
+    UpdateFuncParam,
+)
 from editor.services.transaction.update_operator import UpdateOperator
 
 type EditTransaction = (
@@ -27,6 +30,7 @@ type EditTransaction = (
     | UpdateComment
     | UpdateConstant
     | UpdateOperator
+    | UpdateFuncParam
     | AddComment
     | AddConduit
     | AddNode
@@ -44,6 +48,7 @@ __all__ = [
     "UpdateComment",
     "UpdateConstant",
     "UpdateOperator",
+    "UpdateFuncParam",
     "AddComment",
     "AddConduit",
     "AddNode",

@@ -20,6 +20,7 @@ from editor.services.transaction.update_comment import UpdateComment
 from editor.services.transaction.update_constant import UpdateConstant
 from editor.services.transaction.update_decl import (
     UpdateFuncParam,
+    UpdateFuncReturn,
 )
 from editor.services.transaction.update_operator import UpdateOperator
 
@@ -31,6 +32,7 @@ type EditTransaction = (
     | UpdateConstant
     | UpdateOperator
     | UpdateFuncParam
+    | UpdateFuncReturn
     | AddComment
     | AddConduit
     | AddNode
@@ -49,6 +51,7 @@ __all__ = [
     "UpdateConstant",
     "UpdateOperator",
     "UpdateFuncParam",
+    "UpdateFuncReturn",
     "AddComment",
     "AddConduit",
     "AddNode",

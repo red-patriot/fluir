@@ -21,7 +21,7 @@ class UpdateFuncParam(BaseModel, TransactionBase):
             raise BadEdit(f"Function {self.target} not found")
         if self.index >= len(function.inputs):
             raise BadEdit(
-                f"Function only has {len(function.inputs)} parameters, tried to edit index {self.index}"
+                f"Function {function.name} only has {len(function.inputs)} parameters, tried to edit index {self.index}"
             )
 
         old_type = function.inputs[self.index].flType
@@ -38,5 +38,36 @@ class UpdateFuncParam(BaseModel, TransactionBase):
         old_type = function.inputs[self.index].flType
         assert old_type is not None
         function.inputs[self.index].flType = self.type
+        self.type = old_type
+        return original
+
+
+class UpdateFuncReturn(BaseModel, TransactionBase):
+    discriminator: Literal["update_func_return"] = "update_func_return"
+    target: QualifiedID
+    type: FlType
+
+    @override
+    def do(self, original: Program) -> Program:
+        function = find_item(self.target, original)
+        if not isinstance(function, elements.Function):
+            raise BadEdit(f"Function {self.target} not found")
+        if 0 == len(function.outputs):
+            raise BadEdit(f"Function {function.name} nas no return value")
+
+        old_type = function.outputs[0].flType
+        assert old_type is not None
+        function.outputs[0].flType = self.type
+        self.type = old_type
+
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        function = find_item(self.target, original)
+        assert isinstance(function, elements.Function)
+        old_type = function.outputs[0].flType
+        assert old_type is not None
+        function.outputs[0].flType = self.type
         self.type = old_type
         return original

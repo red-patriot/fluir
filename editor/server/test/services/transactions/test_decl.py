@@ -17,6 +17,7 @@ from editor.services.transaction import (
     FunctionParams,
     RenameDeclaration,
     UpdateFuncParam,
+    UpdateFuncReturn,
 )
 
 
@@ -275,6 +276,41 @@ def test_update_func_param(
     ],
 )
 def test_update_func_param_throws(
+    basic_program: Program, editor: ModuleEditor, input: EditTransaction
+) -> None:
+    with pytest.raises(BadEdit):
+        editor.edit(input)
+
+
+def test_update_func_return(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    undone = copy.deepcopy(basic_program)
+    done = copy.deepcopy(basic_program)
+    done.declarations[3].outputs[0].flType = FlType.I64
+
+    input = UpdateFuncReturn(target=[4], type=FlType.I64)
+
+    editor.edit(input)
+    actual = editor.get()
+
+    assert done == actual
+
+    editor.undo()
+    actual = editor.get()
+    assert undone == actual
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        UpdateFuncReturn(target=[3, 2], type=FlType.U64),
+        UpdateFuncReturn(target=[3], type=FlType.U64),
+    ],
+)
+def test_update_func_return_throws(
     basic_program: Program, editor: ModuleEditor, input: EditTransaction
 ) -> None:
     with pytest.raises(BadEdit):

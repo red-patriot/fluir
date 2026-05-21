@@ -13,6 +13,7 @@ from editor.services.transaction import (
     AddDeclInterface,
     DeclParameterParams,
     DeclReturnParams,
+    EditTransaction,
     FunctionParams,
     RenameDeclaration,
     UpdateFuncParam,
@@ -264,3 +265,17 @@ def test_update_func_param(
     editor.undo()
     actual = editor.get()
     assert undone == actual
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        UpdateFuncParam(target=[3, 2], index=0, type=FlType.U64),
+        UpdateFuncParam(target=[4], index=5, type=FlType.U64),
+    ],
+)
+def test_update_func_param_throws(
+    basic_program: Program, editor: ModuleEditor, input: EditTransaction
+) -> None:
+    with pytest.raises(BadEdit):
+        editor.edit(input)

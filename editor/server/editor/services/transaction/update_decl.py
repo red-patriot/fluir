@@ -19,6 +19,10 @@ class UpdateFuncParam(BaseModel, TransactionBase):
         function = find_item(self.target, original)
         if not isinstance(function, elements.Function):
             raise BadEdit(f"Function {self.target} not found")
+        if self.index >= len(function.inputs):
+            raise BadEdit(
+                f"Function only has {len(function.inputs)} parameters, tried to edit index {self.index}"
+            )
 
         old_type = function.inputs[self.index].flType
         assert old_type is not None

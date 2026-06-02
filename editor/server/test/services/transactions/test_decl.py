@@ -256,8 +256,9 @@ def test_update_func_param(
     done = copy.deepcopy(basic_program)
     done.declarations[3].inputs[0].flType = FlType.I64
 
-    input = UpdateFuncParam(target=[4], index=0, type=FlType.I64)
-
+    input = UpdateFuncParam(
+        target=[4], index=0, cmd=UpdateFuncParam.UpdateType(flType=FlType.I64)
+    )
     editor.edit(input)
     actual = editor.get()
 
@@ -271,8 +272,16 @@ def test_update_func_param(
 @pytest.mark.parametrize(
     "input",
     [
-        UpdateFuncParam(target=[3, 2], index=0, type=FlType.U64),
-        UpdateFuncParam(target=[4], index=5, type=FlType.U64),
+        UpdateFuncParam(
+            target=[3, 2],
+            index=0,
+            cmd=UpdateFuncParam.UpdateType(flType=FlType.U64),
+        ),
+        UpdateFuncParam(
+            target=[4],
+            index=5,
+            cmd=UpdateFuncParam.UpdateType(flType=FlType.U64),
+        ),
     ],
 )
 def test_update_func_param_throws(

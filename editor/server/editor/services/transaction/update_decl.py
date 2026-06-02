@@ -9,10 +9,18 @@ from editor.services.transaction.base import TransactionBase
 
 
 class UpdateFuncParam(BaseModel, TransactionBase):
+    class UpdateType(BaseModel):
+        discriminator: Literal["type"] = "type"
+        flType: FlType
+
+    class UpdateName(BaseModel):
+        discriminator: Literal["name"] = "name"
+        name: str
+
     discriminator: Literal["update_func_param"] = "update_func_param"
     target: QualifiedID
     index: int
-    type: FlType
+    cmd: UpdateType
 
     @override
     def do(self, original: Program) -> Program:
@@ -23,22 +31,21 @@ class UpdateFuncParam(BaseModel, TransactionBase):
             raise BadEdit(
                 f"Function {function.name} only has {len(function.inputs)} parameters, tried to edit index {self.index}"
             )
-
-        old_type = function.inputs[self.index].flType
-        assert old_type is not None
-        function.inputs[self.index].flType = self.type
-        self.type = old_type
+        self._type(function)
 
         return original
+
+    def _type(self, function: elements.Function) -> None:
+        old_type = function.inputs[self.index].flType
+        assert old_type is not None
+        function.inputs[self.index].flType = self.cmd.flType
+        self.cmd.flType = old_type
 
     @override
     def undo(self, original: Program) -> Program:
         function = find_item(self.target, original)
         assert isinstance(function, elements.Function)
-        old_type = function.inputs[self.index].flType
-        assert old_type is not None
-        function.inputs[self.index].flType = self.type
-        self.type = old_type
+        self._type(function)
         return original
 
 

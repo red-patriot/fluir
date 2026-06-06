@@ -93,6 +93,29 @@ export type AddDeclEditRequest = {
   params: CreateFunctionParams;
 };
 
+export type UpdateFuncParamType = {
+  discriminator: 'type';
+  flType: FlType;
+};
+
+export type UpdateFuncParamName = {
+  discriminator: 'name';
+  name: string;
+}
+
+export type UpdateFunctionParamRequest = {
+  discriminator: 'update_func_param';
+  target: number[];
+  index: number;
+  cmd: UpdateFuncParamType | UpdateFuncParamName;
+};
+
+export type UpdateFunctionReturnRequest = {
+  discriminator: 'update_func_return';
+  target: number[];
+  type: FlType;
+};
+
 export type RemoveItemEditRequest = {
   target: number[];
 };
@@ -122,6 +145,8 @@ type EditRequest =
   | AddNodeEditRequest
   | AddDeclEditRequest
   | AddDeclInterfaceEditRequest
-  | RemoveItemEditRequest;
+  | RemoveItemEditRequest
+  | UpdateFunctionParamRequest
+  | UpdateFunctionReturnRequest;
 
 export default EditRequest;

@@ -1,7 +1,9 @@
 import {
   UpdateConstantEditRequest,
   UpdateOperatorEditRequest,
-  RenameDeclarationEditRequest, UpdateCommentEditRequest,
+  RenameDeclarationEditRequest,
+  UpdateCommentEditRequest,
+  UpdateFunctionParamRequest,
 } from '@/models/edit_request';
 import { Operator } from '@/models/fluir_module';
 import { toApiID } from '@/utility/idHelpers';
@@ -43,6 +45,22 @@ export function renameDeclaration(
       discriminator: 'rename_declaration',
       target: toApiID(fullID),
       name: new_name,
+    };
+    commit(request);
+  };
+}
+
+export function updateFuncParamName(
+  commit: (request: UpdateFunctionParamRequest) => void,
+  funcID: string,
+  index: number,
+) {
+  return (name: string) => {
+    const request: UpdateFunctionParamRequest = {
+      discriminator: 'update_func_param',
+      target: toApiID(funcID),
+      index,
+      cmd: { discriminator: 'name', name },
     };
     commit(request);
   };

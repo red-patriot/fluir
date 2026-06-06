@@ -247,7 +247,7 @@ def test_rename_declaration_raises_if_target_is_not_a_decl(
         editor.edit(uut)
 
 
-def test_update_func_param(
+def test_update_func_param_type(
     basic_program: Program,
     editor: ModuleEditor,
     intelligence: IntelligenceReadInterface,
@@ -258,6 +258,30 @@ def test_update_func_param(
 
     input = UpdateFuncParam(
         target=[4], index=0, cmd=UpdateFuncParam.UpdateType(flType=FlType.I64)
+    )
+    editor.edit(input)
+    actual = editor.get()
+
+    assert done == actual
+
+    editor.undo()
+    actual = editor.get()
+    assert undone == actual
+
+
+def test_update_func_param_name(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    undone = copy.deepcopy(basic_program)
+    done = copy.deepcopy(basic_program)
+    done.declarations[3].inputs[0].name = "new_param_name"
+
+    input = UpdateFuncParam(
+        target=[4],
+        index=0,
+        cmd=UpdateFuncParam.UpdateName(name="new_param_name"),
     )
     editor.edit(input)
     actual = editor.get()

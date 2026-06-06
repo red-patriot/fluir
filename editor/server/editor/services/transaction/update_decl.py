@@ -20,7 +20,7 @@ class UpdateFuncParam(BaseModel, TransactionBase):
     discriminator: Literal["update_func_param"] = "update_func_param"
     target: QualifiedID
     index: int
-    cmd: UpdateType
+    cmd: UpdateType | UpdateName
 
     @override
     def do(self, original: Program) -> Program:
@@ -31,21 +31,36 @@ class UpdateFuncParam(BaseModel, TransactionBase):
             raise BadEdit(
                 f"Function {function.name} only has {len(function.inputs)} parameters, tried to edit index {self.index}"
             )
-        self._type(function)
+        match self.cmd.discriminator:
+            case "type":
+                self._type(function)
+            case "name":
+                self._name(function)
 
         return original
 
     def _type(self, function: elements.Function) -> None:
+        assert self.cmd.discriminator == "type"
         old_type = function.inputs[self.index].flType
         assert old_type is not None
         function.inputs[self.index].flType = self.cmd.flType
         self.cmd.flType = old_type
 
+    def _name(self, function: elements.Function) -> None:
+        assert self.cmd.discriminator == "name"
+        old_name = function.inputs[self.index].name
+        function.inputs[self.index].name = self.cmd.name
+        self.cmd.name = old_name
+
     @override
     def undo(self, original: Program) -> Program:
         function = find_item(self.target, original)
         assert isinstance(function, elements.Function)
-        self._type(function)
+        match self.cmd.discriminator:
+            case "type":
+                self._type(function)
+            case "name":
+                self._name(function)
         return original
 
 

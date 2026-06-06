@@ -12,6 +12,10 @@ from editor.services.transaction.add_node import (
     OperatorParams,
 )
 from editor.services.transaction.base import TransactionBase
+from editor.services.transaction.edit_call_node import (
+    EditCallNode,
+    RenameCallArg,
+)
 from editor.services.transaction.move import MoveElement
 from editor.services.transaction.remove import RemoveItem
 from editor.services.transaction.rename import RenameDeclaration
@@ -39,6 +43,7 @@ type EditTransaction = (
     | AddDecl
     | AddDeclInterface
     | RemoveItem
+    | EditCallNode
 )
 
 __all__ = [
@@ -63,4 +68,6 @@ __all__ = [
     "ConstantParams",
     "OperatorParams",
     "RemoveItem",
+    "EditCallNode",
+    "RenameCallArg",
 ]

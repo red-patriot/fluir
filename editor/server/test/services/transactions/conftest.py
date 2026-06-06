@@ -132,3 +132,38 @@ def comments_editor(program_with_comments: Program) -> ModuleEditor:
     editor = ModuleEditor()
     editor.open_module(copy.deepcopy(program_with_comments))
     return editor
+
+
+@pytest.fixture
+def program_with_call(basic_program: Program) -> Program:
+    """basic_program extended with a function containing a Call node."""
+    program = copy.deepcopy(basic_program)
+    program.declarations.append(
+        elements.Function(
+            name="call_host",
+            location=elements.Location(610, 10, 2, 100, 100),
+            id=100,
+            nodes=[
+                elements.Call(
+                    id=1,
+                    target="foo",
+                    arguments=["x", "y"],
+                ),
+            ],
+        )
+    )
+    return program
+
+
+@pytest.fixture
+def call_editor(program_with_call: Program) -> ModuleEditor:
+    editor = ModuleEditor()
+    editor.open_module(copy.deepcopy(program_with_call))
+    return editor
+
+
+@pytest.fixture
+def call_intelligence(program_with_call: Program) -> IntelligenceReadInterface:
+    intelligence = IntelligenceService()
+    intelligence.add_module(program_with_call, Path("/fake/path.fl"))
+    return intelligence

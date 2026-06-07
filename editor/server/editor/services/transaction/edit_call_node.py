@@ -53,8 +53,26 @@ class DeleteCallArg(BaseModel):
         arguments.insert(self.index, self._deleted_name)
 
 
+class ReorderCallArg(BaseModel):
+    discriminator: Literal["reorder_arg"] = "reorder_arg"
+    current: int
+    destination: int
+
+    def do(self, arguments: list[str]) -> None:
+        n = len(arguments)
+        if not (0 <= self.current < n) or not (0 <= self.destination < n):
+            raise BadEdit(
+                f"Call node has {n} arguments, "
+                f"cannot reorder from {self.current} to {self.destination}"
+            )
+        arguments.insert(self.destination, arguments.pop(self.current))
+
+    def undo(self, arguments: list[str]) -> None:
+        arguments.insert(self.current, arguments.pop(self.destination))
+
+
 CallCommand = Annotated[
-    RenameCallArg | AddCallArg | DeleteCallArg,
+    RenameCallArg | AddCallArg | DeleteCallArg | ReorderCallArg,
     Field(discriminator="discriminator"),
 ]
 

@@ -17,6 +17,7 @@ from editor.services.transaction.edit_call_node import (
     DeleteCallArg,
     EditCallNode,
     RenameCallArg,
+    ReorderCallArg,
 )
 from editor.services.transaction.move import MoveElement
 from editor.services.transaction.remove import RemoveItem
@@ -74,4 +75,5 @@ __all__ = [
     "RenameCallArg",
     "AddCallArg",
     "DeleteCallArg",
+    "ReorderCallArg",
 ]

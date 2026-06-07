@@ -14,6 +14,7 @@ from editor.services.transaction import (
     DeleteCallArg,
     EditCallNode,
     RenameCallArg,
+    ReorderCallArg,
 )
 
 
@@ -185,6 +186,98 @@ def test_delete_call_arg_negative_index(
     uut = EditCallNode(
         target=[100, 1],
         command=DeleteCallArg(index=-1),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    with pytest.raises(BadEdit):
+        call_editor.edit(uut)
+
+
+def test_reorder_call_arg(
+    program_with_call: Program,
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    expected = copy.deepcopy(program_with_call)
+    call_node = expected.declarations[4].nodes[0]
+    assert isinstance(call_node, elements.Call)
+    call_node.arguments = ["y", "x"]
+
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=0, destination=1),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    call_editor.edit(uut)
+
+    assert expected == call_editor.get()
+
+
+def test_reorder_call_arg_undo(
+    program_with_call: Program,
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    original = copy.deepcopy(program_with_call)
+
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=0, destination=1),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    call_editor.edit(uut)
+
+    actual = call_editor.get()
+    assert actual is not None
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+def test_reorder_call_arg_current_out_of_bounds(
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=5, destination=0),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    with pytest.raises(BadEdit):
+        call_editor.edit(uut)
+
+
+def test_reorder_call_arg_destination_out_of_bounds(
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=0, destination=5),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    with pytest.raises(BadEdit):
+        call_editor.edit(uut)
+
+
+def test_reorder_call_arg_negative_current(
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=-1, destination=0),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    with pytest.raises(BadEdit):
+        call_editor.edit(uut)
+
+
+def test_reorder_call_arg_negative_destination(
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    uut = EditCallNode(
+        target=[100, 1],
+        command=ReorderCallArg(current=0, destination=-1),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
     with pytest.raises(BadEdit):

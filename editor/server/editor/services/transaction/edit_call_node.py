@@ -3,6 +3,7 @@ from typing import Annotated, Literal, override
 from pydantic import BaseModel, Field, PrivateAttr
 
 from editor.models import Program, QualifiedID, elements
+from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_element
 from editor.services.transaction.base import TransactionBase
 
@@ -42,7 +43,7 @@ class DeleteCallArg(BaseModel):
 
     def do(self, arguments: list[str]) -> None:
         if self.index < 0 or self.index >= len(arguments):
-            raise IndexError(
+            raise BadEdit(
                 f"Call node has {len(arguments)} arguments, "
                 f"cannot delete index {self.index}"
             )

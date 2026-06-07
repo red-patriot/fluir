@@ -5,6 +5,7 @@ from typing import cast
 import pytest
 
 from editor.models import Program, elements
+from editor.models.edit_errors import BadEdit
 from editor.models.elements import IdentifierError
 from editor.services.intelligence import IntelligenceReadInterface
 from editor.services.module_editor import ModuleEditor
@@ -173,7 +174,7 @@ def test_delete_call_arg_out_of_bounds(
         command=DeleteCallArg(index=99),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
-    with pytest.raises(IndexError):
+    with pytest.raises(BadEdit):
         call_editor.edit(uut)
 
 
@@ -186,5 +187,5 @@ def test_delete_call_arg_negative_index(
         command=DeleteCallArg(index=-1),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
-    with pytest.raises(IndexError):
+    with pytest.raises(BadEdit):
         call_editor.edit(uut)

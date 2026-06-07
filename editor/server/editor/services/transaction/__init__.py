@@ -13,6 +13,8 @@ from editor.services.transaction.add_node import (
 )
 from editor.services.transaction.base import TransactionBase
 from editor.services.transaction.edit_call_node import (
+    AddCallArg,
+    DeleteCallArg,
     EditCallNode,
     RenameCallArg,
 )
@@ -70,4 +72,6 @@ __all__ = [
     "RemoveItem",
     "EditCallNode",
     "RenameCallArg",
+    "AddCallArg",
+    "DeleteCallArg",
 ]

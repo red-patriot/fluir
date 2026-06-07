@@ -4,7 +4,6 @@ import { ValueDisplay } from "./ValueDisplay";
 import { editWithInputField } from "@/components/flow_diagram/common/InputField.tsx";
 import { validateDeclName } from "@/components/flow_diagram/logic/validateEdit";
 import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
-import { renameDeclaration } from "@/components/flow_diagram/logic/updateNode.ts";
 import ElementTag from "@/components/flow_diagram/common/ElementTag.tsx";
 import { useDialogContext } from "@/components/flow_diagram/dialog";
 import {
@@ -20,6 +19,7 @@ interface DeclHeaderProps {
   fullID: string;
   variant?: "solid" | "ghost";
   onContextMenu?: (event: React.MouseEvent) => void;
+  updateName?: (name: string) => void;
 }
 
 export default function DeclHeader({
@@ -27,17 +27,18 @@ export default function DeclHeader({
   children,
   fullID,
   onContextMenu,
+  updateName,
 }: React.PropsWithChildren<DeclHeaderProps>) {
   const { editProgram } = useProgramActions();
   const { openTypeOptionsDialog } = useDialogContext();
-  const updateName = renameDeclaration(editProgram, fullID);
-
   const canAddReturn = decl.outputs.length === 0;
 
-  const doEdit = editWithInputField({
-    validate: validateDeclName,
-    onValidateSucceed: updateName,
-  });
+  const doEdit = updateName
+    ? editWithInputField({
+        validate: validateDeclName,
+        onValidateSucceed: updateName,
+      })
+    : undefined;
 
   const openAddParamDialog = (e: React.MouseEvent) => {
     openTypeOptionsDialog({

@@ -40,10 +40,20 @@ export type RenameCallArg = {
   name: string;
 };
 
+export type AddCallArg = {
+  discriminator: 'add_arg';
+  name: string;
+};
+
+export type DeleteCallArg = {
+  discriminator: 'delete_arg';
+  index: number;
+};
+
 export type EditCallNodeRequest = {
   discriminator: 'edit_call_node';
   target: number[];
-  command: RenameCallArg;
+  command: RenameCallArg | AddCallArg | DeleteCallArg;
 };
 
 export type AddConduitEditRequest = {

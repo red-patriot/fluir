@@ -9,6 +9,11 @@ import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut.tsx';
 import { HorizontalResizeHandle } from '@/components/flow_diagram/common/ResizeHandle.tsx';
 import { ZOOM_SCALAR } from '@/hooks/useSizeStyle.ts';
 import { LIMITS } from '@/limits.ts';
+import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
+import { renameCallArg } from '@/components/flow_diagram/logic/updateNode';
+import { editWithInputField } from '@/components/flow_diagram/common/InputField';
+import { validateDeclName } from '@/components/flow_diagram/logic/validateEdit.ts';
+import EditRequest from '@/models/edit_request';
 
 export type CallNode = Node<{
   call: Call;
@@ -19,6 +24,7 @@ export default function CallNode({
                                    data: { call, fullID },
                                    selected,
                                  }: NodeProps<CallNode>) {
+  const { editProgram } = useProgramActions();
   return (
     <Flex
       direction="column"
@@ -33,7 +39,7 @@ export default function CallNode({
       </Flex>
       <Flex direction="column" className="w-full">
         {call.arguments.map((arg, index) => (
-          <CallArgumentNode arg={arg} callID={fullID} index={index} />
+          <CallArgumentNode arg={arg} callID={fullID} index={index} editProgram={editProgram} />
         ))}
       </Flex>
       {call.returns && <NodeOutput fullID={fullID} count={1} />}
@@ -48,9 +54,12 @@ interface CallArgumentProps {
   arg: string;
   callID: string;
   index: number;
+  editProgram: (request: EditRequest) => void;
 }
 
-function CallArgumentNode({ arg, callID, index }: CallArgumentProps) {
+function CallArgumentNode({ arg, callID, index, editProgram }: CallArgumentProps) {
+  const updateName = renameCallArg(editProgram, callID, index);
+  const doEdit = editWithInputField({ validate: validateDeclName, onValidateSucceed: updateName });
   return (
     <Flex direction="row" className="w-full relative">
       <Handle
@@ -65,7 +74,7 @@ function CallArgumentNode({ arg, callID, index }: CallArgumentProps) {
           transform: 'translate(-50%, -50%)',
         }}
       />
-      <ValueDisplay fullID={callID} value={arg} />
+      <ValueDisplay fullID={callID} value={arg} renderEdit={doEdit} />
     </Flex>
   );
 }

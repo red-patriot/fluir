@@ -34,6 +34,18 @@ export type UpdateOperatorEditRequest = {
   value: Operator;
 };
 
+export type RenameCallArg = {
+  discriminator: 'rename_arg';
+  index: number;
+  name: string;
+};
+
+export type EditCallNodeRequest = {
+  discriminator: 'edit_call_node';
+  target: number[];
+  command: RenameCallArg;
+};
+
 export type AddConduitEditRequest = {
   discriminator: 'add_conduit';
   source: string; // "input-QualifiedID-index"
@@ -147,6 +159,7 @@ type EditRequest =
   | AddDeclInterfaceEditRequest
   | RemoveItemEditRequest
   | UpdateFunctionParamRequest
-  | UpdateFunctionReturnRequest;
+  | UpdateFunctionReturnRequest
+  | EditCallNodeRequest;
 
 export default EditRequest;

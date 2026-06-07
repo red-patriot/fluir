@@ -4,6 +4,7 @@ import {
   RenameDeclarationEditRequest,
   UpdateCommentEditRequest,
   UpdateFunctionParamRequest,
+  EditCallNodeRequest,
 } from '@/models/edit_request';
 import { Operator } from '@/models/fluir_module';
 import { toApiID } from '@/utility/idHelpers';
@@ -61,6 +62,21 @@ export function updateFuncParamName(
       target: toApiID(funcID),
       index,
       cmd: { discriminator: 'name', name },
+    };
+    commit(request);
+  };
+}
+
+export function renameCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+  index: number,
+) {
+  return (name: string) => {
+    const request: EditCallNodeRequest = {
+      discriminator: 'edit_call_node',
+      target: toApiID(callID),
+      command: { discriminator: 'rename_arg', index, name },
     };
     commit(request);
   };

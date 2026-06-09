@@ -82,6 +82,34 @@ export function renameCallArg(
   };
 }
 
+export function addCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (name: string) => {
+    const request: EditCallNodeRequest = {
+      discriminator: 'edit_call_node',
+      target: toApiID(callID),
+      command: { discriminator: 'add_arg', name },
+    };
+    commit(request);
+  };
+}
+
+export function deleteCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (index: number) => {
+    const request: EditCallNodeRequest = {
+      discriminator: 'edit_call_node',
+      target: toApiID(callID),
+      command: { discriminator: 'delete_arg', index },
+    };
+    commit(request);
+  };
+}
+
 export function updateComment(
   commit: (request: UpdateCommentEditRequest) => void,
   fullID: string,

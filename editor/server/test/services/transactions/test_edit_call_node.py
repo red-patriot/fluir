@@ -95,6 +95,7 @@ def test_add_call_arg(
     call_node = expected.declarations[4].nodes[0]
     assert isinstance(call_node, elements.Call)
     call_node.arguments.append("z")
+    call_node.location.height += 5
 
     uut = EditCallNode(
         target=[100, 1],
@@ -135,6 +136,7 @@ def test_delete_call_arg(
     call_node = expected.declarations[4].nodes[0]
     assert isinstance(call_node, elements.Call)
     call_node.arguments.pop(0)  # removes "x", leaves ["y"]
+    call_node.location.height -= 5
 
     uut = EditCallNode(
         target=[100, 1],

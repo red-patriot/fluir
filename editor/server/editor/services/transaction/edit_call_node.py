@@ -54,6 +54,7 @@ class DeleteCallArg(BaseModel):
             )
         self._deleted_name = node.arguments.pop(self.index)
         node.location.height -= 5
+        # TODO: Also remove conduits to this as well (could extract to standalone func)?
 
     def undo(self, node: Call) -> None:
         node.arguments.insert(self.index, self._deleted_name)

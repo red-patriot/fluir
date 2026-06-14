@@ -136,6 +136,7 @@ def test_delete_call_arg(
     call_node = expected.declarations[4].nodes[0]
     assert isinstance(call_node, elements.Call)
     call_node.arguments.pop(0)  # removes "x", leaves ["y"]
+    expected.declarations[4].conduits.clear()  # remove the conduit going to "x"
     call_node.location.height -= 5
 
     uut = EditCallNode(
@@ -157,7 +158,7 @@ def test_delete_call_arg_undo(
 
     uut = EditCallNode(
         target=[100, 1],
-        command=DeleteCallArg(index=0),
+        command=DeleteCallArg(index=1),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
     call_editor.edit(uut)

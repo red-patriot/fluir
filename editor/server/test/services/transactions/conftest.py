@@ -149,6 +149,19 @@ def program_with_call(basic_program: Program) -> Program:
                     target="foo",
                     arguments=["x", "y"],
                 ),
+                elements.Constant(
+                    id=2,
+                    location=elements.Location(2, 2, 1, 5, 5),
+                    value="1",
+                    flType=FlType.I32,
+                ),
+            ],
+            conduits=[
+                elements.Conduit(
+                    id=1,
+                    input=2,
+                    children=[elements.Conduit.Output(target=1, index=0)],
+                )
             ],
         )
     )

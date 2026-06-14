@@ -46,7 +46,7 @@ export default function CallNode({
       onContextMenu={(e) => e.stopPropagation()}
     >
       <ContextMenu.Root>
-        <ContextMenu.Trigger asChild>
+        <ContextMenu.Trigger>
           <Flex direction="row" className="w-full">
             <ElementTag name="fn" />
             <ValueDisplay fullID={fullID} value={call.target} />
@@ -111,7 +111,7 @@ function CallArgumentNode({
   const deleteArg = deleteCallArg(editProgram, callID);
   return (
     <ContextMenu.Root>
-      <ContextMenu.Trigger asChild>
+      <ContextMenu.Trigger>
         <Flex
           direction="row"
           className="w-full relative"

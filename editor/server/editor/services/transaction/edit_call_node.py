@@ -8,7 +8,8 @@ from editor.models.elements import Call, find_element
 from editor.services.transaction.base import TransactionBase
 from editor.utility.remove_connections import (
     ConnectionTarget,
-    remove_connections,
+    remove_inputs_to,
+    remove_outputs_of,
 )
 
 
@@ -60,7 +61,7 @@ class DeleteCallArg(BaseModel):
                 f"cannot delete index {self.index}"
             )
         self._deleted_name = node.arguments.pop(self.index)
-        self._removed_conduits = remove_connections(
+        self._removed_conduits = remove_inputs_to(
             ConnectionTarget(id=node.id, index=self.index), parent
         )
         node.location.height -= 5
@@ -115,7 +116,7 @@ class DeleteCallReturn(BaseModel):
         if not node.returns:
             raise BadEdit("Call node has no return value to delete")
         node.returns = False
-        self._removed_conduits = remove_connections(
+        self._removed_conduits = remove_outputs_of(
             ConnectionTarget(id=node.id, index=0), parent
         )
 

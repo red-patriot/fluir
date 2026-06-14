@@ -6,9 +6,10 @@ from editor.models import Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_item
 from editor.services.transaction.base import TransactionBase
+from editor.utility import remove_connections
 from editor.utility.remove_connections import (
     ConnectionTarget,
-    remove_connections,
+    remove_all_connections_of,
 )
 
 
@@ -119,7 +120,7 @@ class RemoveItem(BaseModel, TransactionBase):
                 for annotation in parent.annotations
                 if annotation.id != element_id
             ]
-            self._removed_conduits = remove_connections(
+            self._removed_conduits = remove_all_connections_of(
                 target=ConnectionTarget(id=element_id), parent=parent
             )
         else:

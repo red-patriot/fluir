@@ -165,6 +165,32 @@ def program_with_call(basic_program: Program) -> Program:
             ],
         )
     )
+    program.declarations.append(
+        elements.Function(
+            name="call_ret",
+            location=elements.Location(610, 10, 2, 15, 15),
+            id=101,
+            nodes=[
+                elements.Call(
+                    id=1, target="foo", arguments=["x", "y"], returns=True
+                ),
+                elements.Call(
+                    id=2,
+                    location=elements.Location(2, 2, 1, 5, 10),
+                    target="bar",
+                    arguments=["first"],
+                ),
+            ],
+            conduits=[
+                elements.Conduit(
+                    id=3,
+                    input=1,
+                    index=0,
+                    children=[elements.Conduit.Output(target=2, index=0)],
+                )
+            ],
+        )
+    )
     return program
 
 

@@ -93,8 +93,44 @@ class ReorderCallArg(BaseModel):
         )
 
 
+class AddCallReturn(BaseModel):
+    discriminator: Literal["add_return"] = "add_return"
+
+    def do(self, node: Call, parent: Function) -> None:
+        if node.returns:
+            raise BadEdit("Call node already has a return value")
+        node.returns = True
+
+    def undo(self, node: Call, parent: Function) -> None:
+        node.returns = False
+
+
+class DeleteCallReturn(BaseModel):
+    discriminator: Literal["delete_return"] = "delete_return"
+    _removed_conduits: list[elements.Conduit] = PrivateAttr(
+        default_factory=list
+    )
+
+    def do(self, node: Call, parent: Function) -> None:
+        if not node.returns:
+            raise BadEdit("Call node has no return value to delete")
+        node.returns = False
+        self._removed_conduits = remove_connections(
+            ConnectionTarget(id=node.id, index=0), parent
+        )
+
+    def undo(self, node: Call, parent: Function) -> None:
+        node.returns = True
+        parent.conduits.extend(self._removed_conduits)
+
+
 CallCommand = Annotated[
-    RenameCallArg | AddCallArg | DeleteCallArg | ReorderCallArg,
+    RenameCallArg
+    | AddCallArg
+    | DeleteCallArg
+    | ReorderCallArg
+    | AddCallReturn
+    | DeleteCallReturn,
     Field(discriminator="discriminator"),
 ]
 

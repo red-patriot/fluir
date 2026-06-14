@@ -64,12 +64,28 @@ class DeleteCallArg(BaseModel):
         self._removed_conduits = remove_inputs_to(
             ConnectionTarget(id=node.id, index=self.index), parent
         )
+        for conduit in parent.conduits:
+            for child in conduit.children:
+                if (
+                    isinstance(child, elements.Conduit.Output)
+                    and child.target == node.id
+                    and child.index > self.index
+                ):
+                    child.index -= 1
         node.location.height -= 5
-        # TODO: Also remove conduits to this as well (could extract to standalone func)?
 
     def undo(self, node: Call, parent: Function) -> None:
         node.arguments.insert(self.index, self._deleted_name)
         node.location.height += 5
+        for conduit in parent.conduits:
+            for child in conduit.children:
+                if (
+                    isinstance(child, elements.Conduit.Output)
+                    and child.target == node.id
+                    and child.index >= self.index
+                ):
+                    child.index += 1
+        parent.conduits.extend(self._removed_conduits)
 
 
 class ReorderCallArg(BaseModel):

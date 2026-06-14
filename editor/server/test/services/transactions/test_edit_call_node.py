@@ -197,6 +197,87 @@ def test_delete_call_arg_negative_index(
         call_editor.edit(uut)
 
 
+def test_delete_call_arg_shifts_conduit_indices(
+    program_with_call: Program,
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    # Add a conduit targeting arg index 1 of the call node (id=1)
+    program_with_call.declarations[4].conduits.append(
+        elements.Conduit(
+            id=2,
+            input=2,
+            children=[elements.Conduit.Output(target=1, index=1)],
+        )
+    )
+    call_editor.open_module(copy.deepcopy(program_with_call))
+
+    uut = EditCallNode(
+        target=[100, 1],
+        command=DeleteCallArg(index=0),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    call_editor.edit(uut)
+
+    result = call_editor.get()
+    assert result is not None
+    conduits = result.declarations[4].conduits
+    # Conduit to index 0 was removed; conduit formerly at index 1 shifted to 0
+    assert len(conduits) == 1
+    out = conduits[0].children[0]
+    assert isinstance(out, elements.Conduit.Output)
+    assert out.index == 0
+
+
+def test_delete_call_arg_shifts_conduit_indices_undo(
+    program_with_call: Program,
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    # Use only a conduit at index 1 (no conduit at index 0) to avoid ordering issues
+    program_with_call.declarations[4].conduits = [
+        elements.Conduit(
+            id=2,
+            input=2,
+            children=[elements.Conduit.Output(target=1, index=1)],
+        )
+    ]
+    original = copy.deepcopy(program_with_call)
+    call_editor.open_module(copy.deepcopy(program_with_call))
+
+    uut = EditCallNode(
+        target=[100, 1],
+        command=DeleteCallArg(index=0),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    call_editor.edit(uut)
+
+    result = call_editor.get()
+    assert result is not None
+    result = uut.undo(result)
+    assert original == result
+
+
+def test_delete_call_arg_undo_restores_conduits(
+    program_with_call: Program,
+    call_editor: ModuleEditor,
+    call_intelligence: IntelligenceReadInterface,
+) -> None:
+    original = copy.deepcopy(program_with_call)
+
+    uut = EditCallNode(
+        target=[100, 1],
+        command=DeleteCallArg(index=0),
+    )
+    uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
+    call_editor.edit(uut)
+
+    result = call_editor.get()
+    assert result is not None
+    result = uut.undo(result)
+    assert original == result
+
+
 def test_reorder_call_arg(
     program_with_call: Program,
     call_editor: ModuleEditor,

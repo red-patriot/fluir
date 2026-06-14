@@ -1,6 +1,6 @@
 import { NodeProps, Node, Handle, Position } from "@xyflow/react";
 import { Call } from "@/models/fluir_module";
-import { Flex } from "@radix-ui/themes";
+import { Code, Flex } from "@radix-ui/themes";
 import { gray, sky } from "@radix-ui/colors";
 import ElementTag from "@/components/flow_diagram/common/ElementTag.tsx";
 import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay.tsx";
@@ -134,7 +134,10 @@ function CallArgumentNode({
       </ContextMenu.Trigger>
       <ContextMenu.Content>
         <ContextMenu.Item onSelect={() => deleteArg(index)}>
-          Delete
+          Delete{" "}
+          <Code variant="soft" color="gray">
+            {arg}
+          </Code>
         </ContextMenu.Item>
       </ContextMenu.Content>
     </ContextMenu.Root>

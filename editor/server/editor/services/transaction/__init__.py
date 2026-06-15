@@ -28,6 +28,7 @@ from editor.services.transaction.resize import ResizeElement
 from editor.services.transaction.update_comment import UpdateComment
 from editor.services.transaction.update_constant import UpdateConstant
 from editor.services.transaction.update_decl import (
+    ReorderFuncParam,
     UpdateFuncParam,
     UpdateFuncReturn,
 )
@@ -42,6 +43,7 @@ type EditTransaction = (
     | UpdateOperator
     | UpdateFuncParam
     | UpdateFuncReturn
+    | ReorderFuncParam
     | AddComment
     | AddConduit
     | AddNode
@@ -62,6 +64,7 @@ __all__ = [
     "UpdateOperator",
     "UpdateFuncParam",
     "UpdateFuncReturn",
+    "ReorderFuncParam",
     "AddComment",
     "AddConduit",
     "AddNode",

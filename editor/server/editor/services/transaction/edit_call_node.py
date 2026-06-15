@@ -103,11 +103,13 @@ class ReorderCallArg(BaseModel):
         node.arguments.insert(
             self.destination, node.arguments.pop(self.current)
         )
+        # TODO: Move conduits around
 
     def undo(self, node: Call, parent: Function) -> None:
         node.arguments.insert(
             self.current, node.arguments.pop(self.destination)
         )
+        # TODO: Move conduits around
 
 
 class AddCallReturn(BaseModel):

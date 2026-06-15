@@ -16,6 +16,7 @@ from editor.services.transaction import (
     EditTransaction,
     FunctionParams,
     RenameDeclaration,
+    ReorderFuncParam,
     UpdateFuncParam,
     UpdateFuncReturn,
 )
@@ -344,6 +345,53 @@ def test_update_func_return(
     ],
 )
 def test_update_func_return_throws(
+    basic_program: Program, editor: ModuleEditor, input: EditTransaction
+) -> None:
+    with pytest.raises(BadEdit):
+        editor.edit(input)
+
+
+def test_reorder_func_param(
+    basic_program: Program,
+    editor: ModuleEditor,
+    intelligence: IntelligenceReadInterface,
+) -> None:
+    original = copy.deepcopy(basic_program)
+    expected = copy.deepcopy(basic_program)
+    func = expected.declarations[3]
+    func.inputs.append(func.inputs.pop(0))
+
+    uut = ReorderFuncParam(
+        target=[4],
+        source_index=0,
+        destination_index=1,
+    )
+
+    uut.resolve(intelligence, cast(Path, editor.get_path()))
+    editor.edit(uut)
+    actual = editor.get()
+
+    assert actual is not None
+    assert actual == expected
+
+    actual = uut.undo(actual)
+    assert original == actual
+
+
+# TODO: Test for moving conduits around
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        ReorderFuncParam(target=[4], source_index=-1, destination_index=0),
+        ReorderFuncParam(target=[4], source_index=3, destination_index=0),
+        ReorderFuncParam(target=[4], source_index=0, destination_index=-3),
+        ReorderFuncParam(target=[4], source_index=1, destination_index=2),
+        ReorderFuncParam(target=[3, 2], source_index=3, destination_index=0),
+    ],
+)
+def test_reorder_func_param_throws(
     basic_program: Program, editor: ModuleEditor, input: EditTransaction
 ) -> None:
     with pytest.raises(BadEdit):

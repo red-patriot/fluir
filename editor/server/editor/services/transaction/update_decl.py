@@ -93,3 +93,44 @@ class UpdateFuncReturn(BaseModel, TransactionBase):
         function.outputs[0].flType = self.type
         self.type = old_type
         return original
+
+
+class ReorderFuncParam(BaseModel, TransactionBase):
+    discriminator: Literal["reorder_func_param"] = "reorder_func_param"
+    target: QualifiedID
+    source_index: int
+    destination_index: int
+
+    @override
+    def do(self, original: Program) -> Program:
+        function = find_item(self.target, original)
+        if not isinstance(function, elements.Function):
+            raise BadEdit(f"Function {self.target} not found")
+        if self.source_index < 0 or self.source_index >= len(function.inputs):
+            raise BadEdit(
+                f"Source index {self.source_index} out of range for function"
+            )
+        if self.destination_index < 0 or self.destination_index >= len(
+            function.inputs
+        ):
+            raise BadEdit(
+                f"Destination index {self.destination_index} out of range for function"
+            )
+
+        reordered = function.inputs.pop(self.source_index)
+        function.inputs.insert(self.destination_index, reordered)
+
+        # TODO: Move conduits around...
+
+        return original
+
+    @override
+    def undo(self, original: Program) -> Program:
+        function = find_item(self.target, original)
+        assert isinstance(function, elements.Function)
+        reordered = function.inputs.pop(self.source_index)
+        function.inputs.insert(self.destination_index, reordered)
+
+        # TODO: Move conduits around...
+
+        return original

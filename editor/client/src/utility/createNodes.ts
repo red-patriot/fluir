@@ -192,6 +192,7 @@ function addFunctionParameterNode(
         funcID: funcID,
         fullID: paramID,
         parameter: param,
+        index: index,
       },
       dragHandle: ".dragHandle__custom",
     });

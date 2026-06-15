@@ -8,6 +8,8 @@ import { XYResizeHandle } from "@/components/flow_diagram/common/ResizeHandle";
 import { useMemo } from "react";
 import { amber } from "@radix-ui/colors";
 import { useDialogContext } from "@/components/flow_diagram/dialog";
+import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
+import { renameDeclaration } from "@/components/flow_diagram/logic/updateNode.ts";
 
 export type FunctionDeclNode = Node<
   { decl: FunctionDecl; fullID: string },
@@ -21,6 +23,8 @@ export default function FunctionDeclNode({
 }: NodeProps<FunctionDeclNode>) {
   const { screenToFlowPosition } = useReactFlow();
   const { openCreateNodeDialog } = useDialogContext();
+  const { editProgram } = useProgramActions();
+  const updateName = renameDeclaration(editProgram, fullID);
   const minWidth = useMemo(() => {
     const rightExtents = decl.nodes.map((n) => n.location.x + n.location.width);
 
@@ -64,6 +68,7 @@ export default function FunctionDeclNode({
           decl={decl}
           variant="solid"
           fullID={fullID}
+          updateName={updateName}
           onContextMenu={(event: React.MouseEvent) => {
             event.stopPropagation();
             // TODO: Fill this out here!

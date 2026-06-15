@@ -6,6 +6,11 @@ from editor.models import Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_item
 from editor.services.transaction.base import TransactionBase
+from editor.utility import remove_connections
+from editor.utility.remove_connections import (
+    ConnectionTarget,
+    remove_all_connections_of,
+)
 
 
 class RemoveItem(BaseModel, TransactionBase):
@@ -95,17 +100,6 @@ class RemoveItem(BaseModel, TransactionBase):
             if self._removed_item is None:
                 raise BadEdit(f"Element {element_id} not found")
 
-            # Store conduits that will be removed due to connections
-            self._removed_conduits = []
-            for conduit in parent.conduits:
-                if conduit.input == element_id or any(
-                    cast(elements.Conduit.Output, out).target == element_id
-                    for out in conduit.children
-                ):
-                    # Only store if it's not the item being directly removed
-                    if conduit.id != element_id:
-                        self._removed_conduits.append(conduit)
-
             # Remove from nodes list
             parent.nodes = [
                 node for node in parent.nodes if node.id != element_id
@@ -126,16 +120,9 @@ class RemoveItem(BaseModel, TransactionBase):
                 for annotation in parent.annotations
                 if annotation.id != element_id
             ]
-            # Remove any conduits connected to this node
-            parent.conduits = [
-                conduit
-                for conduit in parent.conduits
-                if conduit.input != element_id
-                and not any(
-                    cast(elements.Conduit.Output, out).target == element_id
-                    for out in conduit.children
-                )
-            ]
+            self._removed_conduits = remove_all_connections_of(
+                target=ConnectionTarget(id=element_id), parent=parent
+            )
         else:
             raise BadEdit("Can only remove elements from functions")
 
@@ -163,7 +150,7 @@ class RemoveItem(BaseModel, TransactionBase):
         if isinstance(parent, elements.Function):
             # Restore the removed item
             if isinstance(self._removed_item, elements.Node):
-                parent.nodes.append(self._removed_item)
+                parent.nodes.append(cast(elements.Node, self._removed_item))
             elif isinstance(self._removed_item, elements.Conduit):
                 parent.conduits.append(self._removed_item)
             elif isinstance(self._removed_item, elements.Parameter):

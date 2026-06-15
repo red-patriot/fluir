@@ -12,12 +12,25 @@ from editor.services.transaction.add_node import (
     OperatorParams,
 )
 from editor.services.transaction.base import TransactionBase
+from editor.services.transaction.edit_call_node import (
+    AddCallArg,
+    AddCallReturn,
+    DeleteCallArg,
+    DeleteCallReturn,
+    EditCallNode,
+    RenameCallArg,
+    ReorderCallArg,
+)
 from editor.services.transaction.move import MoveElement
 from editor.services.transaction.remove import RemoveItem
 from editor.services.transaction.rename import RenameDeclaration
 from editor.services.transaction.resize import ResizeElement
 from editor.services.transaction.update_comment import UpdateComment
 from editor.services.transaction.update_constant import UpdateConstant
+from editor.services.transaction.update_decl import (
+    UpdateFuncParam,
+    UpdateFuncReturn,
+)
 from editor.services.transaction.update_operator import UpdateOperator
 
 type EditTransaction = (
@@ -27,12 +40,15 @@ type EditTransaction = (
     | UpdateComment
     | UpdateConstant
     | UpdateOperator
+    | UpdateFuncParam
+    | UpdateFuncReturn
     | AddComment
     | AddConduit
     | AddNode
     | AddDecl
     | AddDeclInterface
     | RemoveItem
+    | EditCallNode
 )
 
 __all__ = [
@@ -44,6 +60,8 @@ __all__ = [
     "UpdateComment",
     "UpdateConstant",
     "UpdateOperator",
+    "UpdateFuncParam",
+    "UpdateFuncReturn",
     "AddComment",
     "AddConduit",
     "AddNode",
@@ -55,4 +73,11 @@ __all__ = [
     "ConstantParams",
     "OperatorParams",
     "RemoveItem",
+    "EditCallNode",
+    "RenameCallArg",
+    "AddCallArg",
+    "AddCallReturn",
+    "DeleteCallArg",
+    "DeleteCallReturn",
+    "ReorderCallArg",
 ]

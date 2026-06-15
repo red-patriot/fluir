@@ -796,6 +796,7 @@ describe("createNodes", () => {
           funcID: "1",
           fullID: "1:10",
           parameter: parameter,
+          index: 0,
         },
         dragHandle: ".dragHandle__custom",
       });

@@ -1,10 +1,13 @@
 import {
   UpdateConstantEditRequest,
   UpdateOperatorEditRequest,
-  RenameDeclarationEditRequest, UpdateCommentEditRequest,
-} from '@/models/edit_request';
-import { Operator } from '@/models/fluir_module';
-import { toApiID } from '@/utility/idHelpers';
+  RenameDeclarationEditRequest,
+  UpdateCommentEditRequest,
+  UpdateFunctionParamRequest,
+  EditCallNodeRequest,
+} from "@/models/edit_request";
+import { Operator } from "@/models/fluir_module";
+import { toApiID } from "@/utility/idHelpers";
 
 export function updateConstant(
   commit: (request: UpdateConstantEditRequest) => void,
@@ -12,7 +15,7 @@ export function updateConstant(
 ) {
   return (value: string) => {
     const request: UpdateConstantEditRequest = {
-      discriminator: 'update_constant',
+      discriminator: "update_constant",
       target: toApiID(fullID),
       value,
     };
@@ -26,7 +29,7 @@ export function updateOperator(
 ) {
   return (value: Operator) => {
     const request: UpdateOperatorEditRequest = {
-      discriminator: 'update_operator',
+      discriminator: "update_operator",
       target: toApiID(fullID),
       value,
     };
@@ -40,9 +43,96 @@ export function renameDeclaration(
 ) {
   return (new_name: string) => {
     const request: RenameDeclarationEditRequest = {
-      discriminator: 'rename_declaration',
+      discriminator: "rename_declaration",
       target: toApiID(fullID),
       name: new_name,
+    };
+    commit(request);
+  };
+}
+
+export function updateFuncParamName(
+  commit: (request: UpdateFunctionParamRequest) => void,
+  funcID: string,
+  index: number,
+) {
+  return (name: string) => {
+    const request: UpdateFunctionParamRequest = {
+      discriminator: "update_func_param",
+      target: toApiID(funcID),
+      index,
+      cmd: { discriminator: "name", name },
+    };
+    commit(request);
+  };
+}
+
+export function renameCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+  index: number,
+) {
+  return (name: string) => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "rename_arg", index, name },
+    };
+    commit(request);
+  };
+}
+
+export function addCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (name: string) => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "add_arg", name },
+    };
+    commit(request);
+  };
+}
+
+export function deleteCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (index: number) => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "delete_arg", index },
+    };
+    commit(request);
+  };
+}
+
+export function addCallReturn(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return () => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "add_return" },
+    };
+    commit(request);
+  };
+}
+
+export function deleteCallReturn(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return () => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "delete_return" },
     };
     commit(request);
   };
@@ -53,9 +143,9 @@ export function updateComment(
   fullID: string,
 ) {
   return (new_data: string) => {
-  console.log(fullID);
+    console.log(fullID);
     const request: UpdateCommentEditRequest = {
-      discriminator: 'update_comment',
+      discriminator: "update_comment",
       target: toApiID(fullID),
       data: new_data,
     };

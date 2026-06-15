@@ -6,7 +6,7 @@ from editor.models import Function, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import Call, find_element
 from editor.services.transaction.base import TransactionBase
-from editor.utility.remove_connections import (
+from editor.utility.manage_connections import (
     ConnectionTarget,
     remove_inputs_to,
     remove_outputs_of,

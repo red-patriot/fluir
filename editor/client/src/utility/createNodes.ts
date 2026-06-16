@@ -62,7 +62,9 @@ function addNodes(
         },
         dragHandle: ".dragHandle__custom",
       });
-      decl.inputs.forEach(addFunctionParameterNode(nodes, id, extent));
+      decl.inputs.forEach(
+        addFunctionParameterNode(nodes, id, decl.inputs.length, extent),
+      );
       decl.outputs.forEach(addFunctionReturnNode(nodes, id, decl, extent));
       decl.nodes.forEach((node) => {
         addNodes(nodes, node, id, childrenExtent);
@@ -173,6 +175,7 @@ function addNodes(
 function addFunctionParameterNode(
   nodes: FlowNode[],
   funcID: string,
+  total: number,
   extent?: "parent" | CoordinateExtent,
 ) {
   return (param: FunctionParameter, index: number) => {
@@ -186,13 +189,14 @@ function addFunctionParameterNode(
         x: 0 * ZOOM_SCALAR,
         y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
       },
-      width: 12 * ZOOM_SCALAR,
+      width: 15 * ZOOM_SCALAR,
       height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
       data: {
         funcID: funcID,
         fullID: paramID,
         parameter: param,
         index: index,
+        maxIndex: total - 1,
       },
       dragHandle: ".dragHandle__custom",
     });

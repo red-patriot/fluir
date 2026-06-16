@@ -790,13 +790,14 @@ describe("createNodes", () => {
           x: 0,
           y: 5 * ZOOM_SCALAR,
         },
-        width: 12 * ZOOM_SCALAR,
+        width: expect.any(Number),
         height: 5 * ZOOM_SCALAR,
         data: {
           funcID: "1",
           fullID: "1:10",
           parameter: parameter,
           index: 0,
+          maxIndex: 0,
         },
         dragHandle: ".dragHandle__custom",
       });

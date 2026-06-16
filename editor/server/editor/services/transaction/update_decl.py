@@ -128,8 +128,8 @@ class ReorderFuncParam(BaseModel, TransactionBase):
     def undo(self, original: Program) -> Program:
         function = find_item(self.target, original)
         assert isinstance(function, elements.Function)
-        reordered = function.inputs.pop(self.source_index)
-        function.inputs.insert(self.destination_index, reordered)
+        reordered = function.inputs.pop(self.destination_index)
+        function.inputs.insert(self.source_index, reordered)
 
         # TODO: Move conduits around...
 

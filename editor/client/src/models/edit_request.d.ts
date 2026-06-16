@@ -151,6 +151,13 @@ export type UpdateFunctionReturnRequest = {
   type: FlType;
 };
 
+export type ReorderFunctionParamRequest = {
+  discriminator: "reorder_func_param";
+  target: number[];
+  source_index: number;
+  destination_index: number;
+};
+
 export type RemoveItemEditRequest = {
   target: number[];
 };
@@ -183,6 +190,7 @@ type EditRequest =
   | RemoveItemEditRequest
   | UpdateFunctionParamRequest
   | UpdateFunctionReturnRequest
+  | ReorderFunctionParamRequest
   | EditCallNodeRequest;
 
 export default EditRequest;

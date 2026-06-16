@@ -5,6 +5,7 @@ import {
   UpdateCommentEditRequest,
   UpdateFunctionParamRequest,
   EditCallNodeRequest,
+  ReorderFunctionParamRequest,
 } from "@/models/edit_request";
 import { Operator } from "@/models/fluir_module";
 import { toApiID } from "@/utility/idHelpers";
@@ -62,6 +63,21 @@ export function updateFuncParamName(
       target: toApiID(funcID),
       index,
       cmd: { discriminator: "name", name },
+    };
+    commit(request);
+  };
+}
+
+export function reorderFunctionParam(
+  commit: (request: RenameDeclarationEditRequest) => void,
+  funcID: string,
+) {
+  return (source_index: number, destination_index: number) => {
+    const request: ReorderFunctionParamRequest = {
+      discriminator: "reorder_func_param",
+      target: toApiID(funcID),
+      source_index: source_index,
+      destination_index: destination_index,
     };
     commit(request);
   };

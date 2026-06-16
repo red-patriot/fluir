@@ -1,7 +1,7 @@
 import { FunctionParameter } from "@/models/fluir_module";
 import { type Node, NodeProps } from "@xyflow/react";
 import { Flex } from "@radix-ui/themes";
-import { amber, gray, whiteA } from "@radix-ui/colors";
+import { amber, gray } from "@radix-ui/colors";
 import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay.tsx";
 import { NodeOutput } from "@/components/flow_diagram/common/NodeInOut.tsx";
 import ElementTag from "@/components/flow_diagram/common/ElementTag.tsx";
@@ -64,12 +64,9 @@ export default function FunctionParameterNode({
         renderEdit={doEdit}
       />
       <Flex direction="column">
-        <CaretUpIcon
-          color={isMin ? gray.gray8 : whiteA.whiteA12}
-          onClick={moveUp}
-        />
+        <CaretUpIcon color={isMin ? gray.gray8 : undefined} onClick={moveUp} />
         <CaretDownIcon
-          color={isMax ? gray.gray8 : whiteA.whiteA12}
+          color={isMax ? gray.gray8 : undefined}
           onClick={moveDown}
         />
       </Flex>

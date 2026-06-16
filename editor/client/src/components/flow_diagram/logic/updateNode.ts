@@ -69,7 +69,7 @@ export function updateFuncParamName(
 }
 
 export function reorderFunctionParam(
-  commit: (request: RenameDeclarationEditRequest) => void,
+  commit: (request: ReorderFunctionParamRequest) => void,
   funcID: string,
 ) {
   return (source_index: number, destination_index: number) => {

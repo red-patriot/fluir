@@ -1,7 +1,7 @@
 import { FunctionParameter } from "@/models/fluir_module";
 import { type Node, NodeProps } from "@xyflow/react";
 import { Flex } from "@radix-ui/themes";
-import { amber, gray } from "@radix-ui/colors";
+import { amber } from "@radix-ui/colors";
 import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay.tsx";
 import { NodeOutput } from "@/components/flow_diagram/common/NodeInOut.tsx";
 import ElementTag from "@/components/flow_diagram/common/ElementTag.tsx";
@@ -12,7 +12,7 @@ import {
 } from "@/components/flow_diagram/logic/updateNode";
 import { editWithInputField } from "@/components/flow_diagram/common/InputField";
 import { validateDeclName } from "@/components/flow_diagram/logic/validateEdit.ts";
-import { CaretDownIcon, CaretUpIcon } from "@radix-ui/react-icons";
+import ReorderButtons from "@/components/flow_diagram/common/ReorderButtons.tsx";
 
 type FunctionParameterNode = Node<{
   funcID: string;
@@ -63,13 +63,10 @@ export default function FunctionParameterNode({
         value={parameter.name}
         renderEdit={doEdit}
       />
-      <Flex direction="column">
-        <CaretUpIcon color={isMin ? gray.gray8 : undefined} onClick={moveUp} />
-        <CaretDownIcon
-          color={isMax ? gray.gray8 : undefined}
-          onClick={moveDown}
-        />
-      </Flex>
+      <ReorderButtons
+        moveUp={isMin ? undefined : moveUp}
+        moveDown={isMax ? undefined : moveDown}
+      />
       <NodeOutput fullID={fullID} count={1} />
     </Flex>
   );

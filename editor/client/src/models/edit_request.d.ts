@@ -58,6 +58,12 @@ export type DeleteCallReturn = {
   discriminator: "delete_return";
 };
 
+export type ReorderCallArg = {
+  discriminator: "reorder_arg";
+  current: number;
+  destination: number;
+};
+
 export type EditCallNodeRequest = {
   discriminator: "edit_call_node";
   target: number[];
@@ -66,7 +72,8 @@ export type EditCallNodeRequest = {
     | AddCallArg
     | DeleteCallArg
     | AddCallReturn
-    | DeleteCallReturn;
+    | DeleteCallReturn
+    | ReorderCallArg;
 };
 
 export type AddConduitEditRequest = {

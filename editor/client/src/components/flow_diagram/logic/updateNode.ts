@@ -126,6 +126,20 @@ export function deleteCallArg(
   };
 }
 
+export function reorderCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (current: number, destination: number) => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "reorder_arg", current, destination },
+    };
+    commit(request);
+  };
+}
+
 export function addCallReturn(
   commit: (request: EditCallNodeRequest) => void,
   callID: string,

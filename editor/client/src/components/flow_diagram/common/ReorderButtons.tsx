@@ -1,6 +1,5 @@
 import { Flex } from "@radix-ui/themes";
-import { CaretDownIcon, CaretUpIcon } from "@radix-ui/react-icons";
-import { gray } from "@radix-ui/colors";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/solid";
 
 interface ReorderButtonProps {
   moveUp?: () => void;
@@ -23,10 +22,17 @@ export default function ReorderButtons({
   };
 
   return (
-    <Flex direction="column">
-      <CaretUpIcon color={moveUp ? undefined : gray.gray8} onClick={onMoveUp} />
-      <CaretDownIcon
-        color={moveDown ? undefined : gray.gray8}
+    <Flex direction="column" height={"100%"} justify={"between"}>
+      <ChevronUpIcon
+        className="size-3"
+        opacity={moveUp ? 1 : 0.5}
+        cursor={moveUp ? "pointer" : "default"}
+        onClick={onMoveUp}
+      />
+      <ChevronDownIcon
+        className="size-3"
+        opacity={moveDown ? 1 : 0.5}
+        cursor={moveDown ? "pointer" : "default"}
         onClick={onMoveDown}
       />
     </Flex>

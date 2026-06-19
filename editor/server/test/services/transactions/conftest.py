@@ -158,7 +158,7 @@ def program_with_call(basic_program: Program) -> Program:
             ],
             conduits=[
                 elements.Conduit(
-                    id=1,
+                    id=3,
                     input=2,
                     children=[elements.Conduit.Output(target=1, index=0)],
                 )
@@ -188,6 +188,44 @@ def program_with_call(basic_program: Program) -> Program:
                     index=0,
                     children=[elements.Conduit.Output(target=2, index=0)],
                 )
+            ],
+        )
+    )
+    program.declarations.append(
+        elements.Function(
+            name="call_host",
+            location=elements.Location(610, 10, 2, 100, 100),
+            id=102,
+            nodes=[
+                elements.Call(
+                    id=1,
+                    target="foo",
+                    arguments=["x", "y"],
+                ),
+                elements.Constant(
+                    id=2,
+                    location=elements.Location(2, 2, 1, 5, 5),
+                    value="1",
+                    flType=FlType.I32,
+                ),
+                elements.Constant(
+                    id=3,
+                    location=elements.Location(2, 2, 1, 5, 5),
+                    value="12",
+                    flType=FlType.I32,
+                ),
+            ],
+            conduits=[
+                elements.Conduit(
+                    id=4,
+                    input=2,
+                    children=[elements.Conduit.Output(target=1, index=0)],
+                ),
+                elements.Conduit(
+                    id=5,
+                    input=3,
+                    children=[elements.Conduit.Output(target=1, index=1)],
+                ),
             ],
         )
     )

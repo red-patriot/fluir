@@ -284,12 +284,15 @@ def test_reorder_call_arg(
     call_intelligence: IntelligenceReadInterface,
 ) -> None:
     expected = copy.deepcopy(program_with_call)
-    call_node = expected.declarations[4].nodes[0]
+    call_node = expected.declarations[6].nodes[0]
+    conduits = expected.declarations[6].conduits
     assert isinstance(call_node, elements.Call)
     call_node.arguments = ["y", "x"]
+    cast(elements.Conduit.Output, conduits[0].children[0]).index = 1
+    cast(elements.Conduit.Output, conduits[1].children[0]).index = 0
 
     uut = EditCallNode(
-        target=[100, 1],
+        target=[102, 1],
         command=ReorderCallArg(current=0, destination=1),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))
@@ -306,7 +309,7 @@ def test_reorder_call_arg_undo(
     original = copy.deepcopy(program_with_call)
 
     uut = EditCallNode(
-        target=[100, 1],
+        target=[102, 1],
         command=ReorderCallArg(current=0, destination=1),
     )
     uut.resolve(call_intelligence, cast(Path, call_editor.get_path()))

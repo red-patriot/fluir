@@ -10,7 +10,10 @@ import { HorizontalResizeHandle } from "@/components/flow_diagram/common/ResizeH
 import { ZOOM_SCALAR } from "@/hooks/useSizeStyle.ts";
 import { LIMITS } from "@/limits.ts";
 import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
-import { renameCallArg } from "@/components/flow_diagram/logic/updateNode";
+import {
+  renameCallArg,
+  reorderCallArg,
+} from "@/components/flow_diagram/logic/updateNode";
 import { editWithInputField } from "@/components/flow_diagram/common/InputField";
 import { validateDeclName } from "@/components/flow_diagram/logic/validateEdit.ts";
 import EditRequest from "@/models/edit_request";
@@ -21,6 +24,7 @@ import {
   addCallReturn,
   deleteCallReturn,
 } from "@/components/flow_diagram/logic/updateNode";
+import ReorderButtons from "@/components/flow_diagram/common/ReorderButtons.tsx";
 
 export type CallNode = Node<{
   call: Call;
@@ -76,6 +80,7 @@ export default function CallNode({
             callID={fullID}
             index={index}
             editProgram={editProgram}
+            maxIndex={call.arguments.length - 1}
           />
         ))}
       </Flex>
@@ -95,6 +100,7 @@ interface CallArgumentProps {
   callID: string;
   index: number;
   editProgram: (request: EditRequest) => void;
+  maxIndex: number;
 }
 
 function CallArgumentNode({
@@ -102,6 +108,7 @@ function CallArgumentNode({
   callID,
   index,
   editProgram,
+  maxIndex,
 }: CallArgumentProps) {
   const updateName = renameCallArg(editProgram, callID, index);
   const doEdit = editWithInputField({
@@ -109,6 +116,18 @@ function CallArgumentNode({
     onValidateSucceed: updateName,
   });
   const deleteArg = deleteCallArg(editProgram, callID);
+  const reorderArg = reorderCallArg(editProgram, callID);
+
+  const isMin = index === 0;
+  const isMax = index === maxIndex;
+
+  const moveUp = () => {
+    reorderArg(index, index - 1);
+  };
+  const moveDown = () => {
+    reorderArg(index, index + 1);
+  };
+
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger>
@@ -130,6 +149,10 @@ function CallArgumentNode({
             }}
           />
           <ValueDisplay fullID={callID} value={arg} renderEdit={doEdit} />
+          <ReorderButtons
+            moveUp={isMin ? undefined : moveUp}
+            moveDown={isMax ? undefined : moveDown}
+          />
         </Flex>
       </ContextMenu.Trigger>
       <ContextMenu.Content>

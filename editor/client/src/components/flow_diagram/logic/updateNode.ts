@@ -5,6 +5,7 @@ import {
   UpdateCommentEditRequest,
   UpdateFunctionParamRequest,
   EditCallNodeRequest,
+  ReorderFunctionParamRequest,
 } from "@/models/edit_request";
 import { Operator } from "@/models/fluir_module";
 import { toApiID } from "@/utility/idHelpers";
@@ -67,6 +68,21 @@ export function updateFuncParamName(
   };
 }
 
+export function reorderFunctionParam(
+  commit: (request: ReorderFunctionParamRequest) => void,
+  funcID: string,
+) {
+  return (source_index: number, destination_index: number) => {
+    const request: ReorderFunctionParamRequest = {
+      discriminator: "reorder_func_param",
+      target: toApiID(funcID),
+      source_index: source_index,
+      destination_index: destination_index,
+    };
+    commit(request);
+  };
+}
+
 export function renameCallArg(
   commit: (request: EditCallNodeRequest) => void,
   callID: string,
@@ -105,6 +121,20 @@ export function deleteCallArg(
       discriminator: "edit_call_node",
       target: toApiID(callID),
       command: { discriminator: "delete_arg", index },
+    };
+    commit(request);
+  };
+}
+
+export function reorderCallArg(
+  commit: (request: EditCallNodeRequest) => void,
+  callID: string,
+) {
+  return (current: number, destination: number) => {
+    const request: EditCallNodeRequest = {
+      discriminator: "edit_call_node",
+      target: toApiID(callID),
+      command: { discriminator: "reorder_arg", current, destination },
     };
     commit(request);
   };

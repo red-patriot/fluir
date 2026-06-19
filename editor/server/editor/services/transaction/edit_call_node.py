@@ -6,10 +6,11 @@ from editor.models import Function, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import Call, find_element
 from editor.services.transaction.base import TransactionBase
-from editor.utility.remove_connections import (
+from editor.utility.manage_connections import (
     ConnectionTarget,
     remove_inputs_to,
     remove_outputs_of,
+    rotate_input_indices,
 )
 
 
@@ -103,11 +104,14 @@ class ReorderCallArg(BaseModel):
         node.arguments.insert(
             self.destination, node.arguments.pop(self.current)
         )
+        rotate_input_indices(self.current, self.destination, node.id, parent)
 
     def undo(self, node: Call, parent: Function) -> None:
         node.arguments.insert(
             self.current, node.arguments.pop(self.destination)
         )
+        # Rotate with inverted inputs to put things back
+        rotate_input_indices(self.destination, self.current, node.id, parent)
 
 
 class AddCallReturn(BaseModel):

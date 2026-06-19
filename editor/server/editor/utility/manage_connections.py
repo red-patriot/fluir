@@ -131,5 +131,6 @@ def rotate_input_indices(
         out.index = idx + direction
 
     # Patch source -> destination
-    out = cast(elements.Conduit.Output, conduits[source].children[0])
-    out.index = destination
+    if source in conduits:
+        out = cast(elements.Conduit.Output, conduits[source].children[0])
+        out.index = destination

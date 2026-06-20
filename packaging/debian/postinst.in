@@ -9,6 +9,14 @@ chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/fluir.vm"
 chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/fluir-editor-be"
 chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/editor-fe/fluir-editor-fe"
 
+# Setup permissions on chrome-sandbox
+SANDBOX_PATH="/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/editor-fe/chrome-sandbox"
+
+if [ -f "$SANDBOX_PATH" ]; then
+    chown root:root "$SANDBOX_PATH"
+    chmod 4755 "$SANDBOX_PATH"
+fi
+
 #DEBHELPER#
 
 exit 0

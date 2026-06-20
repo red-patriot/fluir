@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "GOT HERE"
+
 # The permissions don't always get set quite right, so make the
 # program files executable here
 chmod +x "/usr/@CMAKE_INSTALL_BINDIR@/fluir"
@@ -12,10 +14,12 @@ chmod +x "/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/editor-fe/fluir-editor-fe"
 # Setup permissions on chrome-sandbox
 SANDBOX_PATH="/usr/@CMAKE_INSTALL_LIBEXECDIR@/fluir/editor-fe/chrome-sandbox"
 
+echo "SETTING UI PERMISSIONS"
 if [ -f "$SANDBOX_PATH" ]; then
     chown root:root "$SANDBOX_PATH"
     chmod 4755 "$SANDBOX_PATH"
 fi
+echo "DONE"
 
 #DEBHELPER#
 

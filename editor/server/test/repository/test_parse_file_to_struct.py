@@ -18,6 +18,7 @@ from editor.models import (
     UnaryOperator,
     Version,
 )
+from editor.models.elements import Comment
 from editor.repository.fluir_file import XMLFileManager
 
 _TEST_DATA = [
@@ -677,9 +678,9 @@ _TEST_DATA = [
                     <i32>20</i32>
                 </constant>
                 <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
-                    <return index="0"/>
-                    <arg name="a" index="1"/>
-                    <arg name="b" index="2"/>
+                    <return/>
+                    <arg name="a"/>
+                    <arg name="b"/>
                 </call>
                 <conduit id="4" input="1"><output target="3" index="1"/></conduit>
                 <conduit id="5" input="2"><output target="3" index="2"/></conduit>
@@ -757,12 +758,176 @@ _TEST_DATA = [
         <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
             <body>
                 <call target="reorder" id="2" x="5" y="5" z="0" w="12" h="12">
-                    <arg name="third" index="2"/>
-                    <arg name="first" index="0"/>
-                    <arg name="second" index="1"/>
+                    <arg name="first"/>
+                    <arg name="second"/>
+                    <arg name="third"/>
                 </call>
             </body>
         </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            declarations=[],
+            header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+            annotations=[
+                Comment(
+                    id=1,
+                    location=Location(10, 10, 4, 25, 25),
+                    data="hello",
+                ),
+            ],
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <comment id="1" x="10" y="10" z="4" w="25" h="25">hello</comment>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            [
+                Function(
+                    name="main",
+                    location=Location(0, 0, 0, 100, 100),
+                    id=1,
+                    annotations=[
+                        Comment(
+                            id=2,
+                            location=Location(5, 5, 4, 25, 25),
+                            data="note",
+                        ),
+                    ],
+                )
+            ],
+            Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+            <body>
+                <comment id="2" x="5" y="5" z="4" w="25" h="25">note</comment>
+            </body>
+        </function>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            declarations=[
+                Function(
+                    name="main",
+                    location=Location(10, 10, 3, 100, 100),
+                    id=1,
+                    nodes=[
+                        Constant(
+                            id=2,
+                            location=Location(2, 2, 1, 5, 5),
+                            value="3",
+                            flType=FlType.I32,
+                        ),
+                    ],
+                    annotations=[
+                        Comment(
+                            id=1,
+                            location=Location(10, 10, 4, 25, 25),
+                            data="Hello there! This is a simple comment!",
+                        ),
+                    ],
+                )
+            ],
+            header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+            annotations=[
+                Comment(
+                    id=2,
+                    location=Location(1050, 10, 4, 25, 25),
+                    data="Comments are also allowed at the top level",
+                ),
+            ],
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <constant id="2" x="2" y="2" z="1" w="5" h="5">
+                    <i32>3</i32>
+                </constant>
+                <comment id="1" x="10" y="10" z="4" w="25" h="25">Hello there! This is a simple comment!</comment>
+            </body>
+        </function>
+        <comment id="2" x="1050" y="10" z="4" w="25" h="25">Comments are also allowed at the top level</comment>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            declarations=[],
+            header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+            annotations=[
+                Comment(
+                    id=1,
+                    location=Location(10, 10, 4, 25, 25),
+                    data="",
+                ),
+            ],
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <comment id="1" x="10" y="10" z="4" w="25" h="25"></comment>
+    </fluir>
+    """,
+    ),
+    (
+        Program(
+            declarations=[],
+            header=Header(version=Version(MAJOR=0, MINOR=1, PATCH=3)),
+            annotations=[
+                Comment(
+                    id=1,
+                    location=Location(10, 10, 4, 25, 25),
+                    data="Hello there! This is a simple comment!",
+                ),
+            ],
+        ),
+        b"""<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <comment id="1" x="10" y="10" z="4" w="25" h="25">Hello there! This is a simple comment!</comment>
     </fluir>
     """,
     ),
@@ -786,6 +951,11 @@ _TEST_DATA = [
         "function_call",
         "function_call_no_args_no_returns",
         "function_call_args_out_of_order",
+        "top_level_comment_only",
+        "in_body_comment_only",
+        "mixed_comments",
+        "empty_comment_data",
+        "comment_with_whitespace_and_punctuation",
     ],
 )
 def test_repository_parses_string(expected: Program, data: bytes) -> None:

@@ -83,6 +83,9 @@ class ModuleController(Controller):
     def edit(
         self, request: Annotated[EditTransaction, Body()]
     ) -> ProgramStatus:
+        request.resolve(
+            self._intelligence, self._editor.get_path() or _UNNAMED_PATH
+        )
         self._editor.edit(request)
         self._refresh_intelligence()
 

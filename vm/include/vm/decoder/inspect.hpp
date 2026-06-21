@@ -3,19 +3,20 @@
 
 #include <string>
 
-#include "bytecode/byte_code.hpp"
+#include "vm/code/byte_code.hpp"
 
 namespace fluir {
   // clang-format off
   enum class TokenType {
     // Literals
-    HEX_LITERAL, FLOAT_LITERAL, IDENTIFIER,
+    HEX_LITERAL, FLOAT_LITERAL, STR_LITERAL, IDENTIFIER,
     // Sections
     CHUNK, CODE, CONSTANTS, IN, OUT,
     // Data Types
-#define FLUIR_TYPE_TOKEN(type, concrete) TYPE_## type,
-    FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_TOKEN)
-#undef FLUIR_TYPE_TOKEN
+    TYPE_F64,
+    TYPE_I8, TYPE_I16, TYPE_I32, TYPE_I64,
+    TYPE_U8, TYPE_U16, TYPE_U32, TYPE_U64,
+    TYPE_STR,
     // Instructions
 #define FLUIR_INSTRUCTION_TOKEN(code) INST_## code,
     FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_TOKEN)
@@ -44,8 +45,8 @@ namespace fluir {
     void decodeHeader();
     void decodeChunks();
 
+    void constants();
     void chunk();
-    std::vector<code::Value> constants();
     std::vector<uint8_t> code();
     std::uint8_t inCount();
     std::uint8_t outCount();
@@ -66,6 +67,7 @@ namespace fluir {
     code::Value decodeConstant();
     code::Value decodeFloatConstant();
     code::Value decodeIntConstant(code::PrimitiveType type);
+    code::Value decodeStrConstant();
   };
 }  // namespace fluir
 

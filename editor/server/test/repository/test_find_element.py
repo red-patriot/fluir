@@ -84,3 +84,72 @@ def test_find_element_finds_element_in_function(basic_program: Program) -> None:
     assert isinstance(actual, elements.BinaryOperator)
     assert expected_id == actual.id
     assert elements.Operator.PLUS == actual.op
+
+
+@pytest.fixture
+def program_with_comments() -> Program:
+    return Program(
+        declarations=[
+            elements.Function(
+                name="foo",
+                id=1,
+                annotations=[
+                    elements.Comment(
+                        id=4,
+                        data="inside foo",
+                    ),
+                ],
+            ),
+        ],
+        annotations=[
+            elements.Comment(
+                id=2,
+                data="top-level note",
+            ),
+        ],
+    )
+
+
+def test_program_with_annotations_constructs() -> None:
+    program = Program(
+        declarations=[],
+        annotations=[elements.Comment(id=1, data="hello")],
+    )
+    assert len(program.annotations) == 1
+    assert isinstance(program.annotations[0], elements.Comment)
+
+
+def test_find_element_finds_top_level_comment(
+    program_with_comments: Program,
+) -> None:
+    target = [2]
+
+    actual = elements.find_element(target, program_with_comments)
+
+    assert isinstance(actual, elements.Comment)
+    assert actual.id == 2
+    assert actual.data == "top-level note"
+
+
+def test_find_element_finds_in_body_comment(
+    program_with_comments: Program,
+) -> None:
+    target = [1, 4]
+
+    actual = elements.find_element(target, program_with_comments)
+
+    assert isinstance(actual, elements.Comment)
+    assert actual.id == 4
+    assert actual.data == "inside foo"
+
+
+def test_find_element_raises_for_missing_comment(
+    program_with_comments: Program,
+) -> None:
+    target = [99]
+
+    with pytest.raises(
+        elements.IdentifierError,
+        match="An element with ID 99 was not found",
+    ):
+        elements.find_element(target, program_with_comments)

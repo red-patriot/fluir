@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <span>
 
-#include "bytecode/value.hpp"
+#include "code/value.hpp"
 
 namespace fluir::debug {
   void printStack(std::span<const code::Value> stack);

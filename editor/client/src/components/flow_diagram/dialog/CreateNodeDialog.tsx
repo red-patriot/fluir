@@ -7,6 +7,7 @@ import {
   ConstantParams,
   OperatorParams,
   CallParams,
+  AddCommentEditRequest,
 } from "@/models/edit_request";
 import { toApiID } from "@/utility/idHelpers";
 import { LIMITS } from "@/limits";
@@ -27,6 +28,8 @@ function extractWidth(kind: CompletionKind) {
       return LIMITS.constant.width.min;
     case "function":
       return LIMITS.constant.width.min;
+    case "comment":
+      return LIMITS.comment.width.min;
   }
 }
 
@@ -40,6 +43,8 @@ function extractHeight(kind: CompletionKind) {
       return LIMITS.constant.height.min;
     case "function":
       return LIMITS.constant.height.min;
+    case "comment":
+      return LIMITS.comment.height.min;
   }
 }
 
@@ -94,6 +99,20 @@ export default function CreateNodeDialog({
           height: 30,
         },
         params: { discriminator: "function" },
+      };
+      editProgram(request);
+    } else if (selection.kind === "comment") {
+      const request: AddCommentEditRequest = {
+        discriminator: "add_comment",
+        parent: toApiID(parentID),
+        new_location: {
+          x: clickedLocation.x - parentLocation.x,
+          y: clickedLocation.y - parentLocation.y,
+          z: parentLocation.z + 1,
+          width: extractWidth(selection.kind),
+          height: extractHeight(selection.kind),
+        },
+        data: "",
       };
       editProgram(request);
     } else {

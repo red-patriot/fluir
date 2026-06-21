@@ -5,12 +5,12 @@ import {
   ResizeDragEvent,
   ResizeParams,
   ResizeControlProps,
-} from '@xyflow/react';
-import { slate } from '@radix-ui/colors';
-import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
-import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
-import { resize } from '@/components/flow_diagram/logic';
-import { WidthIcon, DimensionsIcon } from '@radix-ui/react-icons';
+} from "@xyflow/react";
+import { slate } from "@radix-ui/colors";
+import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
+import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
+import { resize } from "@/components/flow_diagram/logic";
+import { CornerBottomRightIcon, CaretSortIcon } from "@radix-ui/react-icons";
 
 interface ResizeHandleProps extends ResizeControlProps {
   fullID: string;
@@ -36,11 +36,11 @@ export function HorizontalResizeHandle({
       variant={ResizeControlVariant.Line}
       onResizeEnd={onFinishResize}
       {...props}
-      style={{ border: 'none' }}
+      style={{ border: "none" }}
     >
-      <WidthIcon
+      <CaretSortIcon
         color={slate.slate7}
-        className='-translate-y-2 cursor-w-resize'
+        className="-translate-1.5 rotate-90 cursor-w-resize"
       />
     </NodeResizeControl>
   );
@@ -62,12 +62,12 @@ export function XYResizeHandle({ fullID, ...props }: ResizeHandleProps) {
     <NodeResizeControl
       variant={ResizeControlVariant.Handle}
       onResizeEnd={onFinishResize}
-      style={{ border: 'none', background: 'none' }}
+      style={{ border: "none", background: "none" }}
       {...props}
     >
-      <DimensionsIcon
+      <CornerBottomRightIcon
         color={slate.slate7}
-        className='-translate-1 rotate-90 cursor-nwse-resize'
+        className="-translate-1.5 cursor-nwse-resize"
       />
     </NodeResizeControl>
   );

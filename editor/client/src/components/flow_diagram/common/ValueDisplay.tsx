@@ -1,5 +1,5 @@
-import { Code } from '@radix-ui/themes';
-import { useState } from 'react';
+import { Code } from "@radix-ui/themes";
+import { useState } from "react";
 
 interface ValueDisplayProps extends React.PropsWithChildren {
   fullID: string;
@@ -29,16 +29,45 @@ export function ValueDisplay({ fullID, value, renderEdit }: ValueDisplayProps) {
       variant="solid"
       size="2"
       className="grow m-0.25 overflow-hidden text-ellipsis whitespace-nowrap"
+      onClick={isEditing ? undefined : startEditing}
     >
       {renderEdit && isEditing ? (
         renderEdit(fullID, value, stopEditing)
       ) : (
-        <span
-          aria-label={`${fullID}-value-display`}
-          onClick={startEditing}
-        >
-          {value}
-        </span>
+        <span aria-label={`${fullID}-value-display`}>{value}</span>
+      )}
+    </Code>
+  );
+}
+
+export function MultilineValueDisplay({
+  fullID,
+  value,
+  renderEdit,
+}: ValueDisplayProps) {
+  const [isEditing, setIsEditing] = useState(false);
+
+  const startEditing = () => {
+    if (renderEdit) {
+      setIsEditing(true);
+    }
+  };
+  const stopEditing = () => {
+    setIsEditing(false);
+  };
+
+  return (
+    <Code
+      color="gray"
+      variant="solid"
+      size="2"
+      className="grow w-full h-full m-0.25 wrap-normal overflow-hidden text-ellipsis"
+      onClick={isEditing ? undefined : startEditing}
+    >
+      {renderEdit && isEditing ? (
+        renderEdit(fullID, value, stopEditing)
+      ) : (
+        <span aria-label={`${fullID}-value-display`}>{value}</span>
       )}
     </Code>
   );

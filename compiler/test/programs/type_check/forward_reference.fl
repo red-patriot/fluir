@@ -10,12 +10,12 @@
       <constant id="1" x="0" y="0" z="0" w="5" h="5"><i32>10</i32></constant>
       <constant id="2" x="0" y="20" z="0" w="5" h="5"><i32>20</i32></constant>
       <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
-        <return index="0"/>
-        <arg name="a" index="1"/>
-        <arg name="b" index="2"/>
+        <return/>
+        <arg name="a"/>
+        <arg name="b"/>
       </call>
-      <conduit id="4" input="1"><output target="3" index="1"/></conduit>
-      <conduit id="5" input="2"><output target="3" index="2"/></conduit>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
     </body>
   </function>
   <function name="add" id="2" x="0" y="100" z="0" w="100" h="100">

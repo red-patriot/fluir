@@ -1,6 +1,7 @@
 #ifndef FLUIR_COMPILER_TYPES_TRAITS_HPP
 #define FLUIR_COMPILER_TYPES_TRAITS_HPP
 
+#include "bytecode/primitives.hpp"
 #include "compiler/types/typeid.hpp"
 
 namespace fluir::types {

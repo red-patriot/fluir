@@ -1,8 +1,12 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
+#include <numeric>
+
 #include <gtest/gtest.h>
 
+#include "bytecode/primitives.hpp"
 #include "bytecode_assertions.hpp"
+#include "compiler/backend/code_writer.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/frontend/type_checker.hpp"
 #include "compiler/types/builtin_symbols.hpp"
@@ -11,11 +15,25 @@
 namespace fa = fluir::ast;
 namespace fc = fluir::code;
 namespace ft = fluir::types;
-using namespace fc::value_literals;
 using namespace fluir::literals_types;
 using namespace std::string_literals;
 
 using fluir::FullID;
+
+namespace {
+  class TestWriter : public fluir::CodeWriter {
+   public:
+    TestWriter() : CodeWriter(std::cout) { }
+
+    void writeHeader(const fluir::code::Header& in) override { header = in; }
+    void writeConstants(const fluir::be::ConstantsArray& in) override { constants = in; }
+    void writeChunk(const fluir::code::Chunk& in) override { chunks.push_back(in); }
+
+    fluir::code::Header header;
+    fluir::be::ConstantsArray constants;
+    std::vector<fluir::code::Chunk> chunks;
+  };
+}  // namespace
 
 class TestBytecodeGenerator : public ::testing::Test {
  public:
@@ -36,17 +54,18 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   fa::AST input;
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "main", .code = {fc::Instruction::RETURN}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
 
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
@@ -54,18 +73,19 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}, .constants = {}},
-                                   fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}, .constants = {}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}},
+                             fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (int i = 0; i != expected.chunks.size(); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (int i = 0; i != expectedChunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
 }
 
@@ -83,27 +103,29 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
                        return graph;
                      }()});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "foo",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::PUSH,
-                                                 0x01,
-                                                 fc::Instruction::F64_MUL,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {1.5_f64, 2.5_f64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "foo",
+    .code =
+      {
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::F64_MUL,
+        fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
@@ -119,25 +141,24 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                        return graph;
                      }()});
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "bar",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::F64_NEG,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {3.456_f64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "bar",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::F64_NEG,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
@@ -178,27 +199,26 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
     decl.statements.push_back(std::move(unaryDependent));
   }
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "bar",
-                                             .code =
-                                               {
-                                                 fc::PUSH,    0x0,         fc::F64_NEG, fc::PUSH,     0x1,
-                                                 fc::F64_DIV,  // No POP, write {3,4}
-                                                 fc::PUSH,    0x2,
-                                                 fc::GET_VAL,  // Read {3,4}
-                                                 0x0,         fc::F64_ADD, fc::POP,
-                                                 fc::GET_VAL,  // Read {3,4}
-                                                 0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
-                                               },
-                                             .constants = {3.5_f64, 4.4_f64, 100.0_f64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "bar",
+                          .code = {
+                            fc::PUSH,    0x0,         fc::F64_NEG, fc::PUSH,     0x1,
+                            fc::F64_DIV,  // No POP, write {3,4}
+                            fc::PUSH,    0x2,
+                            fc::GET_VAL,  // Read {3,4}
+                            0x0,         fc::F64_ADD, fc::POP,
+                            fc::GET_VAL,  // Read {3,4}
+                            0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
@@ -244,25 +264,22 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
     decl.statements.push_back(std::move(binary));
   }
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {fc::Chunk{
-      .name = "main",
-      .code =
-        {
-          fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
-          fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
-        },
-      .constants = {2_i32, 3_i32},
-    }}};
+  fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "main",
+    .code = {
+      fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
+      fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
+    }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
@@ -280,33 +297,32 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "ints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x01,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x02,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x03,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_i8, 16_i16, 32_i32, 64_i64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x02,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x03,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
@@ -325,33 +341,32 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "ints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x01,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x02,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x03,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_u8, 16_u16, 32_u32, 64_u64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x02,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x03,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
@@ -386,27 +401,25 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
     return decl;
   }());
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {fc::Chunk{
-      .name = "ints",
-      .code =
-        {
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
-          fc::Instruction::RETURN,
-        },
-      .constants = {8_i32, 16_i32, 28_i32}}}};
+  fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "ints",
+    .code = {
+      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
+      fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
+      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
+      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
+      fc::Instruction::RETURN,
+    }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
   EXPECT_FALSE(sink_.containsErrors());
 
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
@@ -441,27 +454,27 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
     return decl;
   }());
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {fc::Chunk{
-      .name = "ints",
-      .code =
-        {
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
-          fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
-          fc::Instruction::RETURN,
-        },
-      .constants = {8_u32, 16_u32, 28_u32}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "ints",
+    .code =
+      {
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
@@ -487,50 +500,49 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "ints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_IF,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x01,
-                                                 fc::Instruction::CAST_FI,
-                                                 fc::NumericWidth::WIDTH_64,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_IU,
-                                                 fc::NumericWidth::WIDTH_64,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_WIDTH,
-                                                 fc::NumericWidth::WIDTH_8,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_WIDTH,
-                                                 fc::NumericWidth::WIDTH_16,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_WIDTH,
-                                                 fc::NumericWidth::WIDTH_64,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_i32, 12.4_f64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_IF,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::CAST_FI,
+                            fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_IU,
+                            fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_WIDTH,
+                            fc::NumericWidth::WIDTH_8,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_WIDTH,
+                            fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_WIDTH,
+                            fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
@@ -549,35 +561,34 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "ints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_IU,
-                                                 fc::NumericWidth::WIDTH_32,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_IU,
-                                                 fc::NumericWidth::WIDTH_16,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_IU,
-                                                 fc::NumericWidth::WIDTH_8,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_i32}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_IU,
+                            fc::NumericWidth::WIDTH_32,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_IU,
+                            fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_IU,
+                            fc::NumericWidth::WIDTH_8,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
@@ -595,30 +606,29 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "uints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_UF,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x01,
-                                                 fc::Instruction::CAST_FU,
-                                                 fc::NumericWidth::WIDTH_64,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_u32, 12.4_f64}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "uints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_UF,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::CAST_FU,
+                            fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
@@ -637,36 +647,35 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "uints",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_UI,
-                                                 fc::NumericWidth::WIDTH_32,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_UI,
-                                                 fc::NumericWidth::WIDTH_16,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::PUSH,
-                                                 0x00,
-                                                 fc::Instruction::CAST_UI,
-                                                 fc::NumericWidth::WIDTH_8,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {8_u32}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{.name = "uints",
+                          .code = {
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_UI,
+                            fc::NumericWidth::WIDTH_32,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_UI,
+                            fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x00,
+                            fc::Instruction::CAST_UI,
+                            fc::NumericWidth::WIDTH_8,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
@@ -695,25 +704,25 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
     return decl;
   }());
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {fc::Chunk{
-      .name = "inc_dec",
-      .code =
-        {
-          fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
-          0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
-          fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
-        },
-      .constants = {8_i32, 12.45_f64, 8_u64}}}};
+  fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "inc_dec",
+    .code =
+      {
+        fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
+        0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
+        fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
+      },
+  };
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.value().chunks.at(0));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
 
 TEST_F(TestBytecodeGenerator, HandlesMissingLocalVariable) {
@@ -726,7 +735,8 @@ TEST_F(TestBytecodeGenerator, HandlesMissingLocalVariable) {
     return decl;
   }());
 
-  EXPECT_THROW(fluir::generateCode(ctx_, input), fluir::diagnostic::InternalError);
+  TestWriter writer;
+  EXPECT_THROW(fluir::generateCode(ctx_, input, writer), fluir::diagnostic::InternalError);
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
@@ -763,53 +773,52 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main",
-                                             .code =
-                                               {
-                                                 fc::RESERVE,  // Reserve space for the return
-                                                 0x01,
-                                                 fc::PUSH,
-                                                 0x00,  // Arg 1
-                                                 fc::PUSH,
-                                                 0x01,  // Arg 2
-                                                 fc::CALL,
-                                                 0x00,
-                                                 0x00,
-                                                 0x00,
-                                                 0x01,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {2_i32, 3_i32}},
-                                   fc::Chunk{.name = "add_nums",
-                                             .code =
-                                               {
-                                                 fc::GET_VAL,
-                                                 0x1,
-                                                 fc::GET_VAL,
-                                                 0x2,
-                                                 fc::I64_ADD,
-                                                 fc::SET_VAL,
-                                                 0x0,
-                                                 fc::MULTIPOP,  // Pop off the returned temporary
-                                                 0x01,
-                                                 fc::MULTIPOP,
-                                                 0x2,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {},
-                                             .inCount = 2,
-                                             .outCount = 1}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{fc::Chunk{.name = "main",
+                                       .code =
+                                         {
+                                           fc::RESERVE,  // Reserve space for the return
+                                           0x01,
+                                           fc::PUSH,
+                                           0x00,  // Arg 1
+                                           fc::PUSH,
+                                           0x01,  // Arg 2
+                                           fc::CALL,
+                                           0x00,
+                                           0x00,
+                                           0x00,
+                                           0x01,
+                                           fc::Instruction::POP,
+                                           fc::Instruction::RETURN,
+                                         }},
+                             fc::Chunk{.name = "add_nums",
+                                       .code =
+                                         {
+                                           fc::GET_VAL,
+                                           0x1,
+                                           fc::GET_VAL,
+                                           0x2,
+                                           fc::I64_ADD,
+                                           fc::SET_VAL,
+                                           0x0,
+                                           fc::MULTIPOP,  // Pop off the returned temporary
+                                           0x01,
+                                           fc::MULTIPOP,
+                                           0x2,
+                                           fc::Instruction::RETURN,
+                                         },
+                                       .inCount = 2,
+                                       .outCount = 1}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (size_t i = 0; i != expected.chunks.size(); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (size_t i = 0; i != expectedChunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
 }
 
@@ -830,40 +839,39 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main",
-                                             .code =
-                                               {
-                                                 fc::PUSH,
-                                                 0x00,  // arg 7
-                                                 fc::CALL,
-                                                 0x00,
-                                                 0x00,
-                                                 0x00,
-                                                 0x01,
-                                                 // No return => no POP instruction
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {7_i32}},
-                                   fc::Chunk{.name = "sink",
-                                             .code =
-                                               {
-                                                 fc::MULTIPOP,
-                                                 0x01,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {},
-                                             .inCount = 1,
-                                             .outCount = 0}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{fc::Chunk{.name = "main",
+                                       .code =
+                                         {
+                                           fc::PUSH,
+                                           0x00,  // arg 7
+                                           fc::CALL,
+                                           0x00,
+                                           0x00,
+                                           0x00,
+                                           0x01,
+                                           // No return => no POP instruction
+                                           fc::Instruction::RETURN,
+                                         }},
+                             fc::Chunk{.name = "sink",
+                                       .code =
+                                         {
+                                           fc::MULTIPOP,
+                                           0x01,
+                                           fc::Instruction::RETURN,
+                                         },
+                                       .inCount = 1,
+                                       .outCount = 0}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (int i = 0; i != static_cast<int>(expectedChunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
 }
 
@@ -885,44 +893,43 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "main",
-                                             .code =
-                                               {
-                                                 fc::RESERVE,
-                                                 0x01,
-                                                 fc::CALL,
-                                                 0x00,
-                                                 0x00,
-                                                 0x00,
-                                                 0x01,
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {}},
-                                   fc::Chunk{.name = "get_val",
-                                             .code =
-                                               {
-                                                 fc::Instruction::PUSH,
-                                                 0x0,
-                                                 fc::Instruction::SET_VAL,
-                                                 0x0,
-                                                 fc::Instruction::MULTIPOP,  // Pop off the returned temporary
-                                                 0x01,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {12_i32},
-                                             .inCount = 0,
-                                             .outCount = 1}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{fc::Chunk{.name = "main",
+                                       .code =
+                                         {
+                                           fc::RESERVE,
+                                           0x01,
+                                           fc::CALL,
+                                           0x00,
+                                           0x00,
+                                           0x00,
+                                           0x01,
+                                           fc::Instruction::POP,
+                                           fc::Instruction::RETURN,
+                                         }},
+                             fc::Chunk{.name = "get_val",
+                                       .code =
+                                         {
+                                           fc::Instruction::PUSH,
+                                           0x0,
+                                           fc::Instruction::SET_VAL,
+                                           0x0,
+                                           fc::Instruction::MULTIPOP,  // Pop off the returned temporary
+                                           0x01,
+                                           fc::Instruction::RETURN,
+                                         },
+                                       .inCount = 0,
+                                       .outCount = 1}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (int i = 0; i != static_cast<int>(expectedChunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
 }
 
@@ -947,42 +954,41 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
     return decl;
   }());
 
-  fc::ByteCode expected{
-    .header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-    .chunks = {
-      fc::Chunk{.name = "main",
-                .code =
-                  {
-                    fc::RESERVE,
-                    0x01,
-                    fc::CALL,
-                    0x00,
-                    0x00,
-                    0x00,
-                    0x01,
-                    fc::Instruction::POP,
-                    fc::RESERVE,
-                    0x01,
-                    fc::CALL,
-                    0x00,
-                    0x00,
-                    0x00,
-                    0x02,
-                    fc::Instruction::POP,
-                    fc::Instruction::RETURN,
-                  },
-                .constants = {}},
-      fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .constants = {}, .inCount = 0, .outCount = 1},
-      fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .constants = {}, .inCount = 0, .outCount = 1}}};
+  fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{
+    fc::Chunk{.name = "main",
+              .code =
+                {
+                  fc::RESERVE,
+                  0x01,
+                  fc::CALL,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x01,
+                  fc::Instruction::POP,
+                  fc::RESERVE,
+                  0x01,
+                  fc::CALL,
+                  0x00,
+                  0x00,
+                  0x00,
+                  0x02,
+                  fc::Instruction::POP,
+                  fc::Instruction::RETURN,
+                }},
+    fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
+    fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (int i = 0; i != static_cast<int>(expectedChunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
 }
 
@@ -1007,43 +1013,180 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
     return decl;
   }());
 
-  fc::ByteCode expected{.header = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0},
-                        .chunks = {fc::Chunk{.name = "add",
-                                             .code =
-                                               {
-                                                 fc::MULTIPOP,
-                                                 0x02,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {},
-                                             .inCount = 2,
-                                             .outCount = 1},
-                                   fc::Chunk{.name = "main",
-                                             .code =
-                                               {
-                                                 fc::RESERVE,
-                                                 0x01,
-                                                 fc::PUSH,
-                                                 0x00,  // arg 10
-                                                 fc::PUSH,
-                                                 0x01,  // arg 20
-                                                 fc::CALL,
-                                                 0x00,
-                                                 0x00,
-                                                 0x00,
-                                                 0x00,  // add is at index 0
-                                                 fc::Instruction::POP,
-                                                 fc::Instruction::RETURN,
-                                               },
-                                             .constants = {10_i32, 20_i32}}}};
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  std::vector expectedChunks{fc::Chunk{.name = "add",
+                                       .code =
+                                         {
+                                           fc::MULTIPOP,
+                                           0x02,
+                                           fc::Instruction::RETURN,
+                                         },
+                                       .inCount = 2,
+                                       .outCount = 1},
+                             fc::Chunk{.name = "main",
+                                       .code = {
+                                         fc::RESERVE,
+                                         0x01,
+                                         fc::PUSH,
+                                         0x00,  // arg 10
+                                         fc::PUSH,
+                                         0x01,  // arg 20
+                                         fc::CALL,
+                                         0x00,
+                                         0x00,
+                                         0x00,
+                                         0x00,  // add is at index 0
+                                         fc::Instruction::POP,
+                                         fc::Instruction::RETURN,
+                                       }}};
 
   input = prepare(std::move(input));
-  auto actual = fluir::generateCode(ctx_, input);
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
 
   EXPECT_FALSE(sink_.containsErrors());
-  EXPECT_BC_HEADER_EQ(expected.header, actual.value().header);
-  EXPECT_EQ(expected.chunks.size(), actual.value().chunks.size());
-  for (int i = 0; i != static_cast<int>(expected.chunks.size()); ++i) {
-    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.value().chunks.at(i));
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(expectedChunks.size(), writer.chunks.size());
+  for (int i = 0; i != static_cast<int>(expectedChunks.size()); ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
   }
+}
+
+TEST_F(TestBytecodeGenerator, ConstantsAreGlobal) {
+  fa::AST input;
+  input.declarations.emplace_back(
+    fa::FunctionDecl{.id = 3, .name = "foo", .statements = []() {
+                       fa::DataFlowGraph graph;
+                       graph.push_back(std::make_unique<fa::BinaryOp>(
+                         fluir::Operator::PLUS,
+                         fa::createDependency<fa::Constant>(1.0, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                         fa::createDependency<fa::Constant>(2.0, FullID{3, 3}, fluir::FlowGraphLocation{}),
+                         FullID{3, 1},
+                         fluir::FlowGraphLocation{}));
+                       return graph;
+                     }()});
+  input.declarations.emplace_back(
+    fa::FunctionDecl{.id = 4, .name = "bar", .statements = []() {
+                       fa::DataFlowGraph graph;
+                       graph.push_back(std::make_unique<fa::BinaryOp>(
+                         fluir::Operator::PLUS,
+                         fa::createDependency<fa::Constant>(3.0, FullID{4, 2}, fluir::FlowGraphLocation{}),
+                         fa::createDependency<fa::Constant>(4.0, FullID{4, 3}, fluir::FlowGraphLocation{}),
+                         FullID{4, 1},
+                         fluir::FlowGraphLocation{}));
+                       return graph;
+                     }()});
+
+  // Global pool: [1.0, 2.0, 3.0, 4.0]
+  // foo: PUSH 0, PUSH 1, F64_ADD, POP, RETURN
+  // bar: PUSH 2, PUSH 3, F64_ADD, POP, RETURN
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fluir::be::ConstantsArray expectedConstants{1.0, 2.0, 3.0, 4.0};
+  std::vector expectedChunks{
+    fc::Chunk{.name = "foo", .code = {fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::POP, fc::RETURN}},
+    fc::Chunk{.name = "bar", .code = {fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::POP, fc::RETURN}},
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_VALUES_EQ(expectedConstants, writer.constants);
+  for (int i = 0; i != 2; ++i) {
+    EXPECT_CHUNK_EQ(expectedChunks.at(i), writer.chunks.at(i));
+  }
+}
+
+TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
+  size_t constsCount = 257;
+  fa::AST input;
+  input.declarations.emplace_back(
+    fa::FunctionDecl{.id = 3, .name = "foo", .statements = [&]() {
+                       fa::DataFlowGraph graph;
+                       graph.reserve(constsCount);
+                       for (size_t i = 0; i != constsCount; ++i) {
+                         graph.emplace_back(std::make_unique<fa::Constant>(i, FullID{i}, fluir::FlowGraphLocation{}));
+                       }
+                       return graph;
+                     }()});
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fluir::be::ConstantsArray expectedConstants = [&]() {
+    fluir::be::ConstantsArray values;
+    values.reserve(constsCount);
+    for (size_t i = 0; i != constsCount; ++i) {
+      values.emplace_back(i);
+    }
+    return values;
+  }();
+  fc::Chunk expectedChunk{fc::Chunk{.name = "foo", .code = {[]() {
+                                                     std::vector<uint8_t> bytes;
+                                                     for (size_t i = 0; i <= UINT8_MAX; ++i) {
+                                                       bytes.emplace_back(fc::PUSH);
+                                                       bytes.emplace_back(static_cast<uint8_t>(i));
+                                                       bytes.emplace_back(fc::POP);
+                                                     }
+                                                     bytes.emplace_back(fc::QUAD_PUSH);
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0x01));
+                                                     bytes.emplace_back(static_cast<uint8_t>(0));
+                                                     bytes.emplace_back(fc::POP);
+                                                     bytes.emplace_back(fc::RETURN);
+                                                     return bytes;
+                                                   }()}}};
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_VALUES_EQ(expectedConstants, writer.constants);
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.back());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
+  fa::AST input;
+  input.declarations.emplace_back([]() {
+    auto decl = fa::FunctionDecl{
+      .id = 1,
+      .name = "main",
+      .statements = {
+        []() {
+          fluir::ast::DataFlowGraph graph;
+
+          std::vector<fa::UniqueNode> args;
+          args.emplace_back(fa::createDependency<fa::Constant>(12.5, FullID{1, 2}, fluir::FlowGraphLocation{}));
+          graph.emplace_back(
+            fa::createDependency<fa::Call>("print"s, std::move(args), FullID{1, 1}, fluir::FlowGraphLocation{}));
+          return graph;
+        }(),
+      }};
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fluir::be::ConstantsArray expectedConstants{12.5, "print"s};
+  fc::Chunk expectedChunk{.name = "main",
+                          .code = {
+                            fc::PUSH,
+                            0x00,  // arg 12.5
+                            fc::DYN_CALL,
+                            0x00,
+                            0x00,
+                            0x00,
+                            0x01,
+                            fc::Instruction::RETURN,
+                          }};
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  EXPECT_EQ(writer.constants, expectedConstants);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }

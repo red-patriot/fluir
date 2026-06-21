@@ -34,6 +34,48 @@ export type UpdateOperatorEditRequest = {
   value: Operator;
 };
 
+export type RenameCallArg = {
+  discriminator: "rename_arg";
+  index: number;
+  name: string;
+};
+
+export type AddCallArg = {
+  discriminator: "add_arg";
+  name: string;
+};
+
+export type DeleteCallArg = {
+  discriminator: "delete_arg";
+  index: number;
+};
+
+export type AddCallReturn = {
+  discriminator: "add_return";
+};
+
+export type DeleteCallReturn = {
+  discriminator: "delete_return";
+};
+
+export type ReorderCallArg = {
+  discriminator: "reorder_arg";
+  current: number;
+  destination: number;
+};
+
+export type EditCallNodeRequest = {
+  discriminator: "edit_call_node";
+  target: number[];
+  command:
+    | RenameCallArg
+    | AddCallArg
+    | DeleteCallArg
+    | AddCallReturn
+    | DeleteCallReturn
+    | ReorderCallArg;
+};
+
 export type AddConduitEditRequest = {
   discriminator: "add_conduit";
   source: string; // "input-QualifiedID-index"
@@ -93,8 +135,51 @@ export type AddDeclEditRequest = {
   params: CreateFunctionParams;
 };
 
+export type UpdateFuncParamType = {
+  discriminator: "type";
+  flType: FlType;
+};
+
+export type UpdateFuncParamName = {
+  discriminator: "name";
+  name: string;
+};
+
+export type UpdateFunctionParamRequest = {
+  discriminator: "update_func_param";
+  target: number[];
+  index: number;
+  cmd: UpdateFuncParamType | UpdateFuncParamName;
+};
+
+export type UpdateFunctionReturnRequest = {
+  discriminator: "update_func_return";
+  target: number[];
+  type: FlType;
+};
+
+export type ReorderFunctionParamRequest = {
+  discriminator: "reorder_func_param";
+  target: number[];
+  source_index: number;
+  destination_index: number;
+};
+
 export type RemoveItemEditRequest = {
   target: number[];
+};
+
+export type AddCommentEditRequest = {
+  discriminator: "add_comment";
+  parent: number[];
+  new_location: Location;
+  data: string;
+};
+
+export type UpdateCommentEditRequest = {
+  discriminator: "update_comment";
+  target: number[];
+  data: string;
 };
 
 type EditRequest =
@@ -102,11 +187,17 @@ type EditRequest =
   | ResizeEditRequest
   | RenameDeclarationEditRequest
   | UpdateConstantEditRequest
+  | UpdateCommentEditRequest
   | UpdateOperatorEditRequest
+  | AddCommentEditRequest
   | AddConduitEditRequest
   | AddNodeEditRequest
   | AddDeclEditRequest
   | AddDeclInterfaceEditRequest
-  | RemoveItemEditRequest;
+  | RemoveItemEditRequest
+  | UpdateFunctionParamRequest
+  | UpdateFunctionReturnRequest
+  | ReorderFunctionParamRequest
+  | EditCallNodeRequest;
 
 export default EditRequest;

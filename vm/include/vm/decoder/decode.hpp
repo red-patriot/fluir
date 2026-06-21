@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "bytecode/byte_code.hpp"
+#include "vm/code/byte_code.hpp"
 
 namespace fluir {
   code::ByteCode decode(std::string_view source);

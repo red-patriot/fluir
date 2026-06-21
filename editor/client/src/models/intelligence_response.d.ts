@@ -1,8 +1,9 @@
 export type CompletionKind =
-  | 'function'
-  | 'call'
-  | 'constant'
-  | 'operator';
+  | "function"
+  | "call"
+  | "constant"
+  | "operator"
+  | "comment";
 
 export type Completion = {
   short_name: string;

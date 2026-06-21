@@ -14,24 +14,21 @@
 using fluir::code::Instruction;
 
 namespace fluir {
-  Results<code::ByteCode> generateCode(Context& ctx, const ast::AST& graph) {
-    return BytecodeGenerator::generate(ctx, graph);
+  void generateCode(Context& ctx, const ast::AST& graph, CodeWriter& writer) {
+    return BytecodeGenerator::generate(ctx, graph, writer);
   }
 
-  void writeCode(const code::ByteCode& code, CodeWriter& writer, std::ostream& destination) {
-    return writer.write(code, destination);
-  }
-
-  Results<code::ByteCode> BytecodeGenerator::generate(Context& ctx, const ast::AST& graph) {
-    BytecodeGenerator generator{ctx, graph};
+  void BytecodeGenerator::generate(Context& ctx, const ast::AST& graph, CodeWriter& writer) {
+    BytecodeGenerator generator{ctx, writer, graph};
     return generator.run();
   }
 
   void BytecodeGenerator::operator()(const ast::FunctionDecl& func) {
-    current_ = code::Chunk{};
-    current_.name = func.name;
-    current_.inCount = static_cast<std::uint8_t>(func.parameters.size());
-    current_.outCount = func.returnValue ? 1 : 0;
+    chunks_.emplace_back();
+    current_ = &chunks_.back();
+    current_->name = func.name;
+    current_->inCount = static_cast<std::uint8_t>(func.parameters.size());
+    current_->outCount = func.returnValue ? 1 : 0;
 
     // TODO: Handle parameters
     auto& [slots, returnCount] = pushScope();
@@ -62,7 +59,6 @@ namespace fluir {
     popScope();
 
     emitByte(Instruction::RETURN);
-    code_.chunks.push_back(std::move(current_));
   }
 
   void BytecodeGenerator::generate(const ast::BinaryOp& node) {
@@ -107,29 +103,33 @@ namespace fluir {
     auto type = node.type();
     size_t constant;
     if (type == types::ID_F64) {
-      constant = addConstant(code::Value(node.f64()));
+      constant = addConstant(node.f64());
     } else if (type == types::ID_I8) {
-      constant = addConstant(code::Value(node.i8()));
+      constant = addConstant(node.i8());
     } else if (type == types::ID_I16) {
-      constant = addConstant(code::Value(node.i16()));
+      constant = addConstant(node.i16());
     } else if (type == types::ID_I32) {
-      constant = addConstant(code::Value(node.i32()));
+      constant = addConstant(node.i32());
     } else if (type == types::ID_I64) {
-      constant = addConstant(code::Value(node.i64()));
+      constant = addConstant(node.i64());
     } else if (type == types::ID_U8) {
-      constant = addConstant(code::Value(node.u8()));
+      constant = addConstant(node.u8());
     } else if (type == types::ID_U16) {
-      constant = addConstant(code::Value(node.u16()));
+      constant = addConstant(node.u16());
     } else if (type == types::ID_U32) {
-      constant = addConstant(code::Value(node.u32()));
+      constant = addConstant(node.u32());
     } else if (type == types::ID_U64) {
-      constant = addConstant(code::Value(node.u64()));
+      constant = addConstant(node.u64());
     } else {
       diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
     }
-    // TODO: Handle too large
-    emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
+    if (constant <= UINT8_MAX) {
+      emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
+    } else {
+      emitByte(Instruction::QUAD_PUSH);
+      emitLongOperand(constant);
+    }
   }
 
   void BytecodeGenerator::generate(const ast::Cast& cast) {
@@ -218,18 +218,26 @@ namespace fluir {
       recursivelyGenerate(*arg);
     }
 
-    // Find the function to execute
-    if (!functionIndices_.contains(call.target())) {
-      diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+    if (ctx_.symbolTable.isMagicBuiltin(targetType)) {
+      // Emit special instructions for a builtin
+      auto call_index = addConstant(call.target());
+      emitByte(Instruction::DYN_CALL);
+      emitLongOperand(call_index);
+    } else {
+      // Find the function to execute
+      if (!functionIndices_.contains(call.target())) {
+        diagnostic::emitInternalError(std::format("'{}' is not found to call", call.target()));
+      }
+      const auto index = functionIndices_.at(call.target());
+      emitByte(Instruction::CALL);
+      emitLongOperand(index);
     }
-    const auto index = functionIndices_.at(call.target());
-    emitByte(Instruction::CALL);
-    emitLongOperand(index);
   }
 
-  BytecodeGenerator::BytecodeGenerator(Context& ctx, const ast::AST& graph) : ctx_(ctx), graph_(graph), code_{} { }
+  BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
+    ctx_(ctx), graph_(graph), writer_(writer) { }
 
-  void BytecodeGenerator::emitByte(std::uint8_t byte) { current_.code.push_back(byte); }
+  void BytecodeGenerator::emitByte(std::uint8_t byte) { current_->code.push_back(byte); }
 
   void BytecodeGenerator::emitBytes(std::uint8_t byte1, std::uint8_t byte2) {
     emitByte(byte1);
@@ -246,19 +254,15 @@ namespace fluir {
     }
   }
 
-  size_t BytecodeGenerator::addConstant(code::Value value) {
-    if (auto found = std::ranges::find(current_.constants, value); found != current_.constants.end()) {
-      return found - current_.constants.begin();
+  size_t BytecodeGenerator::addConstant(be::Constant value) {
+    if (auto found = std::ranges::find(constants_, value); found != constants_.end()) {
+      return found - constants_.begin();
     }
-    current_.constants.emplace_back(std::move(value));
-    if (current_.constants.size() > UINT8_MAX) {
-      // TODO: Fix this limitation
-      diagnostic::emitInternalError(fmt::format("Too many constants. Only {} constants allowed.", UINT8_MAX));
-    }
-    return current_.constants.size() - 1;
+    constants_.emplace_back(std::move(value));
+    return constants_.size() - 1;
   }
 
-  Results<code::ByteCode> BytecodeGenerator::run() {
+  void BytecodeGenerator::run() {
     for (const auto& [index, declaration] : std::views::enumerate(graph_.declarations)) {
       // Track the indices of each function to manage calls
       functionIndices_.insert({declaration.name, index});
@@ -268,12 +272,15 @@ namespace fluir {
       (*this)(declaration);
     }
 
-    code_.header = code::Header{};
-    code_.header.major = ctx_.version.major;
-    code_.header.minor = ctx_.version.minor;
-    code_.header.patch = ctx_.version.patch;
+    header_.major = ctx_.version.major;
+    header_.minor = ctx_.version.minor;
+    header_.patch = ctx_.version.patch;
 
-    return std::move(code_);
+    writer_.writeHeader(header_);
+    writer_.writeConstants(constants_);
+    for (const auto& chunk : chunks_) {
+      writer_.writeChunk(chunk);
+    }
   }
 
   void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {

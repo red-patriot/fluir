@@ -10,6 +10,7 @@ class Kind(StrEnum):
     CALL = "call"
     CONSTANT = "constant"
     OPERATOR = "operator"
+    COMMENT = "comment"
 
 
 @dataclass

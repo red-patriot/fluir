@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { SERVER_API } from '../api';
 import EditRequest from '../models/edit_request';
 
@@ -10,31 +9,20 @@ interface UseEditProgramParams {
 }
 
 export function useEditProgram({ onEdit, onError }: UseEditProgramParams) {
-  const doEditProgram = (request: EditRequest) => {
+  return (request: EditRequest) => {
+    console.log("REQUEST: ", request);
     axios.post(SERVER_API.editProgram, request).then(onEdit).catch(onError);
   };
-
-  const editProgram = useCallback(doEditProgram, []);
-
-  return editProgram;
 }
 
 export function useUndo({ onEdit, onError }: UseEditProgramParams) {
-  const doUndo = () => {
+  return () => {
     axios.post(SERVER_API.undo).then(onEdit).catch(onError);
   };
-
-  const undoProgramEdit = useCallback(doUndo, []);
-
-  return undoProgramEdit;
 }
 
 export function useRedo({ onEdit, onError }: UseEditProgramParams) {
-  const doRedo = () => {
+  return () => {
     axios.post(SERVER_API.redo).then(onEdit).catch(onError);
   };
-
-  const redoProgramEdit = useCallback(doRedo, []);
-
-  return redoProgramEdit;
 }

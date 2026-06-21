@@ -6,6 +6,10 @@ from editor.models import Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_item
 from editor.services.transaction.base import TransactionBase
+from editor.utility.manage_connections import (
+    ConnectionTarget,
+    remove_all_connections_of,
+)
 
 
 class RemoveItem(BaseModel, TransactionBase):
@@ -21,21 +25,33 @@ class RemoveItem(BaseModel, TransactionBase):
             raise BadEdit("Cannot remove the program itself")
 
         if len(self.target) == 1:
-            # Removing a function from the program
-            # Find and store the function being removed
+            # Removing a top-level item from the program (function or comment)
             for func in original.declarations:
                 if func.id == self.target[0]:
                     self._removed_item = func
                     break
 
             if self._removed_item is None:
-                raise BadEdit(f"Function {self.target[0]} not found")
+                for annotation in original.annotations:
+                    if annotation.id == self.target[0]:
+                        self._removed_item = annotation
+                        break
 
-            original.declarations = [
-                func
-                for func in original.declarations
-                if func.id != self.target[0]
-            ]
+            if self._removed_item is None:
+                raise BadEdit(f"Element {self.target[0]} not found")
+
+            if isinstance(self._removed_item, elements.Function):
+                original.declarations = [
+                    func
+                    for func in original.declarations
+                    if func.id != self.target[0]
+                ]
+            else:
+                original.annotations = [
+                    annotation
+                    for annotation in original.annotations
+                    if annotation.id != self.target[0]
+                ]
             return original
 
         parent_id = self.target[:-1]
@@ -73,19 +89,15 @@ class RemoveItem(BaseModel, TransactionBase):
                         self._removed_item = output
                         break
 
+            # Check if it's an annotation
+            if self._removed_item is None:
+                for annotation in parent.annotations:
+                    if annotation.id == element_id:
+                        self._removed_item = annotation
+                        break
+
             if self._removed_item is None:
                 raise BadEdit(f"Element {element_id} not found")
-
-            # Store conduits that will be removed due to connections
-            self._removed_conduits = []
-            for conduit in parent.conduits:
-                if conduit.input == element_id or any(
-                    cast(elements.Conduit.Output, out).target == element_id
-                    for out in conduit.children
-                ):
-                    # Only store if it's not the item being directly removed
-                    if conduit.id != element_id:
-                        self._removed_conduits.append(conduit)
 
             # Remove from nodes list
             parent.nodes = [
@@ -102,16 +114,14 @@ class RemoveItem(BaseModel, TransactionBase):
             parent.outputs = [
                 output for output in parent.outputs if output.id != element_id
             ]
-            # Remove any conduits connected to this node
-            parent.conduits = [
-                conduit
-                for conduit in parent.conduits
-                if conduit.input != element_id
-                and not any(
-                    cast(elements.Conduit.Output, out).target == element_id
-                    for out in conduit.children
-                )
+            parent.annotations = [
+                annotation
+                for annotation in parent.annotations
+                if annotation.id != element_id
             ]
+            self._removed_conduits = remove_all_connections_of(
+                target=ConnectionTarget(id=element_id), parent=parent
+            )
         else:
             raise BadEdit("Can only remove elements from functions")
 
@@ -123,9 +133,14 @@ class RemoveItem(BaseModel, TransactionBase):
             raise BadEdit("Nothing to undo - no item was removed")
 
         if len(self.target) == 1:
-            # Restoring a function to the program
-            assert isinstance(self._removed_item, elements.Function)
-            original.declarations.append(self._removed_item)
+            # Restoring a top-level item to the program
+            if isinstance(self._removed_item, elements.Function):
+                original.declarations.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Comment):
+                original.annotations.append(self._removed_item)
+            else:
+                raise BadEdit("Cannot restore unsupported top-level item")
+            self._removed_item = None
             return original
 
         parent_id = self.target[:-1]
@@ -134,13 +149,15 @@ class RemoveItem(BaseModel, TransactionBase):
         if isinstance(parent, elements.Function):
             # Restore the removed item
             if isinstance(self._removed_item, elements.Node):
-                parent.nodes.append(self._removed_item)
+                parent.nodes.append(cast(elements.Node, self._removed_item))
             elif isinstance(self._removed_item, elements.Conduit):
                 parent.conduits.append(self._removed_item)
             elif isinstance(self._removed_item, elements.Parameter):
                 parent.inputs.append(self._removed_item)
             elif isinstance(self._removed_item, elements.Return):
                 parent.outputs.append(self._removed_item)
+            elif isinstance(self._removed_item, elements.Comment):
+                parent.annotations.append(self._removed_item)
 
             # Restore any conduits that were removed due to connections
             for conduit in self._removed_conduits:

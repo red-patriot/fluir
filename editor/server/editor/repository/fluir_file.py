@@ -22,6 +22,9 @@ from editor.models import (
     UnaryOperator,
 )
 from editor.models.elements import (
+    Annotation,
+    Annotations,
+    Comment,
     Header,
     Parameter,
     Return,
@@ -32,6 +35,7 @@ from editor.repository.interface.file_manager import FileManager
 type _NodePair = tuple[IDType, Node]
 type _ConduitPair = tuple[IDType, Conduit]
 type _DeclarationPair = tuple[IDType, Declaration]
+type _AnnotationPair = tuple[IDType, Annotation]
 
 
 class XMLFileManager(FileManager):
@@ -63,6 +67,7 @@ class _XMLReader:
     def program(self, root: ObjectifiedElement) -> Program:
         header: Header | None = None
         declarations: list[Declaration] = []
+        annotations: Annotations = []
         for element in root.iterchildren():
             if element.tag == "header":
                 header = self._header(element)
@@ -71,9 +76,14 @@ class _XMLReader:
                 if id == INVALID_ID:
                     continue
                 declarations.append(decl)
+            elif element.tag == "comment":
+                id, ann = self._annotation(element)
+                if id == INVALID_ID:
+                    continue
+                annotations.append(ann)
 
         assert header is not None
-        return Program(declarations, header)
+        return Program(declarations, header, annotations)
 
     def _header(self, element: Any) -> Header:
         version_element = element.find("version")
@@ -95,6 +105,7 @@ class _XMLReader:
     def _declaration(self, element: Any) -> _DeclarationPair:
         nodes: Nodes = []
         conduits: list[Conduit] = []
+        annotations: Annotations = []
         input_block: list[Parameter] = []
         output_block: list[Return] = []
 
@@ -117,6 +128,8 @@ class _XMLReader:
         for child in element.find("body").iterchildren():
             if child.tag == "conduit":
                 handle_child(self._conduit(child), conduits)
+            elif child.tag == "comment":
+                handle_child(self._annotation(child), annotations)
             else:
                 handle_child(self._node(child), nodes)
         return self._id(element), Function(
@@ -127,6 +140,7 @@ class _XMLReader:
             conduits=conduits,
             inputs=input_block,
             outputs=output_block,
+            annotations=annotations,
         )
 
     def _input_block(self, element: Any) -> list[Parameter]:
@@ -171,6 +185,20 @@ class _XMLReader:
             case "call":
                 return self._call(element)
         return (INVALID_ID, Constant())
+
+    def _annotation(self, element: Any) -> _AnnotationPair:
+        match element.tag:
+            case "comment":
+                return self._comment(element)
+        return (INVALID_ID, Comment())
+
+    def _comment(self, element: Any) -> _AnnotationPair:
+        id = self._id(element)
+        return id, Comment(
+            id=id,
+            location=self._location(element),
+            data=element.text or "",
+        )
 
     def _conduit(self, element: Any) -> _ConduitPair:
         id = self._id(element)
@@ -234,18 +262,14 @@ class _XMLReader:
 
     def _call(self, element: Any) -> _NodePair:
         id = self._id(element)
-        indexed_args: list[tuple[int, str]] = []
+        arguments: list[str] = []
         returns = False
         for child in element.iterchildren():
             if child.tag == "arg":
-                indexed_args.append(
-                    (int(child.get("index")), str(child.get("name")))
-                )
+                arguments.append(str(child.get("name")))
             elif child.tag == "return":
                 # TODO: Handle multiple returns
                 returns = True
-        indexed_args.sort(key=lambda pair: pair[0])
-        arguments = [name for _, name in indexed_args]
         return id, Call(
             id=id,
             location=self._location(element),
@@ -303,6 +327,8 @@ class _XMLWriter:
         self._header(program.header)
         for decl in program.declarations:
             self._decl(decl)
+        for annotation in program.annotations:
+            self._annotation(annotation, self.root)
 
         return etree.tostring(
             self.root,
@@ -350,6 +376,8 @@ class _XMLWriter:
             self._node(node, body_element)
         for conduit in declaration.conduits:
             self._conduit(conduit, body_element)
+        for annotation in declaration.annotations:
+            self._annotation(annotation, body_element)
 
     def _input_block(
         self, inputs: list[Parameter], parent: etree._Element
@@ -392,6 +420,28 @@ class _XMLWriter:
                 self._constant(cast(Constant, node), parent)
             case "call":
                 self._call(cast(Call, node), parent)
+
+    def _annotation(
+        self, annotation: Annotation, parent: etree._Element
+    ) -> None:
+        match annotation.discriminator:
+            case "comment":
+                self._comment(annotation, parent)
+
+    def _comment(self, comment: Comment, parent: etree._Element) -> None:
+        comment_element = etree.SubElement(
+            parent,
+            "comment",
+            attrib={
+                "id": str(comment.id),
+                "x": str(comment.location.x),
+                "y": str(comment.location.y),
+                "z": str(comment.location.z),
+                "w": str(comment.location.width),
+                "h": str(comment.location.height),
+            },
+        )
+        comment_element.text = comment.data
 
     def _binary(self, node: BinaryOperator, parent: etree._Element) -> None:
         binary_element = etree.SubElement(
@@ -455,13 +505,12 @@ class _XMLWriter:
             },
         )
         if node.returns:
-            etree.SubElement(call_element, "return", attrib={"index": "0"})
-        start = 1 if node.returns else 0
-        for index, name in enumerate(node.arguments, start=start):
+            etree.SubElement(call_element, "return")
+        for name in node.arguments:
             etree.SubElement(
                 call_element,
                 "arg",
-                attrib={"name": name, "index": str(index)},
+                attrib={"name": name},
             )
 
     def _literal(

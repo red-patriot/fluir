@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated, Literal, override
 
 from pydantic import BaseModel, Field
@@ -6,6 +7,8 @@ from editor.models import Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_element
 from editor.models.id import IDType
+from editor.models.intelligence import FunctionSignature
+from editor.services.intelligence import IntelligenceReadInterface
 from editor.services.transaction.base import TransactionBase
 from editor.services.transaction.remove import RemoveItem
 from editor.utility.next_id import next_id
@@ -26,6 +29,7 @@ class OperatorParams(BaseModel):
 class CallParams(BaseModel):
     discriminator: Literal["call"] = "call"
     target: str | None = None
+    _signature: FunctionSignature | None = None
 
 
 type NodeParams = Annotated[
@@ -40,6 +44,19 @@ class AddNode(BaseModel, TransactionBase):
     new_location: elements.Location
     params: NodeParams
     _inserted: IDType | None = None
+
+    @override
+    def resolve(
+        self, intelligence: IntelligenceReadInterface, module_path: Path
+    ) -> None:
+        if self.params.discriminator != "call":
+            return
+        if self.params.target is None:
+            # This is an error, but will be caught in `do`
+            return
+        self.params._signature = intelligence.get_function_signature(
+            self.params.target, module_path
+        )
 
     @override
     def do(self, original: Program) -> Program:
@@ -107,17 +124,13 @@ class AddNode(BaseModel, TransactionBase):
         assert isinstance(self.params, CallParams)
         if not self.params.target:
             raise BadEdit("call target is required")
+        if self.params._signature is None:
+            # Maybe this should be an error? But we can just be permissive for now with a blank signature
+            self.params._signature = FunctionSignature()
         target_name = self.params.target
-        targets = [
-            decl for decl in original.declarations if decl.name == target_name
-        ]
-        args = []
-        returns = False
-        if len(targets) == 1:
-            target = targets[0]
-            args = [param.name for param in target.inputs]
-            # TODO: Handle multiple returns
-            returns = len(target.outputs) == 1
+        args = [param.name for param in self.params._signature.inputs]
+        # TODO: Handle multiple returns
+        returns = self.params._signature.output is not None
 
         # Make space for each arg
         self.new_location.height = 5 * len(args) + 5

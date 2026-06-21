@@ -223,4 +223,17 @@ namespace fluir::types {
     return it->second;
   }
 
+  bool SymbolTable::isMagicBuiltin(const FunctionType* func) {
+    if (!func) {
+      return false;
+    }
+    // Criteria are no return and all parameters are MAGIC_ANY
+    if (!func->returnType() &&
+        std::ranges::all_of(func->parameters(), [](types::TypeID id) { return id == types::ID_MAGIC_ANY_TYPE; })) {
+      return true;
+    }
+
+    return false;
+  }
+
 }  // namespace fluir::types

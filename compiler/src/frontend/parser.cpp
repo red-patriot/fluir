@@ -11,6 +11,7 @@
 #include "fluir/util/trie.hpp"
 
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 namespace fluir {
   template <typename... FmtArgs>
@@ -171,12 +172,19 @@ namespace fluir {
     return version;
   }
 
+  void Parser::comment(Element* element) {
+    // These are required, so make sure they exist on the element, but we don't care what they are
+    parseId(element);
+    parseLocation(element);
+  }
+
   void Parser::declaration(Element* element) {
     static const util::Trie<void (*)(Parser* p, Element* e)> declarationParsers{
       [](Parser* p, Element* e) -> void {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a declaration.");
       },
-      {{"function", [](Parser* p, Element* e) -> void { p->functionDecl(e); }}}};
+      {{"function", [](Parser* p, Element* e) -> void { p->functionDecl(e); }},
+       {"comment", [](Parser* p, Element* e) -> void { p->comment(e); }}}};
 
     std::string_view name = element->Name();
     FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
@@ -295,7 +303,7 @@ namespace fluir {
   pt::Block Parser::block(Element* body) {
     auto block = pt::EMPTY_BLOCK;
     for (auto child = body->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
-      FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
+      try {
         if (child->Name() == "conduit"s) {
           // Parse a conduit
           auto result = conduit(child);
@@ -308,28 +316,35 @@ namespace fluir {
         } else {
           // Parse any other node
           auto result = node(child);
-          auto& [id, resultNode] = result;
+          if (!result) {
+            continue;
+          }
+          auto& [id, resultNode] = *result;
           panicIf(block.nodes.contains(id) || block.conduits.contains(id),
                   child,
                   diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-          block.nodes.emplace(std::move(result));
+          block.nodes.emplace(std::move(*result));
         }
-      };
+      } catch (const diagnostic::Panic&) { }
     }
     return block;
   }
 
-  WithID<pt::Node> Parser::node(Element* element) {
-    using NodeIdPair = WithID<pt::Node>;
-    static const util::Trie<NodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
-      [](Parser* p, Element* e) -> NodeIdPair {
+  std::optional<WithID<pt::Node>> Parser::node(Element* element) {
+    using OptionalNodeIdPair = std::optional<WithID<pt::Node>>;
+    static const util::Trie<OptionalNodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
+      [](Parser* p, Element* e) -> OptionalNodeIdPair {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a node.");
         std::unreachable();
       },
-      {{"constant", [](Parser* p, Element* e) -> NodeIdPair { return p->constant(e); }},
-       {"binary", [](Parser* p, Element* e) -> NodeIdPair { return p->binary(e); }},
-       {"unary", [](Parser* p, Element* e) -> NodeIdPair { return p->unary(e); }},
-       {"call", [](Parser* p, Element* e) -> NodeIdPair { return p->call(e); }}}};
+      {{"constant", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->constant(e); }},
+       {"binary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->binary(e); }},
+       {"unary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->unary(e); }},
+       {"call", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->call(e); }},
+       {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair {
+          p->comment(e);
+          return std::nullopt;
+        }}}};
 
     std::string_view type = element->Name();
     auto nodeParser = nodeParsers.at(type);
@@ -392,7 +407,6 @@ namespace fluir {
     auto target = getAttribute(element, "target");
     pt::Call::Arguments arguments;
     std::optional<pt::Call::Return> return_{std::nullopt};
-    std::unordered_set<int> argIndices;
     std::unordered_set<std::string> argNames;
 
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
@@ -400,24 +414,13 @@ namespace fluir {
         std::string_view childName = child->Name();
         if (childName == "return") {
           panicIf(return_.has_value(), child, diagnostic::Code::ERROR_TOO_MANY_RETURNS);
-          auto indexStr = getAttribute(child, "index");
-          auto index = fe::parseNumber<int>(indexStr);
-          panicIf(!index.has_value() || index.value() != 0, child, diagnostic::Code::ERROR_WRONG_RETURN_INDEX);
           return_ = pt::Call::Return{};
         } else if (childName == "arg") {
           auto name = getAttribute(child, "name");
-          auto indexStr = getAttribute(child, "index");
-          auto index = fe::parseNumber<int>(indexStr);
-          panicIf(!index.has_value(),
-                  child,
-                  diagnostic::Code::ERROR_CANNOT_PARSE_ATTRIBUTE_TEXT,
-                  "Expected an integer index on <arg>, found '{}'.",
-                  indexStr);
-          panicIf(argIndices.contains(index.value()), child, diagnostic::Code::ERROR_DUPLICATE_ARG_INDEX);
           panicIf(argNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_ARG_NAME);
-          argIndices.insert(index.value());
           argNames.insert(std::string(name));
-          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = index.value()});
+          auto idx = static_cast<int>(arguments.size());
+          arguments.push_back(pt::Call::Argument{.name = std::string(name), .index = idx});
         } else {
           panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element <{}> in call.", childName);
         }

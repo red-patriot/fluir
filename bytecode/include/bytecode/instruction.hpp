@@ -8,6 +8,7 @@ namespace fluir::code {
   #define FLUIR_CODE_INSTRUCTIONS(code)  \
   code(EXIT)                             \
   code(PUSH)                             \
+  code(QUAD_PUSH)                        \
   code(POP)                              \
   code(MULTIPOP)                         \
   code(GET_VAL)                          \
@@ -43,6 +44,7 @@ namespace fluir::code {
   code(CAST_FU)                          \
   code(CAST_WIDTH)                       \
   code(CALL)                             \
+  code(DYN_CALL)                         \
   code(RETURN)                           \
   code(RESERVE)
 

@@ -149,6 +149,9 @@ namespace fluir::fe {
           return out.target == dependentId && out.index == index;
         });
       });
+    if (dependencyPt == pt_.body.conduits.end()) {
+      ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_MISSING_DEPENDENCY, ctx_.currentFile, currentID_);
+    }
     const auto& dependencyId = dependencyPt->second.input;
 
     // Check that the dependency index isn't already in progress
@@ -210,10 +213,6 @@ namespace fluir::fe {
 
   std::unordered_set<fluir::ID> FunctionAstBuilder::getSinkNodes() const {
     std::unordered_set<fluir::ID> sinkNodes;
-    if (pt_.output && pt_.output->ret) {
-      // The return value is a sink if it exists
-      sinkNodes.insert(pt_.output->ret->id);
-    }
     const auto& block = pt_.body;
 
     // Start with all Nodes in the block

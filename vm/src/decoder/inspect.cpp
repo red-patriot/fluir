@@ -1,6 +1,7 @@
 #include "vm/decoder/inspect.hpp"
 
 #include <charconv>
+#include <format>
 #include <stdexcept>
 #include <string>
 
@@ -50,6 +51,9 @@ namespace fluir {
     while (!atEnd()) {
       Token nextToken = scanNext();
       switch (nextToken.type) {
+        case TokenType::CONSTANTS:
+          constants();
+          break;
         case TokenType::CHUNK:
           chunk();
           break;
@@ -63,21 +67,19 @@ namespace fluir {
 
   void InspectDecoder::chunk() {
     auto name = scanNext();
-    auto constantBlock = constants();
     auto codeBlock = code();
     auto inCountVal = inCount();
     auto outCountVal = outCount();
     // TODO: Check for errors
 
-    code_.chunks.push_back(code::Chunk{.name = std::string{name.source},
-                                       .code = codeBlock,
-                                       .constants = constantBlock,
-                                       .inCount = inCountVal,
-                                       .outCount = outCountVal});
+    code_.chunks.push_back(
+      code::Chunk{.name = std::string{name.source}, .code = codeBlock, .inCount = inCountVal, .outCount = outCountVal});
   }
 
-  std::vector<code::Value> InspectDecoder::constants() {
-    [[maybe_unused]] auto constSection = scanNext();
+  void InspectDecoder::constants() {
+    if (!code_.constants.empty()) {
+      throw std::runtime_error{"Expected only one CONSTANTS section in the code."};
+    }
     auto rawCount = scanNext();
     auto count = toUnsignedInteger(rawCount);
 
@@ -86,7 +88,7 @@ namespace fluir {
       constants.push_back(decodeConstant());
     }
 
-    return constants;
+    code_.constants = std::move(constants);
   }
 
   std::vector<uint8_t> InspectDecoder::code() {
@@ -191,15 +193,23 @@ namespace fluir {
 #define FLUIR_INSTRUCTION_BRANCHES(code) {FLUIR_STRINGIFY(FLUIR_CCAT(I, code)), TokenType::FLUIR_CCAT(INST_, code)},
                                       FLUIR_CODE_INSTRUCTIONS(FLUIR_INSTRUCTION_BRANCHES)
 #undef FLUIR_INSTRUCTION_BRANCHES
-#define FLUIR_TYPE_BRANCHES(type, concrete) {FLUIR_STRINGIFY(FLUIR_CCAT(V, type)), FLUIR_CCAT(TokenType::TYPE_, type)},
-                                        FLUIR_CODE_PRIMITIVE_TYPES(FLUIR_TYPE_BRANCHES)
-#undef FLUIR_TYPE_BRANCHES
-                                     }};
+                                        {"VF64", TokenType::TYPE_F64},
+                                      {"VI8", TokenType::TYPE_I8},
+                                      {"VI16", TokenType::TYPE_I16},
+                                      {"VI32", TokenType::TYPE_I32},
+                                      {"VI64", TokenType::TYPE_I64},
+                                      {"VU8", TokenType::TYPE_U8},
+                                      {"VU16", TokenType::TYPE_U16},
+                                      {"VU32", TokenType::TYPE_U32},
+                                      {"VU64", TokenType::TYPE_U64},
+                                      {"VSTR", TokenType::TYPE_STR}}};
 
     std::string_view word{start_, current_};
     TokenType tokenType;
     if (word.starts_with('x')) {
       tokenType = TokenType::HEX_LITERAL;
+    } else if (word.starts_with('s')) {
+      tokenType = TokenType::STR_LITERAL;
     } else {
       tokenType = keywords.at(word);
     }
@@ -262,6 +272,8 @@ namespace fluir {
         return decodeIntConstant(code::PrimitiveType::U32);
       case TokenType::TYPE_U64:
         return decodeIntConstant(code::PrimitiveType::U64);
+      case TokenType::TYPE_STR:
+        return decodeStrConstant();
       default:
         throw std::runtime_error{"Expected a type keyword."};
     }
@@ -304,5 +316,28 @@ namespace fluir {
       default:
         throw std::runtime_error{"Expected an integer type"};
     }
+  }
+
+  code::Value InspectDecoder::decodeStrConstant() {
+    auto rawConstant = scanNext();
+    if (rawConstant.type != TokenType::STR_LITERAL) {
+      throw std::runtime_error{"Expected a string constant."};
+    }
+    if (rawConstant.source.size() < 9) {
+      throw std::runtime_error{
+        std::format("String literal '{}' is not well formed. Expected 8 characters in the size.", rawConstant.source)};
+    }
+
+    Token rawSize{.type = TokenType::HEX_LITERAL, .source = rawConstant.source.substr(0, 9)};
+    auto size = toUnsignedInteger(rawSize);
+    auto literalSize =
+      rawConstant.source.size() - rawSize.source.size();  // Get the size of the string bit of the literal
+    if (literalSize > size) {
+      throw std::runtime_error{std::format("String literal '{}' is too long.", rawConstant.source)};
+    }
+    if (literalSize == size) {
+      return code::Value{createStaticString(rawConstant.source.substr(rawSize.source.size()))};
+    }
+    throw std::runtime_error{"TODO: Handle string literals with spaces in them"};
   }
 }  // namespace fluir

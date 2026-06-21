@@ -1,5 +1,7 @@
 #include "compiler/frontend/type_checker.hpp"
 
+#include <algorithm>
+
 #include <compiler/utility/scope_guard.hpp>
 #include <fmt/format.h>
 
@@ -323,6 +325,12 @@ namespace fluir {
           const auto argType = arg->type();
           const auto expectedType = funcType->parameters()[i];
           if (argType != expectedType) {
+            if (ctx.symbolTable.isMagicBuiltin(funcType)) {
+              // Hack: Builtin functions have special internal logic that allows them to accept any input type
+              // For now, this check passes magically
+              // TODO: Refactor this logic once generics are implemented
+              continue;
+            }
             if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
               ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                                ctx.currentFile,

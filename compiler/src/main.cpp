@@ -70,15 +70,10 @@ int main(int argc, const char** argv) {
       printer.print(*ast);
     }
 
-    auto backendResults = fluir::generateCode(ctx, *ast);
-    if (!backendResults) {
-      return EXIT_FAILURE;
-    }
-
     {
       std::ofstream fout{ctx.outputFilename};
-      fluir::InspectWriter writer{};
-      fluir::writeCode(*backendResults, writer, fout);
+      fluir::InspectWriter writer{fout};
+      fluir::generateCode(ctx, *ast, writer);
     }
 
     return EXIT_SUCCESS;

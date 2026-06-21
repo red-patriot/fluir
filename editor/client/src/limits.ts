@@ -21,6 +21,10 @@ export const LIMITS = {
     width: { min: 14 } as Limit,
     height: { min: 5 } as Limit,
   } as SizeLimit,
+  comment: {
+    width: { min: 10 } as Limit,
+    height: { min: 10 } as Limit,
+  },
 };
 
 export function clamp(x: number, limit: Limit) {

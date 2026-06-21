@@ -15,7 +15,8 @@ export type FlType =
   | "U8"
   | "U16"
   | "U32"
-  | "U64";
+  | "U64"
+  | "BOOL";
 
 export type Constant = {
   discriminator: "constant";

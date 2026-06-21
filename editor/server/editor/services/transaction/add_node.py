@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import Annotated, Literal, override
+from typing import Annotated, Literal, assert_never, override
 
 from pydantic import BaseModel, Field
 
-from editor.models import Program, QualifiedID, elements
+from editor.models import FlType, Program, QualifiedID, elements
 from editor.models.edit_errors import BadEdit
 from editor.models.elements import find_element
 from editor.models.id import IDType
@@ -76,12 +76,25 @@ class AddNode(BaseModel, TransactionBase):
         self._inserted = new_id
         return original
 
+    @staticmethod
+    def _default_of(new_type: FlType) -> str:
+        match new_type:
+            case FlType.F64:
+                return "0.0"
+            case FlType.U8 | FlType.U16 | FlType.U32 | FlType.U64:
+                return "0"
+            case FlType.I8 | FlType.I16 | FlType.I32 | FlType.I64:
+                return "0"
+            case FlType.BOOL:
+                return "false"
+        assert_never("Type default unhandled")
+
     def _make_constant(self, new_id: IDType) -> elements.Constant:
         assert isinstance(self.params, ConstantParams)
         fl_type = self.params.type
         value = self.params.value
         if value is None:
-            value = "0.0" if fl_type == elements.FlType.F64 else "0"
+            value = self._default_of(fl_type)
         return elements.Constant(
             id=new_id,
             location=self.new_location,

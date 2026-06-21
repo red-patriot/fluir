@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <constant id="2" x="2" y="2" z="1" w="5" h="5">
+                    <i32>3</i32>
+                </constant>
+                <comment id="1" x="10" y="10" z="4" w="25" h="25">Hello there! This is a simple comment!</comment>
+            </body>
+        </function>
+        <comment id="2" x="1050" y="10" z="4" w="25" h="25">Comments are also allowed at the top level</comment>
+    </fluir>

@@ -102,6 +102,14 @@ export function NumericConstant({
 export function BoolConstant({
   data: { constant, fullID },
 }: NodeProps<ConstantNode>) {
+  const { editProgram } = useProgramActions();
+
+  const updateValue = updateConstant(editProgram, fullID);
+
+  const toggle = () => {
+    updateValue(constant.value === "true" ? "false" : "true");
+  };
+
   return (
     <Flex
       direction="row"
@@ -109,9 +117,14 @@ export function BoolConstant({
       align="center"
       style={{ backgroundColor: BOOL_PARAMS.color }}
     >
-      <Flex className="grow" />
-      {constant.value === "true" ? <MaskOnIcon /> : <MaskOffIcon />}
-      <Flex className="grow" />
+      <Flex
+        onClick={toggle}
+        direction="row"
+        justify="center"
+        className="cursor-pointer grow"
+      >
+        {constant.value === "true" ? <MaskOnIcon /> : <MaskOffIcon />}
+      </Flex>
       <DragHandle />
       <NodeOutput fullID={fullID} count={1} />
     </Flex>

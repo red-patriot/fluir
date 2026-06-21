@@ -213,10 +213,6 @@ namespace fluir::fe {
 
   std::unordered_set<fluir::ID> FunctionAstBuilder::getSinkNodes() const {
     std::unordered_set<fluir::ID> sinkNodes;
-    if (pt_.output && pt_.output->ret) {
-      // The return value is a sink if it exists
-      sinkNodes.insert(pt_.output->ret->id);
-    }
     const auto& block = pt_.body;
 
     // Start with all Nodes in the block

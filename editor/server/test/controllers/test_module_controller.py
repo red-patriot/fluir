@@ -5,9 +5,11 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from editor.controllers.module_controller import ModuleController
+from editor.controllers.module_controller import (
+    ModuleController,
+)
 from editor.models import Function, Program
-from editor.models.module_requests import OpenRequest, SaveRequest
+from editor.models.module_requests import OpenRequest
 from editor.models.version import FLUIR_CURRENT_VERSION as VERS
 from editor.services.intelligence import IntelligenceService
 from editor.services.module_editor import ModuleEditor
@@ -266,6 +268,33 @@ def test_open_registers_module_with_intelligence(
 
     completions = intelligence.get_completions([1], path)
     assert any(c.short_name == "foo" for c in completions)
+
+
+def test_edit_resolves_intelligence_with_unnamed_path_for_new_module(
+    mock_editor: MagicMock, mock_intelligence: MagicMock
+) -> None:
+    # A new module is unsaved, so the editor has no path yet. The edit must
+    # still resolve intelligence, falling back to the empty placeholder path.
+    mock_editor.get_path.return_value = None
+    request = MagicMock()
+
+    uut = ModuleController(mock_editor, mock_intelligence)
+    uut.edit(request)
+
+    request.resolve.assert_called_once_with(mock_intelligence, Path(""))
+
+
+def test_edit_resolves_intelligence_with_module_path_for_saved_module(
+    mock_editor: MagicMock, mock_intelligence: MagicMock
+) -> None:
+    path = Path("/fake/path/to/module.fl")
+    mock_editor.get_path.return_value = path
+    request = MagicMock()
+
+    uut = ModuleController(mock_editor, mock_intelligence)
+    uut.edit(request)
+
+    request.resolve.assert_called_once_with(mock_intelligence, path)
 
 
 def test_close_removes_module_from_intelligence(

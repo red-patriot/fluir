@@ -22,6 +22,7 @@ class FlType(StrEnum):
     U16 = "U16"
     U32 = "U32"
     U64 = "U64"
+    BOOL = "BOOL"
 
 
 class Operator(StrEnum):

@@ -111,9 +111,17 @@ class IntelligenceService(
         ] + self._builtin_function_completions()
 
     def _constants(self) -> list[Completion]:
-        return [
-            Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType
+        constants = [
+            Completion(short_name=t.value, kind=Kind.CONSTANT)
+            for t in FlType
+            if t != FlType.BOOL
         ]
+        constants += [
+            Completion(short_name="true", kind=Kind.CONSTANT),
+            Completion(short_name="false", kind=Kind.CONSTANT),
+        ]
+
+        return constants
 
     def _builtin_types(self) -> list[str]:
         return [t for t in FlType]

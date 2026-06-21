@@ -74,7 +74,19 @@ def test_operator_completions(expected: Completion, program: Program) -> None:
 
 @pytest.mark.parametrize(
     "expected",
-    [Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType],
+    [
+        Completion(short_name=FlType.F64, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.U8, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.U16, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.U32, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.U64, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.I8, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.I16, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.I32, kind=Kind.CONSTANT),
+        Completion(short_name=FlType.I64, kind=Kind.CONSTANT),
+        Completion(short_name="true", kind=Kind.CONSTANT),
+        Completion(short_name="false", kind=Kind.CONSTANT),
+    ],
 )
 def test_constant_completions(expected: Completion, program: Program) -> None:
     """Tests that completions provide constants for all FlType values"""

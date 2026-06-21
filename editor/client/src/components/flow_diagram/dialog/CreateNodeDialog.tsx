@@ -18,14 +18,16 @@ interface CreateNodeDialogProps extends CreateNodeOptions {
   options: Completion[];
 }
 
-function extractWidth(kind: CompletionKind) {
+function extractWidth(kind: CompletionKind, value: string) {
   switch (kind) {
     case "operator":
       return LIMITS.operator.width.min;
     case "call":
       return LIMITS.call.width.min;
     case "constant":
-      return LIMITS.constant.width.min;
+      return value === "true" || value === "false"
+        ? LIMITS.operator.width.min
+        : LIMITS.constant.width.min;
     case "function":
       return LIMITS.constant.width.min;
     case "comment":
@@ -53,10 +55,15 @@ function extractParameters(
 ): ConstantParams | OperatorParams | CallParams {
   switch (completion.kind) {
     case "constant":
+      const typeInfo =
+        completion.short_name === "true" || completion.short_name === "false"
+          ? "BOOL"
+          : completion.short_name;
+      const value = typeInfo === "BOOL" ? completion.short_name : undefined;
       return {
         discriminator: "constant",
-        type: completion.short_name,
-        // TODO: Add some way to handle the value
+        type: typeInfo,
+        value,
       } as ConstantParams;
     case "operator":
       const opInfo = completion.short_name.split(" ");
@@ -109,7 +116,7 @@ export default function CreateNodeDialog({
           x: clickedLocation.x - parentLocation.x,
           y: clickedLocation.y - parentLocation.y,
           z: parentLocation.z + 1,
-          width: extractWidth(selection.kind),
+          width: extractWidth(selection.kind, selection.short_name),
           height: extractHeight(selection.kind),
         },
         data: "",
@@ -123,7 +130,7 @@ export default function CreateNodeDialog({
           x: clickedLocation.x - parentLocation.x,
           y: clickedLocation.y - parentLocation.y,
           z: parentLocation.z + 1,
-          width: extractWidth(selection.kind),
+          width: extractWidth(selection.kind, selection.short_name),
           height: extractHeight(selection.kind),
         },
         params: extractParameters(selection),

@@ -11,7 +11,12 @@ import {
 } from "@/models/edit_request";
 import { toApiID } from "@/utility/idHelpers";
 import { LIMITS } from "@/limits";
-import { Completion, CompletionKind } from "@/models/intelligence_response";
+import {
+  Completion,
+  CompletionConstantData,
+  CompletionKind,
+  CompletionOperatorData,
+} from "@/models/intelligence_response";
 import CoreDialog, { OptionProps } from "./CoreDialog";
 
 interface CreateNodeDialogProps extends CreateNodeOptions {
@@ -53,25 +58,23 @@ function extractHeight(kind: CompletionKind) {
 function extractParameters(
   completion: Completion,
 ): ConstantParams | OperatorParams | CallParams {
-  switch (completion.kind) {
+  const { data } = completion;
+
+  switch (data.kind) {
     case "constant":
-      const typeInfo =
-        completion.short_name === "true" || completion.short_name === "false"
-          ? "BOOL"
-          : completion.short_name;
-      const value = typeInfo === "BOOL" ? completion.short_name : undefined;
+      const { flType, value } = data as CompletionConstantData;
       return {
         discriminator: "constant",
-        type: typeInfo,
+        type: flType,
         value,
       } as ConstantParams;
     case "operator":
+      const { arity } = data as CompletionOperatorData;
       const opInfo = completion.short_name.split(" ");
       const op = opInfo[0];
-      const arity = opInfo[1].includes("b") ? "binary" : "unary";
       return {
         discriminator: "operator",
-        arity,
+        arity: arity == 1 ? "unary" : "binary",
         op,
       } as OperatorParams;
     case "call":
@@ -92,9 +95,10 @@ export default function CreateNodeDialog({
 }: CreateNodeDialogProps) {
   const { editProgram } = useProgramActions();
   const onSelect = (selection: Completion) => {
+    const { data } = selection;
     console.log(selection);
     // TODO: Refactor this component to not require this unfortunate hack
-    if (selection.kind === "function") {
+    if (data.kind === "function") {
       const request: AddDeclEditRequest = {
         discriminator: "add_decl",
         new_location: {
@@ -108,7 +112,7 @@ export default function CreateNodeDialog({
         params: { discriminator: "function" },
       };
       editProgram(request);
-    } else if (selection.kind === "comment") {
+    } else if (data.kind === "comment") {
       const request: AddCommentEditRequest = {
         discriminator: "add_comment",
         parent: toApiID(parentID),
@@ -116,8 +120,8 @@ export default function CreateNodeDialog({
           x: clickedLocation.x - parentLocation.x,
           y: clickedLocation.y - parentLocation.y,
           z: parentLocation.z + 1,
-          width: extractWidth(selection.kind, selection.short_name),
-          height: extractHeight(selection.kind),
+          width: extractWidth(data.kind, selection.short_name),
+          height: extractHeight(data.kind),
         },
         data: "",
       };
@@ -130,8 +134,8 @@ export default function CreateNodeDialog({
           x: clickedLocation.x - parentLocation.x,
           y: clickedLocation.y - parentLocation.y,
           z: parentLocation.z + 1,
-          width: extractWidth(selection.kind, selection.short_name),
-          height: extractHeight(selection.kind),
+          width: extractWidth(data.kind, selection.short_name),
+          height: extractHeight(data.kind),
         },
         params: extractParameters(selection),
       };

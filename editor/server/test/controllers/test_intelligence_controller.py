@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from editor.controllers.intelligence_controller import IntelligenceController
-from editor.models.lsp.completion import Completion, Kind
+from editor.models.lsp.completion import Completion, Kind, NoData, OperatorData
 from editor.services.intelligence import IntelligenceService
 
 
@@ -19,7 +19,10 @@ def _make_app(service: IntelligenceService) -> TestClient:
 def test_forwards_completions_request_on_post() -> None:
     mock_service = MagicMock(spec=IntelligenceService)
     mock_service.get_completions.return_value = [
-        Completion(short_name="+ (binary)", kind=Kind.OPERATOR),
+        Completion(
+            short_name="+ (binary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=2),
+        ),
     ]
 
     client = _make_app(mock_service)
@@ -40,8 +43,8 @@ def test_returns_completions_as_json() -> None:
     mock_service.get_completions.return_value = [
         Completion(
             short_name="function",
-            kind=Kind.FUNCTION_DEF,
             description="Define a new function here",
+            data=NoData(kind=Kind.FUNCTION_DEF),
         ),
     ]
 
@@ -56,7 +59,7 @@ def test_returns_completions_as_json() -> None:
     data = response.json()
     assert len(data) == 1
     assert data[0]["short_name"] == "function"
-    assert data[0]["kind"] == "function"
+    assert data[0]["data"]["kind"] == "function"
     assert data[0]["description"] == "Define a new function here"
 
 

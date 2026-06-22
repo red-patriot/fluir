@@ -33,6 +33,15 @@ class Operator(StrEnum):
     SLASH = "/"
     PLUS_PLUS = "++"
     MINUS_MINUS = "--"
+    EQUAL_EQUAL = "=="
+    BANG_EQUAL = "!="
+    GREATER = ">"
+    LESS = "<"
+    GREATER_EQUAL = ">="
+    LESS_EQUAL = "<="
+    BANG = "!"
+    AND_AND = "&&"
+    BAR_BAR = "||"
 
 
 @dataclass

@@ -93,7 +93,7 @@ class AddNode(BaseModel, TransactionBase):
         assert isinstance(self.params, ConstantParams)
         fl_type = self.params.type
         value = self.params.value
-        if value is None:
+        if value == "" or value is None:
             value = self._default_of(fl_type)
         return elements.Constant(
             id=new_id,

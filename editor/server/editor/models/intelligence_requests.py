@@ -13,3 +13,10 @@ class CompletionRequest:
 class TypesRequest:
     block_id: QualifiedID
     path: str
+
+
+@dataclass
+class OperatorsRequest:
+    operator_id: QualifiedID
+    arity: int
+    path: str

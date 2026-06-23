@@ -1,5 +1,6 @@
 from ctypes.wintypes import BOOL
 from pathlib import Path
+from token import GREATER
 
 import pytest
 
@@ -49,6 +50,10 @@ def program() -> Program:
                     elements.Parameter(flType=FlType("I32")),
                 ],
                 outputs=[elements.Return(flType=FlType("I32"))],
+                nodes=[
+                    elements.BinaryOperator(id=1, op=elements.Operator.PLUS),
+                    elements.UnaryOperator(id=2, op=elements.Operator.MINUS),
+                ],
             )
             for i, letter in enumerate("abcde", start=1)
         ]
@@ -259,3 +264,58 @@ def test_get_function_signature_returns_correct_data(program: Program) -> None:
     actual = uut.get_function_signature("func_a", path)
 
     assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        elements.Operator.PLUS,
+        elements.Operator.MINUS,
+        elements.Operator.STAR,
+        elements.Operator.SLASH,
+        elements.Operator.EQUAL_EQUAL,
+        elements.Operator.BANG_EQUAL,
+        elements.Operator.GREATER_EQUAL,
+        elements.Operator.LESS_EQUAL,
+        elements.Operator.GREATER,
+        elements.Operator.LESS,
+        elements.Operator.AND_AND,
+        elements.Operator.BAR_BAR,
+    ],
+)
+def test_get_binary_operators(
+    program: Program, expected: elements.Operator
+) -> None:
+    """Tests that all binary operators are returned for binary op requests"""
+    path = Path("fake/path/to/program.fl")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_operators([1, 1], 2, path)
+
+    assert expected in actual
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        elements.Operator.PLUS,
+        elements.Operator.MINUS,
+        elements.Operator.PLUS_PLUS,
+        elements.Operator.MINUS_MINUS,
+        elements.Operator.BANG,
+    ],
+)
+def test_get_unary_operators(
+    program: Program, expected: elements.Operator
+) -> None:
+    """Tests that all unary operators are returned for binary op requests"""
+    path = Path("fake/path/to/program.fl")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_operators([1, 2], 1, path)
+
+    assert expected in actual

@@ -18,7 +18,13 @@ class IntelligenceReadInterface(ABC):
         """Returns a list of available completions at the given location in the given path"""
 
     @abstractmethod
-    def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
+    def get_operators(
+        self, operator_id: QualifiedID, arity: int, path: Path
+    ) -> list[elements.Operator]:
+        """Returns a list of available operators at the given location in the given path"""
+
+    @abstractmethod
+    def get_types(self, item_id: QualifiedID, path: Path) -> list[str]:
         """Returns a list of types visible from the given location in the given path"""
 
     @abstractmethod

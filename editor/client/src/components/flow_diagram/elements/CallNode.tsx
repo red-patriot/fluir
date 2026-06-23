@@ -1,7 +1,7 @@
 import { NodeProps, Node, Handle, Position } from "@xyflow/react";
 import { Call } from "@/models/fluir_module";
 import { Code, Flex } from "@radix-ui/themes";
-import { gray, sky } from "@radix-ui/colors";
+import { gray, amber } from "@radix-ui/colors";
 import ElementTag from "@/components/flow_diagram/common/ElementTag.tsx";
 import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay.tsx";
 import DragHandle from "@/components/flow_diagram/common/DragHandle.tsx";
@@ -46,7 +46,7 @@ export default function CallNode({
       direction="column"
       height="100%"
       align="center"
-      style={{ backgroundColor: sky.sky11 }}
+      style={{ backgroundColor: amber.amber8 }}
       onContextMenu={(e) => e.stopPropagation()}
     >
       <ContextMenu.Root>

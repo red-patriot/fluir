@@ -35,6 +35,7 @@ namespace fluir::debug {
     void operator()(const pt::U16& u16);
     void operator()(const pt::U32& u32);
     void operator()(const pt::U64& u64);
+    void operator()(const pt::BOOL& b);
 
    private:
     std::ostream& out_;

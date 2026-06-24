@@ -360,6 +360,8 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
+      default:
+        // TODO-BOOLEAN
         diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
@@ -394,6 +396,8 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
+      default:
+        // TODO-BOOLEAN
         diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }
@@ -424,6 +428,8 @@ namespace fluir {
         break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
+      default:
+        // TODO-BOOLEAN
         diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
         break;
     }

@@ -65,6 +65,7 @@ namespace fluir {
     pt::U16 u16(Element* element);
     pt::U32 u32(Element* element);
     pt::U64 u64(Element* element);
+    pt::BOOL boolean(Element* element);
 
     std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,

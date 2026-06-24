@@ -441,15 +441,18 @@ namespace fluir {
           element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "'<{}>'  is not a valid literal type.", element->Name());
         std::unreachable();
       },
-      {{"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
-       {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
-       {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
-       {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
-       {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
-       {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
-       {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
-       {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
-       {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }}}};
+      {
+        {"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
+        {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
+        {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
+        {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
+        {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
+        {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
+        {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
+        {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
+        {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }},
+        {"bool", [](Parser* p, Element* e) -> pt::Literal { return p->boolean(e); }},
+      }};
 
     std::string_view name = element->Name();
     auto* literalParser = literalParsers.at(name);
@@ -588,6 +591,18 @@ namespace fluir {
     diagnostic::emitInternalError("Control reached an impossible point");
   }
 
+  pt::BOOL Parser::boolean(Element* element) {
+    std::string_view text = element->GetText();
+    if (text == "true"sv) {
+      return true;
+    } else if (text == "false"sv) {
+      return false;
+    }
+    panicAt(
+      element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT, "'{}' is not a valid boolean representation", text);
+    std::unreachable();
+  }
+
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
     panicIf(value == nullptr,
@@ -668,23 +683,30 @@ namespace fluir {
   }
 
   Operator Parser::parseOperator(Element* element, std::string_view attribute) {
+    static const std::unordered_map<std::string_view, Operator> OPERATORS{
+      {"+"sv, Operator::PLUS},
+      {"-"sv, Operator::MINUS},
+      {"*"sv, Operator::STAR},
+      {"/"sv, Operator::SLASH},
+      {"++"sv, Operator::PLUS_PLUS},
+      {"--"sv, Operator::MINUS_MINUS},
+      {"=="sv, Operator::EQUAL_EQUAL},
+      {"!="sv, Operator::BANG_EQUAL},
+      {">"sv, Operator::GREATER},
+      {"<"sv, Operator::LESS},
+      {">="sv, Operator::GREATER_EQUAL},
+      {"<="sv, Operator::LESS_EQUAL},
+      {"!"sv, Operator::BANG},
+      {"&&"sv, Operator::AND_AND},
+      {"||"sv, Operator::BAR_BAR},
+    };
+
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
-    if (opText == "+") {
-      return Operator::PLUS;
-    } else if (opText == "-") {
-      return Operator::MINUS;
-    } else if (opText == "*") {
-      return Operator::STAR;
-    } else if (opText == "/") {
-      return Operator::SLASH;
-    } else if (opText == "++") {
-      return Operator::PLUS_PLUS;
-    } else if (opText == "--") {
-      return Operator::MINUS_MINUS;
-    } else {
-      panicAt(element, diagnostic::Code::ERROR_UNRECOGNIZED_OPERATOR);
-      std::unreachable();
+    if (OPERATORS.contains(opText)) {
+      return OPERATORS.at(opText);
     }
+    panicAt(element, diagnostic::Code::ERROR_UNRECOGNIZED_OPERATOR);
+    std::unreachable();
   }
 }  // namespace fluir

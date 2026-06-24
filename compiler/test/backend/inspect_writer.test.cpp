@@ -212,6 +212,22 @@ TEST(TestInspectWriter, WriteUIntConstants) {
   EXPECT_EQ(expected, actual);
 }
 
+TEST(TestInspectWriter, WriteBoolConstants) {
+  std::string expected = R"(CONSTANTS x2
+  VTRUE
+  VFALSE
+)";
+  fluir::be::ConstantsArray constants{true, false};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{ss};
+  uut.writeConstants(constants);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}
+
 TEST(TestInspectWriter, WriteCastInstructions) {
   std::string expected = R"(CHUNK main
   CODE x13

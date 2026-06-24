@@ -1,0 +1,15 @@
+Function(1): 'main'
+  LocalWrite(1)
+    ConstantBool(1): true
+  LocalWrite(2)
+    ConstantBool(2): false
+  BinaryOp(3): ||
+    LocalRead(3): 1
+    LocalRead(3): 2
+  BinaryOp(4): &&
+    LocalRead(4): 1
+    LocalRead(4): 2
+  Call(15): 'print'
+    Arg(1):
+      UnaryOp(13): !
+        LocalRead(13): 2

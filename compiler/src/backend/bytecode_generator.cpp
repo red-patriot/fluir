@@ -334,7 +334,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::F64_AFF);
+          // No instruction emitted
         } else {
           emitByte(Instruction::F64_ADD);
         }
@@ -370,7 +370,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::I64_AFF);
+          // No instruction emitted
         } else {
           emitByte(Instruction::I64_ADD);
         }
@@ -406,7 +406,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::U64_AFF);
+          // No instruction emitted
           break;
         }
         emitByte(Instruction::U64_ADD);

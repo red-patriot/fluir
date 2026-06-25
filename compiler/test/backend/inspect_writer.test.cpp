@@ -45,13 +45,12 @@ TEST(TestInspectWriter, WritesConstantsSection) {
 
 TEST(TestInspectWriter, WriteFloatInstructions) {
   std::string expected = R"(CHUNK main
-  CODE x9
+  CODE x8
     IF64_ADD
     IF64_SUB
     IF64_MUL
     IF64_DIV
     IF64_NEG
-    IF64_AFF
     IF64_INC
     IF64_DEC
     IEXIT
@@ -65,7 +64,6 @@ TEST(TestInspectWriter, WriteFloatInstructions) {
                              fc::F64_MUL,
                              fc::F64_DIV,
                              fc::F64_NEG,
-                             fc::F64_AFF,
                              fc::F64_INC,
                              fc::F64_DEC,
                              fc::EXIT,
@@ -82,13 +80,12 @@ TEST(TestInspectWriter, WriteFloatInstructions) {
 
 TEST(TestInspectWriter, WriteIntInstructions) {
   std::string expected = R"(CHUNK main
-  CODE x9
+  CODE x8
     II64_ADD
     II64_SUB
     II64_MUL
     II64_DIV
     II64_NEG
-    II64_AFF
     II64_INC
     II64_DEC
     IEXIT
@@ -102,7 +99,6 @@ TEST(TestInspectWriter, WriteIntInstructions) {
                              fc::I64_MUL,
                              fc::I64_DIV,
                              fc::I64_NEG,
-                             fc::I64_AFF,
                              fc::I64_INC,
                              fc::I64_DEC,
                              fc::EXIT,
@@ -119,12 +115,11 @@ TEST(TestInspectWriter, WriteIntInstructions) {
 
 TEST(TestInspectWriter, WriteUintInstructions) {
   std::string expected = R"(CHUNK main
-  CODE x8
+  CODE x7
     IU64_ADD
     IU64_SUB
     IU64_MUL
     IU64_DIV
-    IU64_AFF
     IU64_INC
     IU64_DEC
     IEXIT
@@ -137,9 +132,70 @@ TEST(TestInspectWriter, WriteUintInstructions) {
                              fc::U64_SUB,
                              fc::U64_MUL,
                              fc::U64_DIV,
-                             fc::U64_AFF,
                              fc::U64_INC,
                              fc::U64_DEC,
+                             fc::EXIT,
+                           }};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestInspectWriter, WriteComparisonInstructions) {
+  std::string expected = R"(CHUNK main
+  CODE x8
+    IEQ
+    IF64_LT
+    IF64_LE
+    II64_LT
+    II64_LE
+    IU64_LT
+    IU64_LE
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::Chunk chunk{.name = "main",
+                           .code = {
+                             fc::EQ,
+                             fc::F64_LT,
+                             fc::F64_LE,
+                             fc::I64_LT,
+                             fc::I64_LE,
+                             fc::U64_LT,
+                             fc::U64_LE,
+                             fc::EXIT,
+                           }};
+
+  std::stringstream ss;
+  fluir::InspectWriter uut{ss};
+  uut.writeChunk(chunk);
+
+  auto actual = ss.str();
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestInspectWriter, WriteBooleanOpInstructions) {
+  std::string expected = R"(CHUNK main
+  CODE x4
+    INOT
+    IAND
+    IOR
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::Chunk chunk{.name = "main",
+                           .code = {
+                             fc::NOT,
+                             fc::AND,
+                             fc::OR,
                              fc::EXIT,
                            }};
 

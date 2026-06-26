@@ -214,10 +214,6 @@ namespace fluir {
         case U64_DEC:
           uintUnary<utility::decrement<code::U64>>();
           break;
-        case F64_AFF:
-        case I64_AFF:
-        case U64_AFF:
-          break;  // This is a No-Op
         case CAST_IU:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());

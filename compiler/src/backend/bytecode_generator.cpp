@@ -478,6 +478,14 @@ namespace fluir {
       case Operator::MINUS_MINUS:
         emitByte(Instruction::U64_DEC);
         break;
+      case Operator::LESS:
+      case Operator::GREATER:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::U64_LT);
+        break;
+      case Operator::LESS_EQUAL:
+      case Operator::GREATER_EQUAL:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::U64_LE);
+        break;
       case Operator::EQUAL_EQUAL:
         emitByte(Instruction::EQ);
         break;

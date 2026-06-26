@@ -117,15 +117,25 @@ namespace fluir {
     constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
 
-    if (const auto type = node.operand()->type(); type == types::ID_F64) {
-      emitFloatOperator(node.op(), IS_UNARY);
-    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
-      emitIntOperator(node.op(), IS_UNARY);
-    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
-      emitUintOperator(node.op(), IS_UNARY);
-    } else {
-      // TODO: Handle this case better
-      diagnostic::emitInternalError("Unknown type encountered");
+    const auto type = node.operand()->type();
+    switch (type) {
+      case types::ID_F64:
+        return emitFloatOperator(node.op(), IS_UNARY);
+      case types::ID_I64:
+      case types::ID_I32:
+      case types::ID_I16:
+      case types::ID_I8:
+        return emitIntOperator(node.op(), IS_UNARY);
+      case types::ID_U64:
+      case types::ID_U32:
+      case types::ID_U16:
+      case types::ID_U8:
+        return emitUintOperator(node.op(), IS_UNARY);
+      case types::ID_BOOL:
+        return emitBoolOperator(node.op(), IS_UNARY);
+      default:
+        // TODO: Handle this case better
+        diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -408,7 +418,7 @@ namespace fluir {
         // TODO: Handle this better
       default:
         // TODO-BOOLEAN
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
   }
@@ -458,7 +468,7 @@ namespace fluir {
         // TODO: Handle this better
       default:
         // TODO-BOOLEAN
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
   }
@@ -504,13 +514,22 @@ namespace fluir {
         // TODO: Handle this better
       default:
         // TODO-BOOLEAN
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
   }
 
-  void BytecodeGenerator::emitBoolOperator(const Operator op, bool) {
+  void BytecodeGenerator::emitBoolOperator(const Operator op, [[maybe_unused]] bool unary) {
     switch (op) {
+      case Operator::AND_AND:
+        emitByte(Instruction::AND);
+        break;
+      case Operator::BAR_BAR:
+        emitByte(Instruction::OR);
+        break;
+      case Operator::BANG:
+        emitByte(Instruction::NOT);
+        break;
       case Operator::EQUAL_EQUAL:
         emitByte(Instruction::EQ);
         break;

@@ -4,6 +4,7 @@ from typing import cast
 
 import pytest
 from pydantic import ValidationError
+from pydantic.v1.validators import BOOL_TRUE
 
 from editor.models import FlType, Program, elements
 from editor.models.edit_errors import BadEdit
@@ -171,6 +172,39 @@ from editor.services.transaction.add_node import CallParams
                 new_location=elements.Location(2, 7, 0, 7, 7),
                 params=CallParams(target="unknown"),
             ),
+        ),
+        (
+            elements.Constant(
+                id=6,
+                location=elements.Location(2, 2, 0, 5, 5),
+                value="false",
+                flType=FlType.BOOL,
+            ),
+            AddNode(
+                parent=[2],
+                new_location=elements.Location(
+                    x=2, y=2, z=0, width=5, height=5
+                ),
+                params=ConstantParams(type=FlType.BOOL),
+            ),
+        ),
+        *(
+            (
+                elements.Constant(
+                    id=6,
+                    location=elements.Location(2, 2, 0, 5, 5),
+                    value=elem,
+                    flType=FlType.BOOL,
+                ),
+                AddNode(
+                    parent=[2],
+                    new_location=elements.Location(
+                        x=2, y=2, z=0, width=5, height=5
+                    ),
+                    params=ConstantParams(type=FlType.BOOL, value=elem),
+                ),
+            )
+            for elem in ["false", "true"]
         ),
     ],
 )

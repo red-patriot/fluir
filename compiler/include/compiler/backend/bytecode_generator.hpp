@@ -61,6 +61,7 @@ namespace fluir {
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);
     void emitUintOperator(const Operator op, bool unary = false);
+    void emitBoolOperator(const Operator op, bool unary = false);
     void emitWidthCast(types::TypeID sourceType, types::TypeID targetType);
   };
 }  // namespace fluir

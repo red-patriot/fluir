@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function
+            name="main"
+            id="1"
+            x="10" y="10" z="3" w="100" h="100">
+            <body>
+                <unary
+                    id="7"
+                    x="15" y="2" z="1" w="5" h="5"
+                    operator="-" />
+                <constant
+                    id="3"
+                    x="2" y="2" z="1" w="5" h="5">
+                    <f64>3.5</f64>
+                </constant>
+                <conduit id="5" input="3">
+                    <output target="7" index="0"/>
+                </conduit>
+            </body>
+        </function>
+    </fluir>

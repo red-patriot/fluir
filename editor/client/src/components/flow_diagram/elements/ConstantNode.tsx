@@ -1,23 +1,25 @@
-import { Flex } from '@radix-ui/themes';
-import { purple, pink } from '@radix-ui/colors';
-import { Node, NodeProps } from '@xyflow/react';
-import { Constant } from '@/models/fluir_module';
-import DragHandle from '@/components/flow_diagram/common/DragHandle';
-import { ZOOM_SCALAR } from '@/hooks/useSizeStyle';
-import { NodeOutput } from '@/components/flow_diagram/common/NodeInOut';
-import { HorizontalResizeHandle } from '@/components/flow_diagram/common/ResizeHandle';
-import { ValueDisplay } from '@/components/flow_diagram/common/ValueDisplay';
-import { useProgramActions } from '@/components/reusable/ProgramActionsContext';
-import { updateConstant } from '@/components/flow_diagram/logic/updateNode';
+import { Flex } from "@radix-ui/themes";
+import { purple, pink, blue } from "@radix-ui/colors";
+import { Node, NodeProps } from "@xyflow/react";
+import { Constant } from "@/models/fluir_module";
+import DragHandle from "@/components/flow_diagram/common/DragHandle";
+import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
+import { NodeOutput } from "@/components/flow_diagram/common/NodeInOut";
+import { HorizontalResizeHandle } from "@/components/flow_diagram/common/ResizeHandle";
+import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay";
+import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
+import { updateConstant } from "@/components/flow_diagram/logic/updateNode";
+import { MaskOnIcon, MaskOffIcon } from "@radix-ui/react-icons";
 import {
   validateF64,
   validateInt,
   validateUint,
-} from '@/components/flow_diagram/logic/validateEdit';
-import { editWithInputField } from '@/components/flow_diagram/common/InputField';
-import ElementTag from '@/components/flow_diagram/common/ElementTag';
+  validateBool,
+} from "@/components/flow_diagram/logic/validateEdit";
+import { editWithInputField } from "@/components/flow_diagram/common/InputField";
+import ElementTag from "@/components/flow_diagram/common/ElementTag";
 
-type ConstantNode = Node<{ constant: Constant; fullID: string }, 'value'>;
+type ConstantNode = Node<{ constant: Constant; fullID: string }, "value">;
 
 type ConstantParams = {
   validate: (text: string) => boolean;
@@ -39,17 +41,34 @@ const UINT_PARAMS: ConstantParams = {
   color: pink.pink9,
 };
 
-export default function ConstantNode({
-                                       data: { constant, fullID },
-                                       selected,
-                                     }: NodeProps<ConstantNode>) {
+const BOOL_PARAMS: ConstantParams = {
+  validate: validateBool,
+  color: blue.blue11,
+};
+
+export default function ConstantNode(props: NodeProps<ConstantNode>) {
+  const {
+    data: { constant },
+  } = props;
+
+  if (constant.flType == "BOOL") {
+    return BoolConstant(props);
+  } else {
+    return NumericConstant(props);
+  }
+}
+
+export function NumericConstant({
+  data: { constant, fullID },
+  selected,
+}: NodeProps<ConstantNode>) {
   const { editProgram } = useProgramActions();
 
   const updateValue = updateConstant(editProgram, fullID);
 
-  const params = constant.flType?.startsWith('F')
+  const params = constant.flType?.startsWith("F")
     ? FLOAT_PARAMS
-    : constant.flType?.startsWith('I')
+    : constant.flType?.startsWith("I")
       ? INT_PARAMS
       : UINT_PARAMS;
 
@@ -65,23 +84,49 @@ export default function ConstantNode({
       align="center"
       style={{ backgroundColor: params.color }}
     >
-      <ElementTag name={constant.flType ?? ''} />
+      <ElementTag name={constant.flType ?? ""} />
       <ValueDisplay
         fullID={fullID}
-        value={constant.value || ''}
+        value={constant.value || ""}
         renderEdit={doEdit}
       />
       <DragHandle />
       {selected && (
-        <HorizontalResizeHandle
-          minWidth={12 * ZOOM_SCALAR}
-          fullID={fullID}
-        />
+        <HorizontalResizeHandle minWidth={12 * ZOOM_SCALAR} fullID={fullID} />
       )}
-      <NodeOutput
-        fullID={fullID}
-        count={1}
-      />
+      <NodeOutput fullID={fullID} count={1} />
+    </Flex>
+  );
+}
+
+export function BoolConstant({
+  data: { constant, fullID },
+}: NodeProps<ConstantNode>) {
+  const { editProgram } = useProgramActions();
+
+  const updateValue = updateConstant(editProgram, fullID);
+
+  const toggle = () => {
+    updateValue(constant.value === "true" ? "false" : "true");
+  };
+
+  return (
+    <Flex
+      direction="row"
+      height="100%"
+      align="center"
+      style={{ backgroundColor: BOOL_PARAMS.color }}
+    >
+      <Flex
+        onClick={toggle}
+        direction="row"
+        justify="center"
+        className="cursor-pointer grow"
+      >
+        {constant.value === "true" ? <MaskOnIcon /> : <MaskOffIcon />}
+      </Flex>
+      <DragHandle />
+      <NodeOutput fullID={fullID} count={1} />
     </Flex>
   );
 }

@@ -51,6 +51,7 @@ namespace fluir {
     void createFlStartup(size_t mainIndex);
     size_t stackSize() const { return currentFrame_->stackEnd - stack_->data(); }
     code::Value& stackTop();
+    code::Value stackPopTop();
     void popStack();
     void pushStack(code::Value value);
 

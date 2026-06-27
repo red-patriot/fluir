@@ -25,6 +25,7 @@ namespace fluir::code {
     explicit Value(std::uint32_t d) : type_{PrimitiveType::U32}, u32_(d) { }
     explicit Value(std::uint64_t d) : type_{PrimitiveType::U64}, u64_(d) { }
     explicit Value(String s) : type_{PrimitiveType::STR}, str_(std::move(s)) { }
+    explicit Value(bool b) : type_{PrimitiveType::BOOL}, bool_(b) { }
 
     Value(const Value& other) : type_(other.type_) {
       if (type_ == PrimitiveType::STR) {
@@ -174,6 +175,15 @@ namespace fluir::code {
       return str_;
     }
 
+    [[nodiscard]] bool& asBool() {
+      assertType(PrimitiveType::BOOL);
+      return bool_;
+    }
+    [[nodiscard]] const bool& asBool() const {
+      assertType(PrimitiveType::BOOL);
+      return bool_;
+    }
+
    private:
     PrimitiveType type_{PrimitiveType::EMPTY};
 
@@ -191,6 +201,7 @@ namespace fluir::code {
       U32 u32_;
       U64 u64_;
       String str_;
+      bool bool_;
     };
 
     void assertType(PrimitiveType type) const {
@@ -210,6 +221,9 @@ namespace fluir::code {
     inline Value operator""_u32(unsigned long long int u) { return Value{static_cast<std::uint32_t>(u)}; }
     inline Value operator""_u16(unsigned long long int u) { return Value{static_cast<std::uint16_t>(u)}; }
     inline Value operator""_u8(unsigned long long int u) { return Value{static_cast<std::uint8_t>(u)}; }
+
+    inline const Value TRUE_VALUE{true};
+    inline const Value FALSE_VALUE{false};
   }  // namespace value_literals
 
   inline bool operator==(const Value& lhs, const Value& rhs) {
@@ -240,6 +254,8 @@ namespace fluir::code {
         return lhs.asU64() == rhs.asU64();
       case PrimitiveType::STR:
         return lhs.asStr() == rhs.asStr();
+      case PrimitiveType::BOOL:
+        return lhs.asBool() == rhs.asBool();
     }
     return false;
   }

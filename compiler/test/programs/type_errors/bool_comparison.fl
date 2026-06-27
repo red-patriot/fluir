@@ -1,0 +1,46 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="bool_less" id="1" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><bool>true</bool></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>false</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="bool_greater" id="2" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><bool>true</bool></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>false</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="bool_less_equal" id="3" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><bool>true</bool></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>false</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="bool_greater_equal" id="4" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><bool>true</bool></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>false</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+</fluir>

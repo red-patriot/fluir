@@ -14,6 +14,18 @@
 using fluir::code::Instruction;
 
 namespace fluir {
+  namespace {
+    bool shouldInvert(const Operator op) {
+      switch (op) {
+        case Operator::GREATER:        // lhs > rhs => rhs < lhs
+        case Operator::GREATER_EQUAL:  // lhs >= rhs => rhs <= lhs
+          return true;
+        default:
+          return false;
+      }
+    }
+  }  // namespace
+
   void generateCode(Context& ctx, const ast::AST& graph, CodeWriter& writer) {
     return BytecodeGenerator::generate(ctx, graph, writer);
   }
@@ -62,8 +74,16 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::BinaryOp& node) {
-    recursivelyGenerate(*node.lhs());
-    recursivelyGenerate(*node.rhs());
+    if (shouldInvert(node.op())) {
+      // Some operators are implemented with their inverse in the VM,
+      // so generate their operands in the reverse order to put them
+      // on the right order on the stack
+      recursivelyGenerate(*node.rhs());
+      recursivelyGenerate(*node.lhs());
+    } else {
+      recursivelyGenerate(*node.lhs());
+      recursivelyGenerate(*node.rhs());
+    }
 
     // TODO: Handle user-defined ops here
     if (node.lhs()->type() != node.rhs()->type()) {
@@ -71,15 +91,25 @@ namespace fluir {
       return;
     }
 
-    if (const auto type = node.lhs()->type(); type == types::ID_F64) {
-      emitFloatOperator(node.op());
-    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
-      emitIntOperator(node.op());
-    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
-      emitUintOperator(node.op());
-    } else {
-      // TODO: Handle this case better
-      diagnostic::emitInternalError("Unknown type encountered");
+    const auto type = node.lhs()->type();
+    switch (type) {
+      case types::ID_F64:
+        return emitFloatOperator(node.op());
+      case types::ID_I8:
+      case types::ID_I16:
+      case types::ID_I32:
+      case types::ID_I64:
+        return emitIntOperator(node.op());
+      case types::ID_U8:
+      case types::ID_U16:
+      case types::ID_U32:
+      case types::ID_U64:
+        return emitUintOperator(node.op());
+      case types::ID_BOOL:
+        return emitBoolOperator(node.op());
+      default:
+        // TODO: Handle this case better
+        diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -87,15 +117,25 @@ namespace fluir {
     constexpr bool IS_UNARY = true;
     recursivelyGenerate(*node.operand());
 
-    if (const auto type = node.operand()->type(); type == types::ID_F64) {
-      emitFloatOperator(node.op(), IS_UNARY);
-    } else if (type == types::ID_I64 || type == types::ID_I32 || type == types::ID_I16 || type == types::ID_I8) {
-      emitIntOperator(node.op(), IS_UNARY);
-    } else if (type == types::ID_U64 || type == types::ID_U32 || type == types::ID_U16 || type == types::ID_U8) {
-      emitUintOperator(node.op(), IS_UNARY);
-    } else {
-      // TODO: Handle this case better
-      diagnostic::emitInternalError("Unknown type encountered");
+    const auto type = node.operand()->type();
+    switch (type) {
+      case types::ID_F64:
+        return emitFloatOperator(node.op(), IS_UNARY);
+      case types::ID_I64:
+      case types::ID_I32:
+      case types::ID_I16:
+      case types::ID_I8:
+        return emitIntOperator(node.op(), IS_UNARY);
+      case types::ID_U64:
+      case types::ID_U32:
+      case types::ID_U16:
+      case types::ID_U8:
+        return emitUintOperator(node.op(), IS_UNARY);
+      case types::ID_BOOL:
+        return emitBoolOperator(node.op(), IS_UNARY);
+      default:
+        // TODO: Handle this case better
+        diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -120,6 +160,8 @@ namespace fluir {
       constant = addConstant(node.u32());
     } else if (type == types::ID_U64) {
       constant = addConstant(node.u64());
+    } else if (type == types::ID_BOOL) {
+      constant = addConstant(node.boolean());
     } else {
       diagnostic::emitInternalError("Unknown constant type encountered.");
       return;
@@ -334,7 +376,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::F64_AFF);
+          // No instruction emitted
         } else {
           emitByte(Instruction::F64_ADD);
         }
@@ -358,9 +400,25 @@ namespace fluir {
       case Operator::MINUS_MINUS:
         emitByte(Instruction::F64_DEC);
         break;
+      case Operator::LESS:
+      case Operator::GREATER:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::F64_LT);
+        break;
+      case Operator::LESS_EQUAL:
+      case Operator::GREATER_EQUAL:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::F64_LE);
+        break;
+      case Operator::EQUAL_EQUAL:
+        emitByte(Instruction::EQ);
+        break;
+      case Operator::BANG_EQUAL:
+        emitBytes(Instruction::EQ, Instruction::NOT);
+        break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+      default:
+        // TODO-BOOLEAN
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
   }
@@ -368,7 +426,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::I64_AFF);
+          // No instruction emitted
         } else {
           emitByte(Instruction::I64_ADD);
         }
@@ -392,9 +450,25 @@ namespace fluir {
       case Operator::MINUS_MINUS:
         emitByte(Instruction::I64_DEC);
         break;
+      case Operator::LESS:
+      case Operator::GREATER:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::I64_LT);
+        break;
+      case Operator::LESS_EQUAL:
+      case Operator::GREATER_EQUAL:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::I64_LE);
+        break;
+      case Operator::EQUAL_EQUAL:
+        emitByte(Instruction::EQ);
+        break;
+      case Operator::BANG_EQUAL:
+        emitBytes(Instruction::EQ, Instruction::NOT);
+        break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+      default:
+        // TODO-BOOLEAN
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
   }
@@ -402,7 +476,7 @@ namespace fluir {
     switch (op) {
       case Operator::PLUS:
         if (unary) {
-          emitByte(Instruction::U64_AFF);
+          // No instruction emitted
           break;
         }
         emitByte(Instruction::U64_ADD);
@@ -422,10 +496,49 @@ namespace fluir {
       case Operator::MINUS_MINUS:
         emitByte(Instruction::U64_DEC);
         break;
+      case Operator::LESS:
+      case Operator::GREATER:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::U64_LT);
+        break;
+      case Operator::LESS_EQUAL:
+      case Operator::GREATER_EQUAL:  // Operands are inverted for this operand, same instruction is emitted
+        emitByte(Instruction::U64_LE);
+        break;
+      case Operator::EQUAL_EQUAL:
+        emitByte(Instruction::EQ);
+        break;
+      case Operator::BANG_EQUAL:
+        emitBytes(Instruction::EQ, Instruction::NOT);
+        break;
       case Operator::UNKNOWN:
         // TODO: Handle this better
-        diagnostic::emitInternalError("Unknown operator encountered. Expected one of +, -, *, /");
+      default:
+        // TODO-BOOLEAN
+        diagnostic::emitInternalError("Unknown operator encountered.");
         break;
+    }
+  }
+
+  void BytecodeGenerator::emitBoolOperator(const Operator op, [[maybe_unused]] bool unary) {
+    switch (op) {
+      case Operator::AND_AND:
+        emitByte(Instruction::AND);
+        break;
+      case Operator::BAR_BAR:
+        emitByte(Instruction::OR);
+        break;
+      case Operator::BANG:
+        emitByte(Instruction::NOT);
+        break;
+      case Operator::EQUAL_EQUAL:
+        emitByte(Instruction::EQ);
+        break;
+      case Operator::BANG_EQUAL:
+        emitBytes(Instruction::EQ, Instruction::NOT);
+        break;
+      default:
+        // TODO: Handle this better
+        diagnostic::emitInternalError("Unsupported operator for type Bool");
     }
   }
 

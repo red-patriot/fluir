@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <call target="doStuff" id="2" x="5" y="5" z="0" w="12" h="12"/>
+    </body>
+  </function>
+</fluir>

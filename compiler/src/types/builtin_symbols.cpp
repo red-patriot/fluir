@@ -25,6 +25,7 @@ namespace fluir::types {
     table.addType(Type("U16"));
     table.addType(Type("U32"));
     table.addType(Type("U64"));
+    table.addType(Type("BOOL"));
   }
 
   void instantiateBuiltinOperators(SymbolTable& table) {
@@ -33,6 +34,8 @@ namespace fluir::types {
     constexpr std::array binaryOps{Operator::PLUS, Operator::MINUS, Operator::STAR, Operator::SLASH};
     constexpr std::array unsignedUnaryOps{Operator::PLUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS};
     constexpr std::array signedUnaryOps{Operator::MINUS, Operator::PLUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS};
+    constexpr std::array equalityOps{Operator::EQUAL_EQUAL, Operator::BANG_EQUAL};
+    constexpr std::array orderingOps{Operator::LESS, Operator::GREATER, Operator::LESS_EQUAL, Operator::GREATER_EQUAL};
 
     for (const auto& type : signedTypes) {
       for (const auto& op : binaryOps) {
@@ -40,6 +43,12 @@ namespace fluir::types {
       }
       for (const auto& op : signedUnaryOps) {
         table.addOperator(OperatorDefinition{op, type, type});
+      }
+      for (const auto& op : equalityOps) {
+        table.addOperator(OperatorDefinition{type, op, type, ID_BOOL});
+      }
+      for (const auto& op : orderingOps) {
+        table.addOperator(OperatorDefinition{type, op, type, ID_BOOL});
       }
     }
 
@@ -49,6 +58,22 @@ namespace fluir::types {
       }
       for (const auto& op : unsignedUnaryOps) {
         table.addOperator(OperatorDefinition{op, type, type});
+      }
+      for (const auto& op : equalityOps) {
+        table.addOperator(OperatorDefinition{type, op, type, ID_BOOL});
+      }
+      for (const auto& op : orderingOps) {
+        table.addOperator(OperatorDefinition{type, op, type, ID_BOOL});
+      }
+    }
+
+    {
+      constexpr auto type = ID_BOOL;
+      table.addOperator(OperatorDefinition{Operator::BANG, type, type});
+      table.addOperator(OperatorDefinition{type, Operator::AND_AND, type, type});
+      table.addOperator(OperatorDefinition{type, Operator::BAR_BAR, type, type});
+      for (const auto& op : equalityOps) {
+        table.addOperator(OperatorDefinition{type, op, type, ID_BOOL});
       }
     }
   }

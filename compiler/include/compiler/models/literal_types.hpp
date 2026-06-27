@@ -17,8 +17,9 @@ namespace fluir::literals_types {
   using U16 = uint16_t;
   using U32 = uint32_t;
   using U64 = uint64_t;
+  using BOOL = bool;
 
-  using Literal = std::variant<F64, I8, I16, I32, I64, U8, U16, U32, U64>;  // TODO: Support other literal types
+  using Literal = std::variant<F64, I8, I16, I32, I64, U8, U16, U32, U64, BOOL>;  // TODO: Support other literal types
 
 }  // namespace fluir::literals_types
 

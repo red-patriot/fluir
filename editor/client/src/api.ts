@@ -1,13 +1,14 @@
 // TODO: Get the path from config
-const BASE_URL = 'http://localhost:8001';
+const BASE_URL = "http://localhost:8001";
 
 export const SERVER_API = {
-  newProgram: BASE_URL + '/api/module/new/',
-  openProgram: BASE_URL + '/api/module/open/',
-  editProgram: BASE_URL + '/api/module/edit/',
-  undo: BASE_URL + '/api/module/undo/',
-  redo: BASE_URL + '/api/module/redo/',
-  saveAs: BASE_URL + '/api/module/save/',
-  completions: BASE_URL + '/api/intelligence/completions/',
-  types: BASE_URL + '/api/intelligence/types/',
+  newProgram: BASE_URL + "/api/module/new/",
+  openProgram: BASE_URL + "/api/module/open/",
+  editProgram: BASE_URL + "/api/module/edit/",
+  undo: BASE_URL + "/api/module/undo/",
+  redo: BASE_URL + "/api/module/redo/",
+  saveAs: BASE_URL + "/api/module/save/",
+  completions: BASE_URL + "/api/intelligence/completions/",
+  types: BASE_URL + "/api/intelligence/types/",
+  operators: BASE_URL + "/api/intelligence/operators/",
 };

@@ -1,10 +1,16 @@
 from pathlib import Path
 
 from editor.models import elements
-from editor.models.elements import FlType, Program
+from editor.models.elements import FlType, Operator, Program
 from editor.models.id import QualifiedID
 from editor.models.intelligence import FunctionSignature, ParamInfo
-from editor.models.lsp.completion import Completion, Kind
+from editor.models.lsp.completion import (
+    Completion,
+    ConstantData,
+    Kind,
+    NoData,
+    OperatorData,
+)
 from editor.services.intelligence.read_interface import (
     IntelligenceReadInterface,
 )
@@ -46,12 +52,12 @@ class IntelligenceService(
         self._functions.pop(path, None)
 
     def get_completions(
-        self, block_id: QualifiedID, path: Path
+        self, item_id: QualifiedID, path: Path
     ) -> list[Completion]:
         """Return a list of available completions at the given location in the given program path"""
         if path not in self._functions:
             return []
-        if len(block_id) == 0:
+        if len(item_id) == 0:
             # Top level provides definition completions
             return self._toplevel_options() + self._annotations()
         return (
@@ -60,6 +66,38 @@ class IntelligenceService(
             + self._function_completions(path)
             + self._annotations()
         )
+
+    def get_operators(
+        self, operator_id: QualifiedID, arity: int, path: Path
+    ) -> list[elements.Operator]:
+        # TODO: Could search through the ID to get it, but for now use arity
+        match arity:
+            case 1:
+                return [
+                    Operator.PLUS,
+                    Operator.MINUS,
+                    Operator.PLUS_PLUS,
+                    Operator.MINUS_MINUS,
+                    Operator.BANG,
+                ]
+            case 2:
+                return [
+                    Operator.PLUS,
+                    Operator.MINUS,
+                    Operator.STAR,
+                    Operator.SLASH,
+                    Operator.EQUAL_EQUAL,
+                    Operator.BANG_EQUAL,
+                    Operator.GREATER_EQUAL,
+                    Operator.LESS_EQUAL,
+                    Operator.GREATER,
+                    Operator.LESS,
+                    Operator.AND_AND,
+                    Operator.BAR_BAR,
+                ]
+            case _:
+                # Shouldn't be possible, ignore for now
+                return []
 
     def get_types(self, block_id: QualifiedID, path: Path) -> list[str]:
         """Return a list of types visible at the given location in the given program path"""
@@ -85,7 +123,7 @@ class IntelligenceService(
         return [
             Completion(
                 short_name="function",
-                kind=Kind.FUNCTION_DEF,
+                data=NoData(kind=Kind.FUNCTION_DEF),
                 description="Define a new function here",
             ),
         ]
@@ -93,40 +131,112 @@ class IntelligenceService(
     def _builtin_operators(self) -> list[Completion]:
         # TODO: Don't just hardcode things here...
         return [
-            Completion(short_name="+ (binary)", kind=Kind.OPERATOR),
-            Completion(short_name="- (binary)", kind=Kind.OPERATOR),
-            Completion(short_name="* (binary)", kind=Kind.OPERATOR),
-            Completion(short_name="/ (binary)", kind=Kind.OPERATOR),
-            Completion(short_name="+ (unary)", kind=Kind.OPERATOR),
-            Completion(short_name="- (unary)", kind=Kind.OPERATOR),
-            Completion(short_name="++ (unary)", kind=Kind.OPERATOR),
-            Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
+            Completion(
+                short_name="+ (binary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=2),
+            ),
+            Completion(
+                short_name="- (binary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=2),
+            ),
+            Completion(
+                short_name="* (binary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=2),
+            ),
+            Completion(
+                short_name="/ (binary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=2),
+            ),
+            Completion(
+                short_name="+ (unary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=1),
+            ),
+            Completion(
+                short_name="- (unary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=1),
+            ),
+            Completion(
+                short_name="++ (unary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=1),
+            ),
+            Completion(
+                short_name="-- (unary)",
+                data=OperatorData(kind=Kind.OPERATOR, arity=1),
+            ),
+            Completion(
+                short_name="==", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name="!=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name="<", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name=">", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name="<=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name=">=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name="!", data=OperatorData(kind=Kind.OPERATOR, arity=1)
+            ),
+            Completion(
+                short_name="&&", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
+            Completion(
+                short_name="||", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+            ),
         ]
 
     def _function_completions(self, path: Path) -> list[Completion]:
         # TODO: Add documentation when that is implemented
         return [
-            Completion(short_name=name, kind=Kind.CALL)
+            Completion(short_name=name, data=NoData(kind=Kind.CALL))
             for name in self._functions.get(path, dict()).keys()
         ] + self._builtin_function_completions()
 
     def _constants(self) -> list[Completion]:
-        return [
-            Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType
+        constants = [
+            Completion(
+                short_name=t.value,
+                data=ConstantData(kind=Kind.CONSTANT, flType=t),
+            )
+            for t in FlType
+            if t != FlType.BOOL
         ]
+        constants += [
+            Completion(
+                short_name="true",
+                data=ConstantData(
+                    kind=Kind.CONSTANT, flType=FlType.BOOL, value="true"
+                ),
+            ),
+            Completion(
+                short_name="false",
+                data=ConstantData(
+                    kind=Kind.CONSTANT, flType=FlType.BOOL, value="false"
+                ),
+            ),
+        ]
+
+        return constants
 
     def _builtin_types(self) -> list[str]:
         return [t for t in FlType]
 
     def _annotations(self) -> list[Completion]:
         return [
-            Completion(short_name="comment", kind=Kind.COMMENT),
-            Completion(short_name="//", kind=Kind.COMMENT),
+            Completion(short_name="comment", data=NoData(kind=Kind.COMMENT)),
+            Completion(short_name="//", data=NoData(kind=Kind.COMMENT)),
         ]
 
     def _builtin_function_completions(self) -> list[Completion]:
         return [
-            Completion(short_name="print", kind=Kind.CALL),
+            Completion(short_name="print", data=NoData(kind=Kind.CALL)),
             # TODO: add other builtin functions here
         ]
 

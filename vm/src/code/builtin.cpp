@@ -5,6 +5,8 @@
 #include "vm/code/value.hpp"
 
 namespace fluir {
+  using namespace std::string_view_literals;
+
   NativeFunctionsMap getBuiltins() {
     NativeFunctionsMap builtins{{"print", print}};
     return builtins;
@@ -51,6 +53,9 @@ namespace fluir {
         break;
       case code::PrimitiveType::STR:
         os << value.asStr().view();
+        break;
+      case code::PrimitiveType::BOOL:
+        os << (value.asBool() ? "true"sv : "false"sv);
         break;
     }
 

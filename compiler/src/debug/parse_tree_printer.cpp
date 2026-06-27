@@ -144,6 +144,7 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::U16& u16) { out_ << formatIndented("U16 {}\n", u16); }
   void ParseTreePrinter::operator()(const pt::U32& u32) { out_ << formatIndented("U32 {}\n", u32); }
   void ParseTreePrinter::operator()(const pt::U64& u64) { out_ << formatIndented("U64 {}\n", u64); }
+  void ParseTreePrinter::operator()(const pt::BOOL& b) { out_ << formatIndented("BOOL {}\n", b); }
 
   std::string ParseTreePrinter::doPrint(const FlowGraphLocation& loc) {
     return formatIndented("at(x{}, y{}, z{}, w{}, h{})\n", loc.x, loc.y, loc.z, loc.width, loc.height);

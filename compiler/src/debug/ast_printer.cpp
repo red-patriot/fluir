@@ -85,6 +85,8 @@ namespace fluir::debug {
         out_ << formatIndented("ConstantU32({}): {}\n", constant.id(), val);
       } else if constexpr (std::is_same_v<T, U64>) {
         out_ << formatIndented("ConstantU64({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, BOOL>) {
+        out_ << formatIndented("ConstantBool({}): {}\n", constant.id(), val);
       }
     };
     std::visit(printer, constant.value());

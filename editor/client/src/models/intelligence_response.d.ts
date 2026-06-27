@@ -1,3 +1,5 @@
+import { FlType } from "@/models/fluir_module";
+
 export type CompletionKind =
   | "function"
   | "call"
@@ -5,10 +7,25 @@ export type CompletionKind =
   | "operator"
   | "comment";
 
+export type CompletionConstantData = {
+  kind: "constant";
+  value?: string;
+  flType: FlType;
+};
+
+export type CompletionOperatorData = {
+  kind: "operator";
+  arity: 1 | 2;
+};
+
+export type CompletionNoData = {
+  kind: CompletionKind;
+};
+
 export type Completion = {
   short_name: string;
-  kind: CompletionKind;
   description: string;
+  data: CompletionOperatorData | CompletionConstantData | CompletionNoData;
 };
 
 export type TypesResponse = string[];

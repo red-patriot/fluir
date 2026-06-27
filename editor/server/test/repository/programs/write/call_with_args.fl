@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <constant id="1" x="0" y="0" z="0" w="5" h="5">
+        <i32>10</i32>
+      </constant>
+      <constant id="2" x="0" y="20" z="0" w="5" h="5">
+        <i32>20</i32>
+      </constant>
+      <call target="add" id="3" x="30" y="10" z="0" w="12" h="12">
+        <return/>
+        <arg name="a"/>
+        <arg name="b"/>
+      </call>
+      <conduit id="4" input="1">
+        <output target="3" index="0"/>
+      </conduit>
+      <conduit id="5" input="2">
+        <output target="3" index="1"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

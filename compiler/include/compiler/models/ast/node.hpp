@@ -85,6 +85,7 @@ namespace fluir::ast {
     [[nodiscard]] const literals_types::U16& u16() const { return std::get<literals_types::U16>(value_); }
     [[nodiscard]] const literals_types::U32& u32() const { return std::get<literals_types::U32>(value_); }
     [[nodiscard]] const literals_types::U64& u64() const { return std::get<literals_types::U64>(value_); }
+    [[nodiscard]] const literals_types::BOOL& boolean() const { return std::get<literals_types::BOOL>(value_); }
 
    private:
     literals_types::Literal value_;
@@ -109,6 +110,8 @@ namespace fluir::ast {
           return types::ID_U32;
         case 8:
           return types::ID_U64;
+        case 9:
+          return types::ID_BOOL;
         default:
           return types::ID_INVALID;
       }

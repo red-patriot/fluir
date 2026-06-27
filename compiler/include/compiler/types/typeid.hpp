@@ -16,6 +16,7 @@ namespace fluir::types {
     ID_U16,
     ID_U32,
     ID_U64,
+    ID_BOOL,
     ID_MAGIC_ANY_TYPE,  // HACK: this is only used as an input type for builtins that handle typing "magically"
                         // It represents a data sink and can accept any type
                         // IT IS IMPERATIVE THIS NEVER BE ALLOWED TO LEAK INTO USER CODE

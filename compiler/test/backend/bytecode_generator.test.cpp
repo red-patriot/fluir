@@ -1190,3 +1190,306 @@ TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
   ASSERT_EQ(1, writer.chunks.size());
   EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
+
+TEST_F(TestBytecodeGenerator, GeneratesEqualityComparisons) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "eq", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::EQUAL_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::BANG_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(
+      std::make_unique<fa::BinaryOp>(fluir::Operator::EQUAL_EQUAL,
+                                     fa::createDependency<fa::Constant>(1.5, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                     fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                                     FullID{3, 3},
+                                     fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::EQUAL_EQUAL,
+      fa::createDependency<fa::Constant>(true, FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(false, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "eq",
+    .code =
+      {
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::EQ,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::EQ,
+        fc::Instruction::NOT,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x02,
+        fc::Instruction::PUSH,
+        0x03,
+        fc::Instruction::EQ,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x04,
+        fc::Instruction::PUSH,
+        0x05,
+        fc::Instruction::EQ,
+        fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesSignedComparisons) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cmp", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::LESS,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::LESS_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    // GREATER swaps operands: rhs (16 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::GREATER,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    // GREATER_EQUAL swaps operands: rhs (16 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::GREATER_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<I32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "cmp",
+    .code =
+      {
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LE, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LE, fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesUnsignedComparisons) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cmp", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::LESS,
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::LESS_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    // GREATER swaps operands: rhs (16 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::GREATER,
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    // GREATER_EQUAL swaps operands: rhs (16 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::GREATER_EQUAL,
+      fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(static_cast<U32>(16), FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "cmp",
+    .code =
+      {
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LE, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LE, fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesFloatComparisons) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cmp", .statements = {}};
+    decl.statements.push_back(std::move(
+      std::make_unique<fa::BinaryOp>(fluir::Operator::LESS,
+                                     fa::createDependency<fa::Constant>(1.5, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                     fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                                     FullID{3, 3},
+                                     fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(
+      std::make_unique<fa::BinaryOp>(fluir::Operator::LESS_EQUAL,
+                                     fa::createDependency<fa::Constant>(1.5, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                     fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                                     FullID{3, 3},
+                                     fluir::FlowGraphLocation{})));
+    // GREATER swaps operands: rhs (2.5 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(
+      std::make_unique<fa::BinaryOp>(fluir::Operator::GREATER,
+                                     fa::createDependency<fa::Constant>(1.5, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                     fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                                     FullID{3, 3},
+                                     fluir::FlowGraphLocation{})));
+    // GREATER_EQUAL swaps operands: rhs (2.5 = constant index 1) is pushed first.
+    decl.statements.push_back(std::move(
+      std::make_unique<fa::BinaryOp>(fluir::Operator::GREATER_EQUAL,
+                                     fa::createDependency<fa::Constant>(1.5, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                     fa::createDependency<fa::Constant>(2.5, FullID{3, 2}, fluir::FlowGraphLocation{}),
+                                     FullID{3, 3},
+                                     fluir::FlowGraphLocation{})));
+
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "cmp",
+    .code =
+      {
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LE, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LT, fc::Instruction::POP,
+        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LE, fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "logic", .statements = {}};
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::AND_AND,
+      fa::createDependency<fa::Constant>(true, FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(false, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    decl.statements.push_back(std::move(std::make_unique<fa::BinaryOp>(
+      fluir::Operator::BAR_BAR,
+      fa::createDependency<fa::Constant>(true, FullID{3, 1}, fluir::FlowGraphLocation{}),
+      fa::createDependency<fa::Constant>(false, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      FullID{3, 3},
+      fluir::FlowGraphLocation{})));
+    // BANG is unary; this also exercises not-yet-implemented bool-constant emission.
+    decl.statements.push_back(
+      std::make_unique<fa::UnaryOp>(fluir::Operator::BANG,
+                                    fa::createDependency<fa::Constant>(true, FullID{3, 1}, fluir::FlowGraphLocation{}),
+                                    FullID{3, 2},
+                                    fluir::FlowGraphLocation{}));
+
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "logic",
+    .code =
+      {
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::AND,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::OR,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::NOT,
+        fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}

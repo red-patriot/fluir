@@ -83,7 +83,7 @@ TEST(TestInspectDecoder, ParsesFloatInstructions) {
   std::string source = R"(I0120030000000000000000
 CONSTANTS x00
 CHUNK main
-CODE x09
+CODE x08
 IF64_ADD
 IF64_SUB
 IF64_MUL
@@ -91,7 +91,6 @@ IF64_DIV
 IF64_INC
 IF64_DEC
 IF64_NEG
-IF64_AFF
 IEXIT
 IN x0
 OUT x0
@@ -107,7 +106,6 @@ OUT x0
                                                                  F64_INC,
                                                                  F64_DEC,
                                                                  F64_NEG,
-                                                                 F64_AFF,
                                                                  EXIT,
                                                                }}}};
 
@@ -121,7 +119,7 @@ TEST(TestInspectDecoder, ParsesIntInstructions) {
   std::string source = R"(I0120030000000000000000
 CONSTANTS x00
 CHUNK main
-CODE x09
+CODE x08
 II64_ADD
 II64_SUB
 II64_MUL
@@ -129,7 +127,6 @@ II64_DIV
 II64_INC
 II64_DEC
 II64_NEG
-II64_AFF
 IEXIT
 IN x0
 OUT x0
@@ -145,7 +142,6 @@ OUT x0
                                                                  I64_INC,
                                                                  I64_DEC,
                                                                  I64_NEG,
-                                                                 I64_AFF,
                                                                  EXIT,
                                                                }}}};
 
@@ -159,14 +155,13 @@ TEST(TestInspectDecoder, ParsesUintInstructions) {
   std::string source = R"(I0120030000000000000000
 CONSTANTS x00
 CHUNK main
-CODE x08
+CODE x07
 IU64_ADD
 IU64_SUB
 IU64_MUL
 IU64_DIV
 IU64_INC
 IU64_DEC
-IU64_AFF
 IEXIT
 IN x0
 OUT x0
@@ -181,7 +176,6 @@ OUT x0
                                                                  U64_DIV,
                                                                  U64_INC,
                                                                  U64_DEC,
-                                                                 U64_AFF,
                                                                  EXIT,
                                                                }}}};
 
@@ -318,10 +312,9 @@ CONSTANTS x3
   VF64 1.234500000000
   VF64 6.789000000000
 CHUNK foo
-  CODE xF
+  CODE xE
     IPUSH x0
     IPUSH x1
-    IF64_AFF
     IF64_MUL
     IPOP
     IPUSH x1
@@ -343,7 +336,7 @@ CHUNK foo
       },
     .chunks = {fluir::code::Chunk{
       .name = "foo",
-      .code = {PUSH, 0x00, PUSH, 0x01, F64_AFF, F64_MUL, POP, PUSH, 0x01, PUSH, 0x02, F64_DIV, F64_NEG, POP, EXIT}}}};
+      .code = {PUSH, 0x00, PUSH, 0x01, F64_MUL, POP, PUSH, 0x01, PUSH, 0x02, F64_DIV, F64_NEG, POP, EXIT}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);
 
@@ -504,6 +497,102 @@ OUT x0
     .constants = {fluir::code::Value{fluir::createStaticString("")},
                   fluir::code::Value{fluir::createStaticString("okay")},
                   fluir::code::Value{fluir::createStaticString("abcdefghijklmnopqrstuvwxyz")}},
+    .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_BC_VALUES_EQ(expected.constants, actual.constants);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}
+
+TEST(TestInspectDecoder, DecodesEqualityInstruction) {
+  std::string source = R"(I07220A000000000000001A
+CONSTANTS x2
+  VF64 1.0
+  VF64 2.0
+CHUNK foo
+  CODE x6
+    IPUSH x0
+    IPUSH x1
+    IEQ
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants = {1.000000000000_f64, 2.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "foo", .code = {PUSH, 0x0, PUSH, 0x1, EQ, EXIT}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}
+
+TEST(TestInspectDecoder, DecodesComparisonInstructions) {
+  std::string source = R"(I07220A000000000000001A
+CONSTANTS x2
+  VF64 1.0
+  VF64 2.0
+CHUNK foo
+  CODE x1F
+    IPUSH x0
+    IPUSH x1
+    IF64_LT
+    IPUSH x0
+    IPUSH x1
+    IF64_LE
+    IPUSH x0
+    IPUSH x1
+    II64_LT
+    IPUSH x0
+    IPUSH x1
+    II64_LE
+    IPUSH x0
+    IPUSH x1
+    IU64_LT
+    IPUSH x0
+    IPUSH x1
+    IU64_LE
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants = {1.000000000000_f64, 2.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "foo",
+                                  .code = {PUSH, 0x0,  PUSH,   0x1,    F64_LT, PUSH, 0x0,  PUSH,   0x1,    F64_LE, PUSH,
+                                           0x0,  PUSH, 0x1,    I64_LT, PUSH,   0x0,  PUSH, 0x1,    I64_LE, PUSH,   0x0,
+                                           PUSH, 0x1,  U64_LT, PUSH,   0x0,    PUSH, 0x1,  U64_LE, EXIT}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}
+
+TEST(TestInspectDecoder, ParsesBoolConstant) {
+  std::string source = R"(I0120030000000000000000
+CONSTANTS x02
+VTRUE
+VFALSE
+CHUNK main
+CODE x00
+IN x0
+OUT x0
+)";
+  const fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+    .constants = {fluir::code::Value{true}, fluir::code::Value{false}},
     .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
 
   auto actual = fluir::InspectDecoder{}.decode(source);

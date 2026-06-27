@@ -1,11 +1,19 @@
+from ctypes.wintypes import BOOL
 from pathlib import Path
+from token import GREATER
 
 import pytest
 
 from editor.models import Function, Program, elements
 from editor.models.elements import FlType
 from editor.models.intelligence import FunctionSignature, ParamInfo
-from editor.models.lsp.completion import Completion, Kind
+from editor.models.lsp.completion import (
+    Completion,
+    ConstantData,
+    Kind,
+    NoData,
+    OperatorData,
+)
 from editor.services.intelligence import IntelligenceService
 
 # TODO: Add a test like this to check complete type info in a program
@@ -42,6 +50,10 @@ def program() -> Program:
                     elements.Parameter(flType=FlType("I32")),
                 ],
                 outputs=[elements.Return(flType=FlType("I32"))],
+                nodes=[
+                    elements.BinaryOperator(id=1, op=elements.Operator.PLUS),
+                    elements.UnaryOperator(id=2, op=elements.Operator.MINUS),
+                ],
             )
             for i, letter in enumerate("abcde", start=1)
         ]
@@ -51,14 +63,65 @@ def program() -> Program:
 @pytest.mark.parametrize(
     "expected",
     [
-        Completion(short_name="+ (binary)", kind=Kind.OPERATOR),
-        Completion(short_name="- (binary)", kind=Kind.OPERATOR),
-        Completion(short_name="* (binary)", kind=Kind.OPERATOR),
-        Completion(short_name="/ (binary)", kind=Kind.OPERATOR),
-        Completion(short_name="+ (unary)", kind=Kind.OPERATOR),
-        Completion(short_name="- (unary)", kind=Kind.OPERATOR),
-        Completion(short_name="++ (unary)", kind=Kind.OPERATOR),
-        Completion(short_name="-- (unary)", kind=Kind.OPERATOR),
+        Completion(
+            short_name="+ (binary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=2),
+        ),
+        Completion(
+            short_name="- (binary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=2),
+        ),
+        Completion(
+            short_name="* (binary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=2),
+        ),
+        Completion(
+            short_name="/ (binary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=2),
+        ),
+        Completion(
+            short_name="+ (unary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=1),
+        ),
+        Completion(
+            short_name="- (unary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=1),
+        ),
+        Completion(
+            short_name="++ (unary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=1),
+        ),
+        Completion(
+            short_name="-- (unary)",
+            data=OperatorData(kind=Kind.OPERATOR, arity=1),
+        ),
+        Completion(
+            short_name="==", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="!=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="<", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name=">", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="<=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name=">=", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="&&", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="||", data=OperatorData(kind=Kind.OPERATOR, arity=2)
+        ),
+        Completion(
+            short_name="!", data=OperatorData(kind=Kind.OPERATOR, arity=1)
+        ),
     ],
 )
 def test_operator_completions(expected: Completion, program: Program) -> None:
@@ -74,7 +137,25 @@ def test_operator_completions(expected: Completion, program: Program) -> None:
 
 @pytest.mark.parametrize(
     "expected",
-    [Completion(short_name=t.value, kind=Kind.CONSTANT) for t in FlType],
+    [
+        Completion(short_name="F64", data=ConstantData(flType=FlType.F64)),
+        Completion(short_name="U8", data=ConstantData(flType=FlType.U8)),
+        Completion(short_name="U16", data=ConstantData(flType=FlType.U16)),
+        Completion(short_name="U32", data=ConstantData(flType=FlType.U32)),
+        Completion(short_name="U64", data=ConstantData(flType=FlType.U64)),
+        Completion(short_name="I8", data=ConstantData(flType=FlType.I8)),
+        Completion(short_name="I16", data=ConstantData(flType=FlType.I16)),
+        Completion(short_name="I32", data=ConstantData(flType=FlType.I32)),
+        Completion(short_name="I64", data=ConstantData(flType=FlType.I64)),
+        Completion(
+            short_name="true",
+            data=ConstantData(flType=FlType.BOOL, value="true"),
+        ),
+        Completion(
+            short_name="false",
+            data=ConstantData(flType=FlType.BOOL, value="false"),
+        ),
+    ],
 )
 def test_constant_completions(expected: Completion, program: Program) -> None:
     """Tests that completions provide constants for all FlType values"""
@@ -105,8 +186,8 @@ def test_builtin_types(expected: str, program: Program) -> None:
 def test_function_def_completion_at_top_level(program: Program) -> None:
     expected = Completion(
         short_name="function",
-        kind=Kind.FUNCTION_DEF,
         description="Define a new function here",
+        data=NoData(kind=Kind.FUNCTION_DEF),
     )
     path = Path("fake/path/to/program.fl")
 
@@ -129,7 +210,10 @@ def test_completion_includes_other_functions(program: Program) -> None:
     actual = uut.get_completions([1], path)
 
     for func_name in expecteds:
-        expected = Completion(short_name=func_name, kind=Kind.CALL)
+        expected = Completion(
+            short_name=func_name,
+            data=NoData(kind=Kind.CALL),
+        )
         assert expected in actual
 
 
@@ -180,3 +264,58 @@ def test_get_function_signature_returns_correct_data(program: Program) -> None:
     actual = uut.get_function_signature("func_a", path)
 
     assert expected == actual
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        elements.Operator.PLUS,
+        elements.Operator.MINUS,
+        elements.Operator.STAR,
+        elements.Operator.SLASH,
+        elements.Operator.EQUAL_EQUAL,
+        elements.Operator.BANG_EQUAL,
+        elements.Operator.GREATER_EQUAL,
+        elements.Operator.LESS_EQUAL,
+        elements.Operator.GREATER,
+        elements.Operator.LESS,
+        elements.Operator.AND_AND,
+        elements.Operator.BAR_BAR,
+    ],
+)
+def test_get_binary_operators(
+    program: Program, expected: elements.Operator
+) -> None:
+    """Tests that all binary operators are returned for binary op requests"""
+    path = Path("fake/path/to/program.fl")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_operators([1, 1], 2, path)
+
+    assert expected in actual
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        elements.Operator.PLUS,
+        elements.Operator.MINUS,
+        elements.Operator.PLUS_PLUS,
+        elements.Operator.MINUS_MINUS,
+        elements.Operator.BANG,
+    ],
+)
+def test_get_unary_operators(
+    program: Program, expected: elements.Operator
+) -> None:
+    """Tests that all unary operators are returned for binary op requests"""
+    path = Path("fake/path/to/program.fl")
+
+    uut = IntelligenceService()
+    uut.add_module(program, path)
+
+    actual = uut.get_operators([1, 2], 1, path)
+
+    assert expected in actual

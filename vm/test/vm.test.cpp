@@ -3,12 +3,14 @@
 #include <array>
 #include <numeric>
 #include <ranges>
+#include <tuple>
 
 #include <gtest/gtest.h>
 
 namespace fc = fluir::code;
 using enum fluir::code::Instruction;
 using namespace fluir::code::value_literals;
+using std::tuple;
 
 TEST(TestVM, ExecEmptyFunction) {
   fluir::code::ByteCode code{.header = {}, .chunks = {fc::Chunk{.name = "main", .code = {EXIT}}}};
@@ -140,17 +142,6 @@ TEST(TestVM, NegateI64) {
   EXPECT_EQ(expected, uut.viewStack().back().asI64());
 }
 
-TEST(TestVM, AffirmI64) {
-  std::int64_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_i64}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asI64());
-}
-
 TEST(TestVM, AddI32) {
   std::int32_t expected = 37;
 
@@ -207,17 +198,6 @@ TEST(TestVM, NegateI32) {
   std::int32_t expected = -5;
   fc::ByteCode code{
     .header = {}, .constants = {5_i32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_NEG, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asI32());
-}
-
-TEST(TestVM, AffirmI32) {
-  std::int32_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_i32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -288,17 +268,6 @@ TEST(TestVM, NegateI16) {
   EXPECT_EQ(expected, uut.viewStack().back().asI16());
 }
 
-TEST(TestVM, AffirmI16) {
-  std::int16_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_i16}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asI16());
-}
-
 TEST(TestVM, AddI8) {
   std::int8_t expected = 37;
 
@@ -362,17 +331,6 @@ TEST(TestVM, NegateI8) {
   EXPECT_EQ(expected, uut.viewStack().back().asI8());
 }
 
-TEST(TestVM, AffirmI8) {
-  std::int8_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_i8}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, I64_AFF, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asI8());
-}
-
 TEST(TestVM, AddU64) {
   std::uint64_t expected = 37;
 
@@ -418,17 +376,6 @@ TEST(TestVM, DivideU64) {
   fc::ByteCode code{.header = {},
                     .constants = {12_u64, 4_u64},
                     .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU64());
-}
-
-TEST(TestVM, AffirmU64) {
-  std::uint64_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_u64}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -488,17 +435,6 @@ TEST(TestVM, DivideU32) {
   EXPECT_EQ(expected, uut.viewStack().back().asU32());
 }
 
-TEST(TestVM, AffirmU32) {
-  std::uint32_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_u32}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU32());
-}
-
 TEST(TestVM, AddU16) {
   std::uint16_t expected = 37;
 
@@ -551,17 +487,6 @@ TEST(TestVM, DivideU16) {
   EXPECT_EQ(expected, uut.viewStack().back().asU16());
 }
 
-TEST(TestVM, AffirmU16) {
-  std::uint16_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_u16}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU16());
-}
-
 TEST(TestVM, AddU8) {
   std::uint8_t expected = 37;
 
@@ -607,17 +532,6 @@ TEST(TestVM, DivideU8) {
   fc::ByteCode code{.header = {},
                     .constants = {12_u8, 4_u8},
                     .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_DIV, EXIT}}}};
-
-  fluir::VirtualMachine uut;
-
-  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
-  EXPECT_EQ(expected, uut.viewStack().back().asU8());
-}
-
-TEST(TestVM, AffirmU8) {
-  std::uint8_t expected = 5;
-  fc::ByteCode code{
-    .header = {}, .constants = {5_u8}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, U64_AFF, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -710,5 +624,207 @@ TEST(TestVM, HandlesLotsOfConstants) {
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_EQ(expected, uut.viewStack().back().asI32());
 }
+
+TEST(TestVM, CompareEqualTrue) {
+  fc::ByteCode code{.header = {},
+                    .constants = {5_i64, 5_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, EQ, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareEqualFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {5_i64, 6_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, EQ, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareF64LessThan) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1.0_f64, 2.0_f64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareF64LessThanFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2.0_f64, 1.0_f64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareF64LessEqual) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1.0_f64, 1.0_f64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareF64LessEqualFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2.0_f64, 1.0_f64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, F64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareI64LessThan) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1_i64, 2_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareI64LessThanFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i64, 1_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareI64LessEqual) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1_i64, 1_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareI64LessEqualFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2_i64, 1_i64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, I64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareU64LessThan) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1_u64, 2_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareU64LessThanFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u64, 1_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_LT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareU64LessEqual) {
+  fc::ByteCode code{.header = {},
+                    .constants = {1_u64, 1_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, CompareU64LessEqualFalse) {
+  fc::ByteCode code{.header = {},
+                    .constants = {2_u64, 1_u64},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, U64_LE, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, NegateTrue) {
+  fc::ByteCode code{
+    .header = {}, .constants = {TRUE_VALUE}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, NOT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, NegateFalse) {
+  fc::ByteCode code{
+    .header = {}, .constants = {FALSE_VALUE}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, NOT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+class TestVmLogicalOps : public ::testing::TestWithParam<tuple<fc::Value, fc::Value, fc::Instruction, bool>> { };
+
+TEST_P(TestVmLogicalOps, Test) {
+  const auto& [v1, v2, op, expected] = GetParam();
+  fc::ByteCode code{
+    .header = {}, .constants = {v1, v2}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, op, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(expected, uut.viewStack().back().asBool());
+}
+
+INSTANTIATE_TEST_SUITE_P(,
+                         TestVmLogicalOps,
+                         ::testing::Values(tuple{FALSE_VALUE, FALSE_VALUE, AND, false},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, AND, false},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, AND, false},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, AND, true},
+                                           tuple{FALSE_VALUE, FALSE_VALUE, OR, false},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, OR, true},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, OR, true},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, OR, true},
+                                           tuple{FALSE_VALUE, FALSE_VALUE, EQ, true},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, EQ, false},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, EQ, false},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, EQ, true}));
 
 // TODO: Tests for error cases

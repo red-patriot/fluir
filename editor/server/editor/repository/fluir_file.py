@@ -301,6 +301,8 @@ class _XMLReader:
                 return FlType.U32
             case "u64":
                 return FlType.U64
+            case "bool":
+                return FlType.BOOL
 
         return None
 

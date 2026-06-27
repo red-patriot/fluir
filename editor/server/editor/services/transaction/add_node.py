@@ -87,7 +87,7 @@ class AddNode(BaseModel, TransactionBase):
                 return "0"
             case FlType.BOOL:
                 return "false"
-        assert_never("Type default unhandled")
+        assert_never(new_type)
 
     def _make_constant(self, new_id: IDType) -> elements.Constant:
         assert isinstance(self.params, ConstantParams)

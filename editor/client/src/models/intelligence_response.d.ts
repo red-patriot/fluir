@@ -10,7 +10,7 @@ export type CompletionKind =
 export type CompletionConstantData = {
   kind: "constant";
   value?: string;
-  flType?: FlType;
+  flType: FlType;
 };
 
 export type CompletionOperatorData = {

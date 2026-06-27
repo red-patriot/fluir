@@ -506,6 +506,80 @@ OUT x0
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
 
+TEST(TestInspectDecoder, DecodesEqualityInstruction) {
+  std::string source = R"(I07220A000000000000001A
+CONSTANTS x2
+  VF64 1.0
+  VF64 2.0
+CHUNK foo
+  CODE x6
+    IPUSH x0
+    IPUSH x1
+    IEQ
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants = {1.000000000000_f64, 2.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "foo", .code = {PUSH, 0x0, PUSH, 0x1, EQ, EXIT}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}
+
+TEST(TestInspectDecoder, DecodesComparisonInstructions) {
+  std::string source = R"(I07220A000000000000001A
+CONSTANTS x2
+  VF64 1.0
+  VF64 2.0
+CHUNK foo
+  CODE x1F
+    IPUSH x0
+    IPUSH x1
+    IF64_LT
+    IPUSH x0
+    IPUSH x1
+    IF64_LE
+    IPUSH x0
+    IPUSH x1
+    II64_LT
+    IPUSH x0
+    IPUSH x1
+    II64_LE
+    IPUSH x0
+    IPUSH x1
+    IU64_LT
+    IPUSH x0
+    IPUSH x1
+    IU64_LE
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants = {1.000000000000_f64, 2.000000000000_f64},
+    .chunks = {fluir::code::Chunk{.name = "foo",
+                                  .code = {PUSH, 0x0,  PUSH,   0x1,    F64_LT, PUSH, 0x0,  PUSH,   0x1,    F64_LE, PUSH,
+                                           0x0,  PUSH, 0x1,    I64_LT, PUSH,   0x0,  PUSH, 0x1,    I64_LE, PUSH,   0x0,
+                                           PUSH, 0x1,  U64_LT, PUSH,   0x0,    PUSH, 0x1,  U64_LE, EXIT}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}
+
 TEST(TestInspectDecoder, ParsesBoolConstant) {
   std::string source = R"(I0120030000000000000000
 CONSTANTS x02

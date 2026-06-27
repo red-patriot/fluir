@@ -221,6 +221,9 @@ namespace fluir::code {
     inline Value operator""_u32(unsigned long long int u) { return Value{static_cast<std::uint32_t>(u)}; }
     inline Value operator""_u16(unsigned long long int u) { return Value{static_cast<std::uint16_t>(u)}; }
     inline Value operator""_u8(unsigned long long int u) { return Value{static_cast<std::uint8_t>(u)}; }
+
+    inline const Value TRUE_VALUE{true};
+    inline const Value FALSE_VALUE{false};
   }  // namespace value_literals
 
   inline bool operator==(const Value& lhs, const Value& rhs) {

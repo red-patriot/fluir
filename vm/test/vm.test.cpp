@@ -3,12 +3,14 @@
 #include <array>
 #include <numeric>
 #include <ranges>
+#include <tuple>
 
 #include <gtest/gtest.h>
 
 namespace fc = fluir::code;
 using enum fluir::code::Instruction;
 using namespace fluir::code::value_literals;
+using std::tuple;
 
 TEST(TestVM, ExecEmptyFunction) {
   fluir::code::ByteCode code{.header = {}, .chunks = {fc::Chunk{.name = "main", .code = {EXIT}}}};
@@ -776,5 +778,53 @@ TEST(TestVM, CompareU64LessEqualFalse) {
   EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
   EXPECT_FALSE(uut.viewStack().back().asBool());
 }
+
+TEST(TestVM, NegateTrue) {
+  fc::ByteCode code{
+    .header = {}, .constants = {TRUE_VALUE}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, NOT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, NegateFalse) {
+  fc::ByteCode code{
+    .header = {}, .constants = {FALSE_VALUE}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, NOT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+class TestVmLogicalOps : public ::testing::TestWithParam<tuple<fc::Value, fc::Value, fc::Instruction, bool>> { };
+
+TEST_P(TestVmLogicalOps, Test) {
+  const auto& [v1, v2, op, expected] = GetParam();
+  fc::ByteCode code{
+    .header = {}, .constants = {v1, v2}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, PUSH, 1, op, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(expected, uut.viewStack().back().asBool());
+}
+
+INSTANTIATE_TEST_SUITE_P(,
+                         TestVmLogicalOps,
+                         ::testing::Values(tuple{FALSE_VALUE, FALSE_VALUE, AND, false},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, AND, false},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, AND, false},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, AND, true},
+                                           tuple{FALSE_VALUE, FALSE_VALUE, OR, false},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, OR, true},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, OR, true},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, OR, true},
+                                           tuple{FALSE_VALUE, FALSE_VALUE, EQ, true},
+                                           tuple{FALSE_VALUE, TRUE_VALUE, EQ, false},
+                                           tuple{TRUE_VALUE, FALSE_VALUE, EQ, false},
+                                           tuple{TRUE_VALUE, TRUE_VALUE, EQ, true}));
 
 // TODO: Tests for error cases

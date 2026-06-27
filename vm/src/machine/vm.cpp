@@ -380,6 +380,28 @@ namespace fluir {
             }
             break;
           }
+        case NOT:
+          {
+            auto operand = stackPopTop().asBool();
+            pushStack(code::Value{!operand});
+          }
+          break;
+        case AND:
+          // TODO: Remove this when branching is implemented
+          {
+            auto rhs = stackPopTop().asBool();
+            auto lhs = stackPopTop().asBool();
+            pushStack(code::Value{lhs && rhs});
+          }
+          break;
+        case OR:
+          // TODO: Remove this when branching is implemented
+          {
+            auto rhs = stackPopTop().asBool();
+            auto lhs = stackPopTop().asBool();
+            pushStack(code::Value{lhs || rhs});
+          }
+          break;
         case CALL:
           {
             auto calleeIndex = readQuadWord();

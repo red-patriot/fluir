@@ -505,3 +505,25 @@ OUT x0
   EXPECT_BC_VALUES_EQ(expected.constants, actual.constants);
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
+
+TEST(TestInspectDecoder, ParsesBoolConstant) {
+  std::string source = R"(I0120030000000000000000
+CONSTANTS x02
+VTRUE
+VFALSE
+CHUNK main
+CODE x00
+IN x0
+OUT x0
+)";
+  const fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 1, .minor = 32, .patch = 3, .entryOffset = 0},
+    .constants = {fluir::code::Value{true}, fluir::code::Value{false}},
+    .chunks = {fluir::code::Chunk{.name = "main", .code = {}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_BC_VALUES_EQ(expected.constants, actual.constants);
+  EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
+}

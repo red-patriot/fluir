@@ -592,6 +592,7 @@ namespace fluir {
   }
 
   pt::BOOL Parser::boolean(Element* element) {
+    panicIf(!element->GetText(), element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT);
     std::string_view text = element->GetText();
     if (text == "true"sv) {
       return true;
@@ -701,6 +702,7 @@ namespace fluir {
       {"||"sv, Operator::BAR_BAR},
     };
 
+    panicIf(!element->Attribute(attribute.data()), element, diagnostic::Code::ERROR_MISSING_ATTRIBUTE);
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
     if (OPERATORS.contains(opText)) {

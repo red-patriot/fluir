@@ -798,6 +798,7 @@ describe("createNodes", () => {
           parameter: parameter,
           index: 0,
           maxIndex: 0,
+          edge: "left",
         },
         dragHandle: ".dragHandle__custom",
       });
@@ -873,6 +874,7 @@ describe("createNodes", () => {
           funcID: "1",
           fullID: "1:20",
           return_: ret,
+          edge: "right",
         },
         dragHandle: ".dragHandle__custom",
       });

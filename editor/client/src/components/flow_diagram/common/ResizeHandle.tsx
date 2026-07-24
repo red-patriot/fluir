@@ -1,15 +1,17 @@
 import {
   NodeResizeControl,
   ResizeControlVariant,
+  OnResize,
   OnResizeEnd,
   ResizeDragEvent,
   ResizeParams,
   ResizeControlProps,
+  useReactFlow,
 } from "@xyflow/react";
 import { slate } from "@radix-ui/colors";
 import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
 import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
-import { resize } from "@/components/flow_diagram/logic";
+import { resize, repositionReturnNodes } from "@/components/flow_diagram/logic";
 import { CornerBottomRightIcon, CaretSortIcon } from "@radix-ui/react-icons";
 
 interface ResizeHandleProps extends ResizeControlProps {
@@ -48,8 +50,13 @@ export function HorizontalResizeHandle({
 
 export function XYResizeHandle({ fullID, ...props }: ResizeHandleProps) {
   const { editProgram } = useProgramActions();
+  const { setNodes } = useReactFlow();
 
   const doResize = resize(editProgram, fullID);
+
+  const onDragResize: OnResize = (_: ResizeDragEvent, params: ResizeParams) => {
+    setNodes((nds) => repositionReturnNodes(nds, fullID, params.width));
+  };
 
   const onFinishResize: OnResizeEnd = (
     _: ResizeDragEvent,
@@ -61,6 +68,7 @@ export function XYResizeHandle({ fullID, ...props }: ResizeHandleProps) {
   return (
     <NodeResizeControl
       variant={ResizeControlVariant.Handle}
+      onResize={onDragResize}
       onResizeEnd={onFinishResize}
       style={{ border: "none", background: "none" }}
       {...props}

@@ -30,6 +30,7 @@ function fullId(parentId: string | undefined, id: number): string {
 }
 
 const PARAM_BLOCK_HEIGHT = 5;
+export const RETURN_NODE_WIDTH = 5;
 
 function addNodes(
   nodes: FlowNode[],
@@ -217,10 +218,10 @@ function addFunctionReturnNode(
       parentId: funcID,
       extent: extent,
       position: {
-        x: (decl.location.width - 5) * ZOOM_SCALAR,
+        x: (decl.location.width - RETURN_NODE_WIDTH) * ZOOM_SCALAR,
         y: (index + 1) * PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
       },
-      width: 5 * ZOOM_SCALAR,
+      width: RETURN_NODE_WIDTH * ZOOM_SCALAR,
       height: PARAM_BLOCK_HEIGHT * ZOOM_SCALAR,
       data: {
         funcID: funcID,

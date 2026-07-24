@@ -198,6 +198,7 @@ function addFunctionParameterNode(
         parameter: param,
         index: index,
         maxIndex: total - 1,
+        edge: "left",
       },
       dragHandle: ".dragHandle__custom",
     });
@@ -227,6 +228,7 @@ function addFunctionReturnNode(
         funcID: funcID,
         fullID: retID,
         return_: ret,
+        edge: "right",
       },
       dragHandle: ".dragHandle__custom",
     });

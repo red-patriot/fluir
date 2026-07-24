@@ -1,26 +1,39 @@
 import { ResizeEditRequest } from "@/models/edit_request";
 import { toApiID } from "@/utility/idHelpers";
 import { Node as FlowNode } from "@xyflow/react";
-import { RETURN_NODE_WIDTH } from "@/utility/createNodes";
-import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
+
+/** Which parent border a node is anchored to. */
+export type EdgeAnchor = "left" | "right";
 
 /**
- * Repositions a function's return nodes to sit against its right border during
- * a live resize drag. `pixelWidth` is the Decl node's current width in pixels
- * (as reported by NodeResizeControl). Returns a new array; nodes that are not
- * return children of `funcID` are left referentially unchanged.
+ * Repositions a function's edge-anchored child nodes to stay glued to the
+ * resizing parent's border during a live resize drag. `pixelWidth` is the
+ * parent node's current width in pixels (as reported by NodeResizeControl).
+ *
+ * A node opts in via `data.edge` ('left' | 'right'). Left-anchored nodes sit at
+ * x = 0; right-anchored nodes sit at the right border (`pixelWidth - width`).
+ * Returns a new array; nodes that are not edge children of `funcID` are left
+ * referentially unchanged.
  */
-export function repositionReturnNodes(
+export function repositionEdgeNodes(
   nodes: FlowNode[],
   funcID: string,
   pixelWidth: number,
 ): FlowNode[] {
-  const x = pixelWidth - RETURN_NODE_WIDTH * ZOOM_SCALAR;
-  return nodes.map((node) =>
-    node.parentId === funcID && node.type === "return_"
-      ? { ...node, position: { ...node.position, x } }
-      : node,
-  );
+  return nodes.map((node) => {
+    if (node.parentId !== funcID) return node;
+    const edge = (node.data as { edge?: EdgeAnchor }).edge;
+    if (edge === "left") {
+      return { ...node, position: { ...node.position, x: 0 } };
+    }
+    if (edge === "right") {
+      return {
+        ...node,
+        position: { ...node.position, x: pixelWidth - (node.width ?? 0) },
+      };
+    }
+    return node;
+  });
 }
 
 export function resizeMove(

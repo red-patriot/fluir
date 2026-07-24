@@ -1,5 +1,6 @@
 import { FunctionParameter } from "@/models/fluir_module";
 import { type Node, NodeProps } from "@xyflow/react";
+import { EdgeAnchor } from "@/components/flow_diagram/logic/resize";
 import { Flex } from "@radix-ui/themes";
 import { amber } from "@radix-ui/colors";
 import { ValueDisplay } from "@/components/flow_diagram/common/ValueDisplay.tsx";
@@ -20,6 +21,7 @@ type FunctionParameterNode = Node<{
   parameter: FunctionParameter;
   index: number;
   maxIndex: number;
+  edge: EdgeAnchor;
 }>;
 
 export default function FunctionParameterNode({

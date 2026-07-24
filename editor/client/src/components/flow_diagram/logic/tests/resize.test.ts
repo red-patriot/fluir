@@ -2,11 +2,9 @@ import { describe, it, expect, vi } from "vitest";
 import {
   resizeMove,
   resize,
-  repositionReturnNodes,
+  repositionEdgeNodes,
 } from "@/components/flow_diagram/logic/resize";
 import { ResizeEditRequest } from "@/models/edit_request";
-import { RETURN_NODE_WIDTH } from "@/utility/createNodes";
-import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
 import { Node as FlowNode } from "@xyflow/react";
 
 describe("resizeMove", () => {
@@ -102,8 +100,9 @@ describe("resize", () => {
   });
 });
 
-describe("repositionReturnNodes", () => {
+describe("repositionEdgeNodes", () => {
   const funcID = "0";
+  const RETURN_WIDTH = 25;
   const makeNodes = (): FlowNode[] => [
     {
       id: "0",
@@ -116,56 +115,60 @@ describe("repositionReturnNodes", () => {
       type: "return_",
       parentId: funcID,
       position: { x: 0, y: 25 },
-      data: {},
+      width: RETURN_WIDTH,
+      data: { edge: "right" },
     },
     {
       id: "0:2",
       type: "parameter",
       parentId: funcID,
-      position: { x: 0, y: 25 },
+      position: { x: 42, y: 25 },
+      data: { edge: "left" },
+    },
+    {
+      id: "0:3",
+      type: "constant",
+      parentId: funcID,
+      position: { x: 7, y: 7 },
       data: {},
     },
   ];
 
-  it("moves return_ children to the resized right border", () => {
-    const pixelWidth = 100 * ZOOM_SCALAR;
+  it("moves right-edge children to the resized right border", () => {
+    const pixelWidth = 500;
 
-    const result = repositionReturnNodes(makeNodes(), funcID, pixelWidth);
-
-    const ret = result.find((n) => n.id === "0:1")!;
-    expect(ret.position.x).toBe(pixelWidth - RETURN_NODE_WIDTH * ZOOM_SCALAR);
-  });
-
-  it("matches the x that createNodes derives from committed width", () => {
-    const committedWidth = 100;
-    const pixelWidth = committedWidth * ZOOM_SCALAR;
-
-    const result = repositionReturnNodes(makeNodes(), funcID, pixelWidth);
+    const result = repositionEdgeNodes(makeNodes(), funcID, pixelWidth);
 
     const ret = result.find((n) => n.id === "0:1")!;
-    // createNodes computes: (decl.location.width - RETURN_NODE_WIDTH) * ZOOM_SCALAR
-    expect(ret.position.x).toBe(
-      (committedWidth - RETURN_NODE_WIDTH) * ZOOM_SCALAR,
-    );
+    expect(ret.position.x).toBe(pixelWidth - RETURN_WIDTH);
   });
 
-  it("leaves non-return and unrelated nodes untouched", () => {
-    const input = makeNodes();
-
-    const result = repositionReturnNodes(input, funcID, 999);
+  it("pins left-edge children to x = 0 regardless of width", () => {
+    const result = repositionEdgeNodes(makeNodes(), funcID, 999);
 
     const param = result.find((n) => n.id === "0:2")!;
+    expect(param.position.x).toBe(0);
+    // y preserved.
+    expect(param.position.y).toBe(25);
+  });
+
+  it("leaves nodes without an edge referentially unchanged", () => {
+    const input = makeNodes();
+
+    const result = repositionEdgeNodes(input, funcID, 999);
+
+    const constant = result.find((n) => n.id === "0:3")!;
     const func = result.find((n) => n.id === "0")!;
-    // Same referential objects, unchanged.
-    expect(param).toBe(input[2]);
+    expect(constant).toBe(input[3]);
     expect(func).toBe(input[0]);
   });
 
-  it("ignores return_ nodes belonging to a different function", () => {
+  it("ignores edge nodes belonging to a different function", () => {
     const input = makeNodes();
 
-    const result = repositionReturnNodes(input, "9", 999);
+    const result = repositionEdgeNodes(input, "9", 999);
 
-    expect(result.find((n) => n.id === "0:1")!.position.x).toBe(0);
+    expect(result[1]).toBe(input[1]);
+    expect(result[2]).toBe(input[2]);
   });
 });

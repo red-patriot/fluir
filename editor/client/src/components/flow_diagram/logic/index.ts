@@ -1,7 +1,7 @@
 import {
   resize,
   resizeMove,
-  repositionReturnNodes,
+  repositionEdgeNodes,
 } from "@/components/flow_diagram/logic/resize";
 import { move } from "@/components/flow_diagram/logic/move";
 import {
@@ -12,7 +12,7 @@ import {
 export {
   resize,
   resizeMove,
-  repositionReturnNodes,
+  repositionEdgeNodes,
   move,
   updateConstant,
   updateOperator,

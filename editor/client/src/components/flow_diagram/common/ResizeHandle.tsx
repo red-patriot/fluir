@@ -11,7 +11,7 @@ import {
 import { slate } from "@radix-ui/colors";
 import { ZOOM_SCALAR } from "@/hooks/useSizeStyle";
 import { useProgramActions } from "@/components/reusable/ProgramActionsContext";
-import { resize, repositionReturnNodes } from "@/components/flow_diagram/logic";
+import { resize, repositionEdgeNodes } from "@/components/flow_diagram/logic";
 import { CornerBottomRightIcon, CaretSortIcon } from "@radix-ui/react-icons";
 
 interface ResizeHandleProps extends ResizeControlProps {
@@ -55,7 +55,7 @@ export function XYResizeHandle({ fullID, ...props }: ResizeHandleProps) {
   const doResize = resize(editProgram, fullID);
 
   const onDragResize: OnResize = (_: ResizeDragEvent, params: ResizeParams) => {
-    setNodes((nds) => repositionReturnNodes(nds, fullID, params.width));
+    setNodes((nds) => repositionEdgeNodes(nds, fullID, params.width));
   };
 
   const onFinishResize: OnResizeEnd = (

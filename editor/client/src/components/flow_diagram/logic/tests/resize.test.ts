@@ -101,7 +101,7 @@ describe("resize", () => {
 });
 
 describe("repositionEdgeNodes", () => {
-  const funcID = "0";
+  const parentID = "0";
   const RETURN_WIDTH = 25;
   const makeNodes = (): FlowNode[] => [
     {
@@ -113,7 +113,7 @@ describe("repositionEdgeNodes", () => {
     {
       id: "0:1",
       type: "return_",
-      parentId: funcID,
+      parentId: parentID,
       position: { x: 0, y: 25 },
       width: RETURN_WIDTH,
       data: { edge: "right" },
@@ -121,14 +121,14 @@ describe("repositionEdgeNodes", () => {
     {
       id: "0:2",
       type: "parameter",
-      parentId: funcID,
+      parentId: parentID,
       position: { x: 42, y: 25 },
       data: { edge: "left" },
     },
     {
       id: "0:3",
       type: "constant",
-      parentId: funcID,
+      parentId: parentID,
       position: { x: 7, y: 7 },
       data: {},
     },
@@ -137,14 +137,14 @@ describe("repositionEdgeNodes", () => {
   it("moves right-edge children to the resized right border", () => {
     const pixelWidth = 500;
 
-    const result = repositionEdgeNodes(makeNodes(), funcID, pixelWidth);
+    const result = repositionEdgeNodes(makeNodes(), parentID, pixelWidth);
 
     const ret = result.find((n) => n.id === "0:1")!;
     expect(ret.position.x).toBe(pixelWidth - RETURN_WIDTH);
   });
 
   it("pins left-edge children to x = 0 regardless of width", () => {
-    const result = repositionEdgeNodes(makeNodes(), funcID, 999);
+    const result = repositionEdgeNodes(makeNodes(), parentID, 999);
 
     const param = result.find((n) => n.id === "0:2")!;
     expect(param.position.x).toBe(0);
@@ -155,7 +155,7 @@ describe("repositionEdgeNodes", () => {
   it("leaves nodes without an edge referentially unchanged", () => {
     const input = makeNodes();
 
-    const result = repositionEdgeNodes(input, funcID, 999);
+    const result = repositionEdgeNodes(input, parentID, 999);
 
     const constant = result.find((n) => n.id === "0:3")!;
     const func = result.find((n) => n.id === "0")!;

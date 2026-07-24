@@ -18,25 +18,42 @@ interface ResizeHandleProps extends ResizeControlProps {
   fullID: string;
 }
 
-export function HorizontalResizeHandle({
-  fullID,
-  ...props
-}: ResizeHandleProps) {
+/**
+ * Shared resize wiring for a node: live-repositions its edge-anchored children
+ * during the drag (`onResize`) and commits the new size on release
+ * (`onResizeEnd`). Works for any node with children — function, loop, etc.
+ */
+function useResizeHandlers(fullID: string) {
   const { editProgram } = useProgramActions();
+  const { setNodes } = useReactFlow();
 
   const doResize = resize(editProgram, fullID);
 
-  const onFinishResize: OnResizeEnd = (
+  const onResize: OnResize = (_: ResizeDragEvent, params: ResizeParams) => {
+    setNodes((nds) => repositionEdgeNodes(nds, fullID, params.width));
+  };
+
+  const onResizeEnd: OnResizeEnd = (
     _: ResizeDragEvent,
     params: ResizeParams,
   ) => {
     doResize(params.width / ZOOM_SCALAR, params.height / ZOOM_SCALAR);
   };
 
+  return { onResize, onResizeEnd };
+}
+
+export function HorizontalResizeHandle({
+  fullID,
+  ...props
+}: ResizeHandleProps) {
+  const { onResize, onResizeEnd } = useResizeHandlers(fullID);
+
   return (
     <NodeResizeControl
       variant={ResizeControlVariant.Line}
-      onResizeEnd={onFinishResize}
+      onResize={onResize}
+      onResizeEnd={onResizeEnd}
       {...props}
       style={{ border: "none" }}
     >
@@ -49,27 +66,13 @@ export function HorizontalResizeHandle({
 }
 
 export function XYResizeHandle({ fullID, ...props }: ResizeHandleProps) {
-  const { editProgram } = useProgramActions();
-  const { setNodes } = useReactFlow();
-
-  const doResize = resize(editProgram, fullID);
-
-  const onDragResize: OnResize = (_: ResizeDragEvent, params: ResizeParams) => {
-    setNodes((nds) => repositionEdgeNodes(nds, fullID, params.width));
-  };
-
-  const onFinishResize: OnResizeEnd = (
-    _: ResizeDragEvent,
-    params: ResizeParams,
-  ) => {
-    doResize(params.width / ZOOM_SCALAR, params.height / ZOOM_SCALAR);
-  };
+  const { onResize, onResizeEnd } = useResizeHandlers(fullID);
 
   return (
     <NodeResizeControl
       variant={ResizeControlVariant.Handle}
-      onResize={onDragResize}
-      onResizeEnd={onFinishResize}
+      onResize={onResize}
+      onResizeEnd={onResizeEnd}
       style={{ border: "none", background: "none" }}
       {...props}
     >

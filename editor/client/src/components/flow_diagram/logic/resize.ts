@@ -6,22 +6,23 @@ import { Node as FlowNode } from "@xyflow/react";
 export type EdgeAnchor = "left" | "right";
 
 /**
- * Repositions a function's edge-anchored child nodes to stay glued to the
- * resizing parent's border during a live resize drag. `pixelWidth` is the
- * parent node's current width in pixels (as reported by NodeResizeControl).
+ * Repositions a node's edge-anchored children to stay glued to its
+ * border during a live resize drag. Works for any parent (function, loop, …)
+ * whose children opt in. `pixelWidth` is the parent node's current width in
+ * pixels (as reported by NodeResizeControl).
  *
- * A node opts in via `data.edge` ('left' | 'right'). Left-anchored nodes sit at
- * x = 0; right-anchored nodes sit at the right border (`pixelWidth - width`).
- * Returns a new array; nodes that are not edge children of `funcID` are left
- * referentially unchanged.
+ * A child opts in via `data.edge` ('left' | 'right'). Left-anchored children sit
+ * at x = 0; right-anchored children sit at the right border (`pixelWidth -
+ * width`). Returns a new array; nodes that are not edge children of `parentID`
+ * are left referentially unchanged.
  */
 export function repositionEdgeNodes(
   nodes: FlowNode[],
-  funcID: string,
+  parentID: string,
   pixelWidth: number,
 ): FlowNode[] {
   return nodes.map((node) => {
-    if (node.parentId !== funcID) return node;
+    if (node.parentId !== parentID) return node;
     const edge = (node.data as { edge?: EdgeAnchor }).edge;
     if (edge === "left") {
       return { ...node, position: { ...node.position, x: 0 } };

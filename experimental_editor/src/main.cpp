@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include <fmt/format.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -28,21 +26,26 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  /* No event handling. Run a fixed number of frames, then exit.
-     Without an event pump the window cannot be closed by the user
-     and the window manager may flag it "not responding". */
-  for (int frame = 0; frame < 600; ++frame) {
-    const double now = ((double)SDL_GetTicks()) / 1000.0; /* convert from milliseconds to seconds. */
-    /* choose the color for the frame we will draw. The sine wave trick makes it fade between colors smoothly. */
-    const float red = (float)(0.5 + 0.5 * SDL_sin(now));
-    const float green = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 2 / 3));
-    const float blue = (float)(0.5 + 0.5 * SDL_sin(now + SDL_PI_D * 4 / 3));
-    SDL_SetRenderDrawColorFloat(renderer, red, green, blue, SDL_ALPHA_OPAQUE_FLOAT); /* new color, full alpha. */
+  // A viewer is idle most of the time, so block until something happens
+  // instead of spinning a frame loop. Each wake redraws once.
+  bool running = true;
+  while (running) {
+    SDL_Event event;
+    if (!SDL_WaitEvent(&event)) {
+      fmt::print("SDL_WaitEvent failed: {}", SDL_GetError());
+      break;
+    }
 
+    if (event.type == SDL_EVENT_QUIT) {
+      running = false;
+    } else if (event.type == SDL_EVENT_KEY_DOWN &&
+               (event.key.scancode == SDL_SCANCODE_ESCAPE || event.key.key == SDLK_ESCAPE)) {
+      running = false;
+    }
+
+    SDL_SetRenderDrawColorFloat(renderer, 0.10f, 0.11f, 0.13f, SDL_ALPHA_OPAQUE_FLOAT);
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
-    SDL_PumpEvents();
-    SDL_Delay(16);
   }
 
   SDL_DestroyRenderer(renderer);

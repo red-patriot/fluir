@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="someFuncName" id="1" x="10" y="10" z="3" w="100" h="100">
+    <body>
+      <binary id="3" x="24" y="39" z="2" w="5" h="5" operator="/"/>
+      <constant id="2" x="6" y="34" z="0" w="12" h="5">
+        <f64>1.2345</f64>
+      </constant>
+      <constant id="1" x="6" y="45" z="0" w="12" h="5">
+        <f64>6.7890</f64>
+      </constant>
+      <binary id="5" x="54" y="23" z="2" w="5" h="5" operator="*"/>
+      <constant id="4" x="29" y="18" z="0" w="12" h="5">
+        <f64>7.6543</f64>
+      </constant>
+      <unary id="6" x="35" y="28" z="0" w="5" h="5" operator="+"/>
+      <conduit id="7" input="2">
+        <output target="3" index="0"/>
+        <output target="6" index="0"/>
+      </conduit>
+      <conduit id="8" input="1">
+        <segment x="84" y="19">
+          <output target="3" index="1"/>
+        </segment>
+      </conduit>
+      <conduit id="9" input="4">
+        <output target="5" index="1"/>
+      </conduit>
+      <conduit id="10" input="6">
+        <output target="5" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

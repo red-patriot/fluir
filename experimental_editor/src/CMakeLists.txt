@@ -45,8 +45,20 @@ endif ()
 
 include(strict-warnings)
 
+add_library(fluir.libeditor)
+
+target_include_directories(
+    fluir.libeditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
+)
+
+target_sources(
+    fluir.libeditor PRIVATE "core/collecting_sink.cpp" "core/loader.cpp"
+)
+
+target_link_libraries(fluir.libeditor PUBLIC fmt::fmt fluir::compiler)
+
 add_executable(fluir.editor "main.cpp")
 
-target_link_libraries(fluir.editor PUBLIC SDL3::SDL3 fmt::fmt)
+target_link_libraries(fluir.editor PUBLIC SDL3::SDL3 fluir.libeditor)
 
 turn_up_warnings_on(fluir.editor)

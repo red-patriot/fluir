@@ -1,6 +1,6 @@
+add_subdirectory(src)
+
 if (FLUIR_BUILD_TESTS)
     enable_testing()
+    add_subdirectory(test)
 endif ()
-
-add_subdirectory(core)
-add_subdirectory(src)

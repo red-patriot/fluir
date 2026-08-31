@@ -1,6 +1,11 @@
 find_package(GTest REQUIRED)
 
-add_executable(fluir.editor.test loader.test.cpp viewport.test.cpp)
+add_executable(
+    fluir.editor.test
+    loader.test.cpp
+    viewport.test.cpp
+    render_graph.test.cpp
+)
 
 target_compile_definitions(
     fluir.editor.test

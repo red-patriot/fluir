@@ -55,6 +55,7 @@ target_sources(
     fluir.libeditor
     PRIVATE "core/collecting_sink.cpp"
             "core/loader.cpp"
+            "core/render_graph.cpp"
             "core/viewport.cpp"
 )
 

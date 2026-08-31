@@ -396,3 +396,31 @@ TEST(RenderGraph, DeterministicWithBodyAndWires) {
   EXPECT_FALSE(opsOf(a.calls, DrawCall::Op::Line).empty());
   EXPECT_FALSE(opsOf(a.calls, DrawCall::Op::PushClip).empty());
 }
+
+TEST(GraphBounds, EmptyTreeIsZero) {
+  const Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{0, 0, 0, 0});
+}
+
+TEST(GraphBounds, SingleFunctionIsItsFrame) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture: x=10 y=10 w=100 h=100 (logical); world px = logical * UNIT_PX (5).
+  // Same frame rect asserted by SingleEmptyFunctionFrameAndHeader above.
+  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{50, 50, 500, 500});
+}
+
+TEST(GraphBounds, MultipleFunctionsUnion) {
+  const Loaded l = loadFixture("read/multiple_empty_functions.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture frames (logical -> world px, * UNIT_PX == 5):
+  //   foo x=10  y=10 w=100 h=100 -> world [ 50, 50 ..  550, 550]
+  //   baz x=330 y=10 w=100 h=100 -> world [1650, 50 .. 2150, 550]
+  //   bar x=210 y=10 w=50  h=70  -> world [1050, 50 .. 1300, 400]
+  // union: min (50, 50), max (2150, 550) -> {50, 50, 2100, 500}.
+  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{50, 50, 2100, 500});
+}

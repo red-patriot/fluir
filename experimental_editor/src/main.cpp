@@ -58,12 +58,21 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  float dpi = SDL_GetWindowDisplayScale(window);
+  if (dpi <= 0.0f) {
+    dpi = 1.0f;
+  }
+  SDL_SetRenderScale(sdl, dpi, dpi);
+
   int w = 1280;
   int h = 800;
   SDL_GetCurrentRenderOutputSize(sdl, &w, &h);
 
+  const double logicalW = w / static_cast<double>(dpi);
+  const double logicalH = h / static_cast<double>(dpi);
+
   fluir::editor::SdlRenderer renderer{sdl};
-  const int rc = fluir::editor::run(*result.tree, renderer, {static_cast<double>(w), static_cast<double>(h)});
+  const int rc = fluir::editor::run(*result.tree, renderer, {logicalW, logicalH});
 
   SDL_DestroyRenderer(sdl);
   SDL_DestroyWindow(window);

@@ -52,8 +52,11 @@ namespace fluir::editor {
   }
 
   void SdlRenderer::drawText(Vec2 topLeft, std::string_view text) {
-    (void)topLeft;
-    (void)text;
+    // SDL's built-in 8px debug font. Fixed screen size (does not scale with
+    // zoom); a real glyph atlas is a later phase.
+    SDL_SetRenderDrawColor(renderer_, 225, 225, 235, 255);
+    const std::string str{text};
+    SDL_RenderDebugText(renderer_, static_cast<float>(topLeft.x), static_cast<float>(topLeft.y), str.c_str());
   }
 
   void SdlRenderer::pushClip(Rect screen) {

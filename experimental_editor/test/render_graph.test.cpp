@@ -68,7 +68,6 @@ namespace {
 
 }  // namespace
 
-// read/top_level_comment_only.fl has no <function>, so no frame is emitted.
 TEST(RenderGraph, EmptyOfFunctionsEmitsNoFrames) {
   const Loaded l = loadFixture("read/top_level_comment_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -80,9 +79,6 @@ TEST(RenderGraph, EmptyOfFunctionsEmitsNoFrames) {
   EXPECT_TRUE(r.calls.empty());
 }
 
-// read/single_empty_function.fl: <function name="foo" x=10 y=10 z=3 w=100 h=100>.
-// world origin = (50,50); frame = (50,50,500,500); header = (50,50,500,25);
-// name text at (54,54).
 TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   const Loaded l = loadFixture("read/single_empty_function.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -109,9 +105,6 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PopClip).empty());
 }
 
-// read/function_with_input_only.fl: <function name="add" x=10 y=10 z=3 w=100 h=100>
-// with params a,b (I32). Param 0 rect = (50,75,75,25); right-edge output dot
-// centred on (125,87.5) => fill rect (122,84.5,6,6). Param text "I32 a" at (54,79).
 TEST(RenderGraph, ParamRailFromInputOnly) {
   const Loaded l = loadFixture("read/function_with_input_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -140,9 +133,6 @@ TEST(RenderGraph, ParamRailFromInputOnly) {
   expectVecNear(texts[2].a, Vec2{54, 104});
 }
 
-// read/function_with_output_only.fl: <function name="getVal" x=10 y=10 z=3 w=100
-// h=100> with a single F64 return. Return rect = (525,75,25,25); left-edge input
-// dot centred on (525,87.5) => fill rect (522,84.5,6,6). Return text "F64" at (529,79).
 TEST(RenderGraph, ReturnRailFromOutputOnly) {
   const Loaded l = loadFixture("read/function_with_output_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -167,8 +157,6 @@ TEST(RenderGraph, ReturnRailFromOutputOnly) {
   expectVecNear(texts[1].a, Vec2{529, 79});
 }
 
-// read/multiple_empty_functions.fl: three functions (ids 1,7,2, all z=3). Two
-// renderGraph runs on the same tree must produce identical call sequences.
 TEST(RenderGraph, DeterministicAcrossRuns) {
   const Loaded l = loadFixture("read/multiple_empty_functions.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -189,8 +177,6 @@ TEST(RenderGraph, DeterministicAcrossRuns) {
   EXPECT_EQ(texts[2].text, "baz");
 }
 
-// A non-identity Viewport maps world -> screen before every Renderer call:
-// top-left * scale + pan, size * scale.
 TEST(RenderGraph, ViewportIsApplied) {
   const Loaded l = loadFixture("read/single_empty_function.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -213,4 +199,200 @@ TEST(RenderGraph, ViewportIsApplied) {
   ASSERT_EQ(texts.size(), 1u);
   // world text pos (54,54) -> screen (54*2+100, 54*2+50).
   expectVecNear(texts.front().a, Vec2{208, 158});
+}
+
+TEST(RenderGraph, ConstantNode) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  const auto rects = opsOf(r.calls, DrawCall::Op::Rect);
+  ASSERT_EQ(rects.size(), 5u);  // frame + 4 constants
+  expectRectNear(rects[1].rect, Rect{60, 150, 25, 25});
+
+  const auto texts = opsOf(r.calls, DrawCall::Op::Text);
+  ASSERT_EQ(texts.size(), 5u);  // name + 4 literals
+  EXPECT_EQ(texts[1].text, "-5");
+  expectVecNear(texts[1].a, Vec2{64, 154});
+  EXPECT_EQ(texts[2].text, "318");
+  EXPECT_EQ(texts[3].text, "324");
+  EXPECT_EQ(texts[4].text, "-12");
+
+  const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
+  ASSERT_EQ(fills.size(), 5u);  // header + 4 output dots, no input dots
+  expectRectNear(fills[0].rect, Rect{50, 50, 500, 25});
+  expectRectNear(fills[1].rect, Rect{82, 159.5, 6, 6});
+
+  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::Line).empty());
+}
+
+TEST(RenderGraph, BinaryNodeHasTwoInputsOneOutput) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  const auto texts = opsOf(r.calls, DrawCall::Op::Text);
+  ASSERT_GE(texts.size(), 2u);
+  EXPECT_EQ(texts[1].text, "+");  // stringify(PLUS); binary sorts first (id 1)
+  expectVecNear(texts[1].a, Vec2{129, 64});
+
+  const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
+  ASSERT_EQ(fills.size(), 6u);                           // header + (2 in + 1 out) + const out + const out
+  expectRectNear(fills[1].rect, Rect{122, 57, 6, 6});    // binary input 0, y-frac 0.0
+  expectRectNear(fills[2].rect, Rect{122, 82, 6, 6});    // binary input 1, y-frac 1.0
+  expectRectNear(fills[3].rect, Rect{147, 69.5, 6, 6});  // binary output, y-frac 0.5
+}
+
+TEST(RenderGraph, UnaryNodeHasOneInput) {
+  const Loaded l = loadFixture("read/simple_unary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  const auto texts = opsOf(r.calls, DrawCall::Op::Text);
+  ASSERT_EQ(texts.size(), 3u);    // name + constant + unary op
+  EXPECT_EQ(texts[2].text, "-");  // unary sorts after constant (id 7 vs 3)
+  expectVecNear(texts[2].a, Vec2{129, 64});
+
+  const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
+  ASSERT_EQ(fills.size(), 4u);                           // header + const out + unary in + unary out
+  expectRectNear(fills[2].rect, Rect{122, 69.5, 6, 6});  // unary single input, y-frac 0.5
+  expectRectNear(fills[3].rect, Rect{147, 69.5, 6, 6});  // unary output
+
+  ASSERT_EQ(opsOf(r.calls, DrawCall::Op::Line).size(), 1u);
+}
+
+TEST(RenderGraph, CallNodeArgsAndReturn) {
+  {
+    const Loaded l = loadFixture("read/function_call.fl");
+    ASSERT_TRUE(l.result.tree.has_value());
+
+    RecordingRenderer r;
+    fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+    const auto texts = opsOf(r.calls, DrawCall::Op::Text);
+    ASSERT_EQ(texts.size(), 6u);  // main, 10, 20, add, a, b
+    EXPECT_EQ(texts[3].text, "add");
+    expectVecNear(texts[3].a, Vec2{154, 54});
+    EXPECT_EQ(texts[4].text, "a");
+    expectVecNear(texts[4].a, Vec2{154, 79});
+    EXPECT_EQ(texts[5].text, "b");
+    expectVecNear(texts[5].a, Vec2{154, 104});
+
+    const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
+    ASSERT_EQ(fills.size(), 6u);                           // header + 2 const outs + 2 call arg ins + 1 call return out
+    expectRectNear(fills[3].rect, Rect{147, 84.5, 6, 6});  // call arg row 0 input
+    expectRectNear(fills[4].rect, Rect{147, 109.5, 6, 6});  // call arg row 1 input
+    expectRectNear(fills[5].rect, Rect{207, 77, 6, 6});     // call return output
+
+    ASSERT_EQ(opsOf(r.calls, DrawCall::Op::Line).size(), 1u);  // conduit id=5 index 2 guarded out
+  }
+  {
+    const Loaded l = loadFixture("read/function_call_no_args_no_returns.fl");
+    ASSERT_TRUE(l.result.tree.has_value());
+
+    RecordingRenderer r;
+    fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+    const auto texts = opsOf(r.calls, DrawCall::Op::Text);
+    ASSERT_EQ(texts.size(), 2u);  // name + call target only
+    EXPECT_EQ(texts[1].text, "doStuff");
+    expectVecNear(texts[1].a, Vec2{29, 29});
+
+    const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
+    ASSERT_EQ(fills.size(), 1u);  // header only; no args, no return
+
+    EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::Line).empty());
+  }
+}
+
+TEST(RenderGraph, WireEndpointsMatchPorts) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  const auto lines = opsOf(r.calls, DrawCall::Op::Line);
+  ASSERT_EQ(lines.size(), 2u);
+  expectVecNear(lines[0].a, Vec2{85, 72.5});   // constant id=2 output-0 anchor
+  expectVecNear(lines[0].b, Vec2{125, 60});    // binary id=1 input-0 anchor
+  expectVecNear(lines[1].a, Vec2{85, 122.5});  // constant id=3 output-0 anchor
+  expectVecNear(lines[1].b, Vec2{125, 60});    // binary id=1 input-0 anchor
+}
+
+TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  const auto& calls = r.calls;
+
+  ASSERT_EQ(opsOf(calls, DrawCall::Op::PushClip).size(), 1u);
+  ASSERT_EQ(opsOf(calls, DrawCall::Op::PopClip).size(), 1u);
+
+  std::size_t pushIdx = calls.size();
+  std::size_t popIdx = calls.size();
+  for (std::size_t i = 0; i < calls.size(); ++i) {
+    if (calls[i].op == DrawCall::Op::PushClip) {
+      pushIdx = i;
+    }
+    if (calls[i].op == DrawCall::Op::PopClip) {
+      popIdx = i;
+    }
+  }
+  ASSERT_LT(pushIdx, calls.size());
+  ASSERT_LT(popIdx, calls.size());
+  expectRectNear(calls[pushIdx].rect, Rect{50, 50, 500, 500});
+
+  std::size_t firstBodyRect = calls.size();
+  for (std::size_t i = pushIdx + 1; i < calls.size(); ++i) {
+    if (calls[i].op == DrawCall::Op::Rect) {
+      firstBodyRect = i;
+      break;
+    }
+  }
+  ASSERT_LT(firstBodyRect, calls.size());
+  EXPECT_LT(pushIdx, firstBodyRect);
+  expectRectNear(calls[firstBodyRect].rect, Rect{125, 60, 25, 25});
+
+  std::size_t lastLine = calls.size();
+  for (std::size_t i = 0; i < popIdx; ++i) {
+    if (calls[i].op == DrawCall::Op::Line) {
+      lastLine = i;
+    }
+  }
+  ASSERT_LT(lastLine, calls.size());
+  EXPECT_LT(lastLine, popIdx);
+}
+
+TEST(RenderGraph, NoClipForEmptyFunction) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PushClip).empty());
+  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PopClip).empty());
+}
+
+TEST(RenderGraph, DeterministicWithBodyAndWires) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer a;
+  RecordingRenderer b;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, a);
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, b);
+
+  EXPECT_EQ(a.calls, b.calls);
+  EXPECT_FALSE(opsOf(a.calls, DrawCall::Op::Line).empty());
+  EXPECT_FALSE(opsOf(a.calls, DrawCall::Op::PushClip).empty());
 }

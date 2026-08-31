@@ -52,7 +52,10 @@ target_include_directories(
 )
 
 target_sources(
-    fluir.libeditor PRIVATE "core/collecting_sink.cpp" "core/loader.cpp"
+    fluir.libeditor
+    PRIVATE "core/collecting_sink.cpp"
+            "core/loader.cpp"
+            "core/viewport.cpp"
 )
 
 target_link_libraries(fluir.libeditor PUBLIC fmt::fmt fluir::compiler)

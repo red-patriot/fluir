@@ -11,6 +11,9 @@ namespace fluir::editor {
    public:
     virtual ~Renderer() = default;
 
+    virtual void beginFrame() = 0;  ///< clear the target
+    virtual void endFrame() = 0;    ///< present
+
     virtual void drawRect(Rect screen) = 0;
     virtual void fillRect(Rect screen) = 0;
     virtual void drawLine(Vec2 a, Vec2 b) = 0;

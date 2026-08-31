@@ -57,12 +57,20 @@ target_sources(
             "core/loader.cpp"
             "core/render_graph.cpp"
             "core/viewport.cpp"
+            "sdl_renderer.cpp"
+            "input.cpp"
+            "app.cpp"
 )
 
-target_link_libraries(fluir.libeditor PUBLIC fmt::fmt fluir::compiler)
+target_link_libraries(
+    fluir.libeditor
+    PUBLIC fmt::fmt
+           SDL3::SDL3
+           fluir::compiler
+)
 
 add_executable(fluir.editor "main.cpp")
 
-target_link_libraries(fluir.editor PUBLIC SDL3::SDL3 fluir.libeditor)
+target_link_libraries(fluir.editor PUBLIC fluir.libeditor)
 
 turn_up_warnings_on(fluir.editor)

@@ -323,7 +323,7 @@ TEST(RenderGraph, WireEndpointsMatchPorts) {
   expectVecNear(lines[0].a, Vec2{85, 72.5});   // constant id=2 output-0 anchor
   expectVecNear(lines[0].b, Vec2{125, 60});    // binary id=1 input-0 anchor
   expectVecNear(lines[1].a, Vec2{85, 122.5});  // constant id=3 output-0 anchor
-  expectVecNear(lines[1].b, Vec2{125, 60});    // binary id=1 input-0 anchor
+  expectVecNear(lines[1].b, Vec2{125, 85});    // binary id=1 input-1 anchor
 }
 
 TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {

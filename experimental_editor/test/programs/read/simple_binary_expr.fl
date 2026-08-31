@@ -27,10 +27,10 @@
                     <f64>2.0</f64>
                 </constant>
                 <conduit id="4" input="2">
-                    <output target="1"/>
+                    <output target="1" index="0"/>
                 </conduit>
                 <conduit id="5" input="3">
-                    <output target="1"/>
+                    <output target="1" index="1"/>
                 </conduit>
             </body>
         </function>

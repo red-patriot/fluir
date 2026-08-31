@@ -21,6 +21,9 @@ namespace testutil {
    public:
     std::vector<DrawCall> calls;
 
+    void beginFrame() override { }
+    void endFrame() override { }
+
     void drawRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Rect, r, {}, {}, {}}); }
     void fillRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Fill, r, {}, {}, {}}); }
     void drawLine(fluir::editor::Vec2 p, fluir::editor::Vec2 q) override {

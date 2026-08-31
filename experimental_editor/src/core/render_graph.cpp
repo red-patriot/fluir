@@ -293,4 +293,39 @@ namespace fluir::editor {
     }
   }
 
+  Rect graphBounds(const pt::ParseTree& tree) {
+    bool any = false;
+    double minX = 0.0;
+    double minY = 0.0;
+    double maxX = 0.0;
+    double maxY = 0.0;
+    for (const auto& entry : tree.declarations) {
+      const auto* fn = std::get_if<pt::FunctionDecl>(&entry.second);
+      if (fn == nullptr) {
+        continue;
+      }
+      const FlowGraphLocation& loc = fn->location;
+      const double x0 = static_cast<double>(loc.x) * UNIT_PX;
+      const double y0 = static_cast<double>(loc.y) * UNIT_PX;
+      const double x1 = x0 + static_cast<double>(loc.width) * UNIT_PX;
+      const double y1 = y0 + static_cast<double>(loc.height) * UNIT_PX;
+      if (!any) {
+        minX = x0;
+        minY = y0;
+        maxX = x1;
+        maxY = y1;
+        any = true;
+      } else {
+        minX = std::min(minX, x0);
+        minY = std::min(minY, y0);
+        maxX = std::max(maxX, x1);
+        maxY = std::max(maxY, y1);
+      }
+    }
+    if (!any) {
+      return {0.0, 0.0, 0.0, 0.0};
+    }
+    return {minX, minY, maxX - minX, maxY - minY};
+  }
+
 }  // namespace fluir::editor

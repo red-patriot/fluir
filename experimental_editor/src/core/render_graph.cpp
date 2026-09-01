@@ -5,7 +5,6 @@
 #include <cstdint>
 #include <string>
 #include <type_traits>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -30,14 +29,6 @@ namespace fluir::editor {
     constexpr double kRailStep = 5.0 * UNIT_PX;  // 25 — row height and y-step
     constexpr double kParamW = 15.0 * UNIT_PX;   // 75
     constexpr double kReturnInsetLogical = 5.0;  // rail sits at logical x = width - 5
-
-    // World-space port anchors for one graph element (param / return / body
-    // node), keyed by element id. Wires read these back to find their endpoints.
-    struct PortSet {
-      std::vector<Vec2> inputs;
-      std::vector<Vec2> outputs;
-    };
-    using PortMap = std::unordered_map<fluir::ID, PortSet>;
 
     Rect dotRect(Vec2 anchor) { return {anchor.x - kPortDot * 0.5, anchor.y - kPortDot * 0.5, kPortDot, kPortDot}; }
 
@@ -78,14 +69,6 @@ namespace fluir::editor {
         value);
     }
 
-    const FlowGraphLocation& nodeLocation(const pt::Node& node) {
-      return std::visit([](const auto& n) -> const FlowGraphLocation& { return n.location; }, node);
-    }
-
-    fluir::ID nodeId(const pt::Node& node) {
-      return std::visit([](const auto& n) { return n.id; }, node);
-    }
-
     // Deterministic order: (location.z, id).
     std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree) {
       std::vector<const pt::FunctionDecl*> funcs;
@@ -104,42 +87,6 @@ namespace fluir::editor {
       return funcs;
     }
 
-    void emitParamRail(
-      const pt::FunctionDecl::InputBlock& input, Vec2 origin, const Viewport& vp, Renderer& out, PortMap& ports) {
-      std::vector<const pt::FunctionDecl::Parameter*> params;
-      params.reserve(input.parameters.size());
-      for (const auto& param : input.parameters) {
-        params.push_back(&param);
-      }
-      std::sort(
-        params.begin(), params.end(), [](const pt::FunctionDecl::Parameter* a, const pt::FunctionDecl::Parameter* b) {
-          return a->index < b->index;
-        });
-
-      for (std::size_t i = 0; i < params.size(); ++i) {
-        const pt::FunctionDecl::Parameter& param = *params[i];
-        const Rect rect{origin.x, origin.y + (static_cast<double>(i) + 1.0) * kRailStep, kParamW, kRailStep};
-        out.drawRect(toScreen(vp, rect));
-        out.drawText(toScreen(vp, Vec2{rect.x + kTextPad, rect.y + kTextPad}), param.typeName + " " + param.name);
-        const Vec2 anchor{rect.x + rect.w, rect.y + rect.h * 0.5};
-        out.fillRect(toScreen(vp, dotRect(anchor)));
-        ports[param.id].outputs.push_back(anchor);
-      }
-    }
-
-    void emitReturnRail(
-      const pt::FunctionDecl::Return& ret, Vec2 origin, int width, const Viewport& vp, Renderer& out, PortMap& ports) {
-      const Rect rect{origin.x + (static_cast<double>(width) - kReturnInsetLogical) * UNIT_PX,
-                      origin.y + kRailStep,
-                      kRailStep,
-                      kRailStep};
-      out.drawRect(toScreen(vp, rect));
-      out.drawText(toScreen(vp, Vec2{rect.x + kTextPad, rect.y + kTextPad}), ret.typeName);
-      const Vec2 anchor{rect.x, rect.y + rect.h * 0.5};
-      out.fillRect(toScreen(vp, dotRect(anchor)));
-      ports[ret.id].inputs.push_back(anchor);
-    }
-
     // Spread `count` port dots down an edge at world x == `edgeX`, pushing each
     // anchor (top-to-bottom) into `slot`.
     void emitEdgeDots(
@@ -151,146 +98,223 @@ namespace fluir::editor {
       }
     }
 
-    void emitBodyNode(const pt::Node& node, Vec2 origin, const Viewport& vp, Renderer& out, PortMap& ports) {
-      const FlowGraphLocation& loc = nodeLocation(node);
-      const Rect nodeRect{origin.x + static_cast<double>(loc.x) * UNIT_PX,
-                          origin.y + static_cast<double>(loc.y) * UNIT_PX,
-                          static_cast<double>(loc.width) * UNIT_PX,
-                          static_cast<double>(loc.height) * UNIT_PX};
-      out.drawRect(toScreen(vp, nodeRect));
-
-      PortSet& set = ports[nodeId(node)];
-      const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
-
-      if (const auto* constant = std::get_if<pt::Constant>(&node)) {
-        out.drawText(toScreen(vp, textPos), renderLiteral(constant->value));
-        emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, vp, out, set.outputs);
-        return;
-      }
-      if (const auto* unary = std::get_if<pt::Unary>(&node)) {
-        out.drawText(toScreen(vp, textPos), stringify(unary->op));
-        emitEdgeDots(nodeRect.x, nodeRect, 1, vp, out, set.inputs);
-        emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, vp, out, set.outputs);
-        return;
-      }
-      if (const auto* binary = std::get_if<pt::Binary>(&node)) {
-        out.drawText(toScreen(vp, textPos), stringify(binary->op));
-        emitEdgeDots(nodeRect.x, nodeRect, 2, vp, out, set.inputs);
-        emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, vp, out, set.outputs);
-        return;
-      }
-      if (const auto* call = std::get_if<pt::Call>(&node)) {
-        out.drawText(toScreen(vp, textPos), call->target);
-
-        std::vector<const pt::Call::Argument*> args;
-        args.reserve(call->arguments.size());
-        for (const auto& arg : call->arguments) {
-          args.push_back(&arg);
-        }
-        std::sort(args.begin(), args.end(), [](const pt::Call::Argument* a, const pt::Call::Argument* b) {
-          return a->index < b->index;
-        });
-
-        // One row per argument, stacked below the header row (kRailStep tall),
-        // matching CallNode.tsx's column of CallArgumentNode rows; each row's
-        // input handle sits at the row's vertical centre.
-        for (std::size_t k = 0; k < args.size(); ++k) {
-          const double rowTop = nodeRect.y + (static_cast<double>(k) + 1.0) * kRailStep;
-          out.drawText(toScreen(vp, Vec2{nodeRect.x + kTextPad, rowTop + kTextPad}), args[k]->name);
-          const Vec2 anchor{nodeRect.x, rowTop + kRailStep * 0.5};
-          out.fillRect(toScreen(vp, dotRect(anchor)));
-          set.inputs.push_back(anchor);
-        }
-
-        if (call->_return.has_value()) {
-          emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, vp, out, set.outputs);
-        }
-        return;
-      }
-    }
-
-    void emitWires(const pt::Block& body, const Viewport& vp, Renderer& out, const PortMap& ports) {
-      std::vector<const pt::Conduit*> conduits;
-      conduits.reserve(body.conduits.size());
-      for (const auto& entry : body.conduits) {
-        conduits.push_back(&entry.second);
-      }
-      std::sort(
-        conduits.begin(), conduits.end(), [](const pt::Conduit* a, const pt::Conduit* b) { return a->id < b->id; });
-
-      for (const pt::Conduit* conduit : conduits) {
-        const auto sourceIt = ports.find(conduit->input);
-        if (sourceIt == ports.end() || sourceIt->second.outputs.empty()) {
-          continue;
-        }
-        // createEdges (createNodes.ts): sourceHandle is always `input-<conduit.input>-0`,
-        // i.e. the source node's output port 0; targetHandle is
-        // `output-<child.target>-<child.index>`, i.e. the target's input port child.index.
-        const Vec2 source = sourceIt->second.outputs.front();
-        for (const pt::Conduit::Output& child : conduit->children) {
-          const auto targetIt = ports.find(child.target);
-          if (targetIt == ports.end()) {
-            continue;
-          }
-          if (child.index < 0 || static_cast<std::size_t>(child.index) >= targetIt->second.inputs.size()) {
-            continue;
-          }
-          const Vec2 target = targetIt->second.inputs[static_cast<std::size_t>(child.index)];
-          out.drawLine(toScreen(vp, source), toScreen(vp, target));
-        }
-      }
-    }
-
   }  // namespace
 
-  void renderGraph(const pt::ParseTree& tree, const Viewport& view, Renderer& renderer) {
+  GraphRenderer::GraphRenderer(const Viewport& viewport, Renderer& renderer) :
+    viewport_(viewport), renderer_(renderer) { }
+
+  void GraphRenderer::operator()(const pt::ParseTree& tree) {
     for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
-      const FlowGraphLocation& loc = fn->location;
-      const Vec2 origin{static_cast<double>(loc.x) * UNIT_PX, static_cast<double>(loc.y) * UNIT_PX};
+      (*this)(*fn);
+    }
+  }
 
-      const Rect frame{
-        origin.x, origin.y, static_cast<double>(loc.width) * UNIT_PX, static_cast<double>(loc.height) * UNIT_PX};
-      renderer.drawRect(toScreen(view, frame));
+  void GraphRenderer::operator()(const pt::FunctionDecl& decl) {
+    const FlowGraphLocation& loc = decl.location;
+    origin_ = Vec2{static_cast<double>(loc.x) * UNIT_PX, static_cast<double>(loc.y) * UNIT_PX};
+    width_ = loc.width;
 
-      const Rect header{origin.x, origin.y, static_cast<double>(loc.width) * UNIT_PX, kHeaderH};
-      renderer.fillRect(toScreen(view, header));
-      renderer.drawText(toScreen(view, Vec2{origin.x + kTextPad, origin.y + kTextPad}), fn->name);
+    const Rect frame{
+      origin_.x, origin_.y, static_cast<double>(loc.width) * UNIT_PX, static_cast<double>(loc.height) * UNIT_PX};
+    renderer_.drawRect(toScreen(viewport_, frame));
 
-      PortMap ports;
-      if (fn->input) {
-        emitParamRail(*fn->input, origin, view, renderer, ports);
+    const Rect header{origin_.x, origin_.y, static_cast<double>(loc.width) * UNIT_PX, kHeaderH};
+    renderer_.fillRect(toScreen(viewport_, header));
+    renderer_.drawText(toScreen(viewport_, Vec2{origin_.x + kTextPad, origin_.y + kTextPad}), decl.name);
+
+    ports_.clear();
+    if (decl.input) {
+      drawParamRail(*decl.input);
+    }
+    if (decl.output && decl.output->ret) {
+      drawReturnRail(*decl.output->ret);
+    }
+
+    if (decl.body.nodes.empty() && decl.body.conduits.empty()) {
+      return;
+    }
+
+    renderer_.pushClip(toScreen(viewport_, frame));
+
+    std::vector<const pt::Node*> nodes;
+    nodes.reserve(decl.body.nodes.size());
+    for (const auto& entry : decl.body.nodes) {
+      nodes.push_back(&entry.second);
+    }
+    std::sort(nodes.begin(), nodes.end(), [](const pt::Node* a, const pt::Node* b) {
+      const auto zOf = [](const pt::Node& n) {
+        return std::visit([](const auto& node) { return node.location.z; }, n);
+      };
+      const auto idOf = [](const pt::Node& n) { return std::visit([](const auto& node) { return node.id; }, n); };
+      const int za = zOf(*a);
+      const int zb = zOf(*b);
+      if (za != zb) {
+        return za < zb;
       }
-      if (fn->output && fn->output->ret) {
-        emitReturnRail(*fn->output->ret, origin, loc.width, view, renderer, ports);
-      }
+      return idOf(*a) < idOf(*b);
+    });
+    for (const pt::Node* node : nodes) {
+      std::visit(*this, *node);
+    }
 
-      if (fn->body.nodes.empty() && fn->body.conduits.empty()) {
+    std::vector<const pt::Conduit*> conduits;
+    conduits.reserve(decl.body.conduits.size());
+    for (const auto& entry : decl.body.conduits) {
+      conduits.push_back(&entry.second);
+    }
+    std::sort(
+      conduits.begin(), conduits.end(), [](const pt::Conduit* a, const pt::Conduit* b) { return a->id < b->id; });
+    for (const pt::Conduit* conduit : conduits) {
+      (*this)(*conduit);
+    }
+
+    renderer_.popClip();
+  }
+
+  void GraphRenderer::operator()(const pt::Binary& binary) {
+    const FlowGraphLocation& loc = binary.location;
+    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
+                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+                        static_cast<double>(loc.width) * UNIT_PX,
+                        static_cast<double>(loc.height) * UNIT_PX};
+    renderer_.drawRect(toScreen(viewport_, nodeRect));
+
+    PortSet& set = ports_[binary.id];
+    const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
+
+    renderer_.drawText(toScreen(viewport_, textPos), stringify(binary.op));
+    emitEdgeDots(nodeRect.x, nodeRect, 2, viewport_, renderer_, set.inputs);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+  }
+
+  void GraphRenderer::operator()(const pt::Unary& unary) {
+    const FlowGraphLocation& loc = unary.location;
+    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
+                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+                        static_cast<double>(loc.width) * UNIT_PX,
+                        static_cast<double>(loc.height) * UNIT_PX};
+    renderer_.drawRect(toScreen(viewport_, nodeRect));
+
+    PortSet& set = ports_[unary.id];
+    const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
+
+    renderer_.drawText(toScreen(viewport_, textPos), stringify(unary.op));
+    emitEdgeDots(nodeRect.x, nodeRect, 1, viewport_, renderer_, set.inputs);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+  }
+
+  void GraphRenderer::operator()(const pt::Constant& constant) {
+    const FlowGraphLocation& loc = constant.location;
+    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
+                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+                        static_cast<double>(loc.width) * UNIT_PX,
+                        static_cast<double>(loc.height) * UNIT_PX};
+    renderer_.drawRect(toScreen(viewport_, nodeRect));
+
+    PortSet& set = ports_[constant.id];
+    const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
+
+    renderer_.drawText(toScreen(viewport_, textPos), renderLiteral(constant.value));
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+  }
+
+  void GraphRenderer::operator()(const pt::Call& call) {
+    const FlowGraphLocation& loc = call.location;
+    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
+                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+                        static_cast<double>(loc.width) * UNIT_PX,
+                        static_cast<double>(loc.height) * UNIT_PX};
+    renderer_.drawRect(toScreen(viewport_, nodeRect));
+
+    PortSet& set = ports_[call.id];
+    const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
+
+    renderer_.drawText(toScreen(viewport_, textPos), call.target);
+
+    std::vector<const pt::Call::Argument*> args;
+    args.reserve(call.arguments.size());
+    for (const auto& arg : call.arguments) {
+      args.push_back(&arg);
+    }
+    std::sort(args.begin(), args.end(), [](const pt::Call::Argument* a, const pt::Call::Argument* b) {
+      return a->index < b->index;
+    });
+
+    // One row per argument, stacked below the header row (kRailStep tall),
+    // matching CallNode.tsx's column of CallArgumentNode rows; each row's
+    // input handle sits at the row's vertical centre.
+    for (std::size_t k = 0; k < args.size(); ++k) {
+      const double rowTop = nodeRect.y + (static_cast<double>(k) + 1.0) * kRailStep;
+      renderer_.drawText(toScreen(viewport_, Vec2{nodeRect.x + kTextPad, rowTop + kTextPad}), args[k]->name);
+      const Vec2 anchor{nodeRect.x, rowTop + kRailStep * 0.5};
+      renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+      set.inputs.push_back(anchor);
+    }
+
+    if (call._return.has_value()) {
+      emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+    }
+  }
+
+  void GraphRenderer::operator()(const pt::Conduit& conduit) {
+    const auto sourceIt = ports_.find(conduit.input);
+    if (sourceIt == ports_.end() || sourceIt->second.outputs.empty()) {
+      return;
+    }
+    // createEdges (createNodes.ts): sourceHandle is always `input-<conduit.input>-0`,
+    // i.e. the source node's output port 0; targetHandle is
+    // `output-<child.target>-<child.index>`, i.e. the target's input port child.index.
+    const Vec2 source = sourceIt->second.outputs.front();
+    for (const pt::Conduit::Output& child : conduit.children) {
+      const auto targetIt = ports_.find(child.target);
+      if (targetIt == ports_.end()) {
         continue;
       }
-
-      renderer.pushClip(toScreen(view, frame));
-
-      std::vector<const pt::Node*> nodes;
-      nodes.reserve(fn->body.nodes.size());
-      for (const auto& entry : fn->body.nodes) {
-        nodes.push_back(&entry.second);
+      if (child.index < 0 || static_cast<std::size_t>(child.index) >= targetIt->second.inputs.size()) {
+        continue;
       }
-      std::sort(nodes.begin(), nodes.end(), [](const pt::Node* a, const pt::Node* b) {
-        const int za = nodeLocation(*a).z;
-        const int zb = nodeLocation(*b).z;
-        if (za != zb) {
-          return za < zb;
-        }
-        return nodeId(*a) < nodeId(*b);
-      });
-      for (const pt::Node* node : nodes) {
-        emitBodyNode(*node, origin, view, renderer, ports);
-      }
-
-      emitWires(fn->body, view, renderer, ports);
-
-      renderer.popClip();
+      const Vec2 target = targetIt->second.inputs[static_cast<std::size_t>(child.index)];
+      renderer_.drawLine(toScreen(viewport_, source), toScreen(viewport_, target));
     }
+  }
+
+  void GraphRenderer::drawParamRail(const pt::FunctionDecl::InputBlock& input) {
+    std::vector<const pt::FunctionDecl::Parameter*> params;
+    params.reserve(input.parameters.size());
+    for (const auto& param : input.parameters) {
+      params.push_back(&param);
+    }
+    std::sort(
+      params.begin(), params.end(), [](const pt::FunctionDecl::Parameter* a, const pt::FunctionDecl::Parameter* b) {
+        return a->index < b->index;
+      });
+
+    for (std::size_t i = 0; i < params.size(); ++i) {
+      const pt::FunctionDecl::Parameter& param = *params[i];
+      const Rect rect{origin_.x, origin_.y + (static_cast<double>(i) + 1.0) * kRailStep, kParamW, kRailStep};
+      renderer_.drawRect(toScreen(viewport_, rect));
+      renderer_.drawText(toScreen(viewport_, Vec2{rect.x + kTextPad, rect.y + kTextPad}),
+                         param.typeName + " " + param.name);
+      const Vec2 anchor{rect.x + rect.w, rect.y + rect.h * 0.5};
+      renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+      ports_[param.id].outputs.push_back(anchor);
+    }
+  }
+
+  void GraphRenderer::drawReturnRail(const pt::FunctionDecl::Return& ret) {
+    const Rect rect{origin_.x + (static_cast<double>(width_) - kReturnInsetLogical) * UNIT_PX,
+                    origin_.y + kRailStep,
+                    kRailStep,
+                    kRailStep};
+    renderer_.drawRect(toScreen(viewport_, rect));
+    renderer_.drawText(toScreen(viewport_, Vec2{rect.x + kTextPad, rect.y + kTextPad}), ret.typeName);
+    const Vec2 anchor{rect.x, rect.y + rect.h * 0.5};
+    renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+    ports_[ret.id].inputs.push_back(anchor);
+  }
+
+  void renderGraph(const pt::ParseTree& tree, const Viewport& view, Renderer& renderer) {
+    GraphRenderer{view, renderer}(tree);
   }
 
   Rect graphBounds(const pt::ParseTree& tree) {

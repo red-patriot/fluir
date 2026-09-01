@@ -121,7 +121,6 @@ namespace fluir::editor {
     const double w = static_cast<double>(loc.width) * UNIT_PX;
     const double h = static_cast<double>(loc.height) * UNIT_PX;
 
-    // Chrome: no clip of its own (an empty function pushes zero clip regions).
     renderer_.drawRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, h})));         // frame
     renderer_.fillRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, kHeaderH})));  // header
     renderer_.drawText(toScreen(viewport_, Vec2{origin.x + kTextPad, origin.y + kTextPad}), decl.name);
@@ -130,7 +129,7 @@ namespace fluir::editor {
 
     // Body content is offset below the header band so nodes don't render over it.
     auto bodyOrigin = origin + Vec2{0.0, kHeaderH};
-    const Subview body{viewport_, bodyOrigin, Rect{0, 0, w, h}, renderer_};
+    const Subview body{viewport_, Rect{bodyOrigin.x, bodyOrigin.y, w, h}, renderer_};
     const Subview* const prevBody = body_;
     body_ = &body;
 

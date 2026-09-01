@@ -101,6 +101,17 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   ASSERT_EQ(texts.size(), 1u);
   EXPECT_EQ(texts.front().text, "foo");
   expectVecNear(texts.front().a, Vec2{54, 54});
+
+  // The body Subview is constructed before the empty-body early-return (ports and
+  // rails draw on it), so an empty function pushes exactly one clip for the body
+  // rect and pops it once at scope exit.
+  const auto pushes = opsOf(r.calls, DrawCall::Op::PushClip);
+  const auto pops = opsOf(r.calls, DrawCall::Op::PopClip);
+  ASSERT_EQ(pushes.size(), 1u);
+  ASSERT_EQ(pops.size(), 1u);
+  // toScreen(Rect{0,0,w,h}) from bodyOrigin = frameOrigin + kHeaderH (25 world px).
+  expectRectNear(pushes.front().rect, Rect{50, 75, 500, 500});
+  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::Line).empty());
 }
 
 TEST(RenderGraph, ParamRailFromInputOnly) {
@@ -368,6 +379,24 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   }
   ASSERT_LT(lastLine, calls.size());
   EXPECT_LT(lastLine, popIdx);
+}
+
+TEST(RenderGraph, EmptyFunctionPushesSingleBodyClip) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+
+  // Empty body: the body Subview still constructs (rails/ports render on it)
+  // before the early-return, so exactly one clip push + one matching pop, for
+  // the body rect. Same body rect the non-empty ClipWrapsBodyForFunctionWithNodes
+  // asserts: toScreen(Rect{0,0,w,h}) at bodyOrigin = frameOrigin + kHeaderH.
+  const auto pushes = opsOf(r.calls, DrawCall::Op::PushClip);
+  const auto pops = opsOf(r.calls, DrawCall::Op::PopClip);
+  ASSERT_EQ(pushes.size(), 1u);
+  ASSERT_EQ(pops.size(), 1u);
+  expectRectNear(pushes.front().rect, Rect{50, 75, 500, 500});
 }
 
 TEST(RenderGraph, DeterministicWithBodyAndWires) {

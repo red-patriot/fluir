@@ -25,14 +25,14 @@ namespace fluir::editor {
     pan = viewportSize * 0.5 - world.center() * scale;
   }
 
-  Subview::Subview(const Viewport& viewport, Vec2 originWorld, Rect bounds, Renderer& renderer) :
-    composed_{viewport.worldToScreen(originWorld), viewport.scale}, renderer_(renderer) {
-    renderer_.pushClip(toScreen(bounds));
+  Subview::Subview(const Viewport& viewport, Rect frameWorld, Renderer& renderer) :
+    composed_{viewport.worldToScreen(frameWorld.topLeft()), viewport.scale}, renderer_(renderer) {
+    renderer_.pushClip(toScreen(Rect{0, 0, frameWorld.w, frameWorld.h}));
   }
 
-  Subview::Subview(const Subview& parent, Vec2 originLocal, Rect bounds) :
-    composed_{parent.toScreen(originLocal), parent.composed_.scale}, renderer_(parent.renderer_) {
-    renderer_.pushClip(toScreen(bounds));
+  Subview::Subview(const Subview& parent, Rect frameLocal) :
+    composed_{parent.toScreen(frameLocal.topLeft()), parent.composed_.scale}, renderer_(parent.renderer_) {
+    renderer_.pushClip(toScreen(Rect{0, 0, frameLocal.w, frameLocal.h}));
   }
 
   Subview::~Subview() { renderer_.popClip(); }

@@ -34,12 +34,13 @@ namespace fluir::editor {
    *  nested clips intersect (the renderer's clip stack intersects on push). */
   class Subview {
    public:
-    /** Root: compose `viewport` with `originWorld`, clipped to local `bounds`. */
-    Subview(const Viewport& viewport, Vec2 originWorld, Rect bounds, Renderer& renderer);
-    /** Nested: compose `parent`'s transform with `originLocal`, expressed in
-     *  `parent`'s local world-pixel space, clipped to local `bounds`. Inherits
-     *  `parent`'s renderer. */
-    Subview(const Subview& parent, Vec2 originLocal, Rect bounds);
+    /** Root: compose `viewport` with `frameWorld`'s top-left origin, clipped to
+     *  `frameWorld`'s size. */
+    Subview(const Viewport& viewport, Rect frameWorld, Renderer& renderer);
+    /** Nested: compose `parent`'s transform with `frameLocal`'s top-left origin,
+     *  expressed in `parent`'s local world-pixel space, clipped to `frameLocal`'s
+     *  size. Inherits `parent`'s renderer. */
+    Subview(const Subview& parent, Rect frameLocal);
     ~Subview();
 
     Subview(const Subview&) = delete;
@@ -49,7 +50,7 @@ namespace fluir::editor {
     // No move ctor (reference member). `child()` returns by value via C++17
     // guaranteed copy elision, so no move is needed.
 
-    [[nodiscard]] Subview child(Vec2 originLocal, Rect bounds) const { return Subview{*this, originLocal, bounds}; }
+    [[nodiscard]] Subview child(Rect frameLocal) const { return Subview{*this, frameLocal}; }
 
     Vec2 toScreen(Vec2 local) const { return composed_.worldToScreen(local); }
     Rect toScreen(Rect local) const {

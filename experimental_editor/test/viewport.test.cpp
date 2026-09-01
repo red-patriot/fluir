@@ -113,21 +113,22 @@ namespace {
     EXPECT_EQ(r.center(), (Vec2{30.0, 50.0}));
   }
 
-  // Any bounds; these cases only exercise the transform, not the clip rect.
-  constexpr Rect kAnyBounds{0.0, 0.0, 1000.0, 1000.0};
+  // Any frame; these cases only exercise the transform, not the clip rect. The
+  // frame corners at (0,0) so its top-left origin is unchanged by the fold.
+  constexpr Rect kAnyFrame{0.0, 0.0, 1000.0, 1000.0};
 
   TEST(Subview, RootComposesViewportWithOrigin) {
     ClipCountingRenderer out;
     {
       const Viewport vp;
-      const Subview view{vp, Vec2{30.0, 40.0}, kAnyBounds, out};
+      const Subview view{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
       const Vec2 s = view.toScreen(Vec2{5.0, 7.0});
       EXPECT_NEAR(s.x, 35.0, 1e-6);
       EXPECT_NEAR(s.y, 47.0, 1e-6);
     }
     {
       const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
-      const Subview view{vp, Vec2{30.0, 40.0}, kAnyBounds, out};
+      const Subview view{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
       // (local + origin) * scale + pan
       const Vec2 s = view.toScreen(Vec2{5.0, 7.0});
       EXPECT_NEAR(s.x, (5.0 + 30.0) * 2.0 + 100.0, 1e-6);
@@ -138,7 +139,7 @@ namespace {
   TEST(Subview, RectToScreenScalesSizeOnly) {
     ClipCountingRenderer out;
     const Viewport vp{.pan = {10.0, 20.0}, .scale = 3.0};
-    const Subview view{vp, Vec2{0.0, 0.0}, kAnyBounds, out};
+    const Subview view{vp, kAnyFrame, out};
     const Rect r = view.toScreen(Rect{4.0, 5.0, 6.0, 8.0});
     EXPECT_NEAR(r.x, 4.0 * 3.0 + 10.0, 1e-6);
     EXPECT_NEAR(r.y, 5.0 * 3.0 + 20.0, 1e-6);
@@ -149,12 +150,12 @@ namespace {
   TEST(Subview, ChildOriginAddsOnComposedTransform) {
     ClipCountingRenderer out;
     const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
-    const Subview parent{vp, Vec2{30.0, 40.0}, kAnyBounds, out};
+    const Subview parent{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
 
-    const Subview same = parent.child(Vec2{0.0, 0.0}, kAnyBounds);
+    const Subview same = parent.child(kAnyFrame);
     EXPECT_EQ(same.toScreen(Vec2{5.0, 7.0}), parent.toScreen(Vec2{5.0, 7.0}));
 
-    const Subview shifted = parent.child(Vec2{10.0, 0.0}, kAnyBounds);
+    const Subview shifted = parent.child(Rect{10.0, 0.0, 1000.0, 1000.0});
     const Vec2 a = parent.toScreen(Vec2{5.0, 7.0});
     const Vec2 b = shifted.toScreen(Vec2{5.0, 7.0});
     EXPECT_NEAR(b.x - a.x, 10.0 * vp.scale, 1e-6);
@@ -165,11 +166,11 @@ namespace {
     ClipCountingRenderer out;
     {
       const Viewport vp;
-      const Subview view{vp, Vec2{0.0, 0.0}, Rect{0.0, 0.0, 10.0, 10.0}, out};
+      const Subview view{vp, Rect{0.0, 0.0, 10.0, 10.0}, out};
       EXPECT_EQ(out.pushes, 1);
       EXPECT_EQ(out.pops, 0);
       {
-        const Subview nested = view.child(Vec2{0.0, 0.0}, Rect{0.0, 0.0, 5.0, 5.0});
+        const Subview nested = view.child(Rect{0.0, 0.0, 5.0, 5.0});
         EXPECT_EQ(out.pushes, 2);
         EXPECT_EQ(out.pops, 0);
       }
@@ -182,9 +183,9 @@ namespace {
   TEST(Subview, ClipRectIsBoundsInScreenSpace) {
     ClipCountingRenderer out;
     const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
-    const Subview view{vp, Vec2{30.0, 40.0}, Rect{0.0, 0.0, 10.0, 20.0}, out};
+    const Subview view{vp, Rect{30.0, 40.0, 10.0, 20.0}, out};
     EXPECT_EQ(out.pushes, 1);
-    // bounds top-left (0,0) local -> ((0+30)*2+100, (0+40)*2+50); size scaled by 2.
+    // frame top-left (30,40) world -> ((0+30)*2+100, (0+40)*2+50); size scaled by 2.
     EXPECT_NEAR(out.lastClip.x, 160.0, 1e-6);
     EXPECT_NEAR(out.lastClip.y, 130.0, 1e-6);
     EXPECT_NEAR(out.lastClip.w, 20.0, 1e-6);

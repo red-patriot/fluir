@@ -32,16 +32,15 @@ namespace fluir::editor {
     };
     using PortMap = std::unordered_map<fluir::ID, PortSet>;
 
-    void drawParamRail(const pt::FunctionDecl::InputBlock& input);
-    void drawReturnRail(const pt::FunctionDecl::Return& ret);
+    void drawParamRail(Vec2 origin, const pt::FunctionDecl::InputBlock& input);
+    void drawReturnRail(Vec2 origin, const pt::FunctionDecl::Return& ret, int width);
 
     Viewport viewport_;
     Renderer& renderer_;
 
-    // Current function's world origin, logical width, and ports
+    // Current function's ports, and the body Subview.
     PortMap ports_;
-    Vec2 origin_{};
-    int width_ = 0;
+    const Subview* body_ = nullptr;
   };
 
   /** Walk `tree` and draw to renderer */

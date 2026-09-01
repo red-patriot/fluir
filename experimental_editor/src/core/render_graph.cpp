@@ -1,6 +1,7 @@
 #include "editor/core/render_graph.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -32,12 +33,18 @@ namespace fluir::editor {
 
     Rect dotRect(Vec2 anchor) { return {anchor.x - kPortDot * 0.5, anchor.y - kPortDot * 0.5, kPortDot, kPortDot}; }
 
+    // Chrome (frame / header / name / rails) draws with no clip of its own, so it
+    // uses the bare viewport transform rather than a Subview (which always
+    // clips). `world == origin + local`.
     Vec2 toScreen(const Viewport& vp, Vec2 world) { return vp.worldToScreen(world); }
 
     Rect toScreen(const Viewport& vp, Rect world) {
       const Vec2 tl = vp.worldToScreen(world.topLeft());
       return {tl.x, tl.y, world.w * vp.scale, world.h * vp.scale};
     }
+
+    // Shift a local-space rect by the function's world origin.
+    Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }
 
     // Ported from editor/client NodeInOut.tsx `positionFunc`, which returns the
     // CSS-translate percentage `count == 1 ? 0 : 100 * count * (i/(count-1) - 0.5)`
@@ -87,13 +94,12 @@ namespace fluir::editor {
       return funcs;
     }
 
-    // Spread `count` port dots down an edge at world x == `edgeX`, pushing each
-    // anchor (top-to-bottom) into `slot`.
-    void emitEdgeDots(
-      double edgeX, const Rect& nodeRect, int count, const Viewport& vp, Renderer& out, std::vector<Vec2>& slot) {
+    // Spread `count` port dots down an edge at local x == `edgeX`, pushing each
+    // anchor (top-to-bottom, in `view`-local coords) into `slot`.
+    void emitEdgeDots(double edgeX, const Rect& nodeRect, int count, const Subview& view, std::vector<Vec2>& slot) {
       for (int i = 0; i < count; ++i) {
         const Vec2 anchor{edgeX, nodeRect.y + portFraction(count, i) * nodeRect.h};
-        out.fillRect(toScreen(vp, dotRect(anchor)));
+        view.renderer().fillRect(view.toScreen(dotRect(anchor)));
         slot.push_back(anchor);
       }
     }
@@ -111,30 +117,31 @@ namespace fluir::editor {
 
   void GraphRenderer::operator()(const pt::FunctionDecl& decl) {
     const FlowGraphLocation& loc = decl.location;
-    origin_ = Vec2{static_cast<double>(loc.x) * UNIT_PX, static_cast<double>(loc.y) * UNIT_PX};
-    width_ = loc.width;
+    const Vec2 origin{static_cast<double>(loc.x) * UNIT_PX, static_cast<double>(loc.y) * UNIT_PX};
+    const double w = static_cast<double>(loc.width) * UNIT_PX;
+    const double h = static_cast<double>(loc.height) * UNIT_PX;
 
-    const Rect frame{
-      origin_.x, origin_.y, static_cast<double>(loc.width) * UNIT_PX, static_cast<double>(loc.height) * UNIT_PX};
-    renderer_.drawRect(toScreen(viewport_, frame));
-
-    const Rect header{origin_.x, origin_.y, static_cast<double>(loc.width) * UNIT_PX, kHeaderH};
-    renderer_.fillRect(toScreen(viewport_, header));
-    renderer_.drawText(toScreen(viewport_, Vec2{origin_.x + kTextPad, origin_.y + kTextPad}), decl.name);
+    // Chrome: no clip of its own (an empty function pushes zero clip regions).
+    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, h})));         // frame
+    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, kHeaderH})));  // header
+    renderer_.drawText(toScreen(viewport_, Vec2{origin.x + kTextPad, origin.y + kTextPad}), decl.name);
 
     ports_.clear();
     if (decl.input) {
-      drawParamRail(*decl.input);
+      drawParamRail(origin, *decl.input);
     }
     if (decl.output && decl.output->ret) {
-      drawReturnRail(*decl.output->ret);
+      drawReturnRail(origin, *decl.output->ret, loc.width);
     }
 
     if (decl.body.nodes.empty() && decl.body.conduits.empty()) {
       return;
     }
 
-    renderer_.pushClip(toScreen(viewport_, frame));
+    // Body: a Subview clipped to the frame; leaves draw in coords local to it.
+    const Subview body{viewport_, origin, Rect{0, 0, w, h}, renderer_};  // pushClip here
+    const Subview* const prevBody = body_;
+    body_ = &body;
 
     std::vector<const pt::Node*> nodes;
     nodes.reserve(decl.body.nodes.size());
@@ -168,68 +175,73 @@ namespace fluir::editor {
       (*this)(*conduit);
     }
 
-    renderer_.popClip();
+    body_ = prevBody;
+    // `body` destructs at scope exit -> popClip, after the last conduit line.
   }
 
   void GraphRenderer::operator()(const pt::Binary& binary) {
+    assert(body_);
     const FlowGraphLocation& loc = binary.location;
-    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
-                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+    const Rect nodeRect{static_cast<double>(loc.x) * UNIT_PX,
+                        static_cast<double>(loc.y) * UNIT_PX,
                         static_cast<double>(loc.width) * UNIT_PX,
                         static_cast<double>(loc.height) * UNIT_PX};
-    renderer_.drawRect(toScreen(viewport_, nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect));
 
     PortSet& set = ports_[binary.id];
     const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
 
-    renderer_.drawText(toScreen(viewport_, textPos), stringify(binary.op));
-    emitEdgeDots(nodeRect.x, nodeRect, 2, viewport_, renderer_, set.inputs);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), stringify(binary.op));
+    emitEdgeDots(nodeRect.x, nodeRect, 2, *body_, set.inputs);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, *body_, set.outputs);
   }
 
   void GraphRenderer::operator()(const pt::Unary& unary) {
+    assert(body_);
     const FlowGraphLocation& loc = unary.location;
-    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
-                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+    const Rect nodeRect{static_cast<double>(loc.x) * UNIT_PX,
+                        static_cast<double>(loc.y) * UNIT_PX,
                         static_cast<double>(loc.width) * UNIT_PX,
                         static_cast<double>(loc.height) * UNIT_PX};
-    renderer_.drawRect(toScreen(viewport_, nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect));
 
     PortSet& set = ports_[unary.id];
     const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
 
-    renderer_.drawText(toScreen(viewport_, textPos), stringify(unary.op));
-    emitEdgeDots(nodeRect.x, nodeRect, 1, viewport_, renderer_, set.inputs);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), stringify(unary.op));
+    emitEdgeDots(nodeRect.x, nodeRect, 1, *body_, set.inputs);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, *body_, set.outputs);
   }
 
   void GraphRenderer::operator()(const pt::Constant& constant) {
+    assert(body_);
     const FlowGraphLocation& loc = constant.location;
-    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
-                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+    const Rect nodeRect{static_cast<double>(loc.x) * UNIT_PX,
+                        static_cast<double>(loc.y) * UNIT_PX,
                         static_cast<double>(loc.width) * UNIT_PX,
                         static_cast<double>(loc.height) * UNIT_PX};
-    renderer_.drawRect(toScreen(viewport_, nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect));
 
     PortSet& set = ports_[constant.id];
     const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
 
-    renderer_.drawText(toScreen(viewport_, textPos), renderLiteral(constant.value));
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), renderLiteral(constant.value));
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, *body_, set.outputs);
   }
 
   void GraphRenderer::operator()(const pt::Call& call) {
+    assert(body_);
     const FlowGraphLocation& loc = call.location;
-    const Rect nodeRect{origin_.x + static_cast<double>(loc.x) * UNIT_PX,
-                        origin_.y + static_cast<double>(loc.y) * UNIT_PX,
+    const Rect nodeRect{static_cast<double>(loc.x) * UNIT_PX,
+                        static_cast<double>(loc.y) * UNIT_PX,
                         static_cast<double>(loc.width) * UNIT_PX,
                         static_cast<double>(loc.height) * UNIT_PX};
-    renderer_.drawRect(toScreen(viewport_, nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect));
 
     PortSet& set = ports_[call.id];
     const Vec2 textPos{nodeRect.x + kTextPad, nodeRect.y + kTextPad};
 
-    renderer_.drawText(toScreen(viewport_, textPos), call.target);
+    renderer_.drawText(body_->toScreen(textPos), call.target);
 
     std::vector<const pt::Call::Argument*> args;
     args.reserve(call.arguments.size());
@@ -245,18 +257,19 @@ namespace fluir::editor {
     // input handle sits at the row's vertical centre.
     for (std::size_t k = 0; k < args.size(); ++k) {
       const double rowTop = nodeRect.y + (static_cast<double>(k) + 1.0) * kRailStep;
-      renderer_.drawText(toScreen(viewport_, Vec2{nodeRect.x + kTextPad, rowTop + kTextPad}), args[k]->name);
+      renderer_.drawText(body_->toScreen(Vec2{nodeRect.x + kTextPad, rowTop + kTextPad}), args[k]->name);
       const Vec2 anchor{nodeRect.x, rowTop + kRailStep * 0.5};
-      renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+      renderer_.fillRect(body_->toScreen(dotRect(anchor)));
       set.inputs.push_back(anchor);
     }
 
     if (call._return.has_value()) {
-      emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, viewport_, renderer_, set.outputs);
+      emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, *body_, set.outputs);
     }
   }
 
   void GraphRenderer::operator()(const pt::Conduit& conduit) {
+    assert(body_);
     const auto sourceIt = ports_.find(conduit.input);
     if (sourceIt == ports_.end() || sourceIt->second.outputs.empty()) {
       return;
@@ -274,11 +287,11 @@ namespace fluir::editor {
         continue;
       }
       const Vec2 target = targetIt->second.inputs[static_cast<std::size_t>(child.index)];
-      renderer_.drawLine(toScreen(viewport_, source), toScreen(viewport_, target));
+      renderer_.drawLine(body_->toScreen(source), body_->toScreen(target));
     }
   }
 
-  void GraphRenderer::drawParamRail(const pt::FunctionDecl::InputBlock& input) {
+  void GraphRenderer::drawParamRail(Vec2 origin, const pt::FunctionDecl::InputBlock& input) {
     std::vector<const pt::FunctionDecl::Parameter*> params;
     params.reserve(input.parameters.size());
     for (const auto& param : input.parameters) {
@@ -291,25 +304,24 @@ namespace fluir::editor {
 
     for (std::size_t i = 0; i < params.size(); ++i) {
       const pt::FunctionDecl::Parameter& param = *params[i];
-      const Rect rect{origin_.x, origin_.y + (static_cast<double>(i) + 1.0) * kRailStep, kParamW, kRailStep};
-      renderer_.drawRect(toScreen(viewport_, rect));
-      renderer_.drawText(toScreen(viewport_, Vec2{rect.x + kTextPad, rect.y + kTextPad}),
+      const Rect rect{0.0, (static_cast<double>(i) + 1.0) * kRailStep, kParamW, kRailStep};  // local
+      renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
+      renderer_.drawText(toScreen(viewport_, Vec2{origin.x + rect.x + kTextPad, origin.y + rect.y + kTextPad}),
                          param.typeName + " " + param.name);
-      const Vec2 anchor{rect.x + rect.w, rect.y + rect.h * 0.5};
-      renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+      const Vec2 anchor{rect.x + rect.w, rect.y + rect.h * 0.5};  // local
+      renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor))));
       ports_[param.id].outputs.push_back(anchor);
     }
   }
 
-  void GraphRenderer::drawReturnRail(const pt::FunctionDecl::Return& ret) {
-    const Rect rect{origin_.x + (static_cast<double>(width_) - kReturnInsetLogical) * UNIT_PX,
-                    origin_.y + kRailStep,
-                    kRailStep,
-                    kRailStep};
-    renderer_.drawRect(toScreen(viewport_, rect));
-    renderer_.drawText(toScreen(viewport_, Vec2{rect.x + kTextPad, rect.y + kTextPad}), ret.typeName);
-    const Vec2 anchor{rect.x, rect.y + rect.h * 0.5};
-    renderer_.fillRect(toScreen(viewport_, dotRect(anchor)));
+  void GraphRenderer::drawReturnRail(Vec2 origin, const pt::FunctionDecl::Return& ret, int width) {
+    const Rect rect{
+      (static_cast<double>(width) - kReturnInsetLogical) * UNIT_PX, kRailStep, kRailStep, kRailStep};  // local
+    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
+    renderer_.drawText(toScreen(viewport_, Vec2{origin.x + rect.x + kTextPad, origin.y + rect.y + kTextPad}),
+                       ret.typeName);
+    const Vec2 anchor{rect.x, rect.y + rect.h * 0.5};  // local
+    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor))));
     ports_[ret.id].inputs.push_back(anchor);
   }
 

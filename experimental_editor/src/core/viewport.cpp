@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "editor/core/renderer.hpp"
+
 namespace fluir::editor {
 
   Vec2 Viewport::worldToScreen(Vec2 world) const { return world * scale + pan; }
@@ -22,5 +24,17 @@ namespace fluir::editor {
     }
     pan = viewportSize * 0.5 - world.center() * scale;
   }
+
+  Subview::Subview(const Viewport& viewport, Vec2 originWorld, Rect bounds, Renderer& renderer) :
+    composed_{viewport.worldToScreen(originWorld), viewport.scale}, renderer_(renderer) {
+    renderer_.pushClip(toScreen(bounds));
+  }
+
+  Subview::Subview(const Subview& parent, Vec2 originLocal, Rect bounds) :
+    composed_{parent.toScreen(originLocal), parent.composed_.scale}, renderer_(parent.renderer_) {
+    renderer_.pushClip(toScreen(bounds));
+  }
+
+  Subview::~Subview() { renderer_.popClip(); }
 
 }  // namespace fluir::editor

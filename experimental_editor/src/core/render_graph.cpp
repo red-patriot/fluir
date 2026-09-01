@@ -127,21 +127,24 @@ namespace fluir::editor {
     renderer_.drawText(toScreen(viewport_, Vec2{origin.x + kTextPad, origin.y + kTextPad}), decl.name);
 
     ports_.clear();
+
+    // Body content is offset below the header band so nodes don't render over it.
+    auto bodyOrigin = origin + Vec2{0.0, kHeaderH};
+    const Subview body{viewport_, bodyOrigin, Rect{0, 0, w, h}, renderer_};
+    const Subview* const prevBody = body_;
+    body_ = &body;
+
     if (decl.input) {
-      drawParamRail(origin, *decl.input);
+      drawParamRail(bodyOrigin, *decl.input);
     }
     if (decl.output && decl.output->ret) {
-      drawReturnRail(origin, *decl.output->ret, loc.width);
+      drawReturnRail(bodyOrigin, *decl.output->ret, loc.width);
     }
 
     if (decl.body.nodes.empty() && decl.body.conduits.empty()) {
+      body_ = prevBody;  // TODO: use scope guard here
       return;
     }
-
-    // Body: a Subview clipped to the frame; leaves draw in coords local to it.
-    const Subview body{viewport_, origin, Rect{0, 0, w, h}, renderer_};  // pushClip here
-    const Subview* const prevBody = body_;
-    body_ = &body;
 
     std::vector<const pt::Node*> nodes;
     nodes.reserve(decl.body.nodes.size());
@@ -304,7 +307,7 @@ namespace fluir::editor {
 
     for (std::size_t i = 0; i < params.size(); ++i) {
       const pt::FunctionDecl::Parameter& param = *params[i];
-      const Rect rect{0.0, (static_cast<double>(i) + 1.0) * kRailStep, kParamW, kRailStep};  // local
+      const Rect rect{0.0, static_cast<double>(i) * kRailStep, kParamW, kRailStep};  // local
       renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
       renderer_.drawText(toScreen(viewport_, Vec2{origin.x + rect.x + kTextPad, origin.y + rect.y + kTextPad}),
                          param.typeName + " " + param.name);
@@ -315,8 +318,7 @@ namespace fluir::editor {
   }
 
   void GraphRenderer::drawReturnRail(Vec2 origin, const pt::FunctionDecl::Return& ret, int width) {
-    const Rect rect{
-      (static_cast<double>(width) - kReturnInsetLogical) * UNIT_PX, kRailStep, kRailStep, kRailStep};  // local
+    const Rect rect{(static_cast<double>(width) - kReturnInsetLogical) * UNIT_PX, 0, kRailStep, kRailStep};
     renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
     renderer_.drawText(toScreen(viewport_, Vec2{origin.x + rect.x + kTextPad, origin.y + rect.y + kTextPad}),
                        ret.typeName);

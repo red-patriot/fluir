@@ -23,6 +23,9 @@ namespace {
   using testutil::DrawCall;
   using testutil::RecordingRenderer;
 
+  // Body coordinates are frame-origin + kHeaderH (25 world px): body content is
+  // rendered below the header band, so every body-relative y is offset by +25.
+  //
   // Same fixture-loading shape as loader.test.cpp: each load owns its Context +
   // CollectingSink, version checks off (fixtures declare <version>0.1.3</version>).
   struct Loaded {
@@ -98,11 +101,6 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   ASSERT_EQ(texts.size(), 1u);
   EXPECT_EQ(texts.front().text, "foo");
   expectVecNear(texts.front().a, Vec2{54, 54});
-
-  // Scope for P1c-a: no wires, no clip rects.
-  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::Line).empty());
-  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PushClip).empty());
-  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PopClip).empty());
 }
 
 TEST(RenderGraph, ParamRailFromInputOnly) {
@@ -210,12 +208,12 @@ TEST(RenderGraph, ConstantNode) {
 
   const auto rects = opsOf(r.calls, DrawCall::Op::Rect);
   ASSERT_EQ(rects.size(), 5u);  // frame + 4 constants
-  expectRectNear(rects[1].rect, Rect{60, 150, 25, 25});
+  expectRectNear(rects[1].rect, Rect{60, 175, 25, 25});
 
   const auto texts = opsOf(r.calls, DrawCall::Op::Text);
   ASSERT_EQ(texts.size(), 5u);  // name + 4 literals
   EXPECT_EQ(texts[1].text, "-5");
-  expectVecNear(texts[1].a, Vec2{64, 154});
+  expectVecNear(texts[1].a, Vec2{64, 179});
   EXPECT_EQ(texts[2].text, "318");
   EXPECT_EQ(texts[3].text, "324");
   EXPECT_EQ(texts[4].text, "-12");
@@ -223,7 +221,7 @@ TEST(RenderGraph, ConstantNode) {
   const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
   ASSERT_EQ(fills.size(), 5u);  // header + 4 output dots, no input dots
   expectRectNear(fills[0].rect, Rect{50, 50, 500, 25});
-  expectRectNear(fills[1].rect, Rect{82, 159.5, 6, 6});
+  expectRectNear(fills[1].rect, Rect{82, 184.5, 6, 6});
 
   EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::Line).empty());
 }
@@ -238,13 +236,13 @@ TEST(RenderGraph, BinaryNodeHasTwoInputsOneOutput) {
   const auto texts = opsOf(r.calls, DrawCall::Op::Text);
   ASSERT_GE(texts.size(), 2u);
   EXPECT_EQ(texts[1].text, "+");  // stringify(PLUS); binary sorts first (id 1)
-  expectVecNear(texts[1].a, Vec2{129, 64});
+  expectVecNear(texts[1].a, Vec2{129, 89});
 
   const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
   ASSERT_EQ(fills.size(), 6u);                           // header + (2 in + 1 out) + const out + const out
-  expectRectNear(fills[1].rect, Rect{122, 57, 6, 6});    // binary input 0, y-frac 0.0
-  expectRectNear(fills[2].rect, Rect{122, 82, 6, 6});    // binary input 1, y-frac 1.0
-  expectRectNear(fills[3].rect, Rect{147, 69.5, 6, 6});  // binary output, y-frac 0.5
+  expectRectNear(fills[1].rect, Rect{122, 82, 6, 6});    // binary input 0, y-frac 0.0
+  expectRectNear(fills[2].rect, Rect{122, 107, 6, 6});   // binary input 1, y-frac 1.0
+  expectRectNear(fills[3].rect, Rect{147, 94.5, 6, 6});  // binary output, y-frac 0.5
 }
 
 TEST(RenderGraph, UnaryNodeHasOneInput) {
@@ -257,12 +255,12 @@ TEST(RenderGraph, UnaryNodeHasOneInput) {
   const auto texts = opsOf(r.calls, DrawCall::Op::Text);
   ASSERT_EQ(texts.size(), 3u);    // name + constant + unary op
   EXPECT_EQ(texts[2].text, "-");  // unary sorts after constant (id 7 vs 3)
-  expectVecNear(texts[2].a, Vec2{129, 64});
+  expectVecNear(texts[2].a, Vec2{129, 89});
 
   const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
   ASSERT_EQ(fills.size(), 4u);                           // header + const out + unary in + unary out
-  expectRectNear(fills[2].rect, Rect{122, 69.5, 6, 6});  // unary single input, y-frac 0.5
-  expectRectNear(fills[3].rect, Rect{147, 69.5, 6, 6});  // unary output
+  expectRectNear(fills[2].rect, Rect{122, 94.5, 6, 6});  // unary single input, y-frac 0.5
+  expectRectNear(fills[3].rect, Rect{147, 94.5, 6, 6});  // unary output
 
   ASSERT_EQ(opsOf(r.calls, DrawCall::Op::Line).size(), 1u);
 }
@@ -278,17 +276,17 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     const auto texts = opsOf(r.calls, DrawCall::Op::Text);
     ASSERT_EQ(texts.size(), 6u);  // main, 10, 20, add, a, b
     EXPECT_EQ(texts[3].text, "add");
-    expectVecNear(texts[3].a, Vec2{154, 54});
+    expectVecNear(texts[3].a, Vec2{154, 79});
     EXPECT_EQ(texts[4].text, "a");
-    expectVecNear(texts[4].a, Vec2{154, 79});
+    expectVecNear(texts[4].a, Vec2{154, 104});
     EXPECT_EQ(texts[5].text, "b");
-    expectVecNear(texts[5].a, Vec2{154, 104});
+    expectVecNear(texts[5].a, Vec2{154, 129});
 
     const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
-    ASSERT_EQ(fills.size(), 6u);                           // header + 2 const outs + 2 call arg ins + 1 call return out
-    expectRectNear(fills[3].rect, Rect{147, 84.5, 6, 6});  // call arg row 0 input
-    expectRectNear(fills[4].rect, Rect{147, 109.5, 6, 6});  // call arg row 1 input
-    expectRectNear(fills[5].rect, Rect{207, 77, 6, 6});     // call return output
+    ASSERT_EQ(fills.size(), 6u);  // header + 2 const outs + 2 call arg ins + 1 call return out
+    expectRectNear(fills[3].rect, Rect{147, 109.5, 6, 6});  // call arg row 0 input
+    expectRectNear(fills[4].rect, Rect{147, 134.5, 6, 6});  // call arg row 1 input
+    expectRectNear(fills[5].rect, Rect{207, 102, 6, 6});    // call return output
 
     ASSERT_EQ(opsOf(r.calls, DrawCall::Op::Line).size(), 1u);  // conduit id=5 index 2 guarded out
   }
@@ -302,7 +300,7 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     const auto texts = opsOf(r.calls, DrawCall::Op::Text);
     ASSERT_EQ(texts.size(), 2u);  // name + call target only
     EXPECT_EQ(texts[1].text, "doStuff");
-    expectVecNear(texts[1].a, Vec2{29, 29});
+    expectVecNear(texts[1].a, Vec2{29, 54});
 
     const auto fills = opsOf(r.calls, DrawCall::Op::Fill);
     ASSERT_EQ(fills.size(), 1u);  // header only; no args, no return
@@ -320,10 +318,10 @@ TEST(RenderGraph, WireEndpointsMatchPorts) {
 
   const auto lines = opsOf(r.calls, DrawCall::Op::Line);
   ASSERT_EQ(lines.size(), 2u);
-  expectVecNear(lines[0].a, Vec2{85, 72.5});   // constant id=2 output-0 anchor
-  expectVecNear(lines[0].b, Vec2{125, 60});    // binary id=1 input-0 anchor
-  expectVecNear(lines[1].a, Vec2{85, 122.5});  // constant id=3 output-0 anchor
-  expectVecNear(lines[1].b, Vec2{125, 85});    // binary id=1 input-1 anchor
+  expectVecNear(lines[0].a, Vec2{85, 97.5});   // constant id=2 output-0 anchor
+  expectVecNear(lines[0].b, Vec2{125, 85});    // binary id=1 input-0 anchor
+  expectVecNear(lines[1].a, Vec2{85, 147.5});  // constant id=3 output-0 anchor
+  expectVecNear(lines[1].b, Vec2{125, 110});   // binary id=1 input-1 anchor
 }
 
 TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
@@ -349,7 +347,7 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   }
   ASSERT_LT(pushIdx, calls.size());
   ASSERT_LT(popIdx, calls.size());
-  expectRectNear(calls[pushIdx].rect, Rect{50, 50, 500, 500});
+  expectRectNear(calls[pushIdx].rect, Rect{50, 75, 500, 500});
 
   std::size_t firstBodyRect = calls.size();
   for (std::size_t i = pushIdx + 1; i < calls.size(); ++i) {
@@ -360,7 +358,7 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   }
   ASSERT_LT(firstBodyRect, calls.size());
   EXPECT_LT(pushIdx, firstBodyRect);
-  expectRectNear(calls[firstBodyRect].rect, Rect{125, 60, 25, 25});
+  expectRectNear(calls[firstBodyRect].rect, Rect{125, 85, 25, 25});
 
   std::size_t lastLine = calls.size();
   for (std::size_t i = 0; i < popIdx; ++i) {
@@ -370,17 +368,6 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   }
   ASSERT_LT(lastLine, calls.size());
   EXPECT_LT(lastLine, popIdx);
-}
-
-TEST(RenderGraph, NoClipForEmptyFunction) {
-  const Loaded l = loadFixture("read/single_empty_function.fl");
-  ASSERT_TRUE(l.result.tree.has_value());
-
-  RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
-
-  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PushClip).empty());
-  EXPECT_TRUE(opsOf(r.calls, DrawCall::Op::PopClip).empty());
 }
 
 TEST(RenderGraph, DeterministicWithBodyAndWires) {

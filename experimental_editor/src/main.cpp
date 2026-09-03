@@ -8,6 +8,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/app.hpp"
 #include "editor/core/collecting_sink.hpp"
+#include "editor/core/editor_context.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/sdl_renderer.hpp"
 
@@ -18,6 +19,8 @@ int main(int argc, char* argv[]) {
   }
 
   const std::filesystem::path path = argv[1];
+
+  fluir::editor::EditorContext editorCtx;
 
   fluir::editor::CollectingSink sink;
   fluir::Context ctx{
@@ -43,7 +46,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  SDL_Window* window = SDL_CreateWindow(path.filename().string().c_str(), 1280, 800, SDL_WINDOW_RESIZABLE);
+  SDL_Window* window = SDL_CreateWindow(
+    path.filename().string().c_str(), editorCtx.window.width, editorCtx.window.height, SDL_WINDOW_RESIZABLE);
   if (!window) {
     fmt::print(stderr, "SDL_CreateWindow failed: {}\n", SDL_GetError());
     SDL_Quit();
@@ -58,8 +62,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  fluir::editor::SdlRenderer renderer{sdl};
-  const int rc = fluir::editor::run(*result.tree, renderer, renderer.outputSize());
+  fluir::editor::SdlRenderer renderer{sdl, editorCtx.theme};
+  const int rc = fluir::editor::run(editorCtx, *result.tree, renderer, renderer.outputSize());
 
   SDL_DestroyRenderer(sdl);
   SDL_DestroyWindow(window);

@@ -6,10 +6,6 @@ namespace fluir::editor {
 
   class Renderer;
 
-  /** Logical-unit -> world-pixel scale. */
-  // TODO: Delete this or make it a setting
-  inline constexpr double UNIT_PX = 5.0;
-
   /** Pan + zoom state. screen = world * scale + pan. */
   struct Viewport {
     Vec2 pan;

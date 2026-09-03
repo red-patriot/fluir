@@ -26,6 +26,12 @@ namespace fluir::editor {
 
   }  // namespace
 
+  SdlRenderer::SdlRenderer(SDL_Renderer* renderer, EditorContext::Theme theme) : renderer_(renderer), theme_(theme) {
+    applyScale();
+  }
+
+  void SdlRenderer::setColor(Color c) { SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a); }
+
   void SdlRenderer::applyScale() {
     SDL_Window* w = SDL_GetRenderWindow(renderer_);
     float dpi = SDL_GetWindowDisplayScale(w);
@@ -45,7 +51,7 @@ namespace fluir::editor {
   }
 
   void SdlRenderer::beginFrame() {
-    SDL_SetRenderDrawColor(renderer_, 24, 26, 31, 255);
+    setColor(theme_.background);
     SDL_RenderClear(renderer_);
   }
 
@@ -53,18 +59,18 @@ namespace fluir::editor {
 
   void SdlRenderer::drawRect(Rect screen) {
     const SDL_FRect r = toFRect(screen);
-    SDL_SetRenderDrawColor(renderer_, 200, 200, 210, 255);
+    setColor(theme_.rectStroke);
     SDL_RenderRect(renderer_, &r);
   }
 
   void SdlRenderer::fillRect(Rect screen) {
     const SDL_FRect r = toFRect(screen);
-    SDL_SetRenderDrawColor(renderer_, 120, 120, 140, 255);
+    setColor(theme_.fill);
     SDL_RenderFillRect(renderer_, &r);
   }
 
   void SdlRenderer::drawLine(Vec2 a, Vec2 b) {
-    SDL_SetRenderDrawColor(renderer_, 150, 180, 220, 255);
+    setColor(theme_.line);
     SDL_RenderLine(
       renderer_, static_cast<float>(a.x), static_cast<float>(a.y), static_cast<float>(b.x), static_cast<float>(b.y));
   }
@@ -72,7 +78,7 @@ namespace fluir::editor {
   void SdlRenderer::drawText(Vec2 topLeft, std::string_view text) {
     // SDL's built-in 8px debug font. Fixed screen size (does not scale with
     // zoom); a real glyph atlas is a later phase.
-    SDL_SetRenderDrawColor(renderer_, 225, 225, 235, 255);
+    setColor(theme_.text);
     const std::string str{text};
     SDL_RenderDebugText(renderer_, static_cast<float>(topLeft.x), static_cast<float>(topLeft.y), str.c_str());
   }

@@ -5,6 +5,7 @@
 
 #include <SDL3/SDL.h>
 
+#include "editor/core/editor_context.hpp"
 #include "editor/core/renderer.hpp"
 
 namespace fluir::editor {
@@ -13,7 +14,7 @@ namespace fluir::editor {
    *  Renderer contract. Text is a no-op until the glyph atlas (P2b). */
   class SdlRenderer final : public Renderer {
    public:
-    explicit SdlRenderer(SDL_Renderer* renderer) : renderer_(renderer) { applyScale(); }
+    SdlRenderer(SDL_Renderer* renderer, EditorContext::Theme theme);
 
     void beginFrame() override;
     void endFrame() override;
@@ -30,7 +31,11 @@ namespace fluir::editor {
      *  Idempotent and responds automatically to a monitor/scale change. */
     void applyScale();
 
+    /** Set the SDL draw color from a theme Color. */
+    void setColor(Color c);
+
     SDL_Renderer* renderer_;
+    EditorContext::Theme theme_;
     float dpi_ = 1.0f;
     std::vector<SDL_Rect> clipStack_;
   };

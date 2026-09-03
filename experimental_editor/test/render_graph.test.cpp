@@ -49,6 +49,8 @@ namespace {
     fluir::editor::LoadResult result;
   };
 
+  const fluir::editor::EditorContext kCtx;
+
   Loaded loadFixture(const std::string& relPath) {
     Loaded l;
     fluir::Context ctx{
@@ -70,7 +72,7 @@ TEST(RenderGraph, EmptyOfFunctionsEmitsNoFrames) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(r.calls.empty());
 }
@@ -80,7 +82,7 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 500, 500}));
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));
@@ -101,7 +103,7 @@ TEST(RenderGraph, ParamRailFromInputOnly) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 500, 500}));  // frame
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 75, 75, 25}));    // param a rail slot
@@ -120,12 +122,28 @@ TEST(RenderGraph, ParamRailFromInputOnly) {
   EXPECT_NE(std::find(texts.begin(), texts.end(), "add"), texts.end());
 }
 
+TEST(RenderGraph, ParamRailUsesContextMetrics) {
+  const Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // paramUnits 18 * unitPx 5 -> paramW 90; railUnits 6 * unitPx 5 -> railStep 30.
+  // Body origin y = frameOrigin (50) + headerH (25) = 75; rows step by railStep.
+  fluir::editor::EditorContext ctx;
+  ctx.layout.paramUnits = 18.0;
+  ctx.layout.railUnits = 6.0;
+  RecordingRenderer r;
+  fluir::editor::renderGraph(ctx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{50, 75, 90, 30}));   // param a rail slot
+  EXPECT_TRUE(hasRect(r.calls, Rect{50, 105, 90, 30}));  // param b rail slot
+}
+
 TEST(RenderGraph, ReturnRailFromOutputOnly) {
   const Loaded l = loadFixture("read/function_with_output_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 500, 500}));  // frame
   EXPECT_TRUE(hasRect(r.calls, Rect{525, 75, 25, 25}));   // return rail slot
@@ -147,8 +165,8 @@ TEST(RenderGraph, DeterministicAcrossRuns) {
 
   RecordingRenderer a;
   RecordingRenderer b;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, a);
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, b);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, a);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, b);
 
   EXPECT_EQ(a.calls, b.calls);
   EXPECT_FALSE(a.calls.empty());
@@ -167,7 +185,7 @@ TEST(RenderGraph, ViewportIsApplied) {
 
   const Viewport vp{.pan = {100, 50}, .scale = 2.0};
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, vp, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, vp, r);
 
   // world frame (50,50,500,500) -> screen (50*2+100, 50*2+50, 500*2, 500*2).
   EXPECT_TRUE(hasRect(r.calls, Rect{200, 150, 1000, 1000}));
@@ -177,12 +195,28 @@ TEST(RenderGraph, ViewportIsApplied) {
   EXPECT_TRUE(hasTextAt(r.calls, "foo", Vec2{208, 158}));
 }
 
+TEST(RenderGraph, UnitPxScalesFrameAndHeader) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture: x=10 y=10 w=100 h=100 (logical). With unitPx = 10 the frame doubles
+  // vs. the default (5) and the header band stays headerUnits (5) tall in logical
+  // units -> 50 world px.
+  fluir::editor::EditorContext ctx;
+  ctx.layout.unitPx = 10.0;
+  RecordingRenderer r;
+  fluir::editor::renderGraph(ctx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{100, 100, 1000, 1000}));  // frame
+  EXPECT_TRUE(hasFill(r.calls, Rect{100, 100, 1000, 50}));    // header
+}
+
 TEST(RenderGraph, ConstantNode) {
   const Loaded l = loadFixture("read/int_constants.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasRect(r.calls, Rect{60, 175, 25, 25}));   // constant -5
   EXPECT_TRUE(hasRect(r.calls, Rect{110, 180, 25, 25}));  // constant 318
@@ -216,7 +250,7 @@ TEST(RenderGraph, BinaryNodeHasTwoInputsOneOutput) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasTextAt(r.calls, "+", Vec2{129, 89}));  // stringify(PLUS)
 
@@ -231,7 +265,7 @@ TEST(RenderGraph, UnaryNodeHasOneInput) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasTextAt(r.calls, "-", Vec2{129, 89}));  // unary op label
 
@@ -249,7 +283,7 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     ASSERT_TRUE(l.result.tree.has_value());
 
     RecordingRenderer r;
-    fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+    fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
     EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 6u);  // main, 10, 20, add, a, b
     EXPECT_TRUE(hasTextAt(r.calls, "add", Vec2{154, 79}));
@@ -271,7 +305,7 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     ASSERT_TRUE(l.result.tree.has_value());
 
     RecordingRenderer r;
-    fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+    fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
     EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 2u);  // name + call target only
     EXPECT_TRUE(hasTextAt(r.calls, "doStuff", Vec2{29, 54}));
@@ -286,7 +320,7 @@ TEST(RenderGraph, WireEndpointsMatchPorts) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 2u);
   EXPECT_TRUE(hasLine(r.calls, Vec2{85, 97.5}, Vec2{125, 85}));    // constant id=2 -> binary input-0
@@ -298,7 +332,7 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, r);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_EQ(clipsCovering(r.calls, Rect{50, 75, 500, 500}).size(), 1u);
   EXPECT_TRUE(hasRect(r.calls, Rect{125, 85, 25, 25}));  // binary node body rect
@@ -310,8 +344,8 @@ TEST(RenderGraph, DeterministicWithBodyAndWires) {
 
   RecordingRenderer a;
   RecordingRenderer b;
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, a);
-  fluir::editor::renderGraph(*l.result.tree, Viewport{}, b);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, a);
+  fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, b);
 
   EXPECT_EQ(a.calls, b.calls);
   EXPECT_FALSE(testutil::opsOf(a.calls, DrawCall::Op::Line).empty());
@@ -322,7 +356,7 @@ TEST(GraphBounds, EmptyTreeIsZero) {
   const Loaded l = loadFixture("read/top_level_comment_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
-  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{0, 0, 0, 0});
+  expectRectNear(fluir::editor::graphBounds(kCtx, *l.result.tree), Rect{0, 0, 0, 0});
 }
 
 TEST(GraphBounds, SingleFunctionIsItsFrame) {
@@ -331,7 +365,7 @@ TEST(GraphBounds, SingleFunctionIsItsFrame) {
 
   // Fixture: x=10 y=10 w=100 h=100 (logical); world px = logical * UNIT_PX (5).
   // Same frame rect asserted by SingleEmptyFunctionFrameAndHeader above.
-  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{50, 50, 500, 500});
+  expectRectNear(fluir::editor::graphBounds(kCtx, *l.result.tree), Rect{50, 50, 500, 500});
 }
 
 TEST(GraphBounds, MultipleFunctionsUnion) {
@@ -343,5 +377,16 @@ TEST(GraphBounds, MultipleFunctionsUnion) {
   //   baz x=330 y=10 w=100 h=100 -> world [1650, 50 .. 2150, 550]
   //   bar x=210 y=10 w=50  h=70  -> world [1050, 50 .. 1300, 400]
   // union: min (50, 50), max (2150, 550) -> {50, 50, 2100, 500}.
-  expectRectNear(fluir::editor::graphBounds(*l.result.tree), Rect{50, 50, 2100, 500});
+  expectRectNear(fluir::editor::graphBounds(kCtx, *l.result.tree), Rect{50, 50, 2100, 500});
+}
+
+TEST(GraphBounds, ScalesWithUnitPx) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture: x=10 y=10 w=100 h=100 (logical). With unitPx = 10, world px doubles
+  // relative to the default (5): {100, 100, 1000, 1000}.
+  fluir::editor::EditorContext ctx;
+  ctx.layout.unitPx = 10.0;
+  expectRectNear(fluir::editor::graphBounds(ctx, *l.result.tree), Rect{100, 100, 1000, 1000});
 }

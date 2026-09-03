@@ -4,21 +4,20 @@
 
 #include <SDL3/SDL.h>
 
+#include "editor/core/editor_context.hpp"
 #include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
 
 namespace fluir::editor {
-  static constexpr double ZOOM_UPPER_BOUND = 2.5;
-  static constexpr double ZOOM_LOWER_BOUND = 0.25;
 
-  int run(const pt::ParseTree& tree, Renderer& renderer, Vec2 viewportSize) {
+  int run(const EditorContext& ctx, const pt::ParseTree& tree, Renderer& renderer, Vec2 viewportSize) {
     Viewport vp;
-    vp.fitRect(graphBounds(tree), viewportSize);
+    vp.fitRect(graphBounds(ctx, tree), viewportSize);
 
     const auto redraw = [&] {
       renderer.beginFrame();
-      renderGraph(tree, vp, renderer);
+      renderGraph(ctx, tree, vp, renderer);
       renderer.endFrame();
     };
     redraw();
@@ -44,7 +43,7 @@ namespace fluir::editor {
           if (ie->key == InputEvent::Key::Escape) {
             stop = true;
           } else if (ie->key == InputEvent::Key::F) {
-            vp.fitRect(graphBounds(tree), viewportSize);
+            vp.fitRect(graphBounds(ctx, tree), viewportSize);
           } else if (ie->key == InputEvent::Key::Space) {
             spaceHeld = true;
           }
@@ -79,8 +78,8 @@ namespace fluir::editor {
         case InputEvent::Type::Wheel:
           {
             auto old = vp;
-            vp.zoomAbout(ie->pos, std::pow(1.1, ie->wheel.y));
-            if (vp.scale < ZOOM_LOWER_BOUND || vp.scale > ZOOM_UPPER_BOUND) {
+            vp.zoomAbout(ie->pos, std::pow(ctx.zoom.wheelStep, ie->wheel.y));
+            if (vp.scale < ctx.zoom.min || vp.scale > ctx.zoom.max) {
               vp = old;
             }
             break;

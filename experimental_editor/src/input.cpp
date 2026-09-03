@@ -1,4 +1,4 @@
-#include "../include/editor/input.hpp"
+#include "editor/input.hpp"
 
 namespace fluir::editor {
 

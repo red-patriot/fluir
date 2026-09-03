@@ -1,38 +1,22 @@
-#include "../include/editor/core/viewport.hpp"
+#include "editor/core/viewport.hpp"
 
 #include <cmath>
-#include <string_view>
 
 #include <gtest/gtest.h>
 
-#include "../include/editor/core/renderer.hpp"
+#include "editor/core/renderer.hpp"
+#include "recording_renderer.hpp"
 
 namespace {
 
   using fluir::editor::Rect;
-  using fluir::editor::Renderer;
   using fluir::editor::Subview;
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
-
-  // Minimal Renderer that only tracks clip-stack calls.
-  struct ClipCountingRenderer : Renderer {
-    int pushes = 0;
-    int pops = 0;
-    Rect lastClip{};
-
-    void beginFrame() override { }
-    void endFrame() override { }
-    void drawRect(Rect) override { }
-    void fillRect(Rect) override { }
-    void drawLine(Vec2, Vec2) override { }
-    void drawText(Vec2, std::string_view) override { }
-    void pushClip(Rect r) override {
-      ++pushes;
-      lastClip = r;
-    }
-    void popClip() override { ++pops; }
-  };
+  using testutil::clipsCovering;
+  using testutil::DrawCall;
+  using testutil::opsOf;
+  using testutil::RecordingRenderer;
 
   TEST(Viewport, WorldToScreenAppliesScaleThenPan) {
     const Viewport vp{.pan = {10.0, 20.0}, .scale = 2.0};
@@ -118,7 +102,7 @@ namespace {
   constexpr Rect kAnyFrame{0.0, 0.0, 1000.0, 1000.0};
 
   TEST(Subview, RootComposesViewportWithOrigin) {
-    ClipCountingRenderer out;
+    RecordingRenderer out;
     {
       const Viewport vp;
       const Subview view{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
@@ -137,7 +121,7 @@ namespace {
   }
 
   TEST(Subview, RectToScreenScalesSizeOnly) {
-    ClipCountingRenderer out;
+    RecordingRenderer out;
     const Viewport vp{.pan = {10.0, 20.0}, .scale = 3.0};
     const Subview view{vp, kAnyFrame, out};
     const Rect r = view.toScreen(Rect{4.0, 5.0, 6.0, 8.0});
@@ -148,7 +132,7 @@ namespace {
   }
 
   TEST(Subview, ChildOriginAddsOnComposedTransform) {
-    ClipCountingRenderer out;
+    RecordingRenderer out;
     const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
     const Subview parent{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
 
@@ -163,33 +147,39 @@ namespace {
   }
 
   TEST(Subview, AlwaysPushesOneClipPerSubviewPoppedInReverse) {
-    ClipCountingRenderer out;
+    RecordingRenderer out;
     {
       const Viewport vp;
       const Subview view{vp, Rect{0.0, 0.0, 10.0, 10.0}, out};
-      EXPECT_EQ(out.pushes, 1);
-      EXPECT_EQ(out.pops, 0);
+      EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PushClip).size(), 1u);
+      EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PopClip).size(), 0u);
       {
         const Subview nested = view.child(Rect{0.0, 0.0, 5.0, 5.0});
-        EXPECT_EQ(out.pushes, 2);
-        EXPECT_EQ(out.pops, 0);
+        EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PushClip).size(), 2u);
+        EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PopClip).size(), 0u);
       }
-      EXPECT_EQ(out.pops, 1);  // nested popped at its scope exit
+      EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PopClip).size(), 1u);  // nested popped at its scope exit
     }
-    EXPECT_EQ(out.pushes, 2);
-    EXPECT_EQ(out.pops, 2);  // root popped last
+    EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PushClip).size(), 2u);
+    EXPECT_EQ(opsOf(out.calls, DrawCall::Op::PopClip).size(), 2u);  // root popped last
+
+    // LIFO order: outer pushed first, inner pushed second, both popped after
+    // (root's pop closes the sequence last).
+    const std::vector<DrawCall> want{
+      {DrawCall::Op::PushClip, Rect{0.0, 0.0, 10.0, 10.0}, {}, {}, {}},
+      {DrawCall::Op::PushClip, Rect{0.0, 0.0, 5.0, 5.0}, {}, {}, {}},
+      {DrawCall::Op::PopClip, {}, {}, {}, {}},
+      {DrawCall::Op::PopClip, {}, {}, {}, {}},
+    };
+    EXPECT_EQ(out.calls, want);
   }
 
   TEST(Subview, ClipRectIsBoundsInScreenSpace) {
-    ClipCountingRenderer out;
+    RecordingRenderer out;
     const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
     const Subview view{vp, Rect{30.0, 40.0, 10.0, 20.0}, out};
-    EXPECT_EQ(out.pushes, 1);
     // frame top-left (30,40) world -> ((0+30)*2+100, (0+40)*2+50); size scaled by 2.
-    EXPECT_NEAR(out.lastClip.x, 160.0, 1e-6);
-    EXPECT_NEAR(out.lastClip.y, 130.0, 1e-6);
-    EXPECT_NEAR(out.lastClip.w, 20.0, 1e-6);
-    EXPECT_NEAR(out.lastClip.h, 40.0, 1e-6);
+    EXPECT_EQ(clipsCovering(out.calls, Rect{160.0, 130.0, 20.0, 40.0}).size(), 1u);
   }
 
 }  // namespace

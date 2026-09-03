@@ -1,4 +1,4 @@
-#include "../include/editor/core/loader.hpp"
+#include "editor/core/loader.hpp"
 
 #include <algorithm>
 #include <filesystem>
@@ -10,8 +10,8 @@
 
 #include <gtest/gtest.h>
 
-#include "../include/editor/core/collecting_sink.hpp"
 #include "compiler/utility/context.hpp"
+#include "editor/core/collecting_sink.hpp"
 
 namespace {
 

@@ -2,6 +2,7 @@
 
 #include <string_view>
 
+#include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
@@ -17,10 +18,10 @@ namespace fluir::editor {
     /** Drawable size in screen px (device px / dpi). */
     virtual Vec2 outputSize() = 0;
 
-    virtual void drawRect(Rect screen) = 0;
-    virtual void fillRect(Rect screen) = 0;
-    virtual void drawLine(Vec2 a, Vec2 b) = 0;
-    virtual void drawText(Vec2 topLeft, std::string_view text) = 0;
+    virtual void drawRect(Rect screen, const Color& color) = 0;
+    virtual void fillRect(Rect screen, const Color& color) = 0;
+    virtual void drawLine(Vec2 a, Vec2 b, const Color& color) = 0;
+    virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color) = 0;
     virtual void pushClip(Rect screen) = 0;
     virtual void popClip() = 0;
   };

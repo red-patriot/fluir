@@ -85,11 +85,16 @@ namespace fluir::editor {
 
     // Spread `count` port dots down an edge at local x == `edgeX`, pushing each
     // anchor (top-to-bottom, in `view`-local coords) into `slot`.
-    void emitEdgeDots(
-      double edgeX, const Rect& nodeRect, int count, double portDot, const Subview& view, std::vector<Vec2>& slot) {
+    void emitEdgeDots(double edgeX,
+                      const Rect& nodeRect,
+                      int count,
+                      double portDot,
+                      const Subview& view,
+                      std::vector<Vec2>& slot,
+                      const Color& color) {
       for (int i = 0; i < count; ++i) {
         const Vec2 anchor{edgeX, nodeRect.y + portFraction(count, i) * nodeRect.h};
-        view.renderer().fillRect(view.toScreen(dotRect(anchor, portDot)));
+        view.renderer().fillRect(view.toScreen(dotRect(anchor, portDot)), color);
         slot.push_back(anchor);
       }
     }
@@ -111,10 +116,12 @@ namespace fluir::editor {
     const double w = static_cast<double>(loc.width) * ctx_.layout.unitPx;
     const double h = static_cast<double>(loc.height) * ctx_.layout.unitPx;
 
-    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, h})));                      // frame
-    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, ctx_.layout.headerH()})));  // header
+    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, h})), ctx_.theme.rectStroke);  // frame
+    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, ctx_.layout.headerH()})),
+                       ctx_.theme.fill);  // header
     renderer_.drawText(toScreen(viewport_, Vec2{origin.x + ctx_.layout.textPad, origin.y + ctx_.layout.textPad}),
-                       decl.name);
+                       decl.name,
+                       ctx_.theme.text);
 
     ports_.clear();
 
@@ -179,14 +186,14 @@ namespace fluir::editor {
                         static_cast<double>(loc.y) * ctx_.layout.unitPx,
                         static_cast<double>(loc.width) * ctx_.layout.unitPx,
                         static_cast<double>(loc.height) * ctx_.layout.unitPx};
-    renderer_.drawRect(body_->toScreen(nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.rectStroke);
 
     PortSet& set = ports_[binary.id];
     const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
 
-    renderer_.drawText(body_->toScreen(textPos), stringify(binary.op));
-    emitEdgeDots(nodeRect.x, nodeRect, 2, ctx_.layout.portDot, *body_, set.inputs);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), stringify(binary.op), ctx_.theme.text);
+    emitEdgeDots(nodeRect.x, nodeRect, 2, ctx_.layout.portDot, *body_, set.inputs, ctx_.theme.rectStroke);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.rectStroke);
   }
 
   void GraphRenderer::operator()(const pt::Unary& unary) {
@@ -196,14 +203,14 @@ namespace fluir::editor {
                         static_cast<double>(loc.y) * ctx_.layout.unitPx,
                         static_cast<double>(loc.width) * ctx_.layout.unitPx,
                         static_cast<double>(loc.height) * ctx_.layout.unitPx};
-    renderer_.drawRect(body_->toScreen(nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.rectStroke);
 
     PortSet& set = ports_[unary.id];
     const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
 
-    renderer_.drawText(body_->toScreen(textPos), stringify(unary.op));
-    emitEdgeDots(nodeRect.x, nodeRect, 1, ctx_.layout.portDot, *body_, set.inputs);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), stringify(unary.op), ctx_.theme.text);
+    emitEdgeDots(nodeRect.x, nodeRect, 1, ctx_.layout.portDot, *body_, set.inputs, ctx_.theme.rectStroke);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.rectStroke);
   }
 
   void GraphRenderer::operator()(const pt::Constant& constant) {
@@ -213,13 +220,13 @@ namespace fluir::editor {
                         static_cast<double>(loc.y) * ctx_.layout.unitPx,
                         static_cast<double>(loc.width) * ctx_.layout.unitPx,
                         static_cast<double>(loc.height) * ctx_.layout.unitPx};
-    renderer_.drawRect(body_->toScreen(nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.rectStroke);
 
     PortSet& set = ports_[constant.id];
     const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
 
-    renderer_.drawText(body_->toScreen(textPos), renderLiteral(constant.value));
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs);
+    renderer_.drawText(body_->toScreen(textPos), renderLiteral(constant.value), ctx_.theme.text);
+    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.rectStroke);
   }
 
   void GraphRenderer::operator()(const pt::Call& call) {
@@ -229,12 +236,12 @@ namespace fluir::editor {
                         static_cast<double>(loc.y) * ctx_.layout.unitPx,
                         static_cast<double>(loc.width) * ctx_.layout.unitPx,
                         static_cast<double>(loc.height) * ctx_.layout.unitPx};
-    renderer_.drawRect(body_->toScreen(nodeRect));
+    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.rectStroke);
 
     PortSet& set = ports_[call.id];
     const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
 
-    renderer_.drawText(body_->toScreen(textPos), call.target);
+    renderer_.drawText(body_->toScreen(textPos), call.target, ctx_.theme.text);
 
     std::vector<const pt::Call::Argument*> args;
     args.reserve(call.arguments.size());
@@ -251,14 +258,16 @@ namespace fluir::editor {
     for (std::size_t k = 0; k < args.size(); ++k) {
       const double rowTop = nodeRect.y + (static_cast<double>(k) + 1.0) * ctx_.layout.railStep();
       renderer_.drawText(body_->toScreen(Vec2{nodeRect.x + ctx_.layout.textPad, rowTop + ctx_.layout.textPad}),
-                         args[k]->name);
+                         args[k]->name,
+                         ctx_.theme.text);
       const Vec2 anchor{nodeRect.x, rowTop + ctx_.layout.railStep() * 0.5};
-      renderer_.fillRect(body_->toScreen(dotRect(anchor, ctx_.layout.portDot)));
+      renderer_.fillRect(body_->toScreen(dotRect(anchor, ctx_.layout.portDot)), ctx_.theme.rectStroke);
       set.inputs.push_back(anchor);
     }
 
     if (call._return.has_value()) {
-      emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs);
+      emitEdgeDots(
+        nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.rectStroke);
     }
   }
 
@@ -281,7 +290,7 @@ namespace fluir::editor {
         continue;
       }
       const Vec2 target = targetIt->second.inputs[static_cast<std::size_t>(child.index)];
-      renderer_.drawLine(body_->toScreen(source), body_->toScreen(target));
+      renderer_.drawLine(body_->toScreen(source), body_->toScreen(target), ctx_.theme.line);
     }
   }
 
@@ -300,12 +309,13 @@ namespace fluir::editor {
       const pt::FunctionDecl::Parameter& param = *params[i];
       const Rect rect{
         0.0, static_cast<double>(i) * ctx_.layout.railStep(), ctx_.layout.paramW(), ctx_.layout.railStep()};  // local
-      renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
+      renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)), ctx_.theme.rectStroke);
       renderer_.drawText(
         toScreen(viewport_, Vec2{origin.x + rect.x + ctx_.layout.textPad, origin.y + rect.y + ctx_.layout.textPad}),
-        param.typeName + " " + param.name);
+        param.typeName + " " + param.name,
+        ctx_.theme.text);
       const Vec2 anchor{rect.x + rect.w, rect.y + rect.h * 0.5};  // local
-      renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor, ctx_.layout.portDot))));
+      renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor, ctx_.layout.portDot))), ctx_.theme.fill);
       ports_[param.id].outputs.push_back(anchor);
     }
   }
@@ -315,12 +325,13 @@ namespace fluir::editor {
                     0,
                     ctx_.layout.railStep(),
                     ctx_.layout.railStep()};
-    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)));
+    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, rect)), ctx_.theme.rectStroke);
     renderer_.drawText(
       toScreen(viewport_, Vec2{origin.x + rect.x + ctx_.layout.textPad, origin.y + rect.y + ctx_.layout.textPad}),
-      ret.typeName);
+      ret.typeName,
+      ctx_.theme.text);
     const Vec2 anchor{rect.x, rect.y + rect.h * 0.5};  // local
-    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor, ctx_.layout.portDot))));
+    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, dotRect(anchor, ctx_.layout.portDot))), ctx_.theme.fill);
     ports_[ret.id].inputs.push_back(anchor);
   }
 

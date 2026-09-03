@@ -57,28 +57,28 @@ namespace fluir::editor {
 
   void SdlRenderer::endFrame() { SDL_RenderPresent(renderer_); }
 
-  void SdlRenderer::drawRect(Rect screen) {
+  void SdlRenderer::drawRect(Rect screen, const Color& color) {
     const SDL_FRect r = toFRect(screen);
-    setColor(theme_.rectStroke);
+    setColor(color);
     SDL_RenderRect(renderer_, &r);
   }
 
-  void SdlRenderer::fillRect(Rect screen) {
+  void SdlRenderer::fillRect(Rect screen, const Color& color) {
     const SDL_FRect r = toFRect(screen);
-    setColor(theme_.fill);
+    setColor(color);
     SDL_RenderFillRect(renderer_, &r);
   }
 
-  void SdlRenderer::drawLine(Vec2 a, Vec2 b) {
-    setColor(theme_.line);
+  void SdlRenderer::drawLine(Vec2 a, Vec2 b, const Color& color) {
+    setColor(color);
     SDL_RenderLine(
       renderer_, static_cast<float>(a.x), static_cast<float>(a.y), static_cast<float>(b.x), static_cast<float>(b.y));
   }
 
-  void SdlRenderer::drawText(Vec2 topLeft, std::string_view text) {
+  void SdlRenderer::drawText(Vec2 topLeft, std::string_view text, const Color& color) {
     // SDL's built-in 8px debug font. Fixed screen size (does not scale with
     // zoom); a real glyph atlas is a later phase.
-    setColor(theme_.text);
+    setColor(color);
     const std::string str{text};
     SDL_RenderDebugText(renderer_, static_cast<float>(topLeft.x), static_cast<float>(topLeft.y), str.c_str());
   }

@@ -19,10 +19,10 @@ namespace fluir::editor {
     void beginFrame() override;
     void endFrame() override;
     Vec2 outputSize() override;
-    void drawRect(Rect screen) override;
-    void fillRect(Rect screen) override;
-    void drawLine(Vec2 a, Vec2 b) override;
-    void drawText(Vec2 topLeft, std::string_view text) override;  // no-op for now
+    void drawRect(Rect screen, const Color& color) override;
+    void fillRect(Rect screen, const Color& color) override;
+    void drawLine(Vec2 a, Vec2 b, const Color& color) override;
+    void drawText(Vec2 topLeft, std::string_view text, const Color& color) override;
     void pushClip(Rect screen) override;
     void popClip() override;
 
@@ -31,7 +31,7 @@ namespace fluir::editor {
      *  Idempotent and responds automatically to a monitor/scale change. */
     void applyScale();
 
-    /** Set the SDL draw color from a theme Color. */
+    /** Set the SDL draw color. */
     void setColor(Color c);
 
     SDL_Renderer* renderer_;

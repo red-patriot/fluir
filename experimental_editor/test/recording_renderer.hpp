@@ -32,12 +32,16 @@ namespace testutil {
 
     fluir::editor::Vec2 outputSize() override { return outputSize_; }
 
-    void drawRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Rect, r, {}, {}, {}}); }
-    void fillRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Fill, r, {}, {}, {}}); }
-    void drawLine(fluir::editor::Vec2 p, fluir::editor::Vec2 q) override {
+    void drawRect(fluir::editor::Rect r, const fluir::editor::Color&) override {
+      calls.push_back({DrawCall::Op::Rect, r, {}, {}, {}});
+    }
+    void fillRect(fluir::editor::Rect r, const fluir::editor::Color&) override {
+      calls.push_back({DrawCall::Op::Fill, r, {}, {}, {}});
+    }
+    void drawLine(fluir::editor::Vec2 p, fluir::editor::Vec2 q, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Line, {}, p, q, {}});
     }
-    void drawText(fluir::editor::Vec2 pos, std::string_view t) override {
+    void drawText(fluir::editor::Vec2 pos, std::string_view t, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Text, {}, pos, {}, std::string{t}});
     }
     void pushClip(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::PushClip, r, {}, {}, {}}); }

@@ -13,10 +13,11 @@ namespace fluir::editor {
    *  Renderer contract. Text is a no-op until the glyph atlas (P2b). */
   class SdlRenderer final : public Renderer {
    public:
-    explicit SdlRenderer(SDL_Renderer* renderer) : renderer_(renderer) { }
+    explicit SdlRenderer(SDL_Renderer* renderer) : renderer_(renderer) { applyScale(); }
 
     void beginFrame() override;
     void endFrame() override;
+    Vec2 outputSize() override;
     void drawRect(Rect screen) override;
     void fillRect(Rect screen) override;
     void drawLine(Vec2 a, Vec2 b) override;
@@ -25,7 +26,12 @@ namespace fluir::editor {
     void popClip() override;
 
    private:
+    /** Apply the display scale via SDL_SetRenderScale.
+     *  Idempotent and responds automatically to a monitor/scale change. */
+    void applyScale();
+
     SDL_Renderer* renderer_;
+    float dpi_ = 1.0f;
     std::vector<SDL_Rect> clipStack_;
   };
 

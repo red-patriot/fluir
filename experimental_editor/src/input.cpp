@@ -91,7 +91,6 @@ namespace fluir::editor {
         {
           InputEvent out{};
           out.type = InputEvent::Type::Resize;
-          out.pos = {static_cast<double>(event.window.data1), static_cast<double>(event.window.data2)};
           return out;
         }
 

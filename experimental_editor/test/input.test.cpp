@@ -135,8 +135,6 @@ namespace {
     const auto ie = translate(e);
     ASSERT_TRUE(ie.has_value());
     EXPECT_EQ(ie->type, InputEvent::Type::Resize);
-    EXPECT_NEAR(ie->pos.x, 1024.0, 1e-6);
-    EXPECT_NEAR(ie->pos.y, 768.0, 1e-6);
   }
 
   TEST(TranslateInput, WindowPixelSizeChanged) {
@@ -148,8 +146,6 @@ namespace {
     const auto ie = translate(e);
     ASSERT_TRUE(ie.has_value());
     EXPECT_EQ(ie->type, InputEvent::Type::Resize);
-    EXPECT_NEAR(ie->pos.x, 800.0, 1e-6);
-    EXPECT_NEAR(ie->pos.y, 600.0, 1e-6);
   }
 
   TEST(TranslateInput, UnmappedEventIsIgnored) {

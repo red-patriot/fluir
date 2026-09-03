@@ -87,7 +87,7 @@ namespace fluir::editor {
           }
 
         case InputEvent::Type::Resize:
-          viewportSize = ie->pos;
+          viewportSize = renderer.outputSize();
           break;
       }
 

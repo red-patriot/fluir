@@ -26,6 +26,24 @@ namespace fluir::editor {
 
   }  // namespace
 
+  void SdlRenderer::applyScale() {
+    SDL_Window* w = SDL_GetRenderWindow(renderer_);
+    float dpi = SDL_GetWindowDisplayScale(w);
+    if (dpi <= 0.0f) {
+      dpi = 1.0f;
+    }
+    dpi_ = dpi;
+    SDL_SetRenderScale(renderer_, dpi_, dpi_);
+  }
+
+  Vec2 SdlRenderer::outputSize() {
+    applyScale();
+    int w = 0;
+    int h = 0;
+    SDL_GetCurrentRenderOutputSize(renderer_, &w, &h);
+    return {w / dpi_, h / dpi_};
+  }
+
   void SdlRenderer::beginFrame() {
     SDL_SetRenderDrawColor(renderer_, 24, 26, 31, 255);
     SDL_RenderClear(renderer_);

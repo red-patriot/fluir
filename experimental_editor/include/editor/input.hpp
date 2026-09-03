@@ -13,10 +13,10 @@ namespace fluir::editor {
     enum class Key { Escape, F, Space };
     enum class Button { Left, Middle, Right };
 
-    Type type{};
+    Type type{};                   ///< The type of the event
     std::optional<Key> key;        ///< set for KeyDown / KeyUp
     std::optional<Button> button;  ///< set for MouseDown / MouseUp
-    Vec2 pos;                      ///< mouse pos for mouse events; new (w,h) for Resize
+    Vec2 pos;                      ///< mouse pos for mouse events
     Vec2 wheel;                    ///< scroll delta for Wheel
   };
 

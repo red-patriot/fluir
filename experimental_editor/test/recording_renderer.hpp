@@ -25,9 +25,12 @@ namespace testutil {
   class RecordingRenderer : public fluir::editor::Renderer {
    public:
     std::vector<DrawCall> calls;
+    fluir::editor::Vec2 outputSize_{800, 600};  // test-settable
 
     void beginFrame() override { }
     void endFrame() override { }
+
+    fluir::editor::Vec2 outputSize() override { return outputSize_; }
 
     void drawRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Rect, r, {}, {}, {}}); }
     void fillRect(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::Fill, r, {}, {}, {}}); }

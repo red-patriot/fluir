@@ -9,6 +9,8 @@
 #include "editor/input.hpp"
 
 namespace fluir::editor {
+  static constexpr double ZOOM_UPPER_BOUND = 2.5;
+  static constexpr double ZOOM_LOWER_BOUND = 0.25;
 
   int run(const pt::ParseTree& tree, Renderer& renderer, Vec2 viewportSize) {
     Viewport vp;
@@ -75,8 +77,14 @@ namespace fluir::editor {
           break;
 
         case InputEvent::Type::Wheel:
-          vp.zoomAbout(ie->pos, std::pow(1.1, ie->wheel.y));
-          break;
+          {
+            auto old = vp;
+            vp.zoomAbout(ie->pos, std::pow(1.1, ie->wheel.y));
+            if (vp.scale < ZOOM_LOWER_BOUND || vp.scale > ZOOM_UPPER_BOUND) {
+              vp = old;
+            }
+            break;
+          }
 
         case InputEvent::Type::Resize:
           viewportSize = ie->pos;

@@ -37,10 +37,15 @@ namespace fluir::editor {
 
     struct Theme {
       Color background{24, 26, 31, 255};
-      Color rectStroke{200, 200, 210, 255};
-      Color fill{120, 120, 140, 255};
-      Color line{150, 180, 220, 255};
+      Color border{200, 200, 210, 255};
+      Color conduit{150, 180, 220, 255};
       Color text{225, 225, 235, 255};
+      Color funcDeclHeader{237, 170, 30, 255};
+      Color operatorNode{75, 107, 210, 255};
+      Color uIntNode{242, 44, 189, 255};
+      Color sIntNode{225, 31, 251, 255};
+      Color floatNode{139, 31, 255, 255};
+      Color callNode{31, 117, 255, 255};
     };
 
     struct Window {

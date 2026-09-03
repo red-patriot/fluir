@@ -51,12 +51,19 @@ target_include_directories(
     fluir.libeditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
 )
 
+set(FLUIR_EDITOR_CORE_SOURCES
+    "core/collecting_sink.cpp"
+    "core/loader.cpp"
+    "core/render_graph.cpp"
+    "core/viewport.cpp"
+)
+
+set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp")
+
 target_sources(
     fluir.libeditor
-    PRIVATE "core/collecting_sink.cpp"
-            "core/loader.cpp"
-            "core/render_graph.cpp"
-            "core/viewport.cpp"
+    PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
+            ${FLUIR_EDITOR_PAGE_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"
             "app.cpp"

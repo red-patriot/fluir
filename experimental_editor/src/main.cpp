@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
   }
 
   fluir::editor::SdlRenderer renderer{sdl, editorCtx.theme};
-  const int rc = fluir::editor::run(editorCtx, renderer, renderer.outputSize());
+  const int rc = fluir::editor::run(editorCtx, renderer);
 
   SDL_DestroyRenderer(sdl);
   SDL_DestroyWindow(window);

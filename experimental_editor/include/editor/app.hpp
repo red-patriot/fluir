@@ -7,9 +7,7 @@
 
 namespace fluir::editor {
 
-  /** Blocking view loop: fit `tree` into `viewportSize`, draw, then redraw on
-   *  each input event until quit/Escape. Returns a process exit code (0 ok).
-   *  SDL-free signature so P2d can drive it with a software renderer. */
-  int run(const EditorContext& ctx, Renderer& renderer, Vec2 viewportSize);
+  /**  Runs the main app. Returns a process exit code (0 ok).. */
+  int run(EditorContext& ctx, Renderer& renderer);
 
 }  // namespace fluir::editor

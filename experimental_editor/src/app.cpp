@@ -4,19 +4,35 @@
 
 #include <SDL3/SDL.h>
 
+#include "compiler/utility/context.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/loader.hpp"
 #include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
 
 namespace fluir::editor {
 
-  int run(const EditorContext& ctx, const pt::ParseTree& tree, Renderer& renderer, Vec2 viewportSize) {
+  int run(const EditorContext& ctx, Renderer& renderer, Vec2 viewportSize) {
     Viewport vp;
+    fluir::Context cctx{
+      .currentFile = *ctx.program,  // TODO: Handle no program
+      .ignoreVersionChecks = true,
+    };
+
+    const auto result = fluir::editor::loadFile(cctx, *ctx.program);
+
+    if (!result.tree) {
+      fmt::print(stderr, "parse failed: {}\n", ctx.program->string());
+      return 1;
+    }
+    const auto& tree = *result.tree;
+
     vp.fitRect(graphBounds(ctx, tree), viewportSize);
 
     const auto redraw = [&] {
       renderer.beginFrame();
+
       renderGraph(ctx, tree, vp, renderer);
       renderer.endFrame();
     };

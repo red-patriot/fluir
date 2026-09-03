@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
+#include <optional>
 
 namespace fluir::editor {
 
@@ -57,6 +59,7 @@ namespace fluir::editor {
     Zoom zoom;
     Theme theme;
     Window window;
+    std::optional<std::filesystem::path> program;
   };
 
 }  // namespace fluir::editor

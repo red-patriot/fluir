@@ -23,6 +23,7 @@ namespace fluir::editor {
       return 1;
     }
     tree_ = *result.tree;
+    scene_.build(ctx_, *tree_);
 
     view_.fitRect(graphBounds(ctx_, *tree_), renderer_.outputSize());
     return 0;
@@ -55,6 +56,10 @@ namespace fluir::editor {
           if (ie.button == InputEvent::Button::Middle || (ie.button == InputEvent::Button::Left && spaceHeld_)) {
             panning_ = true;
             lastPan_ = ie.pos;
+          } else if (ie.button == InputEvent::Button::Left) {
+            if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
+              hit->onClick(view_.screenToWorld(ie.pos));
+            }
           }
           break;
 
@@ -100,6 +105,7 @@ namespace fluir::editor {
   void ModulePage::reset() {
     view_ = Viewport{};
     tree_.reset();
+    scene_.clear();
     panning_ = false;
     spaceHeld_ = false;
     lastPan_ = Vec2{};

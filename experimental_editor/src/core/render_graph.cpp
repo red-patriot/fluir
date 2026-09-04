@@ -13,6 +13,7 @@
 
 #include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
+#include "editor/core/graph_geometry.hpp"
 
 namespace fluir::editor {
   using namespace ::fluir::literals_types;
@@ -46,9 +47,6 @@ namespace fluir::editor {
       return {tl.x, tl.y, world.w * vp.scale, world.h * vp.scale};
     }
 
-    // Shift a local-space rect by the function's world origin.
-    Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }
-
     // Ported from editor/client NodeInOut.tsx `positionFunc`, which returns the
     // CSS-translate percentage `count == 1 ? 0 : 100 * count * (i/(count-1) - 0.5)`
     // — a centred offset. As a fraction of the node's height along [0, 1] that is
@@ -77,24 +75,6 @@ namespace fluir::editor {
           }
         },
         value);
-    }
-
-    // Deterministic order: (location.z, id).
-    std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree) {
-      std::vector<const pt::FunctionDecl*> funcs;
-      funcs.reserve(tree.declarations.size());
-      for (const auto& entry : tree.declarations) {
-        if (const auto* fn = std::get_if<pt::FunctionDecl>(&entry.second)) {
-          funcs.push_back(fn);
-        }
-      }
-      std::sort(funcs.begin(), funcs.end(), [](const pt::FunctionDecl* a, const pt::FunctionDecl* b) {
-        if (a->location.z != b->location.z) {
-          return a->location.z < b->location.z;
-        }
-        return a->id < b->id;
-      });
-      return funcs;
     }
 
     // Spread `count` port dots down an edge at local x == `edgeX`, pushing each
@@ -126,7 +106,7 @@ namespace fluir::editor {
 
   void GraphRenderer::operator()(const pt::FunctionDecl& decl) {
     const FlowGraphLocation& loc = decl.location;
-    const Vec2 origin{static_cast<double>(loc.x) * ctx_.layout.unitPx, static_cast<double>(loc.y) * ctx_.layout.unitPx};
+    const Vec2 origin = functionOrigin(loc, ctx_.layout.unitPx);
     const double w = static_cast<double>(loc.width) * ctx_.layout.unitPx;
     const double h = static_cast<double>(loc.height) * ctx_.layout.unitPx;
 
@@ -140,16 +120,16 @@ namespace fluir::editor {
     ports_.clear();
 
     // Body content is offset below the header band so nodes don't render over it.
-    auto bodyOrigin = origin + Vec2{0.0, ctx_.layout.headerH()};
-    const Subview body{viewport_, Rect{bodyOrigin.x, bodyOrigin.y, w, h}, renderer_};
+    const Vec2 bodyOrigin_ = bodyOrigin(origin, ctx_.layout.headerH());
+    const Subview body{viewport_, Rect{bodyOrigin_.x, bodyOrigin_.y, w, h}, renderer_};
     const Subview* const prevBody = body_;
     body_ = &body;
 
     if (decl.input) {
-      drawParamRail(bodyOrigin, *decl.input);
+      drawParamRail(bodyOrigin_, *decl.input);
     }
     if (decl.output && decl.output->ret) {
-      drawReturnRail(bodyOrigin, *decl.output->ret, loc.width);
+      drawReturnRail(bodyOrigin_, *decl.output->ret, loc.width);
     }
 
     if (decl.body.nodes.empty() && decl.body.conduits.empty()) {
@@ -157,24 +137,7 @@ namespace fluir::editor {
       return;
     }
 
-    std::vector<const pt::Node*> nodes;
-    nodes.reserve(decl.body.nodes.size());
-    for (const auto& entry : decl.body.nodes) {
-      nodes.push_back(&entry.second);
-    }
-    std::sort(nodes.begin(), nodes.end(), [](const pt::Node* a, const pt::Node* b) {
-      const auto zOf = [](const pt::Node& n) {
-        return std::visit([](const auto& node) { return node.location.z; }, n);
-      };
-      const auto idOf = [](const pt::Node& n) { return std::visit([](const auto& node) { return node.id; }, n); };
-      const int za = zOf(*a);
-      const int zb = zOf(*b);
-      if (za != zb) {
-        return za < zb;
-      }
-      return idOf(*a) < idOf(*b);
-    });
-    for (const pt::Node* node : nodes) {
+    for (const pt::Node* node : sortedNodes(decl.body)) {
       std::visit(*this, *node);
     }
 
@@ -196,10 +159,7 @@ namespace fluir::editor {
   void GraphRenderer::operator()(const pt::Binary& binary) {
     assert(body_);
     const FlowGraphLocation& loc = binary.location;
-    const Rect nodeRect{static_cast<double>(loc.x) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.y) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.width) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.height) * ctx_.layout.unitPx};
+    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
     renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.operatorNode);
     renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
 
@@ -214,10 +174,7 @@ namespace fluir::editor {
   void GraphRenderer::operator()(const pt::Unary& unary) {
     assert(body_);
     const FlowGraphLocation& loc = unary.location;
-    const Rect nodeRect{static_cast<double>(loc.x) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.y) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.width) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.height) * ctx_.layout.unitPx};
+    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
     renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.operatorNode);
     renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
 
@@ -232,10 +189,7 @@ namespace fluir::editor {
   void GraphRenderer::operator()(const pt::Constant& constant) {
     assert(body_);
     const FlowGraphLocation& loc = constant.location;
-    const Rect nodeRect{static_cast<double>(loc.x) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.y) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.width) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.height) * ctx_.layout.unitPx};
+    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
     renderer_.fillRect(body_->toScreen(nodeRect), std::visit(LiteralColor{ctx_.theme}, constant.value));
     renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
 
@@ -249,10 +203,7 @@ namespace fluir::editor {
   void GraphRenderer::operator()(const pt::Call& call) {
     assert(body_);
     const FlowGraphLocation& loc = call.location;
-    const Rect nodeRect{static_cast<double>(loc.x) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.y) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.width) * ctx_.layout.unitPx,
-                        static_cast<double>(loc.height) * ctx_.layout.unitPx};
+    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
     renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.callNode);
     renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
 

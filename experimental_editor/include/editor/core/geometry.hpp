@@ -24,6 +24,9 @@ namespace fluir::editor {
 
     constexpr Vec2 topLeft() const { return {x, y}; }
     constexpr Vec2 center() const { return {x + w * 0.5, y + h * 0.5}; }
+    constexpr bool contains(Vec2 point) const {
+      return point.x >= x && point.y >= y && point.x < x + w && point.y < y + h;
+    }
 
     friend constexpr bool operator==(const Rect&, const Rect&) = default;
   };

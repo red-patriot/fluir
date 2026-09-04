@@ -6,6 +6,10 @@ add_executable(
     loader.test.cpp
     viewport.test.cpp
     render_graph.test.cpp
+    graph_geometry.test.cpp
+    actor.test.cpp
+    scene.test.cpp
+    module.test.cpp
 )
 
 target_compile_definitions(

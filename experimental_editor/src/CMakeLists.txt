@@ -53,6 +53,7 @@ target_include_directories(
 
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
+    "core/graph_geometry.cpp"
     "core/loader.cpp"
     "core/render_graph.cpp"
     "core/viewport.cpp"
@@ -60,10 +61,13 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp")
 
+set(FLUIR_EDITOR_ACTOR_SOURCES "actors/node_actors.cpp" "actors/scene.cpp")
+
 target_sources(
     fluir.libeditor
     PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
             ${FLUIR_EDITOR_PAGE_SOURCES}
+            ${FLUIR_EDITOR_ACTOR_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"
             "app.cpp"

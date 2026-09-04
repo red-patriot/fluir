@@ -2,17 +2,14 @@
 
 #include <cmath>
 
-#include <SDL3/SDL.h>
-
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/render_graph.hpp"
-#include "editor/input.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : ctx_(ctx), renderer_(renderer) { }
 
-  int ModulePage::run() {
+  int ModulePage::start() {
     reset();
     fluir::Context cctx{
       .currentFile = *ctx_.program,  // TODO: Handle no program
@@ -27,67 +24,57 @@ namespace fluir::editor {
     }
     tree_ = *result.tree;
 
-    auto viewSize = renderer_.outputSize();
-    view_.fitRect(graphBounds(ctx_, *tree_), viewSize);
-    redraw();
+    view_.fitRect(graphBounds(ctx_, *tree_), renderer_.outputSize());
+    return 0;
+  }
 
-    bool panning = false;
-    bool spaceHeld = false;
-    Vec2 lastPan;
-
-    SDL_Event e;  // TODO: Abstract this out
-    while (SDL_WaitEvent(&e)) {
-      const auto ie = translate(e);
-      if (!ie) {
-        continue;
-      }
-
-      bool stop = false;
-      switch (ie->type) {
+  int ModulePage::update(const std::vector<InputEvent>& events) {
+    for (const auto& ie : events) {
+      switch (ie.type) {
         case InputEvent::Type::Quit:
-          stop = true;
+          ctx_.running = false;
           break;
 
         case InputEvent::Type::KeyDown:
-          if (ie->key == InputEvent::Key::Escape) {
-            stop = true;
-          } else if (ie->key == InputEvent::Key::F) {
-            view_.fitRect(graphBounds(ctx_, *tree_), viewSize);
-          } else if (ie->key == InputEvent::Key::Space) {
-            spaceHeld = true;
+          if (ie.key == InputEvent::Key::Escape) {
+            ctx_.running = false;
+          } else if (ie.key == InputEvent::Key::F) {
+            view_.fitRect(graphBounds(ctx_, *tree_), renderer_.outputSize());
+          } else if (ie.key == InputEvent::Key::Space) {
+            spaceHeld_ = true;
           }
           break;
 
         case InputEvent::Type::KeyUp:
-          if (ie->key == InputEvent::Key::Space) {
-            spaceHeld = false;
+          if (ie.key == InputEvent::Key::Space) {
+            spaceHeld_ = false;
           }
           break;
 
         case InputEvent::Type::MouseDown:
-          if (ie->button == InputEvent::Button::Middle || (ie->button == InputEvent::Button::Left && spaceHeld)) {
-            panning = true;
-            lastPan = ie->pos;
+          if (ie.button == InputEvent::Button::Middle || (ie.button == InputEvent::Button::Left && spaceHeld_)) {
+            panning_ = true;
+            lastPan_ = ie.pos;
           }
           break;
 
         case InputEvent::Type::MouseUp:
-          if (ie->button == InputEvent::Button::Middle || ie->button == InputEvent::Button::Left) {
-            panning = false;
+          if (ie.button == InputEvent::Button::Middle || ie.button == InputEvent::Button::Left) {
+            panning_ = false;
           }
           break;
 
         case InputEvent::Type::MouseMove:
-          if (panning) {
-            view_.pan = view_.pan + (ie->pos - lastPan);
-            lastPan = ie->pos;
+          if (panning_) {
+            view_.pan = view_.pan + (ie.pos - lastPan_);
+            lastPan_ = ie.pos;
           }
           break;
 
         case InputEvent::Type::Wheel:
           {
             auto old = view_;
-            view_.zoomAbout(ie->pos, std::pow(ctx_.zoom.wheelStep, ie->wheel.y));
+            view_.zoomAbout(ie.pos, std::pow(ctx_.zoom.wheelStep, ie.wheel.y));
             if (view_.scale < ctx_.zoom.min || view_.scale > ctx_.zoom.max) {
               view_ = old;
             }
@@ -95,29 +82,27 @@ namespace fluir::editor {
           }
 
         case InputEvent::Type::Resize:
-          viewSize = renderer_.outputSize();
           break;
       }
-
-      if (stop) {
-        break;
-      }
-      redraw();
     }
 
+    return 0;
+  }
+
+  int ModulePage::write() {
+    renderer_.beginFrame();
+
+    renderGraph(ctx_, *tree_, view_, renderer_);
+    renderer_.endFrame();
     return 0;
   }
 
   void ModulePage::reset() {
     view_ = Viewport{};
     tree_.reset();
+    panning_ = false;
+    spaceHeld_ = false;
+    lastPan_ = Vec2{};
   }
-
-  void ModulePage::redraw() {
-    renderer_.beginFrame();
-
-    renderGraph(ctx_, *tree_, view_, renderer_);
-    renderer_.endFrame();
-  };
 
 }  // namespace fluir::editor

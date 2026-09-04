@@ -99,4 +99,24 @@ namespace fluir::editor {
     }
   }
 
+  std::vector<InputEvent> InputManager::read(std::chrono::milliseconds timeout) {
+    std::vector<InputEvent> events;
+
+    SDL_Event e;
+    if (!SDL_WaitEventTimeout(&e, static_cast<Sint32>(timeout.count()))) {
+      return events;
+    }
+    if (const auto ie = translate(e)) {
+      events.push_back(*ie);
+    }
+
+    while (SDL_PollEvent(&e)) {
+      if (const auto ie = translate(e)) {
+        events.push_back(*ie);
+      }
+    }
+
+    return events;
+  }
+
 }  // namespace fluir::editor

@@ -59,6 +59,7 @@ namespace fluir::editor {
     Zoom zoom;
     Theme theme;
     Window window;
+    bool running = true;
     std::optional<std::filesystem::path> program;
   };
 

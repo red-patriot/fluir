@@ -1,23 +1,32 @@
 #include "editor/app.hpp"
 
-#include <cmath>
+#include <chrono>
 
-#include <SDL3/SDL.h>
-
-#include "compiler/utility/context.hpp"
-#include "editor/core/editor_context.hpp"
-#include "editor/core/loader.hpp"
-#include "editor/core/render_graph.hpp"
-#include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
 #include "editor/pages/module.hpp"
 
 namespace fluir::editor {
+  using namespace std::chrono_literals;
 
   int run(EditorContext& ctx, Renderer& renderer) {
+    InputManager input;
     ModulePage page{ctx, renderer};
-    // TODO: Create input system and drive event loop
-    return page.run();
+
+    if (const int error = page.start(); error) {
+      return error;
+    }
+
+    while (ctx.running) {
+      const auto events = input.read(10ms);                // Read
+      if (const int error = page.update(events); error) {  // Update
+        return error;
+      }
+      if (const int error = page.write(); error) {  // Write
+        return error;
+      }
+    }
+
+    return 0;
   }
 
 }  // namespace fluir::editor

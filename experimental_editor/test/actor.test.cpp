@@ -276,11 +276,11 @@ TEST(Actor, FunctionDeclActorOnClickSummarizesName) {
   EXPECT_NE(actor.lastClickSummary().find("foo"), std::string::npos);
 }
 
-TEST(Actor, FunctionDeclActorIdIsFunctionScoped) {
+TEST(Actor, FunctionDeclActorFunctionIdAndBoundsReturnConstructionValues) {
   const Rect bounds{10, 20, 30, 40};
   FunctionDeclActor actor(makeFunctionDecl(), bounds);
 
-  EXPECT_EQ(actor.id(), (fluir::FullID{8}));
+  EXPECT_EQ(actor.functionId(), 8u);
   EXPECT_EQ(actor.bounds(), bounds);
 }
 

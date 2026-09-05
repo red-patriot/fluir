@@ -5,6 +5,7 @@
 
 #include "compiler/models/location.hpp"
 #include "editor/actors/function_decl_actor.hpp"
+#include "editor/actors/node_actor.hpp"
 #include "editor/actors/node_actors.hpp"
 #include "editor/core/graph_geometry.hpp"
 
@@ -18,16 +19,16 @@ namespace fluir::editor {
       fluir::ID functionId;
       Rect bounds;
 
-      std::unique_ptr<Actor> operator()(const pt::Binary& node) const {
+      std::unique_ptr<NodeActor> operator()(const pt::Binary& node) const {
         return std::make_unique<BinaryActor>(functionId, node, bounds);
       }
-      std::unique_ptr<Actor> operator()(const pt::Unary& node) const {
+      std::unique_ptr<NodeActor> operator()(const pt::Unary& node) const {
         return std::make_unique<UnaryActor>(functionId, node, bounds);
       }
-      std::unique_ptr<Actor> operator()(const pt::Constant& node) const {
+      std::unique_ptr<NodeActor> operator()(const pt::Constant& node) const {
         return std::make_unique<ConstantActor>(functionId, node, bounds);
       }
-      std::unique_ptr<Actor> operator()(const pt::Call& node) const {
+      std::unique_ptr<NodeActor> operator()(const pt::Call& node) const {
         return std::make_unique<CallActor>(functionId, node, bounds);
       }
     };
@@ -41,6 +42,7 @@ namespace fluir::editor {
   void GraphScene::clear() {
     actors_.clear();
     byId_.clear();
+    frames_.clear();
   }
 
   void GraphScene::build(const EditorContext& ctx, const pt::ParseTree& tree) {
@@ -51,13 +53,15 @@ namespace fluir::editor {
       const double h = static_cast<double>(fn->location.height) * ctx.layout.unitPx;
 
       actors_.push_back(std::make_unique<FunctionDeclActor>(*fn, atOrigin(frameOrigin, Rect{0, 0, w, h})));
-      byId_[actors_.back()->id()] = actors_.back().get();
+      auto* frameActor = static_cast<FunctionDeclActor*>(actors_.back().get());
+      frames_[frameActor->functionId()] = frameActor;
 
       const Vec2 origin = bodyOrigin(frameOrigin, ctx.layout.headerH());
       for (const pt::Node* node : sortedNodes(fn->body)) {
         const Rect bounds = atOrigin(origin, localRect(locationOf(*node), ctx.layout.unitPx));
         actors_.push_back(std::visit(MakeActor{fn->id, bounds}, *node));
-        byId_[actors_.back()->id()] = actors_.back().get();
+        auto* nodeActor = static_cast<NodeActor*>(actors_.back().get());
+        byId_[nodeActor->id()] = nodeActor;
       }
     }
   }
@@ -77,8 +81,8 @@ namespace fluir::editor {
   }
 
   Actor* GraphScene::find(fluir::ID functionId) const {
-    const auto it = byId_.find(fluir::FullID{functionId});
-    return it == byId_.end() ? nullptr : it->second;
+    const auto it = frames_.find(functionId);
+    return it == frames_.end() ? nullptr : it->second;
   }
 
 }  // namespace fluir::editor

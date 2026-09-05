@@ -14,6 +14,9 @@
 
 namespace fluir::editor {
 
+  class NodeActor;
+  class FunctionDeclActor;
+
   namespace detail {
 
     // std::vector has no default std::hash; FullID needs one to key byId_.
@@ -49,7 +52,8 @@ namespace fluir::editor {
 
    private:
     std::vector<std::unique_ptr<Actor>> actors_;
-    std::unordered_map<fluir::FullID, Actor*, detail::FullIDHash> byId_;
+    std::unordered_map<fluir::FullID, NodeActor*, detail::FullIDHash> byId_;
+    std::unordered_map<fluir::ID, FunctionDeclActor*> frames_;
   };
 
 }  // namespace fluir::editor

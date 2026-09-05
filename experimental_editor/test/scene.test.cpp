@@ -12,6 +12,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/actors/function_decl_actor.hpp"
+#include "editor/actors/node_actor.hpp"
 #include "editor/actors/node_actors.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
@@ -37,6 +38,7 @@ namespace {
   using fluir::editor::EditorContext;
   using fluir::editor::FunctionDeclActor;
   using fluir::editor::GraphScene;
+  using fluir::editor::NodeActor;
   using fluir::editor::Rect;
   using fluir::editor::UnaryActor;
   using fluir::editor::Vec2;
@@ -157,7 +159,7 @@ TEST(Scene, TopmostAtReturnsHigherZOnOverlap) {
   // localRect{5,5,10,10} -> bodyOrigin{0,25} -> absolute {5,30,10,10}.
   Actor* hit = scene.topmostAt(Vec2{8, 33});
   ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->id(), (fluir::FullID{1, 11}));
+  EXPECT_EQ(dynamic_cast<NodeActor*>(hit)->id(), (fluir::FullID{1, 11}));
 }
 
 TEST(Scene, TopmostAtOutsideEveryActorReturnsNullptr) {
@@ -195,7 +197,7 @@ TEST(Scene, RebuildClearsStaleActors) {
 
   Actor* hit = scene.topmostAt(Vec2{55, 80});
   ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->id(), (fluir::FullID{1, 21}));
+  EXPECT_EQ(dynamic_cast<NodeActor*>(hit)->id(), (fluir::FullID{1, 21}));
 }
 
 TEST(Scene, FindReturnsActorOwningNodeId) {
@@ -208,7 +210,7 @@ TEST(Scene, FindReturnsActorOwningNodeId) {
   // Fixture: function id=1, constant id=1.
   Actor* found = scene.find(1, 1);
   ASSERT_NE(found, nullptr);
-  EXPECT_EQ(found->id(), (fluir::FullID{1, 1}));
+  EXPECT_EQ(dynamic_cast<NodeActor*>(found)->id(), (fluir::FullID{1, 1}));
   EXPECT_NE(dynamic_cast<ConstantActor*>(found), nullptr);
 }
 
@@ -254,8 +256,8 @@ TEST(Scene, FindDisambiguatesFunctionFrameFromSameIdNode) {
   ASSERT_NE(frame, nullptr);
   ASSERT_NE(node, nullptr);
   EXPECT_NE(frame, node);
-  EXPECT_EQ(frame->id(), (fluir::FullID{1}));
-  EXPECT_EQ(node->id(), (fluir::FullID{1, 1}));
+  EXPECT_EQ(dynamic_cast<FunctionDeclActor*>(frame)->functionId(), 1u);
+  EXPECT_EQ(dynamic_cast<NodeActor*>(node)->id(), (fluir::FullID{1, 1}));
   EXPECT_NE(dynamic_cast<FunctionDeclActor*>(frame), nullptr);
   EXPECT_NE(dynamic_cast<ConstantActor*>(node), nullptr);
 }
@@ -278,8 +280,8 @@ TEST(Scene, FindDisambiguatesCrossFunctionNodeIdCollision) {
   ASSERT_NE(nodeInA, nullptr);
   ASSERT_NE(nodeInB, nullptr);
   EXPECT_NE(nodeInA, nodeInB);
-  EXPECT_EQ(nodeInA->id(), (fluir::FullID{1, 2}));
-  EXPECT_EQ(nodeInB->id(), (fluir::FullID{2, 2}));
+  EXPECT_EQ(dynamic_cast<NodeActor*>(nodeInA)->id(), (fluir::FullID{1, 2}));
+  EXPECT_EQ(dynamic_cast<NodeActor*>(nodeInB)->id(), (fluir::FullID{2, 2}));
 }
 
 TEST(Scene, FactoryConstructsCorrectConcreteTypePerVariant) {
@@ -340,5 +342,5 @@ TEST(Scene, TopmostAtFallsBackToFrameOverEmptyFrameArea) {
   Actor* hit = scene.topmostAt(Vec2{400, 400});
   ASSERT_NE(hit, nullptr);
   EXPECT_NE(dynamic_cast<FunctionDeclActor*>(hit), nullptr);
-  EXPECT_EQ(hit->id(), (fluir::FullID{1}));
+  EXPECT_EQ(dynamic_cast<FunctionDeclActor*>(hit)->functionId(), 1u);
 }

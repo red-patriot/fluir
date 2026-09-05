@@ -1,9 +1,7 @@
 #pragma once
 
-#include <utility>
 #include <vector>
 
-#include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
@@ -18,14 +16,13 @@ namespace fluir::editor {
 
   class Actor {
    public:
-    Actor(fluir::FullID id, Rect bounds) : id_(std::move(id)), bounds_(bounds) { }
+    explicit Actor(Rect bounds) : bounds_(bounds) { }
     virtual ~Actor() = default;
     Actor(const Actor&) = delete;
     Actor& operator=(const Actor&) = delete;
     Actor(Actor&&) = delete;
     Actor& operator=(Actor&&) = delete;
 
-    const fluir::FullID& id() const { return id_; }
     const Rect& bounds() const { return bounds_; }
     void setBounds(Rect bounds) { bounds_ = bounds; }
 
@@ -38,7 +35,6 @@ namespace fluir::editor {
     virtual PortSet ports(const EditorContext& ctx) const = 0;
 
    private:
-    fluir::FullID id_;
     Rect bounds_;
   };
 

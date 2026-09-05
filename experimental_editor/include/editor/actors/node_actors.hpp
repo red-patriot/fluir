@@ -4,16 +4,16 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
-#include "editor/actors/actor.hpp"
+#include "editor/actors/node_actor.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
 
   /** Actor for a `pt::Binary` node: clicking summarizes the stringified operator. */
-  class BinaryActor : public Actor {
+  class BinaryActor : public NodeActor {
    public:
     BinaryActor(fluir::ID functionId, pt::Binary node, Rect bounds) :
-      Actor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
+      NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
     void draw(const Subview& body, const EditorContext& ctx) const override;
@@ -27,10 +27,10 @@ namespace fluir::editor {
   };
 
   /** Actor for a `pt::Unary` node: clicking summarizes the stringified operator. */
-  class UnaryActor : public Actor {
+  class UnaryActor : public NodeActor {
    public:
     UnaryActor(fluir::ID functionId, pt::Unary node, Rect bounds) :
-      Actor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
+      NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
     void draw(const Subview& body, const EditorContext& ctx) const override;
@@ -44,10 +44,10 @@ namespace fluir::editor {
   };
 
   /** Actor for a `pt::Constant` node: clicking summarizes the literal value. */
-  class ConstantActor : public Actor {
+  class ConstantActor : public NodeActor {
    public:
     ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds) :
-      Actor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
+      NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
     void draw(const Subview& body, const EditorContext& ctx) const override;
@@ -61,10 +61,10 @@ namespace fluir::editor {
   };
 
   /** Actor for a `pt::Call` node: clicking summarizes the call's target name. */
-  class CallActor : public Actor {
+  class CallActor : public NodeActor {
    public:
     CallActor(fluir::ID functionId, pt::Call node, Rect bounds) :
-      Actor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
+      NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
     void draw(const Subview& body, const EditorContext& ctx) const override;

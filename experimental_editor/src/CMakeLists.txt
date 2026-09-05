@@ -54,6 +54,7 @@ target_include_directories(
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
+    "core/layer.cpp"
     "core/loader.cpp"
     "core/render_graph.cpp"
     "core/viewport.cpp"

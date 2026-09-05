@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(
     fluir.editor.test
     input.test.cpp
+    layer.test.cpp
     loader.test.cpp
     viewport.test.cpp
     render_graph.test.cpp

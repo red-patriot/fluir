@@ -1,5 +1,6 @@
 #include "editor/pages/module.hpp"
 
+#include <algorithm>
 #include <filesystem>
 #include <string>
 #include <vector>
@@ -217,8 +218,28 @@ TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
   RecordingRenderer directRenderer;
   fluir::editor::renderGraph(ctx, *l.result.tree, v, directRenderer);
 
-  EXPECT_EQ(pageRenderer.calls, directRenderer.calls)
-    << "ModulePage's persistent-scene draw path must match renderGraph()'s ephemeral-scene draw path";
+  // write() now also draws the app-level HeaderBar
+  ASSERT_GT(pageRenderer.calls.size(), directRenderer.calls.size());
+  EXPECT_TRUE(std::equal(directRenderer.calls.begin(), directRenderer.calls.end(), pageRenderer.calls.begin()))
+    << "ModulePage's persistent-scene draw path must match renderGraph()'s ephemeral-scene draw path as a prefix";
+}
+
+TEST(ModulePage, LeftClickOnExitButtonSetsRunningFalse) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.write();  // Lays out header_/exitButton_ bounds via HeaderBar::draw.
+
+  const Vec2 clickPos = page.header().exitButton().bounds().center();
+  page.update({mouseDown(InputEvent::Button::Left, clickPos)});
+
+  EXPECT_FALSE(ctx.running);
 }
 
 TEST(ModulePage, QuitForcesRunningFalseEvenOverANode) {

@@ -7,7 +7,8 @@
 #include "editor/core/render_graph.hpp"
 
 namespace fluir::editor {
-  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : ctx_(ctx), renderer_(renderer) { }
+  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
+    ctx_(ctx), renderer_(renderer), header_([&ctx] { ctx.running = false; }) { }
 
   int ModulePage::start() {
     reset();
@@ -57,8 +58,10 @@ namespace fluir::editor {
             panning_ = true;
             lastPan_ = ie.pos;
           } else if (ie.button == InputEvent::Button::Left) {
-            if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
-              hit->onClick(view_.screenToWorld(ie.pos));
+            if (!header_.handleClick(ie.pos)) {
+              if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
+                hit->onClick(view_.screenToWorld(ie.pos));
+              }
             }
           }
           break;
@@ -98,6 +101,7 @@ namespace fluir::editor {
     renderer_.beginFrame();
 
     GraphRenderer{ctx_, view_, renderer_, scene_}(*tree_);
+    header_.draw(ctx_, renderer_, renderer_.outputSize());
     renderer_.endFrame();
     return 0;
   }

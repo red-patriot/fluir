@@ -5,6 +5,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/actors/scene.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/header_bar.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
@@ -23,12 +24,17 @@ namespace fluir::editor {
     // visible effect through this page's API).
     const GraphScene& scene() const { return scene_; }
 
+    // Test-only observability: lets tests locate/click the header's Exit
+    // button without a second parallel exit path through ModulePage's API.
+    const HeaderBar& header() const { return header_; }
+
    private:
     EditorContext& ctx_;
     Renderer& renderer_;
     Viewport view_;
     std::optional<fluir::pt::ParseTree> tree_;
     GraphScene scene_;
+    HeaderBar header_;
     bool panning_ = false;
     bool spaceHeld_ = false;
     Vec2 lastPan_;

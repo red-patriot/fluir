@@ -25,6 +25,8 @@ namespace fluir::editor {
       double railUnits = 5.0;
       double paramUnits = 15.0;
       double returnInsetUnits = 5.0;
+      // App-level chrome bar height, in screen px (not world units).
+      double chromeHeaderPx = 32.0;
 
       constexpr double headerH() const { return headerUnits * unitPx; }
       constexpr double railStep() const { return railUnits * unitPx; }
@@ -48,6 +50,7 @@ namespace fluir::editor {
       Color sIntNode{225, 31, 251, 255};
       Color floatNode{139, 31, 255, 255};
       Color callNode{31, 117, 255, 255};
+      Color headerBackground{34, 37, 45, 255};
     };
 
     struct Window {

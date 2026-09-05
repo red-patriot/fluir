@@ -11,6 +11,7 @@ add_executable(
     button_actor.test.cpp
     scene.test.cpp
     module.test.cpp
+    header_bar.test.cpp
 )
 
 target_compile_definitions(

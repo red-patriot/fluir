@@ -20,6 +20,10 @@ namespace fluir::editor {
 
   Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }
 
+  Rect dotRect(Vec2 anchor, double portDot) {
+    return {anchor.x - portDot * 0.5, anchor.y - portDot * 0.5, portDot, portDot};
+  }
+
   // Deterministic order: (location.z, id).
   std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree) {
     std::vector<const pt::FunctionDecl*> funcs;

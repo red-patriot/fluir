@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/actors/actor.hpp"
+#include "editor/actors/scene.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
@@ -13,24 +15,15 @@ namespace fluir::editor {
   // Draws a Parse Tree's elements to a Renderer
   class GraphRenderer {
    public:
-    GraphRenderer(const EditorContext& ctx, const Viewport& viewport, Renderer& renderer);
+    GraphRenderer(const EditorContext& ctx, const Viewport& viewport, Renderer& renderer, const GraphScene& scene);
 
     void operator()(const pt::ParseTree& tree);
 
     void operator()(const pt::FunctionDecl& decl);
 
-    void operator()(const pt::Binary& binary);
-    void operator()(const pt::Unary& unary);
-    void operator()(const pt::Constant& constant);
-    void operator()(const pt::Call& call);
-
     void operator()(const pt::Conduit& conduit);
 
    private:
-    struct PortSet {
-      std::vector<Vec2> inputs;
-      std::vector<Vec2> outputs;
-    };
     using PortMap = std::unordered_map<fluir::ID, PortSet>;
 
     void drawParamRail(Vec2 origin, const pt::FunctionDecl::InputBlock& input);
@@ -39,6 +32,7 @@ namespace fluir::editor {
     const EditorContext& ctx_;
     Viewport viewport_;
     Renderer& renderer_;
+    const GraphScene& scene_;
 
     // Current function's ports, and the body Subview.
     PortMap ports_;

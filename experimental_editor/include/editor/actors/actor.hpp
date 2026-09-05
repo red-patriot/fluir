@@ -1,9 +1,19 @@
 #pragma once
 
+#include <vector>
+
 #include "compiler/models/id.hpp"
+#include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/viewport.hpp"
 
 namespace fluir::editor {
+
+  /** A node's port anchors, in body-local (pre-`toScreen`) coordinates. */
+  struct PortSet {
+    std::vector<Vec2> inputs;
+    std::vector<Vec2> outputs;
+  };
 
   class Actor {
    public:
@@ -19,6 +29,12 @@ namespace fluir::editor {
     void setBounds(Rect bounds) { bounds_ = bounds; }
 
     virtual void onClick(Vec2 worldPos) = 0;
+
+    /** Draw this actor's body/label/ports into `body`. */
+    virtual void draw(const Subview& body, const EditorContext& ctx) const = 0;
+
+    /** This actor's port anchors, in body-local (pre-`toScreen`) coordinates. */
+    virtual PortSet ports(const EditorContext& ctx) const = 0;
 
    private:
     fluir::ID id_;

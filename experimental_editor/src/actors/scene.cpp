@@ -36,7 +36,10 @@ namespace fluir::editor {
 
   }  // namespace
 
-  void GraphScene::clear() { actors_.clear(); }
+  void GraphScene::clear() {
+    actors_.clear();
+    byId_.clear();
+  }
 
   void GraphScene::build(const EditorContext& ctx, const pt::ParseTree& tree) {
     clear();
@@ -45,6 +48,7 @@ namespace fluir::editor {
       for (const pt::Node* node : sortedNodes(fn->body)) {
         const Rect bounds = atOrigin(origin, localRect(locationOf(*node), ctx.layout.unitPx));
         actors_.push_back(std::visit(MakeActor{bounds}, *node));
+        byId_[actors_.back()->id()] = actors_.back().get();
       }
     }
   }
@@ -56,6 +60,11 @@ namespace fluir::editor {
       }
     }
     return nullptr;
+  }
+
+  Actor* GraphScene::find(fluir::ID id) const {
+    const auto it = byId_.find(id);
+    return it == byId_.end() ? nullptr : it->second;
   }
 
 }  // namespace fluir::editor

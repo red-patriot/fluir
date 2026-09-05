@@ -3,39 +3,15 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
-#include <string>
-#include <type_traits>
 #include <variant>
 #include <vector>
 
-#include <fmt/format.h>
-
 #include "compiler/models/id.hpp"
-#include "compiler/models/operator.hpp"
 #include "editor/core/graph_geometry.hpp"
 
 namespace fluir::editor {
-  using namespace ::fluir::literals_types;
 
   namespace {
-    struct LiteralColor {
-      const EditorContext::Theme& theme_;
-
-      Color operator()(const F64&) { return theme_.floatNode; };
-      Color operator()(const I8&) { return theme_.sIntNode; };
-      Color operator()(const I16&) { return theme_.sIntNode; };
-      Color operator()(const I32&) { return theme_.sIntNode; };
-      Color operator()(const I64&) { return theme_.sIntNode; };
-      Color operator()(const U8&) { return theme_.uIntNode; };
-      Color operator()(const U16&) { return theme_.uIntNode; };
-      Color operator()(const U32&) { return theme_.uIntNode; };
-      Color operator()(const U64&) { return theme_.uIntNode; };
-    };
-
-    Rect dotRect(Vec2 anchor, double portDot) {
-      return {anchor.x - portDot * 0.5, anchor.y - portDot * 0.5, portDot, portDot};
-    }
 
     // Chrome (frame / header / name / rails) draws with no clip of its own, so it
     // uses the bare viewport transform rather than a Subview (which always
@@ -47,56 +23,17 @@ namespace fluir::editor {
       return {tl.x, tl.y, world.w * vp.scale, world.h * vp.scale};
     }
 
-    // Ported from editor/client NodeInOut.tsx `positionFunc`, which returns the
-    // CSS-translate percentage `count == 1 ? 0 : 100 * count * (i/(count-1) - 0.5)`
-    // — a centred offset. As a fraction of the node's height along [0, 1] that is
-    // `i / (count - 1)` for `count > 1`, and the centre (0.5) for a lone port
-    // (the client's `count == 1 ? 0` means "no offset from the centre").
-    double portFraction(int count, int index) {
-      if (count <= 1) {
-        return 0.5;
-      }
-      return static_cast<double>(index) / (static_cast<double>(count) - 1.0);
-    }
-
-    // Reproduces compiler/src/debug/parse_tree_printer.cpp literal rendering: I8 /
-    // U8 widen to int so they print as numbers, BOOL prints true/false, and every
-    // other arithmetic type goes straight through fmt.
-    std::string renderLiteral(const pt::Literal& value) {
-      return std::visit(
-        [](auto v) -> std::string {
-          using T = std::decay_t<decltype(v)>;
-          if constexpr (std::is_same_v<T, bool>) {
-            return v ? "true" : "false";
-          } else if constexpr (std::is_same_v<T, std::int8_t> || std::is_same_v<T, std::uint8_t>) {
-            return fmt::format("{}", static_cast<int>(v));
-          } else {
-            return fmt::format("{}", v);
-          }
-        },
-        value);
-    }
-
-    // Spread `count` port dots down an edge at local x == `edgeX`, pushing each
-    // anchor (top-to-bottom, in `view`-local coords) into `slot`.
-    void emitEdgeDots(double edgeX,
-                      const Rect& nodeRect,
-                      int count,
-                      double portDot,
-                      const Subview& view,
-                      std::vector<Vec2>& slot,
-                      const Color& color) {
-      for (int i = 0; i < count; ++i) {
-        const Vec2 anchor{edgeX, nodeRect.y + portFraction(count, i) * nodeRect.h};
-        view.renderer().fillRect(view.toScreen(dotRect(anchor, portDot)), color);
-        slot.push_back(anchor);
-      }
+    fluir::ID idOf(const pt::Node& node) {
+      return std::visit([](const auto& n) { return n.id; }, node);
     }
 
   }  // namespace
 
-  GraphRenderer::GraphRenderer(const EditorContext& ctx, const Viewport& viewport, Renderer& renderer) :
-    ctx_(ctx), viewport_(viewport), renderer_(renderer) { }
+  GraphRenderer::GraphRenderer(const EditorContext& ctx,
+                               const Viewport& viewport,
+                               Renderer& renderer,
+                               const GraphScene& scene) :
+    ctx_(ctx), viewport_(viewport), renderer_(renderer), scene_(scene) { }
 
   void GraphRenderer::operator()(const pt::ParseTree& tree) {
     for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
@@ -138,7 +75,11 @@ namespace fluir::editor {
     }
 
     for (const pt::Node* node : sortedNodes(decl.body)) {
-      std::visit(*this, *node);
+      const fluir::ID id = idOf(*node);
+      Actor* actor = scene_.find(id);
+      assert(actor);
+      actor->draw(*body_, ctx_);
+      ports_[id] = actor->ports(ctx_);
     }
 
     std::vector<const pt::Conduit*> conduits;
@@ -154,89 +95,6 @@ namespace fluir::editor {
 
     body_ = prevBody;
     // `body` destructs at scope exit -> popClip, after the last conduit line.
-  }
-
-  void GraphRenderer::operator()(const pt::Binary& binary) {
-    assert(body_);
-    const FlowGraphLocation& loc = binary.location;
-    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
-    renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.operatorNode);
-    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
-
-    PortSet& set = ports_[binary.id];
-    const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
-
-    renderer_.drawText(body_->toScreen(textPos), stringify(binary.op), ctx_.theme.text);
-    emitEdgeDots(nodeRect.x, nodeRect, 2, ctx_.layout.portDot, *body_, set.inputs, ctx_.theme.border);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.border);
-  }
-
-  void GraphRenderer::operator()(const pt::Unary& unary) {
-    assert(body_);
-    const FlowGraphLocation& loc = unary.location;
-    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
-    renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.operatorNode);
-    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
-
-    PortSet& set = ports_[unary.id];
-    const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
-
-    renderer_.drawText(body_->toScreen(textPos), stringify(unary.op), ctx_.theme.text);
-    emitEdgeDots(nodeRect.x, nodeRect, 1, ctx_.layout.portDot, *body_, set.inputs, ctx_.theme.border);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.border);
-  }
-
-  void GraphRenderer::operator()(const pt::Constant& constant) {
-    assert(body_);
-    const FlowGraphLocation& loc = constant.location;
-    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
-    renderer_.fillRect(body_->toScreen(nodeRect), std::visit(LiteralColor{ctx_.theme}, constant.value));
-    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
-
-    PortSet& set = ports_[constant.id];
-    const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
-
-    renderer_.drawText(body_->toScreen(textPos), renderLiteral(constant.value), ctx_.theme.text);
-    emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.border);
-  }
-
-  void GraphRenderer::operator()(const pt::Call& call) {
-    assert(body_);
-    const FlowGraphLocation& loc = call.location;
-    const Rect nodeRect = localRect(loc, ctx_.layout.unitPx);
-    renderer_.fillRect(body_->toScreen(nodeRect), ctx_.theme.callNode);
-    renderer_.drawRect(body_->toScreen(nodeRect), ctx_.theme.border);
-
-    PortSet& set = ports_[call.id];
-    const Vec2 textPos{nodeRect.x + ctx_.layout.textPad, nodeRect.y + ctx_.layout.textPad};
-
-    renderer_.drawText(body_->toScreen(textPos), call.target, ctx_.theme.text);
-
-    std::vector<const pt::Call::Argument*> args;
-    args.reserve(call.arguments.size());
-    for (const auto& arg : call.arguments) {
-      args.push_back(&arg);
-    }
-    std::sort(args.begin(), args.end(), [](const pt::Call::Argument* a, const pt::Call::Argument* b) {
-      return a->index < b->index;
-    });
-
-    // One row per argument, stacked below the header row (railStep() tall),
-    // matching CallNode.tsx's column of CallArgumentNode rows; each row's
-    // input handle sits at the row's vertical centre.
-    for (std::size_t k = 0; k < args.size(); ++k) {
-      const double rowTop = nodeRect.y + (static_cast<double>(k) + 1.0) * ctx_.layout.railStep();
-      renderer_.drawText(body_->toScreen(Vec2{nodeRect.x + ctx_.layout.textPad, rowTop + ctx_.layout.textPad}),
-                         args[k]->name,
-                         ctx_.theme.text);
-      const Vec2 anchor{nodeRect.x, rowTop + ctx_.layout.railStep() * 0.5};
-      renderer_.fillRect(body_->toScreen(dotRect(anchor, ctx_.layout.portDot)), ctx_.theme.border);
-      set.inputs.push_back(anchor);
-    }
-
-    if (call._return.has_value()) {
-      emitEdgeDots(nodeRect.x + nodeRect.w, nodeRect, 1, ctx_.layout.portDot, *body_, set.outputs, ctx_.theme.border);
-    }
   }
 
   void GraphRenderer::operator()(const pt::Conduit& conduit) {
@@ -307,7 +165,9 @@ namespace fluir::editor {
   }
 
   void renderGraph(const EditorContext& ctx, const pt::ParseTree& tree, const Viewport& view, Renderer& renderer) {
-    GraphRenderer{ctx, view, renderer}(tree);
+    GraphScene scene;
+    scene.build(ctx, tree);
+    GraphRenderer{ctx, view, renderer, scene}(tree);
   }
 
   Rect graphBounds(const EditorContext& ctx, const pt::ParseTree& tree) {

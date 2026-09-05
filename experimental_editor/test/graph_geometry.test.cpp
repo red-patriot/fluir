@@ -15,6 +15,7 @@ namespace {
   using fluir::ID;
   using fluir::editor::atOrigin;
   using fluir::editor::bodyOrigin;
+  using fluir::editor::dotRect;
   using fluir::editor::functionOrigin;
   using fluir::editor::localRect;
   using fluir::editor::Rect;
@@ -67,6 +68,8 @@ TEST(GraphGeometry, AtOriginShiftsLocalRectKeepingSize) {
   const Rect local{10, 100, 25, 25};
   EXPECT_EQ(atOrigin(body, local), (Rect{60, 175, 25, 25}));
 }
+
+TEST(GraphGeometry, DotRectIsCenteredOnAnchor) { EXPECT_EQ(dotRect(Vec2{122, 84.5}, 6.0), (Rect{119, 81.5, 6, 6})); }
 
 TEST(GraphGeometry, SortedFunctionsOrdersByZThenId) {
   fluir::pt::ParseTree tree;

@@ -197,6 +197,30 @@ TEST(ModulePage, LeftClickOnActorDispatchesToItsOnClick) {
   EXPECT_EQ(constant->lastClickSummary(), "constant -5");
 }
 
+TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer pageRenderer;
+  ModulePage page{ctx, pageRenderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.write();
+
+  // Replicates the fit-to-window transform ModulePage::start() applies internally
+  // (same helper shape as `toScreen` above), so renderGraph() draws through an
+  // identical Viewport to the one the persistent scene_ was drawn through.
+  Viewport v;
+  v.fitRect(graphBounds(ctx, *l.result.tree), pageRenderer.outputSize_);
+  RecordingRenderer directRenderer;
+  fluir::editor::renderGraph(ctx, *l.result.tree, v, directRenderer);
+
+  EXPECT_EQ(pageRenderer.calls, directRenderer.calls)
+    << "ModulePage's persistent-scene draw path must match renderGraph()'s ephemeral-scene draw path";
+}
+
 TEST(ModulePage, QuitForcesRunningFalseEvenOverANode) {
   const Loaded l = loadFixture("read/int_constants.fl");
   ASSERT_TRUE(l.result.tree.has_value());

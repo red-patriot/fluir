@@ -21,6 +21,9 @@ namespace fluir::editor {
   /** Shift a local-space rect by `origin`, keeping its size. */
   Rect atOrigin(Vec2 origin, Rect local);
 
+  /** A `portDot`-sized square centered on `anchor`. */
+  Rect dotRect(Vec2 anchor, double portDot);
+
   /** `tree`'s function declarations, ordered ascending by (location.z, id). */
   std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree);
 

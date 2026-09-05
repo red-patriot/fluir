@@ -14,6 +14,8 @@ namespace fluir::editor {
     BinaryActor(pt::Binary node, Rect bounds) : Actor(node.id, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
+    void draw(const Subview& body, const EditorContext& ctx) const override;
+    PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -28,6 +30,8 @@ namespace fluir::editor {
     UnaryActor(pt::Unary node, Rect bounds) : Actor(node.id, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
+    void draw(const Subview& body, const EditorContext& ctx) const override;
+    PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -42,6 +46,8 @@ namespace fluir::editor {
     ConstantActor(pt::Constant node, Rect bounds) : Actor(node.id, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
+    void draw(const Subview& body, const EditorContext& ctx) const override;
+    PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -56,6 +62,8 @@ namespace fluir::editor {
     CallActor(pt::Call node, Rect bounds) : Actor(node.id, bounds), node_(node) { }
 
     void onClick(Vec2 worldPos) override;
+    void draw(const Subview& body, const EditorContext& ctx) const override;
+    PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 

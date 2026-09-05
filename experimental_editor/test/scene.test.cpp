@@ -182,6 +182,46 @@ TEST(Scene, RebuildClearsStaleActors) {
   EXPECT_EQ(hit->id(), 21u);
 }
 
+TEST(Scene, FindReturnsActorOwningNodeId) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  Actor* found = scene.find(1);
+  ASSERT_NE(found, nullptr);
+  EXPECT_EQ(found->id(), 1u);
+  EXPECT_NE(dynamic_cast<ConstantActor*>(found), nullptr);
+}
+
+TEST(Scene, FindReturnsNullptrForUnknownId) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  EXPECT_EQ(scene.find(999999), nullptr);
+}
+
+TEST(Scene, FindReflectsRebuild) {
+  fluir::pt::Block bodyA;
+  bodyA.nodes.emplace(20, makeConstant(20, 1, 1, 1, 2, 2));
+
+  fluir::pt::Block bodyB;
+  bodyB.nodes.emplace(21, makeConstant(21, 10, 10, 1, 2, 2));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyA))));
+  ASSERT_NE(scene.find(20), nullptr);
+
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyB))));
+
+  EXPECT_EQ(scene.find(20), nullptr);  // stale actor A must be gone
+  EXPECT_NE(scene.find(21), nullptr);
+}
+
 TEST(Scene, FactoryConstructsCorrectConcreteTypePerVariant) {
   fluir::pt::Block body;
   body.nodes.emplace(30, makeBinary(30, 1, 1, 1, 2, 2));     // localRect {5,5,10,10}   -> abs {5,30,10,10}

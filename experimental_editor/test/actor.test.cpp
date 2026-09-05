@@ -10,7 +10,10 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/viewport.hpp"
+#include "recording_renderer.hpp"
 
 namespace {
 
@@ -21,12 +24,25 @@ namespace {
   using fluir::editor::BinaryActor;
   using fluir::editor::CallActor;
   using fluir::editor::ConstantActor;
+  using fluir::editor::EditorContext;
+  using fluir::editor::PortSet;
   using fluir::editor::Rect;
+  using fluir::editor::Subview;
   using fluir::editor::UnaryActor;
   using fluir::editor::Vec2;
+  using fluir::editor::Viewport;
+  using testutil::fillsOfSize;
+  using testutil::hasFill;
+  using testutil::hasRect;
+  using testutil::hasTextAt;
+  using testutil::RecordingRenderer;
 
   // Geometry fields are irrelevant to click dispatch; z is unused.
   const FlowGraphLocation kLoc{.x = 0, .y = 0, .z = 0, .width = 0, .height = 0};
+
+  // Non-degenerate location for draw tests: width/height = 5 units, unitPx = 5
+  // (EditorContext default) -> a 25x25 local-space node rect.
+  const FlowGraphLocation kDrawLoc{.x = 0, .y = 0, .z = 0, .width = 5, .height = 5};
 
   fluir::pt::Binary makeBinary() {
     fluir::pt::Binary binary;
@@ -119,4 +135,122 @@ TEST(Actor, IdAndBoundsReturnConstructionValues) {
 
   EXPECT_EQ(actor.id(), 1u);
   EXPECT_EQ(actor.bounds(), bounds);
+}
+
+// Draw tests use identity Viewport + a root Subview at world origin, so
+// `body.toScreen(local) == local`; kDrawLoc * unitPx(5) -> node rect {0,0,25,25}.
+
+TEST(Actor, BinaryActorDrawsBodyLabelAndPorts) {
+  fluir::pt::Binary node = makeBinary();
+  node.location = kDrawLoc;
+  BinaryActor actor(node, Rect{0, 0, 10, 10});
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview body{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    actor.draw(body, ctx);
+  }
+  const PortSet ports = actor.ports(ctx);
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasTextAt(renderer.calls, "+", Vec2{4, 4}));
+
+  const auto dots = fillsOfSize(renderer.calls, 6, 6);
+  EXPECT_EQ(dots.size(), 3u);  // 2 inputs + 1 output
+
+  ASSERT_EQ(ports.inputs.size(), 2u);
+  EXPECT_EQ(ports.inputs[0], (Vec2{0, 0}));
+  EXPECT_EQ(ports.inputs[1], (Vec2{0, 25}));
+  ASSERT_EQ(ports.outputs.size(), 1u);
+  EXPECT_EQ(ports.outputs[0], (Vec2{25, 12.5}));
+}
+
+TEST(Actor, UnaryActorDrawsBodyLabelAndPorts) {
+  fluir::pt::Unary node = makeUnary();
+  node.location = kDrawLoc;
+  UnaryActor actor(node, Rect{0, 0, 10, 10});
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview body{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    actor.draw(body, ctx);
+  }
+  const PortSet ports = actor.ports(ctx);
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasTextAt(renderer.calls, "-", Vec2{4, 4}));
+
+  const auto dots = fillsOfSize(renderer.calls, 6, 6);
+  EXPECT_EQ(dots.size(), 2u);  // 1 input + 1 output
+
+  ASSERT_EQ(ports.inputs.size(), 1u);
+  EXPECT_EQ(ports.inputs[0], (Vec2{0, 12.5}));
+  ASSERT_EQ(ports.outputs.size(), 1u);
+  EXPECT_EQ(ports.outputs[0], (Vec2{25, 12.5}));
+}
+
+TEST(Actor, ConstantActorDrawsBodyLabelAndOutputPort) {
+  fluir::pt::Constant node = makeConstant();
+  node.location = kDrawLoc;
+  ConstantActor actor(node, Rect{0, 0, 10, 10});
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview body{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    actor.draw(body, ctx);
+  }
+  const PortSet ports = actor.ports(ctx);
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasTextAt(renderer.calls, "42", Vec2{4, 4}));
+
+  const auto dots = fillsOfSize(renderer.calls, 6, 6);
+  EXPECT_EQ(dots.size(), 1u);  // output only
+
+  EXPECT_TRUE(ports.inputs.empty());
+  ASSERT_EQ(ports.outputs.size(), 1u);
+  EXPECT_EQ(ports.outputs[0], (Vec2{25, 12.5}));
+}
+
+TEST(Actor, CallActorDrawsBodyLabelArgRowsAndReturnPort) {
+  fluir::pt::Call node = makeCall();
+  node.location = kDrawLoc;
+  fluir::pt::Call::Argument arg;
+  arg.index = 0;
+  arg.name = "x";
+  node.arguments.push_back(arg);
+  node._return = fluir::pt::Call::Return{};
+  CallActor actor(node, Rect{0, 0, 10, 10});
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview body{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    actor.draw(body, ctx);
+  }
+  const PortSet ports = actor.ports(ctx);
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(hasTextAt(renderer.calls, "add", Vec2{4, 4}));
+  // Arg row 0: rowTop = 0 + 1*railStep(25) = 25; label at (0+4, 25+4).
+  EXPECT_TRUE(hasTextAt(renderer.calls, "x", Vec2{4, 29}));
+
+  const auto dots = fillsOfSize(renderer.calls, 6, 6);
+  EXPECT_EQ(dots.size(), 2u);  // 1 arg input + 1 return output
+
+  ASSERT_EQ(ports.inputs.size(), 1u);
+  EXPECT_EQ(ports.inputs[0], (Vec2{0, 25 + 12.5}));
+  ASSERT_EQ(ports.outputs.size(), 1u);
+  EXPECT_EQ(ports.outputs[0], (Vec2{25, 12.5}));
 }

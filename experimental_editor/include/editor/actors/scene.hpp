@@ -1,9 +1,11 @@
 #pragma once
 
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/id.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
@@ -27,8 +29,12 @@ namespace fluir::editor {
      *  if none do. */
     Actor* topmostAt(Vec2 worldPos) const;
 
+    /** Returns the actor owning node `id`, or nullptr if none does. */
+    Actor* find(fluir::ID id) const;
+
    private:
     std::vector<std::unique_ptr<Actor>> actors_;
+    std::unordered_map<fluir::ID, Actor*> byId_;
   };
 
 }  // namespace fluir::editor

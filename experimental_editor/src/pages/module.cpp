@@ -97,7 +97,7 @@ namespace fluir::editor {
   int ModulePage::write() {
     renderer_.beginFrame();
 
-    renderGraph(ctx_, *tree_, view_, renderer_);
+    GraphRenderer{ctx_, view_, renderer_, scene_}(*tree_);
     renderer_.endFrame();
     return 0;
   }

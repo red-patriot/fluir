@@ -12,6 +12,7 @@
 
 namespace {
 
+  using fluir::editor::Actor;
   using fluir::editor::EditorContext;
   using fluir::editor::HeaderBar;
   using fluir::editor::Rect;
@@ -23,39 +24,38 @@ namespace {
 
 }  // namespace
 
-TEST(HeaderBar, DrawShowsBarFillAndProgramName) {
+TEST(HeaderBar, DrawChromeShowsBarFillAndProgramName) {
   EditorContext ctx;
   ctx.program = std::filesystem::path("some/dir/example.fl");
   RecordingRenderer renderer;
   const Vec2 outputSize{800, 600};
 
   HeaderBar header([] {});
-  header.draw(ctx, renderer, outputSize);
+  header.drawChrome(ctx, renderer, outputSize);
 
   EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, outputSize.x, ctx.layout.chromeHeaderPx}));
   EXPECT_TRUE(hasTextAt(renderer.calls, "example.fl", Vec2{ctx.layout.textPad, ctx.layout.textPad}));
 }
 
-TEST(HeaderBar, SkipsNameWhenProgramUnset) {
+TEST(HeaderBar, DrawChromeSkipsNameWhenProgramUnset) {
   EditorContext ctx;  // ctx.program left unset
   RecordingRenderer renderer;
   const Vec2 outputSize{800, 600};
 
   HeaderBar header([] {});
-  header.draw(ctx, renderer, outputSize);
+  header.drawChrome(ctx, renderer, outputSize);
 
   EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, outputSize.x, ctx.layout.chromeHeaderPx}));
-  // Only the Exit button's own label should be drawn; no filename text.
-  EXPECT_EQ(textStrings(renderer.calls), std::vector<std::string>{"Exit"});
+  // drawChrome no longer draws the button's own label -- no text at all.
+  EXPECT_TRUE(textStrings(renderer.calls).empty());
 }
 
-TEST(HeaderBar, ExitButtonLandsInTopRightCorner) {
+TEST(HeaderBar, LayoutPositionsExitButtonInTopRightCorner) {
   EditorContext ctx;
-  RecordingRenderer renderer;
   const Vec2 outputSize{800, 600};
 
   HeaderBar header([] {});
-  header.draw(ctx, renderer, outputSize);
+  header.layout(ctx, outputSize);
 
   const Rect bounds = header.exitButton().bounds();
   EXPECT_NEAR(bounds.y, ctx.layout.textPad, 1e-6);
@@ -64,43 +64,35 @@ TEST(HeaderBar, ExitButtonLandsInTopRightCorner) {
   EXPECT_LT(bounds.x + bounds.w, outputSize.x + 1e-6);
 }
 
-TEST(HeaderBar, ClickOnButtonInvokesActionAndConsumes) {
+TEST(HeaderBar, ActorsReturnsExitButtonPointer) {
+  HeaderBar header([] {});
+
+  const std::vector<Actor*> actors = header.actors();
+
+  ASSERT_EQ(actors.size(), 1u);
+  EXPECT_EQ(actors[0], &header.exitButton());
+}
+
+TEST(HeaderBar, ActorsPointerReflectsLayoutAndInvokesAction) {
   bool clicked = false;
   EditorContext ctx;
-  RecordingRenderer renderer;
   const Vec2 outputSize{800, 600};
 
   HeaderBar header([&clicked] { clicked = true; });
-  header.draw(ctx, renderer, outputSize);
+  header.layout(ctx, outputSize);
 
-  const bool consumed = header.handleClick(header.exitButton().bounds().center());
+  Actor* button = header.actors().front();
+  EXPECT_EQ(button->bounds(), header.exitButton().bounds());
 
-  EXPECT_TRUE(consumed);
+  button->onClick(button->bounds().center());
   EXPECT_TRUE(clicked);
 }
 
-TEST(HeaderBar, ClickElsewhereDoesNotConsume) {
-  bool clicked = false;
-  EditorContext ctx;
-  RecordingRenderer renderer;
-  const Vec2 outputSize{800, 600};
+TEST(HeaderBar, ExitButtonZeroSizedBeforeAnyLayout) {
+  HeaderBar header([] {});
 
-  HeaderBar header([&clicked] { clicked = true; });
-  header.draw(ctx, renderer, outputSize);
-
-  ASSERT_LT(0.0, header.exitButton().bounds().x) << "margin must keep the button away from the origin";
-  const bool consumed = header.handleClick(Vec2{0, 0});
-
-  EXPECT_FALSE(consumed);
-  EXPECT_FALSE(clicked);
-}
-
-TEST(HeaderBar, ClickBeforeAnyDrawDoesNotConsume) {
-  bool clicked = false;
-  HeaderBar header([&clicked] { clicked = true; });
-
-  const bool consumed = header.handleClick(Vec2{0, 0});
-
-  EXPECT_FALSE(consumed);
-  EXPECT_FALSE(clicked);
+  // Documents the placeholder pre-layout state: a point can never be "inside"
+  // a zero-size Rect (Rect::contains requires strict less-than on the far edge).
+  EXPECT_EQ(header.exitButton().bounds(), (Rect{0, 0, 0, 0}));
+  EXPECT_FALSE(header.exitButton().bounds().contains(Vec2{0, 0}));
 }

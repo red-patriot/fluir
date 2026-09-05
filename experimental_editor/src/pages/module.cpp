@@ -8,7 +8,9 @@
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
-    ctx_(ctx), renderer_(renderer), header_([&ctx] { ctx.running = false; }) { }
+    ctx_(ctx), renderer_(renderer), header_([&ctx] { ctx.running = false; }) {
+    hudLayer_.setActors(header_.actors());
+  }
 
   int ModulePage::start() {
     reset();
@@ -58,10 +60,10 @@ namespace fluir::editor {
             panning_ = true;
             lastPan_ = ie.pos;
           } else if (ie.button == InputEvent::Button::Left) {
-            if (!header_.handleClick(ie.pos)) {
-              if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
-                hit->onClick(view_.screenToWorld(ie.pos));
-              }
+            if (Actor* hudHit = hudLayer_.topmostAt(ie.pos)) {
+              hudHit->onClick(ie.pos);
+            } else if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
+              hit->onClick(view_.screenToWorld(ie.pos));
             }
           }
           break;
@@ -101,7 +103,9 @@ namespace fluir::editor {
     renderer_.beginFrame();
 
     GraphRenderer{ctx_, view_, renderer_, scene_}(*tree_);
-    header_.draw(ctx_, renderer_, renderer_.outputSize());
+    header_.layout(ctx_, renderer_.outputSize());
+    header_.drawChrome(ctx_, renderer_, renderer_.outputSize());
+    hudLayer_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
     renderer_.endFrame();
     return 0;
   }

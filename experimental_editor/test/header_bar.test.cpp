@@ -1,4 +1,4 @@
-#include "editor/core/header_bar.hpp"
+#include "../include/editor/pages/header_bar.hpp"
 
 #include <filesystem>
 #include <string>

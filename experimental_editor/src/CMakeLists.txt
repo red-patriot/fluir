@@ -54,13 +54,12 @@ target_include_directories(
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
-    "core/header_bar.cpp"
     "core/loader.cpp"
     "core/render_graph.cpp"
     "core/viewport.cpp"
 )
 
-set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp")
+set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp" "pages/header_bar.cpp")
 
 set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/function_decl_actor.cpp"

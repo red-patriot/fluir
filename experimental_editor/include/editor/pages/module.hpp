@@ -5,10 +5,10 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/actors/scene.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/core/header_bar.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "header_bar.hpp"
 
 namespace fluir::editor {
   class ModulePage {

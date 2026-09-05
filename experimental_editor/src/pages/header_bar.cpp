@@ -1,4 +1,4 @@
-#include "editor/core/header_bar.hpp"
+#include "editor/pages/header_bar.hpp"
 
 #include <utility>
 

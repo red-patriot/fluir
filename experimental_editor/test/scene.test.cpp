@@ -11,6 +11,7 @@
 #include "compiler/models/operator.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/actors/actor.hpp"
+#include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actors.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
@@ -34,6 +35,7 @@ namespace {
   using fluir::editor::CallActor;
   using fluir::editor::ConstantActor;
   using fluir::editor::EditorContext;
+  using fluir::editor::FunctionDeclActor;
   using fluir::editor::GraphScene;
   using fluir::editor::Rect;
   using fluir::editor::UnaryActor;
@@ -76,6 +78,13 @@ namespace {
   fluir::pt::ParseTree singleFunctionTree(fluir::pt::FunctionDecl fn) {
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(fn.id, fluir::pt::Declaration{fn});
+    return tree;
+  }
+
+  fluir::pt::ParseTree twoFunctionTree(fluir::pt::FunctionDecl a, fluir::pt::FunctionDecl b) {
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(a.id, fluir::pt::Declaration{a});
+    tree.declarations.emplace(b.id, fluir::pt::Declaration{b});
     return tree;
   }
 
@@ -148,7 +157,7 @@ TEST(Scene, TopmostAtReturnsHigherZOnOverlap) {
   // localRect{5,5,10,10} -> bodyOrigin{0,25} -> absolute {5,30,10,10}.
   Actor* hit = scene.topmostAt(Vec2{8, 33});
   ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->id(), 11u);
+  EXPECT_EQ(hit->id(), (fluir::FullID{1, 11}));
 }
 
 TEST(Scene, TopmostAtOutsideEveryActorReturnsNullptr) {
@@ -172,14 +181,21 @@ TEST(Scene, RebuildClearsStaleActors) {
 
   GraphScene scene;
   scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyA))));
-  ASSERT_NE(scene.topmostAt(Vec2{10, 35}), nullptr);
+  Actor* before = scene.topmostAt(Vec2{10, 35});
+  ASSERT_NE(before, nullptr);
+  EXPECT_NE(dynamic_cast<ConstantActor*>(before), nullptr);
 
   scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyB))));
 
-  EXPECT_EQ(scene.topmostAt(Vec2{10, 35}), nullptr);  // stale actor A must be gone
+  // Stale actor A is gone: that point now falls through to the enclosing FunctionDeclActor
+  // (still non-null -- it's frame area, not empty space), never to a ConstantActor.
+  Actor* after = scene.topmostAt(Vec2{10, 35});
+  ASSERT_NE(after, nullptr);
+  EXPECT_EQ(dynamic_cast<ConstantActor*>(after), nullptr);
+
   Actor* hit = scene.topmostAt(Vec2{55, 80});
   ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->id(), 21u);
+  EXPECT_EQ(hit->id(), (fluir::FullID{1, 21}));
 }
 
 TEST(Scene, FindReturnsActorOwningNodeId) {
@@ -189,9 +205,10 @@ TEST(Scene, FindReturnsActorOwningNodeId) {
   GraphScene scene;
   scene.build(kCtx, *l.result.tree);
 
-  Actor* found = scene.find(1);
+  // Fixture: function id=1, constant id=1.
+  Actor* found = scene.find(1, 1);
   ASSERT_NE(found, nullptr);
-  EXPECT_EQ(found->id(), 1u);
+  EXPECT_EQ(found->id(), (fluir::FullID{1, 1}));
   EXPECT_NE(dynamic_cast<ConstantActor*>(found), nullptr);
 }
 
@@ -202,6 +219,7 @@ TEST(Scene, FindReturnsNullptrForUnknownId) {
   GraphScene scene;
   scene.build(kCtx, *l.result.tree);
 
+  EXPECT_EQ(scene.find(1, 999999), nullptr);
   EXPECT_EQ(scene.find(999999), nullptr);
 }
 
@@ -214,12 +232,54 @@ TEST(Scene, FindReflectsRebuild) {
 
   GraphScene scene;
   scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyA))));
-  ASSERT_NE(scene.find(20), nullptr);
+  ASSERT_NE(scene.find(1, 20), nullptr);
 
   scene.build(kCtx, singleFunctionTree(makeFunction(1, 200, 200, std::move(bodyB))));
 
-  EXPECT_EQ(scene.find(20), nullptr);  // stale actor A must be gone
-  EXPECT_NE(scene.find(21), nullptr);
+  EXPECT_EQ(scene.find(1, 20), nullptr);  // stale actor A must be gone
+  EXPECT_NE(scene.find(1, 21), nullptr);
+}
+
+TEST(Scene, FindDisambiguatesFunctionFrameFromSameIdNode) {
+  // Fixture: function id=1, constant id=1 -- the classic function-vs-node collision this
+  // pass exists to fix. find(1) must hit the frame; find(1, 1) must hit the node.
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  Actor* frame = scene.find(1);
+  Actor* node = scene.find(1, 1);
+  ASSERT_NE(frame, nullptr);
+  ASSERT_NE(node, nullptr);
+  EXPECT_NE(frame, node);
+  EXPECT_EQ(frame->id(), (fluir::FullID{1}));
+  EXPECT_EQ(node->id(), (fluir::FullID{1, 1}));
+  EXPECT_NE(dynamic_cast<FunctionDeclActor*>(frame), nullptr);
+  EXPECT_NE(dynamic_cast<ConstantActor*>(node), nullptr);
+}
+
+TEST(Scene, FindDisambiguatesCrossFunctionNodeIdCollision) {
+  // Two functions each declare a node with the same bare id (matches next_id.py's per-function
+  // numbering restart): find(functionId, nodeId) must resolve to the right function's node.
+  fluir::pt::Block bodyA;
+  bodyA.nodes.emplace(2, makeConstant(2, 1, 1, 1, 2, 2));
+
+  fluir::pt::Block bodyB;
+  bodyB.nodes.emplace(2, makeConstant(2, 1, 1, 1, 2, 2));
+
+  GraphScene scene;
+  scene.build(
+    kCtx, twoFunctionTree(makeFunction(1, 100, 100, std::move(bodyA)), makeFunction(2, 100, 100, std::move(bodyB))));
+
+  Actor* nodeInA = scene.find(1, 2);
+  Actor* nodeInB = scene.find(2, 2);
+  ASSERT_NE(nodeInA, nullptr);
+  ASSERT_NE(nodeInB, nullptr);
+  EXPECT_NE(nodeInA, nodeInB);
+  EXPECT_EQ(nodeInA->id(), (fluir::FullID{1, 2}));
+  EXPECT_EQ(nodeInB->id(), (fluir::FullID{2, 2}));
 }
 
 TEST(Scene, FactoryConstructsCorrectConcreteTypePerVariant) {
@@ -251,4 +311,34 @@ TEST(Scene, FactoryConstructsCorrectConcreteTypePerVariant) {
   EXPECT_EQ(dynamic_cast<UnaryActor*>(binary), nullptr);
   EXPECT_EQ(dynamic_cast<ConstantActor*>(binary), nullptr);
   EXPECT_EQ(dynamic_cast<CallActor*>(binary), nullptr);
+}
+
+TEST(Scene, TopmostAtPrefersNodeOverEnclosingFrameOnOverlap) {
+  // FunctionDeclActor is pushed before its function's node actors, so on overlap the
+  // (later-painted) node actor must win the reverse-order hit test.
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 2, 2));  // localRect{5,5,10,10} -> abs {5,30,10,10}
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  Actor* hit = scene.topmostAt(Vec2{8, 33});
+  ASSERT_NE(hit, nullptr);
+  EXPECT_NE(dynamic_cast<ConstantActor*>(hit), nullptr);
+}
+
+TEST(Scene, TopmostAtFallsBackToFrameOverEmptyFrameArea) {
+  // A click inside the frame but outside every node's bounds must hit the frame chrome
+  // itself, not fall through to nullptr.
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 2, 2));  // localRect{5,5,10,10} -> abs {5,30,10,10}
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  // Frame spans absolute {0,0,500,500}; (400,400) is inside the frame but far from the node.
+  Actor* hit = scene.topmostAt(Vec2{400, 400});
+  ASSERT_NE(hit, nullptr);
+  EXPECT_NE(dynamic_cast<FunctionDeclActor*>(hit), nullptr);
+  EXPECT_EQ(hit->id(), (fluir::FullID{1}));
 }

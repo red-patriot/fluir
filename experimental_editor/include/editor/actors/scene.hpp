@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -12,29 +14,42 @@
 
 namespace fluir::editor {
 
-  /** Owns one Actor per node across `tree`'s functions and supports topmost-first hit
-   *  testing. Actors are constructed with absolute (world-space) bounds, in paint order
-   *  (matching `sortedFunctions`/`sortedNodes`), via a construction-time factory that picks
-   *  the concrete subclass matching each node's `pt::Node` alternative. */
+  namespace detail {
+
+    // std::vector has no default std::hash; FullID needs one to key byId_.
+    struct FullIDHash {
+      std::size_t operator()(const fluir::FullID& id) const noexcept {
+        std::size_t seed = id.size();
+        for (fluir::ID v : id) {
+          seed ^= std::hash<fluir::ID>{}(v) + 0x9e3779b97f4a7c15ULL + (seed << 6) + (seed >> 2);
+        }
+        return seed;
+      }
+    };
+
+  }  // namespace detail
+
+  /** Owns one Actor per function frame and per node, keyed by fluir::FullID (`{functionId}`
+   *  for a frame, `{functionId, nodeId}` for a node) since node ids repeat across functions. */
   class GraphScene {
    public:
-    /** Discards any previously built actors, then walks `tree`'s functions/nodes (in paint
-     *  order) constructing one actor per node with its absolute screen-space bounds. */
     void build(const EditorContext& ctx, const pt::ParseTree& tree);
 
     /** Discards all actors. */
     void clear();
 
-    /** Returns the topmost (last-painted) actor whose bounds contain `worldPos`, or nullptr
-     *  if none do. */
+    /** Topmost (last-painted) actor containing worldPos, or nullptr. */
     Actor* topmostAt(Vec2 worldPos) const;
 
-    /** Returns the actor owning node `id`, or nullptr if none does. */
-    Actor* find(fluir::ID id) const;
+    /** Actor owning node `nodeId` in function `functionId`, or nullptr. */
+    Actor* find(fluir::ID functionId, fluir::ID nodeId) const;
+
+    /** Actor owning function `functionId`'s frame, or nullptr. */
+    Actor* find(fluir::ID functionId) const;
 
    private:
     std::vector<std::unique_ptr<Actor>> actors_;
-    std::unordered_map<fluir::ID, Actor*> byId_;
+    std::unordered_map<fluir::FullID, Actor*, detail::FullIDHash> byId_;
   };
 
 }  // namespace fluir::editor

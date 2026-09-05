@@ -47,18 +47,16 @@ namespace fluir::editor {
     const double w = static_cast<double>(loc.width) * ctx_.layout.unitPx;
     const double h = static_cast<double>(loc.height) * ctx_.layout.unitPx;
 
-    renderer_.fillRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, ctx_.layout.headerH()})),
-                       ctx_.theme.funcDeclHeader);                                                   // header
-    renderer_.drawRect(toScreen(viewport_, atOrigin(origin, Rect{0, 0, w, h})), ctx_.theme.border);  // frame
-    renderer_.drawText(toScreen(viewport_, Vec2{origin.x + ctx_.layout.textPad, origin.y + ctx_.layout.textPad}),
-                       decl.name,
-                       ctx_.theme.text);
-
     ports_.clear();
+
+    const Subview frame{viewport_, Rect{origin.x, origin.y, w, h}, renderer_};
+    Actor* frameActor = scene_.find(decl.id);
+    assert(frameActor);
+    frameActor->draw(frame, ctx_);
 
     // Body content is offset below the header band so nodes don't render over it.
     const Vec2 bodyOrigin_ = bodyOrigin(origin, ctx_.layout.headerH());
-    const Subview body{viewport_, Rect{bodyOrigin_.x, bodyOrigin_.y, w, h}, renderer_};
+    const Subview body = frame.child(Rect{0.0, ctx_.layout.headerH(), w, h});
     const Subview* const prevBody = body_;
     body_ = &body;
 
@@ -76,7 +74,7 @@ namespace fluir::editor {
 
     for (const pt::Node* node : sortedNodes(decl.body)) {
       const fluir::ID id = idOf(*node);
-      Actor* actor = scene_.find(id);
+      Actor* actor = scene_.find(decl.id, id);
       assert(actor);
       actor->draw(*body_, ctx_);
       ports_[id] = actor->ports(ctx_);

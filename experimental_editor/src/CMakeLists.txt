@@ -61,7 +61,11 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp")
 
-set(FLUIR_EDITOR_ACTOR_SOURCES "actors/node_actors.cpp" "actors/scene.cpp")
+set(FLUIR_EDITOR_ACTOR_SOURCES
+    "actors/function_decl_actor.cpp"
+    "actors/node_actors.cpp"
+    "actors/scene.cpp"
+)
 
 target_sources(
     fluir.libeditor

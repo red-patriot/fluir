@@ -90,12 +90,9 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   EXPECT_EQ(textStrings(r.calls), (std::vector<std::string>{"foo"}));
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
 
-  // The body Subview is constructed before the empty-body early-return (ports and
-  // rails draw on it), so an empty function still pushes exactly one clip for the
-  // body rect and pops it once at scope exit. toScreen(Rect{0,0,w,h}) from
-  // bodyOrigin = frameOrigin + kHeaderH (25 world px).
+  // Frame Subview + nested body Subview each push a clip, so an empty function pops 2, not 1.
   EXPECT_EQ(clipsCovering(r.calls, Rect{50, 75, 500, 500}).size(), 1u);
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::PopClip), 1u);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::PopClip), 2u);
 }
 
 TEST(RenderGraph, ParamRailFromInputOnly) {

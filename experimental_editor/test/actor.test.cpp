@@ -9,6 +9,7 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
+#include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actors.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
@@ -25,6 +26,7 @@ namespace {
   using fluir::editor::CallActor;
   using fluir::editor::ConstantActor;
   using fluir::editor::EditorContext;
+  using fluir::editor::FunctionDeclActor;
   using fluir::editor::PortSet;
   using fluir::editor::Rect;
   using fluir::editor::Subview;
@@ -39,6 +41,8 @@ namespace {
 
   // Geometry fields are irrelevant to click dispatch; z is unused.
   const FlowGraphLocation kLoc{.x = 0, .y = 0, .z = 0, .width = 0, .height = 0};
+
+  constexpr ID kFunctionId = 100;
 
   // Non-degenerate location for draw tests: width/height = 5 units, unitPx = 5
   // (EditorContext default) -> a 25x25 local-space node rect.
@@ -79,31 +83,41 @@ namespace {
     return call;
   }
 
+  // width=5, height=10 (distinct from width) so header/frame draw rects differ;
+  // unitPx=5 (EditorContext default) -> w=25, h=50, headerH=25.
+  fluir::pt::FunctionDecl makeFunctionDecl() {
+    fluir::pt::FunctionDecl decl;
+    decl.id = 8;
+    decl.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 5, .height = 10};
+    decl.name = "foo";
+    return decl;
+  }
+
 }  // namespace
 
 TEST(Actor, BinaryActorOnClickSummarizesOperator) {
-  BinaryActor actor(makeBinary(), Rect{0, 0, 10, 10});
+  BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 10, 10});
   actor.onClick(Vec2{1, 1});
 
   EXPECT_NE(actor.lastClickSummary().find("+"), std::string::npos);
 }
 
 TEST(Actor, UnaryActorOnClickSummarizesOperator) {
-  UnaryActor actor(makeUnary(), Rect{0, 0, 10, 10});
+  UnaryActor actor(kFunctionId, makeUnary(), Rect{0, 0, 10, 10});
   actor.onClick(Vec2{1, 1});
 
   EXPECT_NE(actor.lastClickSummary().find("-"), std::string::npos);
 }
 
 TEST(Actor, ConstantActorOnClickSummarizesValue) {
-  ConstantActor actor(makeConstant(), Rect{0, 0, 10, 10});
+  ConstantActor actor(kFunctionId, makeConstant(), Rect{0, 0, 10, 10});
   actor.onClick(Vec2{1, 1});
 
   EXPECT_NE(actor.lastClickSummary().find("42"), std::string::npos);
 }
 
 TEST(Actor, CallActorOnClickSummarizesTarget) {
-  CallActor actor(makeCall(), Rect{0, 0, 10, 10});
+  CallActor actor(kFunctionId, makeCall(), Rect{0, 0, 10, 10});
   actor.onClick(Vec2{1, 1});
 
   EXPECT_NE(actor.lastClickSummary().find("add"), std::string::npos);
@@ -113,10 +127,10 @@ TEST(Actor, CallActorOnClickSummarizesTarget) {
 // its own type-specific summary when clicked through a base `Actor*`, not
 // just when clicked directly on the concrete type.
 TEST(Actor, VirtualDispatchReachesEachOverride) {
-  std::unique_ptr<Actor> binary = std::make_unique<BinaryActor>(makeBinary(), Rect{0, 0, 10, 10});
-  std::unique_ptr<Actor> unary = std::make_unique<UnaryActor>(makeUnary(), Rect{0, 0, 10, 10});
-  std::unique_ptr<Actor> constant = std::make_unique<ConstantActor>(makeConstant(), Rect{0, 0, 10, 10});
-  std::unique_ptr<Actor> call = std::make_unique<CallActor>(makeCall(), Rect{0, 0, 10, 10});
+  std::unique_ptr<Actor> binary = std::make_unique<BinaryActor>(kFunctionId, makeBinary(), Rect{0, 0, 10, 10});
+  std::unique_ptr<Actor> unary = std::make_unique<UnaryActor>(kFunctionId, makeUnary(), Rect{0, 0, 10, 10});
+  std::unique_ptr<Actor> constant = std::make_unique<ConstantActor>(kFunctionId, makeConstant(), Rect{0, 0, 10, 10});
+  std::unique_ptr<Actor> call = std::make_unique<CallActor>(kFunctionId, makeCall(), Rect{0, 0, 10, 10});
 
   binary->onClick(Vec2{1, 1});
   unary->onClick(Vec2{1, 1});
@@ -131,9 +145,9 @@ TEST(Actor, VirtualDispatchReachesEachOverride) {
 
 TEST(Actor, IdAndBoundsReturnConstructionValues) {
   const Rect bounds{10, 20, 30, 40};
-  BinaryActor actor(makeBinary(), bounds);
+  BinaryActor actor(kFunctionId, makeBinary(), bounds);
 
-  EXPECT_EQ(actor.id(), 1u);
+  EXPECT_EQ(actor.id(), (fluir::FullID{kFunctionId, 1}));
   EXPECT_EQ(actor.bounds(), bounds);
 }
 
@@ -143,7 +157,7 @@ TEST(Actor, IdAndBoundsReturnConstructionValues) {
 TEST(Actor, BinaryActorDrawsBodyLabelAndPorts) {
   fluir::pt::Binary node = makeBinary();
   node.location = kDrawLoc;
-  BinaryActor actor(node, Rect{0, 0, 10, 10});
+  BinaryActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
   RecordingRenderer renderer;
@@ -171,7 +185,7 @@ TEST(Actor, BinaryActorDrawsBodyLabelAndPorts) {
 TEST(Actor, UnaryActorDrawsBodyLabelAndPorts) {
   fluir::pt::Unary node = makeUnary();
   node.location = kDrawLoc;
-  UnaryActor actor(node, Rect{0, 0, 10, 10});
+  UnaryActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
   RecordingRenderer renderer;
@@ -198,7 +212,7 @@ TEST(Actor, UnaryActorDrawsBodyLabelAndPorts) {
 TEST(Actor, ConstantActorDrawsBodyLabelAndOutputPort) {
   fluir::pt::Constant node = makeConstant();
   node.location = kDrawLoc;
-  ConstantActor actor(node, Rect{0, 0, 10, 10});
+  ConstantActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
   RecordingRenderer renderer;
@@ -229,7 +243,7 @@ TEST(Actor, CallActorDrawsBodyLabelArgRowsAndReturnPort) {
   arg.name = "x";
   node.arguments.push_back(arg);
   node._return = fluir::pt::Call::Return{};
-  CallActor actor(node, Rect{0, 0, 10, 10});
+  CallActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
   RecordingRenderer renderer;
@@ -253,4 +267,45 @@ TEST(Actor, CallActorDrawsBodyLabelArgRowsAndReturnPort) {
   EXPECT_EQ(ports.inputs[0], (Vec2{0, 25 + 12.5}));
   ASSERT_EQ(ports.outputs.size(), 1u);
   EXPECT_EQ(ports.outputs[0], (Vec2{25, 12.5}));
+}
+
+TEST(Actor, FunctionDeclActorOnClickSummarizesName) {
+  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 10});
+  actor.onClick(Vec2{1, 1});
+
+  EXPECT_NE(actor.lastClickSummary().find("foo"), std::string::npos);
+}
+
+TEST(Actor, FunctionDeclActorIdIsFunctionScoped) {
+  const Rect bounds{10, 20, 30, 40};
+  FunctionDeclActor actor(makeFunctionDecl(), bounds);
+
+  EXPECT_EQ(actor.id(), (fluir::FullID{8}));
+  EXPECT_EQ(actor.bounds(), bounds);
+}
+
+TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
+  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 50});
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview frame{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    actor.draw(frame, ctx);
+  }
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));  // header band
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 50}));  // frame border
+  EXPECT_TRUE(hasTextAt(renderer.calls, "foo", Vec2{4, 4}));
+}
+
+TEST(Actor, FunctionDeclActorPortsAreEmpty) {
+  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 10});
+
+  const EditorContext ctx;
+  const PortSet ports = actor.ports(ctx);
+
+  EXPECT_TRUE(ports.inputs.empty());
+  EXPECT_TRUE(ports.outputs.empty());
 }

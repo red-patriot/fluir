@@ -20,6 +20,4 @@ namespace fluir::editor {
     frame.renderer().drawText(frame.toScreen(Vec2{ctx.layout.textPad, ctx.layout.textPad}), name_, ctx.theme.text);
   }
 
-  PortSet FunctionDeclActor::ports(const EditorContext&) const { return PortSet{}; }
-
 }  // namespace fluir::editor

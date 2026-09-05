@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "compiler/models/id.hpp"
+#include "editor/actors/node_actor.hpp"
 #include "editor/core/graph_geometry.hpp"
 
 namespace fluir::editor {
@@ -77,7 +78,8 @@ namespace fluir::editor {
       Actor* actor = scene_.find(decl.id, id);
       assert(actor);
       actor->draw(*body_, ctx_);
-      ports_[id] = actor->ports(ctx_);
+      // scene_.find(functionId, nodeId) only ever resolves byId_ entries, which are always NodeActor.
+      ports_[id] = static_cast<NodeActor*>(actor)->ports(ctx_);
     }
 
     std::vector<const pt::Conduit*> conduits;

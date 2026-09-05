@@ -14,6 +14,9 @@ namespace fluir::editor {
 
     const fluir::FullID& id() const { return id_; }
 
+    /** This node's port anchors, in body-local (pre-`toScreen`) coordinates. */
+    virtual PortSet ports(const EditorContext& ctx) const = 0;
+
    private:
     fluir::FullID id_;
   };

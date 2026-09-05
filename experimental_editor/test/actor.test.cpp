@@ -299,13 +299,3 @@ TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
   EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 50}));  // frame border
   EXPECT_TRUE(hasTextAt(renderer.calls, "foo", Vec2{4, 4}));
 }
-
-TEST(Actor, FunctionDeclActorPortsAreEmpty) {
-  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 10});
-
-  const EditorContext ctx;
-  const PortSet ports = actor.ports(ctx);
-
-  EXPECT_TRUE(ports.inputs.empty());
-  EXPECT_TRUE(ports.outputs.empty());
-}

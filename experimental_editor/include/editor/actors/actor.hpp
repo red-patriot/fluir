@@ -31,9 +31,6 @@ namespace fluir::editor {
     /** Draw this actor's body/label/ports into `body`. */
     virtual void draw(const Subview& body, const EditorContext& ctx) const = 0;
 
-    /** This actor's port anchors, in body-local (pre-`toScreen`) coordinates. */
-    virtual PortSet ports(const EditorContext& ctx) const = 0;
-
    private:
     Rect bounds_;
   };

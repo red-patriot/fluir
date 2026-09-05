@@ -67,11 +67,14 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/scene.cpp"
 )
 
+set(FLUIR_EDITOR_COMPONENT_SOURCES "components/button_actor.cpp")
+
 target_sources(
     fluir.libeditor
     PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
             ${FLUIR_EDITOR_PAGE_SOURCES}
             ${FLUIR_EDITOR_ACTOR_SOURCES}
+            ${FLUIR_EDITOR_COMPONENT_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"
             "app.cpp"

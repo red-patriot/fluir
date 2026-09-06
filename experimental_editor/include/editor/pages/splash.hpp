@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_PAGES_SPLASH_HPP
 #define FLUIR_EDITOR_PAGES_SPLASH_HPP
 
+#include <memory>
 #include <vector>
 
 #include "editor/components/button_actor.hpp"
@@ -18,6 +19,7 @@ namespace fluir::editor {
     int start() override;
     int update(const std::vector<InputEvent>& events) override;
     int draw() override;
+    std::unique_ptr<Page> next() override { return std::move(next_); }
 
     static constexpr int kWidth = 480;
     static constexpr int kHeight = 320;
@@ -33,10 +35,16 @@ namespace fluir::editor {
     EditorContext& ctx_;
     Renderer& renderer_;
     ButtonActor openButton_;
+    std::unique_ptr<Page> next_;
 
     // Recomputes the centered button bounds for the current output size --
     // mirrors HeaderBar::layout(), since the window is resizable.
     void layout();
+
+    // Pops a native "open file" dialog filtered to .fl programs. On a chosen
+    // file, sets ctx_.program and stages a ModulePage in next_; cancelling
+    // leaves next_ null so the app stays on the splash screen.
+    void openFileDialog();
   };
 }  // namespace fluir::editor
 

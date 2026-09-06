@@ -43,6 +43,26 @@ if (TARGET SDL3-static)
     set_target_properties(SDL3-static PROPERTIES SYSTEM TRUE)
 endif ()
 
+set(NFD_BUILD_TESTS
+    OFF
+    CACHE BOOL
+          ""
+          FORCE
+)
+FetchContent_Declare(
+    nfd
+    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
+    GIT_TAG v1.2.1
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(nfd)
+
+# NFD's headers are third-party: consume them as system includes so our own
+# -Werror -pedantic warnings don't fire on them.
+if (TARGET nfd)
+    set_target_properties(nfd PROPERTIES SYSTEM TRUE)
+endif ()
+
 include(strict-warnings)
 
 add_library(fluir.libeditor)
@@ -89,6 +109,7 @@ target_link_libraries(
     fluir.libeditor
     PUBLIC fmt::fmt
            SDL3::SDL3
+           nfd
            fluir::compiler
 )
 

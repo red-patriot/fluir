@@ -22,6 +22,8 @@ namespace fluir::editor {
     int update(const std::vector<InputEvent>& events) override;
     int draw() override;
 
+    std::unique_ptr<Page> next() override;
+
     // Test-only observability: lets tests verify a Left click actually
     // dispatched to the hit actor (Actor::onClick has no other externally
     // visible effect through this page's API).
@@ -39,6 +41,7 @@ namespace fluir::editor {
     GraphScene scene_;
     HeaderBar header_;
     Layer hudLayer_;
+    bool shouldClose = false;
     bool panning_ = false;
     bool spaceHeld_ = false;
     Vec2 lastPan_;

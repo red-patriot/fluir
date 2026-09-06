@@ -5,10 +5,11 @@
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/render_graph.hpp"
+#include "editor/pages/splash.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
-    ctx_(ctx), renderer_(renderer), header_([&ctx] { ctx.running = false; }) {
+    ctx_(ctx), renderer_(renderer), header_([this] { this->shouldClose = true; }) {
     hudLayer_.setActors(header_.actors());
   }
 
@@ -108,6 +109,13 @@ namespace fluir::editor {
     hudLayer_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
     renderer_.endFrame();
     return 0;
+  }
+
+  std::unique_ptr<Page> ModulePage::next() {
+    if (shouldClose) {
+      return std::make_unique<SplashPage>(ctx_, renderer_);
+    }
+    return nullptr;
   }
 
   void ModulePage::reset() {

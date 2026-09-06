@@ -7,6 +7,7 @@
 #include "editor/core/geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/input.hpp"
 
 namespace fluir::editor {
 
@@ -27,6 +28,10 @@ namespace fluir::editor {
      *  this layer's Viewport), or nullptr. Does not dispatch onClick itself --
      *  matches GraphScene::topmostAt's existing contract. */
     Actor* topmostAt(Vec2 screenPos) const;
+
+    /** Routes one input event to this layer's actors.
+     * Returns true if an actor consumed the event. */
+    bool handleEvent(const InputEvent& event);
 
    private:
     Viewport viewport_;

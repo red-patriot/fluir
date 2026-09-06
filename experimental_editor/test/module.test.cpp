@@ -224,7 +224,7 @@ TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
     << "ModulePage's persistent-scene draw path must match renderGraph()'s ephemeral-scene draw path as a prefix";
 }
 
-TEST(ModulePage, LeftClickOnExitButtonSetsRunningFalse) {
+TEST(ModulePage, LeftClickOnExitButtonClosesPage) {
   const Loaded l = loadFixture("read/int_constants.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
@@ -239,7 +239,7 @@ TEST(ModulePage, LeftClickOnExitButtonSetsRunningFalse) {
   const Vec2 clickPos = page.header().exitButton().bounds().center();
   page.update({mouseDown(InputEvent::Button::Left, clickPos)});
 
-  EXPECT_FALSE(ctx.running);
+  EXPECT_TRUE(page.next());
 }
 
 TEST(ModulePage, QuitForcesRunningFalseEvenOverANode) {

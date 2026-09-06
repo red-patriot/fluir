@@ -19,4 +19,15 @@ namespace fluir::editor {
     return nullptr;
   }
 
+  bool Layer::handleEvent(const InputEvent& event) {
+    if (event.type != InputEvent::Type::MouseDown || event.button != InputEvent::Button::Left) {
+      return false;
+    }
+    if (auto* hit = topmostAt(event.pos); hit) {
+      hit->onClick(viewport_.screenToWorld(event.pos));
+      return true;
+    }
+    return false;
+  }
+
 }  // namespace fluir::editor

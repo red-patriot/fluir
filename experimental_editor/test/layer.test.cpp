@@ -8,12 +8,14 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/input.hpp"
 #include "recording_renderer.hpp"
 
 namespace {
 
   using fluir::editor::Actor;
   using fluir::editor::EditorContext;
+  using fluir::editor::InputEvent;
   using fluir::editor::Layer;
   using fluir::editor::Rect;
   using fluir::editor::Subview;
@@ -100,4 +102,56 @@ TEST(Layer, OnClickInvokedSeparatelyFromTopmostAt) {
   hit->onClick(Vec2{5, 5});
 
   EXPECT_TRUE(a.clicked_);
+}
+
+TEST(Layer, HandleEventDispatchesLeftClickToTopmostActor) {
+  StubActor a{Rect{0, 0, 10, 10}};
+
+  Layer layer;
+  layer.setActors({&a});
+
+  const InputEvent event{.type = InputEvent::Type::MouseDown, .button = InputEvent::Button::Left, .pos = {5, 5}};
+
+  EXPECT_TRUE(layer.handleEvent(event));
+  EXPECT_TRUE(a.clicked_);
+}
+
+TEST(Layer, HandleEventReturnsFalseOnMiss) {
+  StubActor a{Rect{0, 0, 10, 10}};
+
+  Layer layer;
+  layer.setActors({&a});
+
+  const InputEvent event{.type = InputEvent::Type::MouseDown, .button = InputEvent::Button::Left, .pos = {500, 500}};
+
+  EXPECT_FALSE(layer.handleEvent(event));
+  EXPECT_FALSE(a.clicked_);
+}
+
+TEST(Layer, HandleEventIgnoresNonLeftClick) {
+  StubActor a{Rect{0, 0, 10, 10}};
+
+  Layer layer;
+  layer.setActors({&a});
+
+  const InputEvent move{.type = InputEvent::Type::MouseMove, .pos = {5, 5}};
+  const InputEvent rightDown{.type = InputEvent::Type::MouseDown, .button = InputEvent::Button::Right, .pos = {5, 5}};
+
+  EXPECT_FALSE(layer.handleEvent(move));
+  EXPECT_FALSE(layer.handleEvent(rightDown));
+  EXPECT_FALSE(a.clicked_);
+}
+
+TEST(Layer, HandleEventDispatchesInViewportWorldCoords) {
+  // pan={100,50}, scale=2: screenToWorld({120,70}) == {10,10}.
+  StubActor a{Rect{0, 0, 20, 20}};
+
+  Layer layer;
+  layer.setViewport(Viewport{.pan = {100, 50}, .scale = 2.0});
+  layer.setActors({&a});
+
+  const InputEvent event{.type = InputEvent::Type::MouseDown, .button = InputEvent::Button::Left, .pos = {120, 70}};
+
+  EXPECT_TRUE(layer.handleEvent(event));
+  EXPECT_EQ(a.lastClickPos_, (Vec2{10, 10}));
 }

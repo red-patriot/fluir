@@ -7,16 +7,6 @@
 
 #include "editor/app.hpp"
 #include "editor/core/editor_context.hpp"
-// actors/actor.hpp (pulled in transitively) has unnamed-elsewhere default
-// params that only trip -Wunused-parameter under this target's -Werror.
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#endif
-#include "editor/pages/splash.hpp"
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
 #include "editor/sdl_renderer.hpp"
 
 int main(int argc, char* argv[]) {
@@ -24,8 +14,6 @@ int main(int argc, char* argv[]) {
   (void)argv;
 
   fluir::editor::EditorContext editorCtx;
-  editorCtx.window.width = fluir::editor::SplashPage::kWidth;
-  editorCtx.window.height = fluir::editor::SplashPage::kHeight;
 
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     fmt::print(stderr, "SDL_Init failed: {}\n", SDL_GetError());

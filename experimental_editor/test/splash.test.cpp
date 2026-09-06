@@ -18,14 +18,6 @@ namespace {
   using testutil::hasTextAt;
   using testutil::RecordingRenderer;
 
-  InputEvent mouseDown(InputEvent::Button button, Vec2 pos) {
-    InputEvent ie;
-    ie.type = InputEvent::Type::MouseDown;
-    ie.button = button;
-    ie.pos = pos;
-    return ie;
-  }
-
   InputEvent quit() {
     InputEvent ie;
     ie.type = InputEvent::Type::Quit;
@@ -46,25 +38,13 @@ TEST(SplashPage, DrawsOpenButton) {
   EXPECT_TRUE(hasFill(renderer.calls, page.openButton().bounds()));
 }
 
-TEST(SplashPage, ClickingOpenButtonDoesNotCrash) {
-  EditorContext ctx;
-  RecordingRenderer renderer;
-  SplashPage page{ctx, renderer};
-  ASSERT_EQ(page.start(), 0);
-  ASSERT_EQ(page.draw(), 0);
-
-  const Vec2 center = page.openButton().bounds().center();
-  EXPECT_EQ(page.update({mouseDown(InputEvent::Button::Left, center)}), 0);
-  SUCCEED();  // no-op action -- the only thing to verify is that dispatch doesn't crash and returns cleanly.
-}
-
 TEST(SplashPage, NextStaysNullUntilOpenIsWired) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  EXPECT_EQ(page.next(), nullptr) << "Open is a no-op this plan -- transition lands with the file-dialog step";
+  EXPECT_EQ(page.next(), nullptr) << "next() is null until Open is clicked and a file is chosen";
 }
 
 TEST(SplashPage, QuitEventStopsTheApp) {

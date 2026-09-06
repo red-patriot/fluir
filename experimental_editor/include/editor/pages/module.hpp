@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_PAGES_MODULE_HPP
+#define FLUIR_EDITOR_PAGES_MODULE_HPP
 
 #include <vector>
 
@@ -9,16 +10,17 @@
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "editor/pages/page.hpp"
 #include "header_bar.hpp"
 
 namespace fluir::editor {
-  class ModulePage {
+  class ModulePage : public Page {
    public:
     ModulePage(EditorContext& ctx, Renderer& renderer);
 
-    int start();
-    int update(const std::vector<InputEvent>& events);
-    int write();
+    int start() override;
+    int update(const std::vector<InputEvent>& events) override;
+    int draw() override;
 
     // Test-only observability: lets tests verify a Left click actually
     // dispatched to the hit actor (Actor::onClick has no other externally
@@ -44,3 +46,5 @@ namespace fluir::editor {
     void reset();
   };
 }  // namespace fluir::editor
+
+#endif

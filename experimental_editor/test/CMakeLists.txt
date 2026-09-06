@@ -13,6 +13,7 @@ add_executable(
     scene.test.cpp
     module.test.cpp
     header_bar.test.cpp
+    splash.test.cpp
 )
 
 target_compile_definitions(

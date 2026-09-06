@@ -115,14 +115,14 @@ TEST(ModulePage, LeftClickOnActorDoesNotPan) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  page.write();
+  page.draw();
   const auto before = renderer.calls;
   renderer.calls.clear();
 
   const Vec2 clickPos = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
   page.update({mouseDown(InputEvent::Button::Left, clickPos), mouseMove(clickPos + Vec2{50, 50})});
 
-  page.write();
+  page.draw();
   const auto after = renderer.calls;
 
   EXPECT_EQ(before, after) << "plain Left click+drag on a node must not pan the view";
@@ -138,14 +138,14 @@ TEST(ModulePage, MiddlePanGestureOverActorStillPans) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  page.write();
+  page.draw();
   const auto before = renderer.calls;
   renderer.calls.clear();
 
   const Vec2 panStart = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
   page.update({mouseDown(InputEvent::Button::Middle, panStart), mouseMove(panStart + Vec2{50, 50})});
 
-  page.write();
+  page.draw();
   const auto after = renderer.calls;
 
   EXPECT_NE(before, after) << "a pan gesture starting over a node must still pan (regression guard)";
@@ -161,14 +161,14 @@ TEST(ModulePage, LeftClickOutsideEveryActorStaysInert) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  page.write();
+  page.draw();
   const auto before = renderer.calls;
   renderer.calls.clear();
 
   const Vec2 outsidePos = toScreen(ctx, *l.result.tree, renderer.outputSize_, kOutsideEveryActor);
   page.update({mouseDown(InputEvent::Button::Left, outsidePos), mouseMove(outsidePos + Vec2{50, 50})});
 
-  page.write();
+  page.draw();
   const auto after = renderer.calls;
 
   EXPECT_EQ(before, after) << "Left click outside every actor must stay inert (no pan, no crash)";
@@ -208,7 +208,7 @@ TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
   ModulePage page{ctx, pageRenderer};
   ASSERT_EQ(page.start(), 0);
 
-  page.write();
+  page.draw();
 
   // Replicates the fit-to-window transform ModulePage::start() applies internally
   // (same helper shape as `toScreen` above), so renderGraph() draws through an
@@ -234,7 +234,7 @@ TEST(ModulePage, LeftClickOnExitButtonSetsRunningFalse) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  page.write();  // Lays out header_/exitButton_ bounds via HeaderBar::draw.
+  page.draw();  // Lays out header_/exitButton_ bounds via HeaderBar::draw.
 
   const Vec2 clickPos = page.header().exitButton().bounds().center();
   page.update({mouseDown(InputEvent::Button::Left, clickPos)});

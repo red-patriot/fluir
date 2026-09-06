@@ -60,7 +60,11 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/viewport.cpp"
 )
 
-set(FLUIR_EDITOR_PAGE_SOURCES "pages/module.cpp" "pages/header_bar.cpp")
+set(FLUIR_EDITOR_PAGE_SOURCES
+    "pages/module.cpp"
+    "pages/header_bar.cpp"
+    "pages/splash.cpp"
+)
 
 set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/function_decl_actor.cpp"

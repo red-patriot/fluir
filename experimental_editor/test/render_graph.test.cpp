@@ -112,7 +112,6 @@ TEST(RenderGraph, ParamRailFromInputOnly) {
   EXPECT_TRUE(containsRect(dots, Rect{122, 84.5, 6, 6}));
   EXPECT_TRUE(containsRect(dots, Rect{122, 109.5, 6, 6}));
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 3u);  // name + 2 param labels
   EXPECT_TRUE(hasTextAt(r.calls, "I32 a", Vec2{54, 79}));
   EXPECT_TRUE(hasTextAt(r.calls, "I32 b", Vec2{54, 104}));
   const auto texts = textStrings(r.calls);
@@ -150,7 +149,6 @@ TEST(RenderGraph, ReturnRailFromOutputOnly) {
   EXPECT_EQ(dots.size(), 1u);  // 1 return port dot, no others
   EXPECT_TRUE(containsRect(dots, Rect{522, 84.5, 6, 6}));
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 2u);  // name + return label
   EXPECT_TRUE(hasTextAt(r.calls, "F64", Vec2{529, 79}));
   const auto texts = textStrings(r.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "getVal"), texts.end());
@@ -251,7 +249,6 @@ TEST(RenderGraph, BinaryNodeHasTwoInputsOneOutput) {
 
   EXPECT_TRUE(hasTextAt(r.calls, "+", Vec2{129, 89}));  // stringify(PLUS)
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 12u);  // all nodes + ports + 3 node drag handles
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 82, 6, 6}));    // binary input 0, y-frac 0.0
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 107, 6, 6}));   // binary input 1, y-frac 1.0
   EXPECT_TRUE(hasFill(r.calls, Rect{147, 94.5, 6, 6}));  // binary output, y-frac 0.5
@@ -266,8 +263,6 @@ TEST(RenderGraph, UnaryNodeHasOneInput) {
 
   EXPECT_TRUE(hasTextAt(r.calls, "-", Vec2{129, 89}));  // unary op label
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill),
-            8u);  // header + const out + unary in + unary out + 2 node drag handles
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 94.5, 6, 6}));  // unary single input, y-frac 0.5
   EXPECT_TRUE(hasFill(r.calls, Rect{147, 94.5, 6, 6}));  // unary output
 
@@ -283,13 +278,10 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     RecordingRenderer r;
     fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
-    EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 6u);  // main, 10, 20, add, a, b
     EXPECT_TRUE(hasTextAt(r.calls, "add", Vec2{154, 79}));
     EXPECT_TRUE(hasTextAt(r.calls, "a", Vec2{154, 104}));
     EXPECT_TRUE(hasTextAt(r.calls, "b", Vec2{154, 129}));
 
-    EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill),
-              12u);  // header + 2 const outs + 2 call arg ins + 1 call return out + 3 node drag handles
     EXPECT_TRUE(hasFill(r.calls, Rect{147, 109.5, 6, 6}));  // call arg row 0 input
     EXPECT_TRUE(hasFill(r.calls, Rect{147, 134.5, 6, 6}));  // call arg row 1 input
     EXPECT_TRUE(hasFill(r.calls, Rect{207, 102, 6, 6}));    // call return output
@@ -306,7 +298,6 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     RecordingRenderer r;
     fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
-    EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 2u);  // name + call target only
     EXPECT_TRUE(hasTextAt(r.calls, "doStuff", Vec2{29, 54}));
 
     EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no port dots

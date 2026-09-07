@@ -18,11 +18,6 @@ namespace fluir::editor {
   using namespace ::fluir::literals_types;
 
   namespace {
-    Rect dragRect(const fluir::FlowGraphLocation& nodeLoc) {
-      return Rect{
-        .x = nodeLoc.width - (DragHandle::WIDTH + 1), .y = 1, .w = DragHandle::WIDTH, .h = DragHandle::HEIGHT};
-    }
-
     // Mirrors render_graph.cpp's private `renderLiteral`: I8 / U8 widen to int
     // so they print as numbers, BOOL prints true/false, and every other
     // arithmetic type goes straight through fmt.

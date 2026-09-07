@@ -10,6 +10,11 @@ namespace fluir::editor {
     }
   }  // namespace
 
+  Rect dragRect(const fluir::FlowGraphLocation& nodeLoc) {
+    return Rect{
+      .x = nodeLoc.width - (DragHandle::WIDTH + 1), .y = 1, .w = DragHandle::WIDTH, .h = DragHandle::HEIGHT};
+  }
+
   DragHandle::DragHandle(Rect handleRect, FlowGraphLocation& location, Rect& bounds) :
     rect_(handleRect), location_(location), bounds_(bounds) { }
 

@@ -7,6 +7,8 @@
 #include "editor/core/viewport.hpp"
 
 namespace fluir::editor {
+  Rect dragRect(const fluir::FlowGraphLocation& nodeLoc);
+
   class DragHandle {
    public:
     static constexpr double WIDTH = 3;

@@ -50,10 +50,11 @@ namespace fluir::editor {
 
     ports_.clear();
 
-    const Subview frame{viewport_, Rect{origin.x, origin.y, w, h}, renderer_};
+    const Subview world{viewport_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y}, renderer_};
     Actor* frameActor = scene_.find(decl.id);
     assert(frameActor);
-    frameActor->draw(frame, ctx_);
+    frameActor->draw(world, ctx_);
+    const Subview frame{world, Rect{origin.x, origin.y, w, h}};
 
     // Body content is offset below the header band so nodes don't render over it.
     const Vec2 bodyOrigin_ = bodyOrigin(origin, ctx_.layout.headerH());

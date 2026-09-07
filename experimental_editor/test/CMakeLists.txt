@@ -9,6 +9,7 @@ add_executable(
     render_graph.test.cpp
     graph_geometry.test.cpp
     actor.test.cpp
+    node_drag.test.cpp
     button_actor.test.cpp
     scene.test.cpp
     module.test.cpp

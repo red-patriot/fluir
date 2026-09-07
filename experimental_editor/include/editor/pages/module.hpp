@@ -45,6 +45,8 @@ namespace fluir::editor {
     bool panning_ = false;
     bool spaceHeld_ = false;
     Vec2 lastPan_;
+    Actor* dragActor_ = nullptr;
+    Vec2 lastDragWorld_;
 
     void reset();
   };

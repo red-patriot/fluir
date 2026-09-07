@@ -88,6 +88,7 @@ set(FLUIR_EDITOR_PAGE_SOURCES
 
 set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/function_decl_actor.cpp"
+    "actors/node_actor.cpp"
     "actors/node_actors.cpp"
     "actors/scene.cpp"
 )

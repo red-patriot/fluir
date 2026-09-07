@@ -31,14 +31,14 @@ namespace fluir::editor {
 
     /** Optionally start dragging a node.
      * Returning true claims the drag gesture, false leaves unclaimed. */
-    virtual bool onDragStart(Vec2 position) { return false; }
+    virtual bool onDragStart(const EditorContext& ctx, Vec2 position) { return false; }
 
     /** Callback invoked each frame while dragging.
      * `delta` is the displacement since the last call. */
-    virtual void onDrag(Vec2 position, Vec2 delta) { }
+    virtual void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) { }
 
     /** Called once on MouseUp, ending a claimed drag. */
-    virtual void onDragEnd(Vec2) { }
+    virtual void onDragEnd(const EditorContext& ctx, Vec2 position) { }
 
     /** Draw this actor into `view`. */
     virtual void draw(const Subview& view, const EditorContext& ctx) const = 0;

@@ -251,7 +251,7 @@ TEST(RenderGraph, BinaryNodeHasTwoInputsOneOutput) {
 
   EXPECT_TRUE(hasTextAt(r.calls, "+", Vec2{129, 89}));  // stringify(PLUS)
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 9u);   // all nodes + ports
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 12u);  // all nodes + ports + 3 node drag handles
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 82, 6, 6}));    // binary input 0, y-frac 0.0
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 107, 6, 6}));   // binary input 1, y-frac 1.0
   EXPECT_TRUE(hasFill(r.calls, Rect{147, 94.5, 6, 6}));  // binary output, y-frac 0.5
@@ -266,7 +266,8 @@ TEST(RenderGraph, UnaryNodeHasOneInput) {
 
   EXPECT_TRUE(hasTextAt(r.calls, "-", Vec2{129, 89}));  // unary op label
 
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 6u);   // header + const out + unary in + unary out
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill),
+            8u);  // header + const out + unary in + unary out + 2 node drag handles
   EXPECT_TRUE(hasFill(r.calls, Rect{122, 94.5, 6, 6}));  // unary single input, y-frac 0.5
   EXPECT_TRUE(hasFill(r.calls, Rect{147, 94.5, 6, 6}));  // unary output
 
@@ -287,7 +288,8 @@ TEST(RenderGraph, CallNodeArgsAndReturn) {
     EXPECT_TRUE(hasTextAt(r.calls, "a", Vec2{154, 104}));
     EXPECT_TRUE(hasTextAt(r.calls, "b", Vec2{154, 129}));
 
-    EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 9u);  // header + 2 const outs + 2 call arg ins + 1 call return out
+    EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill),
+              12u);  // header + 2 const outs + 2 call arg ins + 1 call return out + 3 node drag handles
     EXPECT_TRUE(hasFill(r.calls, Rect{147, 109.5, 6, 6}));  // call arg row 0 input
     EXPECT_TRUE(hasFill(r.calls, Rect{147, 134.5, 6, 6}));  // call arg row 1 input
     EXPECT_TRUE(hasFill(r.calls, Rect{207, 102, 6, 6}));    // call return output

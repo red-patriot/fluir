@@ -63,8 +63,16 @@ namespace fluir::editor {
           } else if (ie.button == InputEvent::Button::Left) {
             if (Actor* hudHit = hudLayer_.topmostAt(ie.pos)) {
               hudHit->onClick(ie.pos);
-            } else if (Actor* hit = scene_.topmostAt(view_.screenToWorld(ie.pos))) {
-              hit->onClick(view_.screenToWorld(ie.pos));
+            } else {
+              const Vec2 world = view_.screenToWorld(ie.pos);
+              if (Actor* hit = scene_.topmostAt(world)) {
+                if (hit->onDragStart(ctx_, world)) {
+                  dragActor_ = hit;
+                  lastDragWorld_ = world;
+                } else {
+                  hit->onClick(world);
+                }
+              }
             }
           }
           break;
@@ -73,12 +81,20 @@ namespace fluir::editor {
           if (ie.button == InputEvent::Button::Middle || ie.button == InputEvent::Button::Left) {
             panning_ = false;
           }
+          if (dragActor_ != nullptr && ie.button == InputEvent::Button::Left) {
+            dragActor_->onDragEnd(ctx_, view_.screenToWorld(ie.pos));
+            dragActor_ = nullptr;
+          }
           break;
 
         case InputEvent::Type::MouseMove:
           if (panning_) {
             view_.pan = view_.pan + (ie.pos - lastPan_);
             lastPan_ = ie.pos;
+          } else if (dragActor_ != nullptr) {
+            const Vec2 world = view_.screenToWorld(ie.pos);
+            dragActor_->onDrag(ctx_, world, world - lastDragWorld_);
+            lastDragWorld_ = world;
           }
           break;
 
@@ -125,6 +141,7 @@ namespace fluir::editor {
     panning_ = false;
     spaceHeld_ = false;
     lastPan_ = Vec2{};
+    dragActor_ = nullptr;
   }
 
 }  // namespace fluir::editor

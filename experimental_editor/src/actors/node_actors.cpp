@@ -99,6 +99,7 @@ namespace fluir::editor {
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet BinaryActor::ports(const EditorContext& ctx) const {
@@ -115,6 +116,7 @@ namespace fluir::editor {
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet UnaryActor::ports(const EditorContext& ctx) const {
@@ -130,6 +132,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet ConstantActor::ports(const EditorContext& ctx) const {
@@ -190,6 +193,7 @@ namespace fluir::editor {
     if (node_._return.has_value()) {
       drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     }
+    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet CallActor::ports(const EditorContext& ctx) const {

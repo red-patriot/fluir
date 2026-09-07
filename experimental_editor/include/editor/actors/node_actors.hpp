@@ -21,6 +21,12 @@ namespace fluir::editor {
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void nudgeLocation(int dx, int dy) override {
+      node_.location.x += dx;
+      node_.location.y += dy;
+    }
+
    private:
     pt::Binary node_;
     std::string lastClickSummary_;
@@ -37,6 +43,12 @@ namespace fluir::editor {
     PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
+
+   protected:
+    void nudgeLocation(int dx, int dy) override {
+      node_.location.x += dx;
+      node_.location.y += dy;
+    }
 
    private:
     pt::Unary node_;
@@ -55,6 +67,12 @@ namespace fluir::editor {
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void nudgeLocation(int dx, int dy) override {
+      node_.location.x += dx;
+      node_.location.y += dy;
+    }
+
    private:
     pt::Constant node_;
     std::string lastClickSummary_;
@@ -71,6 +89,12 @@ namespace fluir::editor {
     PortSet ports(const EditorContext& ctx) const override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
+
+   protected:
+    void nudgeLocation(int dx, int dy) override {
+      node_.location.x += dx;
+      node_.location.y += dy;
+    }
 
    private:
     pt::Call node_;

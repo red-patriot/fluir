@@ -78,13 +78,24 @@ namespace {
   const fs::path kIntConstants = fs::path(TEST_FOLDER) / "read/int_constants.fl";
 
   // int_constants.fl constant id=1 absolute rect {60,175,25,25} (verified in
-  // scene.test.cpp / render_graph.test.cpp / graph_geometry.test.cpp).
-  constexpr Vec2 kInsideActor{65, 180};
+  // scene.test.cpp / render_graph.test.cpp / graph_geometry.test.cpp). The
+  // drag handle is the clamped 15px top-left square {60,175,15,15}; this point
+  // sits inside the node body but OUTSIDE that handle, so a Left press here is
+  // a plain body click, not a handle grab.
+  constexpr Vec2 kInsideActor{80, 195};
   constexpr Vec2 kOutsideEveryActor{-1000, -1000};
 
   InputEvent mouseDown(InputEvent::Button button, Vec2 pos) {
     InputEvent ie;
     ie.type = InputEvent::Type::MouseDown;
+    ie.button = button;
+    ie.pos = pos;
+    return ie;
+  }
+
+  InputEvent mouseUp(InputEvent::Button button, Vec2 pos) {
+    InputEvent ie;
+    ie.type = InputEvent::Type::MouseUp;
     ie.button = button;
     ie.pos = pos;
     return ie;
@@ -189,13 +200,40 @@ TEST(ModulePage, LeftClickOnActorDispatchesToItsOnClick) {
   page.update({mouseDown(InputEvent::Button::Left, clickPos)});
 
   // int_constants.fl constant id=1 absolute rect {60,175,25,25}; kInsideActor
-  // {65,180} is inside it (same fixture/geometry verified in scene.test.cpp).
+  // {80,195} is inside it (same fixture/geometry verified in scene.test.cpp).
   Actor* hit = page.scene().topmostAt(kInsideActor);
   ASSERT_NE(hit, nullptr);
   auto* constant = dynamic_cast<ConstantActor*>(hit);
   ASSERT_NE(constant, nullptr);
   // id=1 is declared as <i8>-5</i8>.
   EXPECT_EQ(constant->lastClickSummary(), "constant -5");
+}
+
+TEST(ModulePage, LeftDragOnHandleMovesNode) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // constant id=1 world rect {60,175,25,25}; drag handle {60,175,15,15}.
+  Actor* c = page.scene().topmostAt(Vec2{80, 195});
+  ASSERT_NE(c, nullptr);
+  const fluir::editor::Rect r0 = c->bounds();
+
+  // Move +16 world px: 16/unitPx(5) truncates to 3 whole grid units -> +15px.
+  // The extra sub-unit past 15 keeps the truncation off the exact 3.0 boundary,
+  // which screenToWorld(worldToScreen(...)) round-trip error can otherwise nudge
+  // just under (14.999.../5 -> 2 units).
+  const auto S = [&](Vec2 w) { return toScreen(ctx, *l.result.tree, renderer.outputSize_, w); };
+  page.update({mouseDown(InputEvent::Button::Left, S({62, 177})),  // inside the handle
+               mouseMove(S({78, 177})),                            // +16 world x -> +3 grid units
+               mouseUp(InputEvent::Button::Left, S({78, 177}))});
+
+  EXPECT_EQ(c->bounds(), (fluir::editor::Rect{r0.x + 15, r0.y, r0.w, r0.h}));
 }
 
 TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {

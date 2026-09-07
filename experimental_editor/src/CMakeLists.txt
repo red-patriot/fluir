@@ -93,7 +93,9 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/scene.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES "components/button_actor.cpp")
+set(FLUIR_EDITOR_COMPONENT_SOURCES "components/button_actor.cpp"
+                                   "components/drag_handle.cpp"
+)
 
 target_sources(
     fluir.libeditor

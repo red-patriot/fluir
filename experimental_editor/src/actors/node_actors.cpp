@@ -18,6 +18,10 @@ namespace fluir::editor {
   using namespace ::fluir::literals_types;
 
   namespace {
+    Rect dragRect(const fluir::FlowGraphLocation& nodeLoc) {
+      return Rect{
+        .x = nodeLoc.width - (DragHandle::WIDTH + 1), .y = 1, .w = DragHandle::WIDTH, .h = DragHandle::HEIGHT};
+    }
 
     // Mirrors render_graph.cpp's private `renderLiteral`: I8 / U8 widen to int
     // so they print as numbers, BOOL prints true/false, and every other
@@ -82,13 +86,12 @@ namespace fluir::editor {
 
   }  // namespace
 
+  BinaryActor::BinaryActor(fluir::ID functionId, pt::Binary node, Rect bound) :
+    NodeActor(fluir::FullID{functionId, node.id}, bound),
+    node_(node),
+    drag_(dragRect(node_.location), node_.location, this->bounds()) { }
+
   void BinaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("binary {}", stringify(node_.op)); }
-
-  void UnaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("unary {}", stringify(node_.op)); }
-
-  void ConstantActor::onClick(Vec2) { lastClickSummary_ = fmt::format("constant {}", renderLiteral(node_.value)); }
-
-  void CallActor::onClick(Vec2) { lastClickSummary_ = fmt::format("call {}", node_.target); }
 
   void BinaryActor::draw(const Subview& body, const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
@@ -97,15 +100,24 @@ namespace fluir::editor {
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
+
+    drag_.draw(body, ctx, nodeRect);
+
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
-    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet BinaryActor::ports(const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
     return {edgeAnchors(nodeRect.x, nodeRect, 2), edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
+
+  UnaryActor::UnaryActor(fluir::ID functionId, pt::Unary node, Rect bounds) :
+    NodeActor(fluir::FullID{functionId, node.id}, bounds),
+    node_(node),
+    drag_(dragRect(node_.location), node_.location, this->bounds()) { }
+
+  void UnaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("unary {}", stringify(node_.op)); }
 
   void UnaryActor::draw(const Subview& body, const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
@@ -114,15 +126,24 @@ namespace fluir::editor {
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
+
+    drag_.draw(body, ctx, nodeRect);
+
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
-    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet UnaryActor::ports(const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
     return {edgeAnchors(nodeRect.x, nodeRect, 1), edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
+
+  ConstantActor::ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds) :
+    NodeActor(fluir::FullID{functionId, node.id}, bounds),
+    node_(node),
+    drag_(dragRect(node_.location), node_.location, this->Actor::bounds()) { }
+
+  void ConstantActor::onClick(Vec2) { lastClickSummary_ = fmt::format("constant {}", renderLiteral(node_.value)); }
 
   void ConstantActor::draw(const Subview& body, const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
@@ -131,14 +152,23 @@ namespace fluir::editor {
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
+
+    drag_.draw(body, ctx, nodeRect);
+
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
-    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet ConstantActor::ports(const EditorContext& ctx) const {
     const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
     return {{}, edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
+
+  CallActor::CallActor(fluir::ID functionId, pt::Call node, Rect bounds) :
+    NodeActor(fluir::FullID{functionId, node.id}, bounds),
+    node_(node),
+    drag_(dragRect(node_.location), node_.location, this->Actor::bounds()) { }
+
+  void CallActor::onClick(Vec2) { lastClickSummary_ = fmt::format("call {}", node_.target); }
 
   namespace {
 
@@ -188,12 +218,14 @@ namespace fluir::editor {
                                args[k]->name,
                                ctx.theme.text);
     }
+
+    drag_.draw(body, ctx, nodeRect);
+
     drawDots(argAnchors, ctx.layout.portDot, body, ctx.theme.border);
 
     if (node_._return.has_value()) {
       drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     }
-    drawDragHandle(body, ctx, nodeRect);
   }
 
   PortSet CallActor::ports(const EditorContext& ctx) const {

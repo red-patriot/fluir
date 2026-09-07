@@ -79,9 +79,11 @@ namespace fluir::editor {
       const fluir::ID id = idOf(*node);
       Actor* actor = scene_.find(decl.id, id);
       assert(actor);
-      actor->draw(*body_, ctx_);
       // scene_.find(functionId, nodeId) only ever resolves byId_ entries, which are always NodeActor.
-      ports_[id] = static_cast<NodeActor*>(actor)->ports(ctx_);
+      auto* nodeActor = static_cast<NodeActor*>(actor);
+      nodeActor->setBounds(atOrigin(bodyOrigin_, localRect(nodeActor->location(), ctx_.layout.unitPx)));
+      nodeActor->draw(*body_, ctx_);
+      ports_[id] = nodeActor->ports(ctx_);
     }
 
     std::vector<const pt::Conduit*> conduits;

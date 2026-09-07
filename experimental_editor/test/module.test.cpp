@@ -234,6 +234,34 @@ TEST(ModulePage, LeftDragOnHandleMovesNode) {
   EXPECT_EQ(c->bounds(), (fluir::editor::Rect{r0.x + 15, r0.y, r0.w, r0.h}));
 }
 
+TEST(ModulePage, ChildStaysDraggableAfterFrameDrag) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  page.draw();
+
+  const auto S = [&](Vec2 w) { return toScreen(ctx, *l.result.tree, renderer.outputSize_, w); };
+
+  page.update({mouseDown(InputEvent::Button::Left, S({537, 62})),
+               mouseMove(S({552, 62})),
+               mouseUp(InputEvent::Button::Left, S({552, 62}))});
+  page.draw();  // reconciles child bounds_ from the moved frame origin
+
+  Actor* child = page.scene().topmostAt(Vec2{92, 187});
+  ASSERT_NE(child, nullptr);
+  ASSERT_NE(dynamic_cast<ConstantActor*>(child), nullptr);
+
+  ASSERT_TRUE(child->onDragStart(ctx, Vec2{87, 187}));
+  const fluir::editor::Rect r0 = child->bounds();
+  child->onDrag(ctx, Vec2{}, Vec2{ctx.layout.unitPx, 0});  // +1 grid unit
+  EXPECT_EQ(child->bounds(), (fluir::editor::Rect{r0.x + ctx.layout.unitPx, r0.y, r0.w, r0.h}));
+}
+
 TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
   const Loaded l = loadFixture("read/int_constants.fl");
   ASSERT_TRUE(l.result.tree.has_value());

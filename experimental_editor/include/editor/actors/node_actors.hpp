@@ -23,6 +23,7 @@ namespace fluir::editor {
 
     void draw(const Subview& body, const EditorContext& ctx) const override;
     PortSet ports(const EditorContext& ctx) const override;
+    const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -45,6 +46,7 @@ namespace fluir::editor {
 
     void draw(const Subview& body, const EditorContext& ctx) const override;
     PortSet ports(const EditorContext& ctx) const override;
+    const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -67,6 +69,7 @@ namespace fluir::editor {
 
     void draw(const Subview& body, const EditorContext& ctx) const override;
     PortSet ports(const EditorContext& ctx) const override;
+    const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -89,6 +92,7 @@ namespace fluir::editor {
 
     void draw(const Subview& body, const EditorContext& ctx) const override;
     PortSet ports(const EditorContext& ctx) const override;
+    const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 

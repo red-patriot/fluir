@@ -26,6 +26,7 @@ namespace {
 
   namespace fs = std::filesystem;
 
+  using fluir::editor::Actor;
   using fluir::editor::FunctionDeclActor;
   using fluir::editor::GraphRenderer;
   using fluir::editor::GraphScene;
@@ -160,4 +161,80 @@ TEST(FunctionDeclDrag, FrameChromeIsNotScissoredToItsOwnRect) {
   ASSERT_GE(headerFill, 0);
   // The frame-sized clip, if pushed at all, comes only after the header is drawn.
   EXPECT_TRUE(frameClip < 0 || headerFill < frameClip);
+}
+
+TEST(FunctionDeclDrag, BodyNodeHitBoundsFollowFrameDrag) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  Actor* node = scene.find(1, 1);  // binary id=1 in function id=1
+  ASSERT_NE(node, nullptr);
+  // Matches the drawn rect: bodyOrigin {50,75} + localRect {75,10,25,25}.
+  ASSERT_EQ(node->bounds(), (Rect{125, 85, 25, 25}));
+
+  dragFrame(scene, 10, 4);  // +50 world px in x, +20 in y
+  RecordingRenderer after;
+  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+
+  // The pick rect must shift by the same (50,20) world delta as the drawn rect.
+  EXPECT_EQ(node->bounds(), (Rect{175, 105, 25, 25}));
+}
+
+TEST(FunctionDeclDrag, BodyNodeHitBoundsMatchDrawnRectAfterFrameDrag) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  dragFrame(scene, 10, 4);
+  RecordingRenderer after;
+  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+
+  Actor* node = scene.find(1, 1);
+  ASSERT_NE(node, nullptr);
+  EXPECT_TRUE(hasRect(after.calls, node->bounds()));
+}
+
+TEST(FunctionDeclDrag, BodyNodeOwnDragBoundsSurviveRerender) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  Actor* node = scene.find(1, 1);
+  ASSERT_NE(node, nullptr);
+  // binary id=1 world rect {125,85,25,25}; its grip is handleBox({125,85,..},{1,1,3,3}) = {130,90,15,15}.
+  ASSERT_TRUE(node->onDragStart(kCtx, Vec2{137, 97}));
+  node->onDrag(kCtx, Vec2{}, Vec2{2 * kCtx.layout.unitPx, 0});  // +2 units in x
+  const Rect dragged = node->bounds();
+  ASSERT_EQ(dragged, (Rect{135, 85, 25, 25}));
+
+  RecordingRenderer after;
+  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+
+  EXPECT_EQ(node->bounds(), dragged);
+}
+
+TEST(FunctionDeclDrag, AtRestRenderDoesNotMoveBodyNodeBounds) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  Actor* node = scene.find(1, 1);
+  ASSERT_NE(node, nullptr);
+  const Rect built = node->bounds();
+
+  RecordingRenderer r1;
+  GraphRenderer{kCtx, Viewport{}, r1, scene}(*l.result.tree);
+  RecordingRenderer r2;
+  GraphRenderer{kCtx, Viewport{}, r2, scene}(*l.result.tree);
+
+  EXPECT_EQ(node->bounds(), built);
 }

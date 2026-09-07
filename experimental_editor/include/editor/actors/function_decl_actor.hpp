@@ -28,6 +28,7 @@ namespace fluir::editor {
     void draw(const Subview& frame, const EditorContext& ctx) const override;
 
     fluir::ID functionId() const { return functionId_; }
+    const FlowGraphLocation& location() const { return location_; }
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
    private:

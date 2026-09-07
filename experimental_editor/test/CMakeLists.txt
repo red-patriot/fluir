@@ -10,6 +10,7 @@ add_executable(
     graph_geometry.test.cpp
     actor.test.cpp
     node_drag.test.cpp
+    function_decl_drag.test.cpp
     button_actor.test.cpp
     scene.test.cpp
     module.test.cpp

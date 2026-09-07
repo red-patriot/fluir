@@ -90,9 +90,10 @@ TEST(RenderGraph, SingleEmptyFunctionFrameAndHeader) {
   EXPECT_EQ(textStrings(r.calls), (std::vector<std::string>{"foo"}));
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
 
-  // Frame Subview + nested body Subview each push a clip, so an empty function pops 2, not 1.
+  // The body Subview clips exactly once to the body rect; every Subview push is
+  // balanced by a pop (full-canvas `world` + frame + body for an empty function).
   EXPECT_EQ(clipsCovering(r.calls, Rect{50, 75, 500, 500}).size(), 1u);
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::PopClip), 2u);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::PushClip), countOf(r.calls, DrawCall::Op::PopClip));
 }
 
 TEST(RenderGraph, ParamRailFromInputOnly) {

@@ -79,9 +79,10 @@ namespace {
 
   // int_constants.fl constant id=1 absolute rect {60,175,25,25} (verified in
   // scene.test.cpp / render_graph.test.cpp / graph_geometry.test.cpp). The
-  // drag handle is the clamped 15px top-left square {60,175,15,15}; this point
-  // sits inside the node body but OUTSIDE that handle, so a Left press here is
-  // a plain body click, not a handle grab.
+  // drag handle is the 15px grip inset one unit from the node's top and right
+  // edges -> world {65,180,15,15}; this point sits inside the node body but
+  // OUTSIDE that handle, so a Left press here is a plain body click, not a
+  // handle grab.
   constexpr Vec2 kInsideActor{80, 195};
   constexpr Vec2 kOutsideEveryActor{-1000, -1000};
 
@@ -219,19 +220,16 @@ TEST(ModulePage, LeftDragOnHandleMovesNode) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  // constant id=1 world rect {60,175,25,25}; drag handle {60,175,15,15}.
+  // constant id=1 world rect {60,175,25,25}; drag handle is the 3x3-unit grip
+  // inset one unit from the node's top and right edges -> world {65,180,15,15}.
   Actor* c = page.scene().topmostAt(Vec2{80, 195});
   ASSERT_NE(c, nullptr);
   const fluir::editor::Rect r0 = c->bounds();
 
-  // Move +16 world px: 16/unitPx(5) truncates to 3 whole grid units -> +15px.
-  // The extra sub-unit past 15 keeps the truncation off the exact 3.0 boundary,
-  // which screenToWorld(worldToScreen(...)) round-trip error can otherwise nudge
-  // just under (14.999.../5 -> 2 units).
   const auto S = [&](Vec2 w) { return toScreen(ctx, *l.result.tree, renderer.outputSize_, w); };
-  page.update({mouseDown(InputEvent::Button::Left, S({62, 177})),  // inside the handle
-               mouseMove(S({78, 177})),                            // +16 world x -> +3 grid units
-               mouseUp(InputEvent::Button::Left, S({78, 177}))});
+  page.update({mouseDown(InputEvent::Button::Left, S({70, 185})),  // inside the handle
+               mouseMove(S({86, 185})),                            // +16 world x -> +3 grid units
+               mouseUp(InputEvent::Button::Left, S({86, 185}))});
 
   EXPECT_EQ(c->bounds(), (fluir::editor::Rect{r0.x + 15, r0.y, r0.w, r0.h}));
 }

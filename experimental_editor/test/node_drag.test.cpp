@@ -7,6 +7,7 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/components/drag_handle.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
@@ -91,22 +92,45 @@ TEST(NodeDrag, OnDragAccumulatesSubGridRemainder) {
   EXPECT_EQ(actor.bounds().x, 5.0);
 }
 
-TEST(NodeDrag, DrawRendersHandleBlockAtNodeTopLeft) {
-  BinaryActor actor(
-    kFunctionId, makeBinary(FlowGraphLocation{.x = 2, .y = 2, .z = 0, .width = 5, .height = 5}), Rect{0, 0, 25, 25});
+TEST(NodeDrag, DrawRendersHandleBlockFromDragRect) {
+  const FlowGraphLocation loc{.x = 2, .y = 2, .z = 0, .width = 5, .height = 5};
+  BinaryActor actor(kFunctionId, makeBinary(loc), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  // nodeRect = {10, 10, 25, 25}; handle span = min(15, 25, 25) = 15.
-  EXPECT_TRUE(hasFill(recordDraw(actor, ctx), Rect{10, 10, 15, 15}));
+  // draw() computes nodeRect = localRect(loc, unitPx) = {10, 10, 25, 25}, then
+  // fills dragRect(loc) scaled into it: dragRect is grid units
+  //   {loc.width - (WIDTH + 1), 1, WIDTH, HEIGHT} = {1, 1, 3, 3}
+  // -> world {10 + 1*5, 10 + 1*5, 3*5, 3*5} = {15, 15, 15, 15}.
+  const double u = ctx.layout.unitPx;
+  const Rect nodeRect{loc.x * u, loc.y * u, loc.width * u, loc.height * u};
+  const Rect dr = fluir::editor::dragRect(loc);
+  const Rect handle{nodeRect.x + dr.x * u, nodeRect.y + dr.y * u, dr.w * u, dr.h * u};
+
+  EXPECT_EQ(handle, (Rect{15, 15, 15, 15}));
+  EXPECT_TRUE(hasFill(recordDraw(actor, ctx), handle));
 }
 
-TEST(NodeDrag, HandleClampsToSmallNode) {
-  BinaryActor actor(
-    kFunctionId, makeBinary(FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 2, .height = 5}), Rect{0, 0, 10, 25});
+TEST(NodeDrag, HandleBlockFitsWithinNode) {
+  // Smallest node a real graph uses is 5x5 units (fixtures declare w="5" h="5").
+  const FlowGraphLocation loc{.x = 0, .y = 0, .z = 0, .width = 5, .height = 5};
+  BinaryActor actor(kFunctionId, makeBinary(loc), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  // nodeRect = {0, 0, 10, 25}; handle span = min(15, 10, 25) = 10, not 15.
+  const double u = ctx.layout.unitPx;
+  const Rect nodeRect{loc.x * u, loc.y * u, loc.width * u, loc.height * u};
+  const Rect dr = fluir::editor::dragRect(loc);
+  const Rect handle{nodeRect.x + dr.x * u, nodeRect.y + dr.y * u, dr.w * u, dr.h * u};
+
+  // The handle is a fixed 3x3-unit (15x15 px) grip inset one unit from the
+  // node's top and right edges, so it never overflows the node rect.
+  EXPECT_EQ(handle, (Rect{5, 5, 15, 15}));
+  EXPECT_GE(handle.x, nodeRect.x);
+  EXPECT_GE(handle.y, nodeRect.y);
+  EXPECT_LE(handle.x + handle.w, nodeRect.x + nodeRect.w);
+  EXPECT_LE(handle.y + handle.h, nodeRect.y + nodeRect.h);
+
   const auto calls = recordDraw(actor, ctx);
-  EXPECT_TRUE(hasFill(calls, Rect{0, 0, 10, 10}));
+  EXPECT_TRUE(hasFill(calls, handle));
+  // The pre-refactor handle was a square anchored at the node's top-left corner.
   EXPECT_FALSE(hasFill(calls, Rect{0, 0, 15, 15}));
 }

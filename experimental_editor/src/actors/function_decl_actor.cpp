@@ -29,7 +29,8 @@ namespace fluir::editor {
 
     frame.renderer().fillRect(frame.toScreen(headerRect), ctx.theme.funcDeclHeader);
     frame.renderer().drawRect(frame.toScreen(Rect{x, y, w, h}), ctx.theme.border);
-    frame.renderer().drawText(frame.toScreen(Vec2{ctx.layout.textPad, ctx.layout.textPad}), name_, ctx.theme.text);
+    frame.renderer().drawText(
+      frame.toScreen(Vec2{x + ctx.layout.textPad, y + ctx.layout.textPad}), name_, ctx.theme.text);
 
     drag_.draw(frame, ctx, headerRect);
   }

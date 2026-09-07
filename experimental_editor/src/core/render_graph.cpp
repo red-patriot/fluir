@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "compiler/models/id.hpp"
+#include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actor.hpp"
 #include "editor/core/graph_geometry.hpp"
 
@@ -43,20 +44,20 @@ namespace fluir::editor {
   }
 
   void GraphRenderer::operator()(const pt::FunctionDecl& decl) {
-    const FlowGraphLocation& loc = decl.location;
+    ports_.clear();
+
+    auto* frameActor = static_cast<FunctionDeclActor*>(scene_.find(decl.id));
+    assert(frameActor);
+    const FlowGraphLocation& loc = frameActor->location();
     const Vec2 origin = functionOrigin(loc, ctx_.layout.unitPx);
     const double w = static_cast<double>(loc.width) * ctx_.layout.unitPx;
     const double h = static_cast<double>(loc.height) * ctx_.layout.unitPx;
 
-    ports_.clear();
-
     const Subview world{viewport_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y}, renderer_};
-    Actor* frameActor = scene_.find(decl.id);
-    assert(frameActor);
     frameActor->draw(world, ctx_);
     const Subview frame{world, Rect{origin.x, origin.y, w, h}};
 
-    // Body content is offset below the header band so nodes don't render over it.
+    // Body content is offset below the header band so nodes don't render over/under it.
     const Vec2 bodyOrigin_ = bodyOrigin(origin, ctx_.layout.headerH());
     const Subview body = frame.child(Rect{0.0, ctx_.layout.headerH(), w, h});
     const Subview* const prevBody = body_;

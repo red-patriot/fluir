@@ -11,10 +11,10 @@
     <body>
       <binary id="1" x="15" y="2" z="1" w="5" h="5" operator="+"/>
       <constant id="2" x="2" y="2" z="1" w="5" h="5">
-        <f64>3.0</f64>
+        <f64>3.000000</f64>
       </constant>
       <constant id="3" x="2" y="12" z="1" w="5" h="5">
-        <f64>2.0</f64>
+        <f64>2.000000</f64>
       </constant>
     </body>
   </function>

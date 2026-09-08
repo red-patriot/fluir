@@ -76,6 +76,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/graph_geometry.cpp"
     "core/layer.cpp"
     "core/loader.cpp"
+    "core/parse_tree_writer.cpp"
     "core/render_graph.cpp"
     "core/viewport.cpp"
 )

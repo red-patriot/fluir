@@ -5,6 +5,7 @@ add_executable(
     input.test.cpp
     layer.test.cpp
     loader.test.cpp
+    parse_tree_writer.test.cpp
     viewport.test.cpp
     render_graph.test.cpp
     graph_geometry.test.cpp

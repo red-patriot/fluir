@@ -24,6 +24,12 @@ namespace {
     return ie;
   }
 
+  InputEvent resize() {
+    InputEvent ie;
+    ie.type = InputEvent::Type::Resize;
+    return ie;
+  }
+
 }  // namespace
 
 TEST(SplashPage, DrawsOpenButton) {
@@ -66,9 +72,9 @@ TEST(SplashPage, ButtonRecentersOnResize) {
   const Rect before = page.openButton().bounds();
 
   renderer.outputSize_ = Vec2{1200, 900};
-  ASSERT_EQ(page.draw(), 0);
+  ASSERT_EQ(page.update({resize()}), 0);
   const Rect after = page.openButton().bounds();
 
-  EXPECT_NE(before, after) << "the button must re-layout each frame, not stay frozen from construction";
+  EXPECT_NE(before, after) << "a Resize event must re-layout the button, not leave it frozen";
   EXPECT_EQ(after.center(), (Vec2{600, 450}));
 }

@@ -14,6 +14,7 @@
 #include "editor/core/loader.hpp"
 #include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
+#include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
 // Dragging a function frame's DragHandle must move the whole frame as one unit:
@@ -23,6 +24,9 @@
 // geometry (rects, text positions, clip rects), never draw-call counts.
 
 namespace {
+
+  using testutil::Loaded;
+  using testutil::loadFixture;
 
   namespace fs = std::filesystem;
 
@@ -42,26 +46,6 @@ namespace {
 
   const fluir::editor::EditorContext kCtx;
 
-  // Same fixture-loading shape as render_graph.test.cpp / scene.test.cpp.
-  struct Loaded {
-    fluir::editor::CollectingSink sink;
-    fluir::editor::LoadResult result;
-  };
-
-  Loaded loadFixture(const std::string& relPath) {
-    Loaded l;
-    fluir::Context ctx{
-      .diagnosticSink = l.sink,
-      .symbolTable = {},
-      .currentFile = {},
-      .outputFilename = {},
-      .version = {},
-      .ignoreVersionChecks = true,
-    };
-    l.result = fluir::editor::loadFile(ctx, fs::path(TEST_FOLDER) / relPath);
-    return l;
-  }
-
   // Drags function id=1's frame handle by (dxUnits, dyUnits) logical units.
   // simple_binary_expr.fl / single_empty_function.fl: foo at x=10 y=10 w=100
   // h=100; unitPx 5 -> frame bounds {50,50,500,500} and drag-handle world box
@@ -75,6 +59,7 @@ namespace {
       kCtx,
       Vec2{},
       Vec2{static_cast<double>(dxUnits) * kCtx.layout.unitPx, static_cast<double>(dyUnits) * kCtx.layout.unitPx});
+    scene.layout(kCtx);  // layout, not draw, is what reconciles bounds with the new location
   }
 
   long firstIndex(const std::vector<DrawCall>& calls, bool (*pred)(const DrawCall&)) {
@@ -173,14 +158,14 @@ TEST(FunctionDeclDrag, BodyNodeHitBoundsFollowFrameDrag) {
   Actor* node = scene.find(1, 1);  // binary id=1 in function id=1
   ASSERT_NE(node, nullptr);
   // Matches the drawn rect: bodyOrigin {50,75} + localRect {75,10,25,25}.
-  ASSERT_EQ(node->bounds(), (Rect{125, 85, 25, 25}));
+  ASSERT_EQ(node->worldBounds(), (Rect{125, 85, 25, 25}));
 
   dragFrame(scene, 10, 4);  // +50 world px in x, +20 in y
   RecordingRenderer after;
   GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
 
   // The pick rect must shift by the same (50,20) world delta as the drawn rect.
-  EXPECT_EQ(node->bounds(), (Rect{175, 105, 25, 25}));
+  EXPECT_EQ(node->worldBounds(), (Rect{175, 105, 25, 25}));
 }
 
 TEST(FunctionDeclDrag, BodyNodeHitBoundsMatchDrawnRectAfterFrameDrag) {
@@ -196,7 +181,7 @@ TEST(FunctionDeclDrag, BodyNodeHitBoundsMatchDrawnRectAfterFrameDrag) {
 
   Actor* node = scene.find(1, 1);
   ASSERT_NE(node, nullptr);
-  EXPECT_TRUE(hasRect(after.calls, node->bounds()));
+  EXPECT_TRUE(hasRect(after.calls, node->worldBounds()));
 }
 
 TEST(FunctionDeclDrag, BodyNodeOwnDragBoundsSurviveRerender) {
@@ -209,15 +194,17 @@ TEST(FunctionDeclDrag, BodyNodeOwnDragBoundsSurviveRerender) {
   Actor* node = scene.find(1, 1);
   ASSERT_NE(node, nullptr);
   // binary id=1 world rect {125,85,25,25}; its grip is handleBox({125,85,..},{1,1,3,3}) = {130,90,15,15}.
-  ASSERT_TRUE(node->onDragStart(kCtx, Vec2{137, 97}));
+  // Events arrive in the node's parent (body) space, so the world point converts first.
+  ASSERT_TRUE(node->onDragStart(kCtx, node->toParentLocal(Vec2{137, 97})));
   node->onDrag(kCtx, Vec2{}, Vec2{2 * kCtx.layout.unitPx, 0});  // +2 units in x
-  const Rect dragged = node->bounds();
+  scene.layout(kCtx);
+  const Rect dragged = node->worldBounds();
   ASSERT_EQ(dragged, (Rect{135, 85, 25, 25}));
 
   RecordingRenderer after;
   GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
 
-  EXPECT_EQ(node->bounds(), dragged);
+  EXPECT_EQ(node->worldBounds(), dragged);
 }
 
 TEST(FunctionDeclDrag, AtRestRenderDoesNotMoveBodyNodeBounds) {
@@ -229,12 +216,12 @@ TEST(FunctionDeclDrag, AtRestRenderDoesNotMoveBodyNodeBounds) {
 
   Actor* node = scene.find(1, 1);
   ASSERT_NE(node, nullptr);
-  const Rect built = node->bounds();
+  const Rect built = node->worldBounds();
 
   RecordingRenderer r1;
   GraphRenderer{kCtx, Viewport{}, r1, scene}(*l.result.tree);
   RecordingRenderer r2;
   GraphRenderer{kCtx, Viewport{}, r2, scene}(*l.result.tree);
 
-  EXPECT_EQ(node->bounds(), built);
+  EXPECT_EQ(node->worldBounds(), built);
 }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -18,6 +19,7 @@
 #include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
 // These tests assert *ModulePage's MouseDown dispatch*: a plain Left click on
@@ -30,6 +32,9 @@
 
 namespace {
 
+  using testutil::Loaded;
+  using testutil::loadFixture;
+
   namespace fs = std::filesystem;
 
   using fluir::editor::Actor;
@@ -41,28 +46,6 @@ namespace {
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
   using testutil::RecordingRenderer;
-
-  // Same fixture-loading shape as scene.test.cpp / render_graph.test.cpp: each
-  // load owns its Context + CollectingSink, version checks off (fixtures
-  // declare <version>0.1.3</version>).
-  struct Loaded {
-    fluir::editor::CollectingSink sink;
-    fluir::editor::LoadResult result;
-  };
-
-  Loaded loadFixture(const std::string& relPath) {
-    Loaded l;
-    fluir::Context ctx{
-      .diagnosticSink = l.sink,
-      .symbolTable = {},
-      .currentFile = {},
-      .outputFilename = {},
-      .version = {},
-      .ignoreVersionChecks = true,
-    };
-    l.result = fluir::editor::loadFile(ctx, fs::path(TEST_FOLDER) / relPath);
-    return l;
-  }
 
   // Replicates the exact fit-to-window transform ModulePage::start() applies
   // internally (fitRect(graphBounds(ctx, tree), renderer.outputSize())), so a
@@ -224,14 +207,14 @@ TEST(ModulePage, LeftDragOnHandleMovesNode) {
   // inset one unit from the node's top and right edges -> world {65,180,15,15}.
   Actor* c = page.scene().topmostAt(Vec2{80, 195});
   ASSERT_NE(c, nullptr);
-  const fluir::editor::Rect r0 = c->bounds();
+  const fluir::editor::Rect r0 = c->worldBounds();
 
   const auto S = [&](Vec2 w) { return toScreen(ctx, *l.result.tree, renderer.outputSize_, w); };
   page.update({mouseDown(InputEvent::Button::Left, S({70, 185})),  // inside the handle
                mouseMove(S({86, 185})),                            // +16 world x -> +3 grid units
                mouseUp(InputEvent::Button::Left, S({86, 185}))});
 
-  EXPECT_EQ(c->bounds(), (fluir::editor::Rect{r0.x + 15, r0.y, r0.w, r0.h}));
+  EXPECT_EQ(c->worldBounds(), (fluir::editor::Rect{r0.x + 15, r0.y, r0.w, r0.h}));
 }
 
 TEST(ModulePage, ChildStaysDraggableAfterFrameDrag) {
@@ -256,10 +239,11 @@ TEST(ModulePage, ChildStaysDraggableAfterFrameDrag) {
   ASSERT_NE(child, nullptr);
   ASSERT_NE(dynamic_cast<ConstantActor*>(child), nullptr);
 
-  ASSERT_TRUE(child->onDragStart(ctx, Vec2{87, 187}));
-  const fluir::editor::Rect r0 = child->bounds();
+  ASSERT_TRUE(child->onDragStart(ctx, child->toParentLocal(Vec2{87, 187})));
+  const fluir::editor::Rect r0 = child->worldBounds();
   child->onDrag(ctx, Vec2{}, Vec2{ctx.layout.unitPx, 0});  // +1 grid unit
-  EXPECT_EQ(child->bounds(), (fluir::editor::Rect{r0.x + ctx.layout.unitPx, r0.y, r0.w, r0.h}));
+  page.scene().layout(ctx);
+  EXPECT_EQ(child->worldBounds(), (fluir::editor::Rect{r0.x + ctx.layout.unitPx, r0.y, r0.w, r0.h}));
 }
 
 TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
@@ -320,4 +304,81 @@ TEST(ModulePage, QuitForcesRunningFalseEvenOverANode) {
   page.update({mouseMove(overActor), quit()});
 
   EXPECT_FALSE(ctx.running);
+}
+
+namespace {
+
+  // Loads a .fl file from an arbitrary absolute path (loadFixture only reaches
+  // under TEST_FOLDER), version checks off like every other loader in this file.
+  fluir::editor::LoadResult reloadFrom(fluir::editor::CollectingSink& sink, const fs::path& path) {
+    fluir::Context ctx{
+      .diagnosticSink = sink,
+      .symbolTable = {},
+      .currentFile = {},
+      .outputFilename = {},
+      .version = {},
+      .ignoreVersionChecks = true,
+    };
+    return fluir::editor::loadFile(ctx, path);
+  }
+
+}  // namespace
+
+// Save As is dialog-driven (NFD_SaveDialogU8) so it is not unit-tested here;
+// saveToPath()/syncTreeFromScene() are exercised transitively via the Save
+// button, whose path comes from EditorContext::program.
+TEST(ModulePage, SaveWritesCurrentProgramToItsPath) {
+  const fs::path tmp = fs::temp_directory_path() / "fluir_module_save_test.fl";
+  fs::copy_file(kIntConstants, tmp, fs::copy_options::overwrite_existing);
+
+  EditorContext ctx;
+  ctx.program = tmp;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  page.draw();  // lays out header_/saveButton_ bounds
+
+  const Vec2 clickPos = page.header().saveButton().bounds().center();
+  page.update({mouseDown(InputEvent::Button::Left, clickPos)});
+
+  fluir::editor::CollectingSink sink;
+  const auto reloaded = reloadFrom(sink, tmp);
+  EXPECT_TRUE(reloaded.tree.has_value());
+  EXPECT_FALSE(reloaded.tree->declarations.empty());
+
+  fs::remove(tmp);
+}
+
+TEST(ModulePage, SaveAfterDragPersistsNewPosition) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const fs::path tmp = fs::temp_directory_path() / "fluir_module_save_drag_test.fl";
+  fs::copy_file(kIntConstants, tmp, fs::copy_options::overwrite_existing);
+
+  EditorContext ctx;
+  ctx.program = tmp;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  page.draw();
+
+  // constant id=1 body-local x=2 (grid units) in int_constants.fl; drag its
+  // handle +16 world x -> +3 grid units (same geometry as LeftDragOnHandleMovesNode).
+  const auto S = [&](Vec2 w) { return toScreen(ctx, *l.result.tree, renderer.outputSize_, w); };
+  page.update({mouseDown(InputEvent::Button::Left, S({70, 185})),
+               mouseMove(S({86, 185})),
+               mouseUp(InputEvent::Button::Left, S({86, 185}))});
+
+  page.update({mouseDown(InputEvent::Button::Left, page.header().saveButton().bounds().center())});
+
+  fluir::editor::CollectingSink sink;
+  const auto reloaded = reloadFrom(sink, tmp);
+  ASSERT_TRUE(reloaded.tree.has_value());
+
+  const auto& fn = std::get<fluir::pt::FunctionDecl>(reloaded.tree->declarations.at(1));
+  const auto& node = std::get<fluir::pt::Constant>(fn.body.nodes.at(1));
+  EXPECT_EQ(node.location.x, 5);  // original 2 + 3 grid-unit drag
+
+  fs::remove(tmp);
 }

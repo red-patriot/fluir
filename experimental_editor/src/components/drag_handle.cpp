@@ -4,26 +4,26 @@
 
 namespace fluir::editor {
   namespace {
-    Rect handleBox(const Rect& nodeRect, const Rect& boxRect, const EditorContext& ctx) {
+    Rect handleBox(const Rect& nodeRect, const FlowGraphLocation& loc, const EditorContext& ctx) {
+      const Rect box = dragRect(loc);
       const auto u = ctx.layout.unitPx;
-      return {nodeRect.x + boxRect.x * u, nodeRect.y + boxRect.y * u, boxRect.w * u, boxRect.h * u};
+      return {nodeRect.x + box.x * u, nodeRect.y + box.y * u, box.w * u, box.h * u};
     }
   }  // namespace
 
   Rect dragRect(const fluir::FlowGraphLocation& nodeLoc) {
-    return Rect{
-      .x = nodeLoc.width - (DragHandle::WIDTH + 1), .y = 1, .w = DragHandle::WIDTH, .h = DragHandle::HEIGHT};
+    return Rect{.x = nodeLoc.width - (DragHandle::WIDTH + 1), .y = 1, .w = DragHandle::WIDTH, .h = DragHandle::HEIGHT};
   }
 
-  DragHandle::DragHandle(Rect handleRect, FlowGraphLocation& location, Rect& bounds) :
-    rect_(handleRect), location_(location), bounds_(bounds) { }
-
-  bool DragHandle::onDragStart(const EditorContext& ctx, Vec2 worldPos) {
+  bool DragHandle::onDragStart(const EditorContext& ctx,
+                               Vec2 parentLocalPos,
+                               const FlowGraphLocation& loc,
+                               const Rect& nodeRect) {
     accumulator_ = {};
-    return handleBox(bounds_, rect_, ctx).contains(worldPos);
+    return handleBox(nodeRect, loc, ctx).contains(parentLocalPos);
   }
 
-  void DragHandle::onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta) {
+  void DragHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta, FlowGraphLocation& loc) {
     accumulator_ = accumulator_ + worldDelta;
     const double unit = ctx.layout.unitPx;
     const int dx = static_cast<int>(accumulator_.x / unit);
@@ -33,14 +33,15 @@ namespace fluir::editor {
     }
     accumulator_.x -= dx * unit;  // keep only the sub-unit remainder
     accumulator_.y -= dy * unit;
-    location_.x += dx;
-    location_.y += dy;
-    bounds_.x += dx * unit;
-    bounds_.y += dy * unit;  // move bounds by the same whole step
+    loc.x += dx;
+    loc.y += dy;
   }
 
-  void DragHandle::draw(const Subview& view, const EditorContext& ctx, const Rect& nodeRect) const {
-    view.renderer().fillRect(view.toScreen(handleBox(nodeRect, rect_, ctx)), ctx.theme.border);
+  void DragHandle::draw(const Subview& view,
+                        const EditorContext& ctx,
+                        const FlowGraphLocation& loc,
+                        const Rect& nodeRect) const {
+    view.renderer().fillRect(view.toScreen(handleBox(nodeRect, loc, ctx)), ctx.theme.border);
   }
 
 }  // namespace fluir::editor

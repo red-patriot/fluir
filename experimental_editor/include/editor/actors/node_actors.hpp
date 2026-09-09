@@ -5,7 +5,6 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/actors/node_actor.hpp"
-#include "editor/components/drag_handle.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
@@ -15,21 +14,17 @@ namespace fluir::editor {
    public:
     BinaryActor(fluir::ID functionId, pt::Binary node, Rect bound);
 
-    void onClick(Vec2 worldPos) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 worldPos) override { return drag_.onDragStart(ctx, worldPos); }
-    void onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta) override {
-      return drag_.onDrag(ctx, worldPos, worldDelta);
-    }
-
-    void draw(const Subview& body, const EditorContext& ctx) const override;
+    void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
     const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void drawSelf(const Subview& body, const EditorContext& ctx) const override;
+
    private:
     pt::Binary node_;
-    DragHandle drag_;
     std::string lastClickSummary_;
   };
 
@@ -38,21 +33,17 @@ namespace fluir::editor {
    public:
     UnaryActor(fluir::ID functionId, pt::Unary node, Rect bounds);
 
-    void onClick(Vec2 worldPos) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 worldPos) override { return drag_.onDragStart(ctx, worldPos); }
-    void onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta) override {
-      return drag_.onDrag(ctx, worldPos, worldDelta);
-    }
-
-    void draw(const Subview& body, const EditorContext& ctx) const override;
+    void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
     const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void drawSelf(const Subview& body, const EditorContext& ctx) const override;
+
    private:
     pt::Unary node_;
-    DragHandle drag_;
     std::string lastClickSummary_;
   };
 
@@ -61,21 +52,17 @@ namespace fluir::editor {
    public:
     ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds);
 
-    void onClick(Vec2 worldPos) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 worldPos) override { return drag_.onDragStart(ctx, worldPos); }
-    void onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta) override {
-      return drag_.onDrag(ctx, worldPos, worldDelta);
-    }
-
-    void draw(const Subview& body, const EditorContext& ctx) const override;
+    void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
     const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void drawSelf(const Subview& body, const EditorContext& ctx) const override;
+
    private:
     pt::Constant node_;
-    DragHandle drag_;
     std::string lastClickSummary_;
   };
 
@@ -84,21 +71,17 @@ namespace fluir::editor {
    public:
     CallActor(fluir::ID functionId, pt::Call node, Rect bounds);
 
-    void onClick(Vec2 worldPos) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 worldPos) override { return drag_.onDragStart(ctx, worldPos); }
-    void onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta) override {
-      return drag_.onDrag(ctx, worldPos, worldDelta);
-    }
-
-    void draw(const Subview& body, const EditorContext& ctx) const override;
+    void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
     const fluir::FlowGraphLocation& location() const override { return node_.location; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+   protected:
+    void drawSelf(const Subview& body, const EditorContext& ctx) const override;
+
    private:
     pt::Call node_;
-    DragHandle drag_;
     std::string lastClickSummary_;
   };
 

@@ -44,6 +44,7 @@ namespace testutil {
     void drawText(fluir::editor::Vec2 pos, std::string_view t, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Text, {}, pos, {}, std::string{t}});
     }
+    fluir::editor::Vec2 measureText(std::string_view t) override { return {static_cast<double>(t.size()) * 8.0, 8.0}; }
     void pushClip(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::PushClip, r, {}, {}, {}}); }
     void popClip() override { calls.push_back({DrawCall::Op::PopClip, {}, {}, {}, {}}); }
   };

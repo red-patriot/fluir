@@ -45,7 +45,8 @@ namespace {
 
   // Identity Viewport + a root Subview at world origin, so
   // `body.toScreen(local) == local`; returns every recorded draw call.
-  std::vector<testutil::DrawCall> recordDraw(const BinaryActor& actor, const EditorContext& ctx) {
+  std::vector<testutil::DrawCall> recordDraw(BinaryActor& actor, const EditorContext& ctx) {
+    actor.layout(ctx);
     RecordingRenderer renderer;
     const Viewport viewport;
     {
@@ -74,6 +75,7 @@ TEST(NodeDrag, OnDragGridSnapsLocationAndBounds) {
 
   ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
   actor.onDrag(ctx, Vec2{}, Vec2{12, 3});  // 12/5 -> 2 units (10px); 3/5 -> 0 units
+  actor.layout(ctx);                       // bounds follow the location, no draw needed
 
   EXPECT_EQ(actor.bounds(), (Rect{10, 0, 25, 25}));
   EXPECT_TRUE(hasFill(recordDraw(actor, ctx), Rect{10, 0, 25, 25}));
@@ -86,9 +88,11 @@ TEST(NodeDrag, OnDragAccumulatesSubGridRemainder) {
   ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
 
   actor.onDrag(ctx, Vec2{}, Vec2{3, 0});  // 3px < 1 unit -> no move yet
+  actor.layout(ctx);
   EXPECT_EQ(actor.bounds().x, 0.0);
 
   actor.onDrag(ctx, Vec2{}, Vec2{3, 0});  // 6px total -> 1 whole unit (5px)
+  actor.layout(ctx);
   EXPECT_EQ(actor.bounds().x, 5.0);
 }
 

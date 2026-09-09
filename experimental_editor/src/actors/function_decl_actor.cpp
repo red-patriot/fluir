@@ -1,38 +1,52 @@
 #include "editor/actors/function_decl_actor.hpp"
 
+#include <memory>
+
 #include <fmt/format.h>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 
 namespace fluir::editor {
 
+  FunctionDeclActor::FunctionDeclActor(const pt::FunctionDecl& decl, Rect bounds) :
+    Actor(bounds),
+    functionId_(decl.id),
+    location_(decl.location),
+    name_(decl.name),
+    body_(static_cast<ContainerActor*>(&add(std::make_unique<ContainerActor>(Rect{0, 0, bounds.w, bounds.h})))) { }
+
+  void FunctionDeclActor::layout(const EditorContext& ctx) {
+    const Rect frame = localRect(location_, ctx.layout.unitPx);
+    setBounds(frame);
+    body_->setBounds(Rect{0, ctx.layout.headerH(), frame.w, frame.h});
+    Actor::layout(ctx);
+  }
+
   void FunctionDeclActor::onClick(Vec2) { lastClickSummary_ = fmt::format("function {}", name_); }
 
-  bool FunctionDeclActor::onDragStart(const EditorContext& ctx, Vec2 worldPos) {
-    return drag_.onDragStart(ctx, worldPos);
+  bool FunctionDeclActor::onDragStart(const EditorContext& ctx, Vec2 position) {
+    return drag_.onDragStart(ctx, position, location_, headerRect(ctx));
   }
 
-  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) {
-    return drag_.onDrag(ctx, position, delta);
+  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) { drag_.onDrag(ctx, delta, location_); }
+
+  Rect FunctionDeclActor::headerRect(const EditorContext& ctx) const {
+    return Rect{bounds().x, bounds().y, bounds().w, ctx.layout.headerH()};
   }
 
-  void FunctionDeclActor::draw(const Subview& frame, const EditorContext& ctx) const {
-    const double x = static_cast<double>(location_.x) * ctx.layout.unitPx;
-    const double y = static_cast<double>(location_.y) * ctx.layout.unitPx;
-    const double w = static_cast<double>(location_.width) * ctx.layout.unitPx;
-    const double h = static_cast<double>(location_.height) * ctx.layout.unitPx;
-    const double headerH = ctx.layout.headerH();
+  void FunctionDeclActor::drawSelf(const Subview& parentView, const EditorContext& ctx) const {
+    parentView.renderer().fillRect(parentView.toScreen(bounds()), ctx.theme.background);
+    const Rect header = headerRect(ctx);
 
-    const auto headerRect = Rect{x, y, w, headerH};
+    parentView.renderer().fillRect(parentView.toScreen(header), ctx.theme.funcDeclHeader);
+    parentView.renderer().drawRect(parentView.toScreen(bounds()), ctx.theme.border);
+    parentView.renderer().drawText(
+      parentView.toScreen(bounds().topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad}), name_, ctx.theme.text);
 
-    frame.renderer().fillRect(frame.toScreen(headerRect), ctx.theme.funcDeclHeader);
-    frame.renderer().drawRect(frame.toScreen(Rect{x, y, w, h}), ctx.theme.border);
-    frame.renderer().drawText(
-      frame.toScreen(Vec2{x + ctx.layout.textPad, y + ctx.layout.textPad}), name_, ctx.theme.text);
-
-    drag_.draw(frame, ctx, headerRect);
+    drag_.draw(parentView, ctx, location_, header);
   }
 
 }  // namespace fluir::editor

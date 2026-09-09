@@ -82,86 +82,78 @@ namespace fluir::editor {
   }  // namespace
 
   BinaryActor::BinaryActor(fluir::ID functionId, pt::Binary node, Rect bound) :
-    NodeActor(fluir::FullID{functionId, node.id}, bound),
-    node_(node),
-    drag_(dragRect(node_.location), node_.location, this->bounds()) { }
+    NodeActor(fluir::FullID{functionId, node.id}, bound), node_(node) { }
 
   void BinaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("binary {}", stringify(node_.op)); }
 
-  void BinaryActor::draw(const Subview& body, const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+  void BinaryActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
+    const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), ctx.theme.operatorNode);
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drag_.draw(body, ctx, nodeRect);
+    drag_.draw(body, ctx, node_.location, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
   }
 
   PortSet BinaryActor::ports(const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+    const Rect& nodeRect = bounds();
     return {edgeAnchors(nodeRect.x, nodeRect, 2), edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
 
   UnaryActor::UnaryActor(fluir::ID functionId, pt::Unary node, Rect bounds) :
-    NodeActor(fluir::FullID{functionId, node.id}, bounds),
-    node_(node),
-    drag_(dragRect(node_.location), node_.location, this->bounds()) { }
+    NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
   void UnaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("unary {}", stringify(node_.op)); }
 
-  void UnaryActor::draw(const Subview& body, const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+  void UnaryActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
+    const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), ctx.theme.operatorNode);
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drag_.draw(body, ctx, nodeRect);
+    drag_.draw(body, ctx, node_.location, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
   }
 
   PortSet UnaryActor::ports(const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+    const Rect& nodeRect = bounds();
     return {edgeAnchors(nodeRect.x, nodeRect, 1), edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
 
   ConstantActor::ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds) :
-    NodeActor(fluir::FullID{functionId, node.id}, bounds),
-    node_(node),
-    drag_(dragRect(node_.location), node_.location, this->Actor::bounds()) { }
+    NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
   void ConstantActor::onClick(Vec2) { lastClickSummary_ = fmt::format("constant {}", renderLiteral(node_.value)); }
 
-  void ConstantActor::draw(const Subview& body, const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+  void ConstantActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
+    const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), std::visit(LiteralColor{ctx.theme}, node_.value));
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
 
-    drag_.draw(body, ctx, nodeRect);
+    drag_.draw(body, ctx, node_.location, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
   }
 
   PortSet ConstantActor::ports(const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+    const Rect& nodeRect = bounds();
     return {{}, edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1)};
   }
 
   CallActor::CallActor(fluir::ID functionId, pt::Call node, Rect bounds) :
-    NodeActor(fluir::FullID{functionId, node.id}, bounds),
-    node_(node),
-    drag_(dragRect(node_.location), node_.location, this->Actor::bounds()) { }
+    NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
   void CallActor::onClick(Vec2) { lastClickSummary_ = fmt::format("call {}", node_.target); }
 
@@ -197,8 +189,8 @@ namespace fluir::editor {
 
   }  // namespace
 
-  void CallActor::draw(const Subview& body, const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+  void CallActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
+    const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), ctx.theme.callNode);
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
@@ -214,7 +206,7 @@ namespace fluir::editor {
                                ctx.theme.text);
     }
 
-    drag_.draw(body, ctx, nodeRect);
+    drag_.draw(body, ctx, node_.location, nodeRect);
 
     drawDots(argAnchors, ctx.layout.portDot, body, ctx.theme.border);
 
@@ -224,7 +216,7 @@ namespace fluir::editor {
   }
 
   PortSet CallActor::ports(const EditorContext& ctx) const {
-    const Rect nodeRect = localRect(node_.location, ctx.layout.unitPx);
+    const Rect& nodeRect = bounds();
     PortSet result;
     result.inputs = callArgumentAnchors(nodeRect, sortedArgs(node_), ctx.layout);
     if (node_._return.has_value()) {

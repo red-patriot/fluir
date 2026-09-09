@@ -10,6 +10,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
+#include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
 // These tests assert *what is drawn where*: which primitive (rect / fill /
@@ -20,6 +21,9 @@
 // order of unrelated primitives.
 
 namespace {
+
+  using testutil::Loaded;
+  using testutil::loadFixture;
 
   namespace fs = std::filesystem;
 
@@ -42,28 +46,8 @@ namespace {
   // Body coordinates are frame-origin + kHeaderH (25 world px): body content is
   // rendered below the header band, so every body-relative y is offset by +25.
   //
-  // Same fixture-loading shape as loader.test.cpp: each load owns its Context +
-  // CollectingSink, version checks off (fixtures declare <version>0.1.3</version>).
-  struct Loaded {
-    fluir::editor::CollectingSink sink;
-    fluir::editor::LoadResult result;
-  };
 
   const fluir::editor::EditorContext kCtx;
-
-  Loaded loadFixture(const std::string& relPath) {
-    Loaded l;
-    fluir::Context ctx{
-      .diagnosticSink = l.sink,
-      .symbolTable = {},
-      .currentFile = {},
-      .outputFilename = {},
-      .version = {},
-      .ignoreVersionChecks = true,
-    };
-    l.result = fluir::editor::loadFile(ctx, fs::path(TEST_FOLDER) / relPath);
-    return l;
-  }
 
 }  // namespace
 
@@ -325,7 +309,10 @@ TEST(RenderGraph, ClipWrapsBodyForFunctionWithNodes) {
   RecordingRenderer r;
   fluir::editor::renderGraph(kCtx, *l.result.tree, Viewport{}, r);
 
-  EXPECT_EQ(clipsCovering(r.calls, Rect{50, 75, 500, 500}).size(), 1u);
+  // The body rect is clipped twice: once by the frame actor's body container,
+  // once by the Subview GraphRenderer still opens for rails and conduits.
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 75, 500, 500}).empty());
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::PushClip), countOf(r.calls, DrawCall::Op::PopClip));
   EXPECT_TRUE(hasRect(r.calls, Rect{125, 85, 25, 25}));  // binary node body rect
 }
 

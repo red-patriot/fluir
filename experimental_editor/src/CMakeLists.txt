@@ -74,6 +74,7 @@ target_include_directories(
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
+    "core/interaction.cpp"
     "core/layer.cpp"
     "core/loader.cpp"
     "core/parse_tree_writer.cpp"
@@ -94,8 +95,10 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/scene.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES "components/button_actor.cpp"
-                                   "components/drag_handle.cpp"
+set(FLUIR_EDITOR_COMPONENT_SOURCES
+    "components/button_actor.cpp"
+    "components/drag_handle.cpp"
+    "components/toolbar_actor.cpp"
 )
 
 target_sources(

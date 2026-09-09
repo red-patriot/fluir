@@ -14,6 +14,7 @@
 #include "header_bar.hpp"
 
 namespace fluir::editor {
+  /** The page to display an open module and edit it. */
   class ModulePage : public Page {
    public:
     ModulePage(EditorContext& ctx, Renderer& renderer);
@@ -36,19 +37,23 @@ namespace fluir::editor {
    private:
     EditorContext& ctx_;
     Renderer& renderer_;
-    Viewport view_;
     std::optional<fluir::pt::ParseTree> tree_;
     GraphScene scene_;
     HeaderBar header_;
-    Layer hudLayer_;
+    Layer hud_;   /**< screen space; wins over the graph */
+    Layer graph_; /**< world space; owns the pan/zoom viewport */
     bool shouldClose = false;
-    bool panning_ = false;
-    bool spaceHeld_ = false;
-    Vec2 lastPan_;
-    Actor* dragActor_ = nullptr;
-    Vec2 lastDragWorld_;
 
     void reset();
+    void layoutChrome();
+
+    /** Handles app-wide events (quit, fit, resize) before any layer sees them. */
+    bool handleAppEvent(const InputEvent& event);
+
+    void onSave();
+    void onSaveAs();
+    void syncTreeFromScene();
+    bool saveToPath(const std::filesystem::path& path);
   };
 }  // namespace fluir::editor
 

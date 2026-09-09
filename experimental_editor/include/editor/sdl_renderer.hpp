@@ -23,6 +23,7 @@ namespace fluir::editor {
     void fillRect(Rect screen, const Color& color) override;
     void drawLine(Vec2 a, Vec2 b, const Color& color) override;
     void drawText(Vec2 topLeft, std::string_view text, const Color& color) override;
+    Vec2 measureText(std::string_view text) override;
     void pushClip(Rect screen) override;
     void popClip() override;
 

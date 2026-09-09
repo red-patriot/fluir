@@ -7,27 +7,24 @@
 #include "editor/core/viewport.hpp"
 
 namespace fluir::editor {
+  /** The grip's rect in grid units, inset from `nodeLoc`'s top-right corner. */
   Rect dragRect(const fluir::FlowGraphLocation& nodeLoc);
 
+  /** The grip an actor is dragged by. Owns only the sub-grid remainder */
   class DragHandle {
    public:
     static constexpr double WIDTH = 3;
     static constexpr double HEIGHT = 3;
 
-    DragHandle(Rect handleRect, FlowGraphLocation& position, Rect& bounds);
+    /** True if `parentLocalPos` lands on the grip drawn inside `nodeRect`. */
+    bool onDragStart(const EditorContext& ctx, Vec2 parentLocalPos, const FlowGraphLocation& loc, const Rect& nodeRect);
 
-    bool onDragStart(const EditorContext& ctx, Vec2 worldPos);
-    void onDrag(const EditorContext& ctx, Vec2 worldPos, Vec2 worldDelta);
+    /** Applies `worldDelta` to `loc`, snapped to whole grid units. */
+    void onDrag(const EditorContext& ctx, Vec2 worldDelta, FlowGraphLocation& loc);
 
-    void draw(const Subview& view, const EditorContext& ctx, const Rect& nodeRect) const;
-
-    const Rect& box(const EditorContext& ctx) const;
+    void draw(const Subview& view, const EditorContext& ctx, const FlowGraphLocation& loc, const Rect& nodeRect) const;
 
    private:
-    Rect rect_;
-    FlowGraphLocation& location_;
-    Rect& bounds_;
-
     Vec2 accumulator_{}; /**< Accumulated diff while dragging */
   };
 }  // namespace fluir::editor

@@ -18,6 +18,7 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/loader.hpp"
+#include "fixture_loader.hpp"
 
 // These tests assert *scene construction and hit-testing*: absolute actor
 // bounds for a real fixture, topmost-first overlap resolution, out-of-bounds
@@ -25,6 +26,9 @@
 // picking the right concrete Actor subclass per pt::Node alternative.
 
 namespace {
+
+  using testutil::Loaded;
+  using testutil::loadFixture;
 
   namespace fs = std::filesystem;
 
@@ -44,28 +48,6 @@ namespace {
   using fluir::editor::Vec2;
 
   const EditorContext kCtx;
-
-  // Same fixture-loading shape as render_graph.test.cpp: each load owns its
-  // Context + CollectingSink, version checks off (fixtures declare
-  // <version>0.1.3</version>).
-  struct Loaded {
-    fluir::editor::CollectingSink sink;
-    fluir::editor::LoadResult result;
-  };
-
-  Loaded loadFixture(const std::string& relPath) {
-    Loaded l;
-    fluir::Context ctx{
-      .diagnosticSink = l.sink,
-      .symbolTable = {},
-      .currentFile = {},
-      .outputFilename = {},
-      .version = {},
-      .ignoreVersionChecks = true,
-    };
-    l.result = fluir::editor::loadFile(ctx, fs::path(TEST_FOLDER) / relPath);
-    return l;
-  }
 
   // Bare-bones FunctionDecl wrapping `body`, at unit location (0,0,0,width,height).
   fluir::pt::FunctionDecl makeFunction(ID id, int width, int height, fluir::pt::Block body) {
@@ -141,7 +123,7 @@ TEST(Scene, BuildResolvesFixtureConstantToVerifiedAbsoluteRect) {
   // graph_geometry.test.cpp.
   Actor* hit = scene.topmostAt(Vec2{65, 180});
   ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->bounds(), (Rect{60, 175, 25, 25}));
+  EXPECT_EQ(hit->worldBounds(), (Rect{60, 175, 25, 25}));
   EXPECT_NE(dynamic_cast<ConstantActor*>(hit), nullptr);
 }
 

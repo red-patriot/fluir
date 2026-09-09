@@ -9,6 +9,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/actors/actor.hpp"
+#include "editor/components/container_actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 
@@ -32,11 +33,17 @@ namespace fluir::editor {
 
   }  // namespace detail
 
-  /** Owns one Actor per function frame and per node, keyed by fluir::FullID (`{functionId}`
-   *  for a frame, `{functionId, nodeId}` for a node) since node ids repeat across functions. */
+  /** Owns the display tree: an unclipped world root holding one FunctionDeclActor per
+   *  function. */
   class GraphScene {
    public:
     void build(const EditorContext& ctx, const pt::ParseTree& tree);
+
+    /** Re-derives every actor's bounds from its live location. */
+    void layout(const EditorContext& ctx) const { root_->layout(ctx); }
+
+    /** The world-space root; children are the function frames. */
+    Actor& root() const { return *root_; }
 
     /** Discards all actors. */
     void clear();
@@ -51,7 +58,8 @@ namespace fluir::editor {
     Actor* find(fluir::ID functionId) const;
 
    private:
-    std::vector<std::unique_ptr<Actor>> actors_;
+    // The root spans the whole world: it must not clip or offset its frames.
+    std::unique_ptr<ContainerActor> root_ = std::make_unique<ContainerActor>(Rect{0, 0, 0, 0}, Actor::ClipChildren::No);
     std::unordered_map<fluir::FullID, NodeActor*, detail::FullIDHash> byId_;
     std::unordered_map<fluir::ID, FunctionDeclActor*> frames_;
   };

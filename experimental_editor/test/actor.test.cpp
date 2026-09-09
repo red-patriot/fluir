@@ -11,8 +11,10 @@
 #include "compiler/models/operator.hpp"
 #include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/components/container_actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "recording_renderer.hpp"
 
@@ -160,6 +162,7 @@ TEST(Actor, BinaryActorDrawsBodyLabelAndPorts) {
   BinaryActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
+  actor.layout(ctx);
   RecordingRenderer renderer;
   const Viewport viewport;
   {
@@ -188,6 +191,7 @@ TEST(Actor, UnaryActorDrawsBodyLabelAndPorts) {
   UnaryActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
+  actor.layout(ctx);
   RecordingRenderer renderer;
   const Viewport viewport;
   {
@@ -215,6 +219,7 @@ TEST(Actor, ConstantActorDrawsBodyLabelAndOutputPort) {
   ConstantActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
+  actor.layout(ctx);
   RecordingRenderer renderer;
   const Viewport viewport;
   {
@@ -246,6 +251,7 @@ TEST(Actor, CallActorDrawsBodyLabelArgRowsAndReturnPort) {
   CallActor actor(kFunctionId, node, Rect{0, 0, 10, 10});
 
   const EditorContext ctx;
+  actor.layout(ctx);
   RecordingRenderer renderer;
   const Viewport viewport;
   {
@@ -284,10 +290,91 @@ TEST(Actor, FunctionDeclActorFunctionIdAndBoundsReturnConstructionValues) {
   EXPECT_EQ(actor.bounds(), bounds);
 }
 
+namespace {
+
+  // Minimal leaf that fills its own bounds in its parent's view.
+  class StubActor : public fluir::editor::Actor {
+   public:
+    using Actor::Actor;
+
+    void drawSelf(const Subview& view, const EditorContext&) const override {
+      view.renderer().fillRect(view.toScreen(bounds()), {});
+    }
+  };
+
+}  // namespace
+
+TEST(ActorTree, AddSetsParentAndOwnsChild) {
+  StubActor root{Rect{10, 20, 100, 100}};
+  Actor& child = root.add(std::make_unique<StubActor>(Rect{5, 5, 10, 10}));
+
+  ASSERT_EQ(root.children().size(), 1u);
+  EXPECT_EQ(root.children().front().get(), &child);
+  EXPECT_EQ(child.parent(), &root);
+  EXPECT_EQ(root.parent(), nullptr);
+}
+
+TEST(ActorTree, WorldBoundsAccumulateThroughTwoLevels) {
+  StubActor root{Rect{10, 20, 100, 100}};
+  Actor& mid = root.add(std::make_unique<StubActor>(Rect{5, 5, 50, 50}));
+  Actor& leaf = mid.add(std::make_unique<StubActor>(Rect{1, 2, 10, 10}));
+
+  EXPECT_EQ(root.worldBounds(), (Rect{10, 20, 100, 100}));
+  EXPECT_EQ(mid.worldBounds(), (Rect{15, 25, 50, 50}));
+  EXPECT_EQ(leaf.worldBounds(), (Rect{16, 27, 10, 10}));
+  EXPECT_EQ(leaf.toParentLocal(Vec2{16, 27}), (Vec2{1, 2}));
+}
+
+TEST(ActorTree, HitTestReturnsDeepestLastPaintedChild) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  Actor& under = root.add(std::make_unique<StubActor>(Rect{10, 10, 40, 40}));
+  Actor& over = root.add(std::make_unique<StubActor>(Rect{10, 10, 40, 40}));
+  Actor& deep = over.add(std::make_unique<StubActor>(Rect{0, 0, 5, 5}));
+
+  EXPECT_EQ(root.hitTest(Vec2{12, 12}), &deep);
+  EXPECT_EQ(root.hitTest(Vec2{30, 30}), &over);
+  EXPECT_NE(root.hitTest(Vec2{30, 30}), &under);
+}
+
+TEST(ActorTree, HitTestFallsBackToParentAndMissesOutside) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  root.add(std::make_unique<StubActor>(Rect{10, 10, 10, 10}));
+
+  EXPECT_EQ(root.hitTest(Vec2{80, 80}), &root);  // inside root, outside every child
+  EXPECT_EQ(root.hitTest(Vec2{500, 500}), nullptr);
+}
+
+TEST(ActorTree, ContainerIsTransparentToHitTesting) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  Actor& group = root.add(std::make_unique<fluir::editor::ContainerActor>(Rect{0, 0, 100, 100}));
+  Actor& leaf = group.add(std::make_unique<StubActor>(Rect{10, 10, 10, 10}));
+
+  EXPECT_EQ(root.hitTest(Vec2{12, 12}), &leaf);
+  EXPECT_EQ(root.hitTest(Vec2{80, 80}), &root) << "an empty spot in a container must fall through to it";
+}
+
+TEST(ActorTree, DrawNestsChildrenInsideTheParentsClippedView) {
+  StubActor root{Rect{10, 10, 100, 100}};
+  root.add(std::make_unique<StubActor>(Rect{5, 5, 20, 20}));
+
+  const EditorContext ctx;
+  RecordingRenderer renderer;
+  const Viewport viewport;
+  {
+    const Subview view{viewport, Rect{0, 0, 1000, 1000}, renderer};
+    root.draw(view, ctx);
+  }
+
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{10, 10, 100, 100}));  // root, in its parent's space
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{15, 15, 20, 20}));    // child, offset by root's origin
+  EXPECT_EQ(testutil::clipsCovering(renderer.calls, Rect{10, 10, 100, 100}).size(), 1u);
+}
+
 TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
   FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 50});
 
   const EditorContext ctx;
+  actor.layout(ctx);
   RecordingRenderer renderer;
   const Viewport viewport;
   {

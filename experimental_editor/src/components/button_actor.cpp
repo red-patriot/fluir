@@ -12,7 +12,7 @@ namespace fluir::editor {
     }
   }
 
-  void ButtonActor::draw(const Subview& body, const EditorContext& ctx) const {
+  void ButtonActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
     body.renderer().fillRect(body.toScreen(bounds()), ctx.theme.operatorNode);
     body.renderer().drawRect(body.toScreen(bounds()), ctx.theme.border);
 

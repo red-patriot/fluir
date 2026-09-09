@@ -7,6 +7,9 @@ namespace fluir::editor {
 
   namespace {
 
+    // SDL_RenderDebugText's fixed monospace cell, in screen px.
+    constexpr double kDebugGlyphPx = 8.0;
+
     SDL_FRect toFRect(Rect r) {
       return SDL_FRect{
         static_cast<float>(r.x),
@@ -81,6 +84,11 @@ namespace fluir::editor {
     setColor(color);
     const std::string str{text};
     SDL_RenderDebugText(renderer_, static_cast<float>(topLeft.x), static_cast<float>(topLeft.y), str.c_str());
+  }
+
+  Vec2 SdlRenderer::measureText(std::string_view text) {
+    // SDL_RenderDebugText draws a fixed 8x8 monospace cell per character.
+    return {static_cast<double>(text.size()) * kDebugGlyphPx, kDebugGlyphPx};
   }
 
   void SdlRenderer::pushClip(Rect screen) {

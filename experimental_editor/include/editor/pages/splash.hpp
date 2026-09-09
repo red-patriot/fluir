@@ -5,7 +5,9 @@
 #include <vector>
 
 #include "editor/components/button_actor.hpp"
+#include "editor/components/container_actor.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/layer.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/input.hpp"
 #include "editor/pages/page.hpp"
@@ -23,7 +25,7 @@ namespace fluir::editor {
 
     // Test-only observability: lets tests locate/click the Open button
     // without a second parallel path through SplashPage's API.
-    const ButtonActor& openButton() const { return openButton_; }
+    const ButtonActor& openButton() const { return *openButton_; }
 
    private:
     static constexpr int kButtonWidth = 120;
@@ -31,7 +33,10 @@ namespace fluir::editor {
 
     EditorContext& ctx_;
     Renderer& renderer_;
-    ButtonActor openButton_;
+    // The page spans the whole output, so it neither offsets nor clips its button.
+    ContainerActor root_{Rect{0, 0, 0, 0}, Actor::ClipChildren::No};
+    ButtonActor* openButton_;
+    Layer layer_;
     std::unique_ptr<Page> next_;
 
     void layout();

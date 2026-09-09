@@ -40,7 +40,7 @@ namespace fluir::editor {
   }  // namespace
 
   void GraphScene::clear() {
-    actors_.clear();
+    root_->clearChildren();
     byId_.clear();
     frames_.clear();
   }
@@ -48,32 +48,20 @@ namespace fluir::editor {
   void GraphScene::build(const EditorContext& ctx, const pt::ParseTree& tree) {
     clear();
     for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
-      const Vec2 frameOrigin = functionOrigin(fn->location, ctx.layout.unitPx);
-      const double w = static_cast<double>(fn->location.width) * ctx.layout.unitPx;
-      const double h = static_cast<double>(fn->location.height) * ctx.layout.unitPx;
+      const Rect frame = localRect(fn->location, ctx.layout.unitPx);
+      auto& frameActor = static_cast<FunctionDeclActor&>(root_->add(std::make_unique<FunctionDeclActor>(*fn, frame)));
+      frames_[frameActor.functionId()] = &frameActor;
 
-      actors_.push_back(std::make_unique<FunctionDeclActor>(*fn, atOrigin(frameOrigin, Rect{0, 0, w, h})));
-      auto* frameActor = static_cast<FunctionDeclActor*>(actors_.back().get());
-      frames_[frameActor->functionId()] = frameActor;
-
-      const Vec2 origin = bodyOrigin(frameOrigin, ctx.layout.headerH());
       for (const pt::Node* node : sortedNodes(fn->body)) {
-        const Rect bounds = atOrigin(origin, localRect(locationOf(*node), ctx.layout.unitPx));
-        actors_.push_back(std::visit(MakeActor{fn->id, bounds}, *node));
-        auto* nodeActor = static_cast<NodeActor*>(actors_.back().get());
-        byId_[nodeActor->id()] = nodeActor;
+        const Rect bounds = localRect(locationOf(*node), ctx.layout.unitPx);
+        auto& nodeActor = static_cast<NodeActor&>(frameActor.body().add(std::visit(MakeActor{fn->id, bounds}, *node)));
+        byId_[nodeActor.id()] = &nodeActor;
       }
     }
+    layout(ctx);
   }
 
-  Actor* GraphScene::topmostAt(Vec2 worldPos) const {
-    for (auto it = actors_.rbegin(); it != actors_.rend(); ++it) {
-      if ((*it)->bounds().contains(worldPos)) {
-        return it->get();
-      }
-    }
-    return nullptr;
-  }
+  Actor* GraphScene::topmostAt(Vec2 worldPos) const { return root_->hitTest(worldPos); }
 
   Actor* GraphScene::find(fluir::ID functionId, fluir::ID nodeId) const {
     const auto it = byId_.find(fluir::FullID{functionId, nodeId});

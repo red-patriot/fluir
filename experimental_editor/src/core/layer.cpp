@@ -3,31 +3,23 @@
 namespace fluir::editor {
 
   void Layer::draw(Renderer& renderer, const EditorContext& ctx, Rect outputRect) const {
-    const Subview root{viewport_, outputRect, renderer};
-    for (Actor* actor : actors_) {
-      actor->draw(root, ctx);
+    if (root_ == nullptr) {
+      return;
     }
+    const Subview root{viewport_, outputRect, renderer};
+    root_->draw(root, ctx);
   }
 
   Actor* Layer::topmostAt(Vec2 screenPos) const {
-    const Vec2 local = viewport_.screenToWorld(screenPos);
-    for (auto it = actors_.rbegin(); it != actors_.rend(); ++it) {
-      if ((*it)->bounds().contains(local)) {
-        return *it;
-      }
-    }
-    return nullptr;
+    return root_ == nullptr ? nullptr : root_->hitTest(viewport_.screenToWorld(screenPos));
   }
 
-  bool Layer::handleEvent(const InputEvent& event) {
-    if (event.type != InputEvent::Type::MouseDown || event.button != InputEvent::Button::Left) {
+  bool Layer::dispatch(const InputEvent& event, EditorContext& ctx, Vec2 outputSize) {
+    if (root_ == nullptr) {
       return false;
     }
-    if (auto* hit = topmostAt(event.pos); hit) {
-      hit->onClick(viewport_.screenToWorld(event.pos));
-      return true;
-    }
-    return false;
+    InteractionContext ictx{ctx, viewport_, *root_, outputSize};
+    return chain_.dispatch(event, ictx);
   }
 
 }  // namespace fluir::editor

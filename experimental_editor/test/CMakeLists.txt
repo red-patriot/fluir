@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(
     fluir.editor.test
     input.test.cpp
+    interaction.test.cpp
     layer.test.cpp
     loader.test.cpp
     parse_tree_writer.test.cpp

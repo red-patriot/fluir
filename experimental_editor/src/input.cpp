@@ -12,6 +12,8 @@ namespace fluir::editor {
           return InputEvent::Key::F;
         case SDL_SCANCODE_SPACE:
           return InputEvent::Key::Space;
+        case SDL_SCANCODE_DELETE:
+          return InputEvent::Key::Delete;
         default:
           return std::nullopt;
       }

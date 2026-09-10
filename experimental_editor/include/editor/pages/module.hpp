@@ -51,6 +51,7 @@ namespace fluir::editor {
     void onSave();
     void onSaveAs();
     void syncTreeFromScene();
+    void deleteSelection();
     bool saveToPath(const std::filesystem::path& path);
   };
 }  // namespace fluir::editor

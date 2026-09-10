@@ -14,6 +14,7 @@
 #include "editor/core/interaction.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
+#include "editor/core/tree_edit.hpp"
 #include "editor/pages/splash.hpp"
 
 namespace fluir::editor {
@@ -58,6 +59,11 @@ namespace fluir::editor {
       graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
       return true;
     }
+    // Delete is a page command, consumed whether or not anything is selected.
+    if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::Delete) {
+      deleteSelection();
+      return true;
+    }
     return false;
   }
 
@@ -96,6 +102,29 @@ namespace fluir::editor {
         }
       }
     }
+  }
+
+  void ModulePage::deleteSelection() {
+    if (!tree_ || !scene_.selected()) {
+      return;
+    }
+    syncTreeFromScene();  // or the rebuild below reverts every unsaved drag
+    const fluir::FullID id = *scene_.selected();
+
+    bool removed = false;
+    if (id.size() == 1) {
+      removed = deleteFunction(*tree_, id[0]);
+    } else if (auto decl = tree_->declarations.find(id[0]); decl != tree_->declarations.end()) {
+      removed = deleteNode(std::get<fluir::pt::FunctionDecl>(decl->second), id[1]);
+    }
+    if (!removed) {
+      return;
+    }
+
+    scene_.clearSelection();
+    // Every actor pointer dies with the rebuild, in-flight gestures included.
+    graph_.reset();
+    scene_.build(ctx_, *tree_);  // no refit: the viewport is the user's, not ours
   }
 
   bool ModulePage::saveToPath(const std::filesystem::path& path) {

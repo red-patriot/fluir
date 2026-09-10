@@ -19,6 +19,7 @@ add_executable(
     header_bar.test.cpp
     splash.test.cpp
     selection.test.cpp
+    tree_edit.test.cpp
 )
 
 target_compile_definitions(

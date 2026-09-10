@@ -78,6 +78,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/layer.cpp"
     "core/loader.cpp"
     "core/parse_tree_writer.cpp"
+    "core/tree_edit.cpp"
     "core/viewport.cpp"
 )
 

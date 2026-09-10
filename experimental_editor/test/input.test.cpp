@@ -29,6 +29,18 @@ namespace {
     EXPECT_EQ(*ie->key, InputEvent::Key::Escape);
   }
 
+  TEST(TranslateInput, KeyDownDelete) {
+    SDL_Event e{};
+    e.type = SDL_EVENT_KEY_DOWN;
+    e.key.scancode = SDL_SCANCODE_DELETE;
+
+    const auto ie = translate(e);
+    ASSERT_TRUE(ie.has_value());
+    EXPECT_EQ(ie->type, InputEvent::Type::KeyDown);
+    ASSERT_TRUE(ie->key.has_value());
+    EXPECT_EQ(*ie->key, InputEvent::Key::Delete);
+  }
+
   TEST(TranslateInput, KeyDownF) {
     SDL_Event e{};
     e.type = SDL_EVENT_KEY_DOWN;

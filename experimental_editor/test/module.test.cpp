@@ -46,8 +46,11 @@ namespace {
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
+  using testutil::countOf;
+  using testutil::DrawCall;
   using testutil::hasRect;
   using testutil::RecordingRenderer;
+  using testutil::textStrings;
 
   // Replicates the exact fit-to-window transform ModulePage::start() applies
   // internally (fitRect(scene.worldBounds(), renderer.outputSize())), so a
@@ -73,6 +76,13 @@ namespace {
   }
 
   const fs::path kIntConstants = fs::path(TEST_FOLDER) / "read/int_constants.fl";
+  const fs::path kSimpleBinary = fs::path(TEST_FOLDER) / "read/simple_binary_expr.fl";
+
+  // simple_binary_expr.fl world rects (unitPx 5, body origin {50,75}):
+  //   constant id=2 {60,85,25,25}, constant id=3 {60,135,25,25}, binary id=1 {125,85,25,25}.
+  // Each point sits in the node's lower-left, clear of its top-right 15px grip.
+  constexpr Vec2 kInsideConstant2{63, 103};
+  constexpr Vec2 kInsideBinary1{128, 103};
 
   // int_constants.fl constant id=1 absolute rect {60,175,25,25} (verified in
   // scene.test.cpp / graph_draw.test.cpp / graph_geometry.test.cpp). The
@@ -117,6 +127,8 @@ namespace {
     ie.key = key;
     return ie;
   }
+
+  InputEvent deleteKey() { return keyDown(InputEvent::Key::Delete); }
 
   InputEvent quit() {
     InputEvent ie;
@@ -492,6 +504,257 @@ TEST(ModulePage, SaveAfterDragPersistsNewPosition) {
   const auto& fn = std::get<fluir::pt::FunctionDecl>(reloaded.tree->declarations.at(1));
   const auto& node = std::get<fluir::pt::Constant>(fn.body.nodes.at(1));
   EXPECT_EQ(node.location.x, 5);  // original 2 + 3 grid-unit drag
+
+  fs::remove(tmp);
+}
+
+// DELETE edits the in-memory tree and rebuilds the scene; it never touches the
+// viewport, and reaches disk only on the next Save.
+
+TEST(ModulePage, DeleteWithNoSelectionChangesNothing) {
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const fluir::editor::Rect boundsBefore = page.scene().worldBounds();
+  page.update({deleteKey()});
+
+  EXPECT_NE(page.scene().find(1, 1), nullptr);
+  EXPECT_NE(page.scene().find(1), nullptr);
+  EXPECT_EQ(page.scene().worldBounds(), boundsBefore);
+}
+
+TEST(ModulePage, DeleteRemovesTheSelectedNodeFromTheScene) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               deleteKey()});
+
+  EXPECT_EQ(page.scene().find(1, 1), nullptr);
+  EXPECT_NE(page.scene().find(1, 2), nullptr);  // its siblings survive
+  EXPECT_NE(page.scene().find(1), nullptr);
+}
+
+TEST(ModulePage, DeleteClearsTheSelection) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               deleteKey()});
+
+  EXPECT_FALSE(page.scene().selected().has_value());
+}
+
+TEST(ModulePage, DeleteRemovesConduitsAttachedToTheDeletedNode) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kSimpleBinary;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.draw();
+  ASSERT_EQ(countOf(renderer.calls, DrawCall::Op::Line), 2u);
+  renderer.calls.clear();
+
+  // Both conduits target the binary node, so both go with it.
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideBinary1)),
+               deleteKey()});
+  page.draw();
+
+  EXPECT_EQ(countOf(renderer.calls, DrawCall::Op::Line), 0u);
+}
+
+TEST(ModulePage, DeleteOfAConstantRemovesOnlyItsOwnConduit) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kSimpleBinary;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update(
+    {mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideConstant2)),
+     deleteKey()});
+  page.draw();
+
+  EXPECT_EQ(countOf(renderer.calls, DrawCall::Op::Line), 1u) << "the sibling constant's wire survives";
+  EXPECT_EQ(page.scene().find(1, 2), nullptr);
+  EXPECT_NE(page.scene().find(1, 3), nullptr);
+}
+
+TEST(ModulePage, DeleteOfAFrameRemovesTheWholeFunction) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update(
+    {mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideEmptyFrameArea)),
+     deleteKey()});
+  renderer.calls.clear();
+  page.draw();
+
+  EXPECT_EQ(page.scene().find(1), nullptr);
+  EXPECT_EQ(page.scene().find(1, 1), nullptr);
+  EXPECT_EQ(page.scene().worldBounds(), (fluir::editor::Rect{0, 0, 0, 0}));
+
+  const std::vector<std::string> texts = textStrings(renderer.calls);
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), "main"), texts.end());
+}
+
+TEST(ModulePage, DeleteKeepsTheCurrentViewport) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kSimpleBinary;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // A refit after the delete would move every survivor on screen.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Rect survivorScreen = toScreenRect(v, Rect{60, 135, 25, 25});  // constant id=3
+
+  page.draw();
+  ASSERT_TRUE(hasRect(renderer.calls, survivorScreen));
+  renderer.calls.clear();
+
+  page.update({mouseDown(InputEvent::Button::Left, v.worldToScreen(kInsideConstant2)), deleteKey()});
+  page.draw();
+
+  EXPECT_TRUE(hasRect(renderer.calls, survivorScreen));
+}
+
+TEST(ModulePage, DeleteDuringADragDoesNotCrash) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // The rebuild frees every actor, so the in-flight drag must be dropped first.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  page.update({mouseDown(InputEvent::Button::Left, grip),
+               mouseMove(grip + Vec2{10, 0}),
+               deleteKey(),
+               mouseMove(grip + Vec2{20, 0}),
+               mouseUp(InputEvent::Button::Left, grip + Vec2{20, 0})});
+  page.draw();
+
+  EXPECT_EQ(page.scene().find(1, 1), nullptr);
+}
+
+TEST(ModulePage, DeleteThenSavePersistsTheRemoval) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const fs::path tmp = fs::temp_directory_path() / "fluir_module_delete_test.fl";
+  fs::copy_file(kIntConstants, tmp, fs::copy_options::overwrite_existing);
+
+  EditorContext ctx;
+  ctx.program = tmp;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  page.draw();
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               deleteKey()});
+  page.update({mouseDown(InputEvent::Button::Left, page.header().saveButton().bounds().center())});
+
+  fluir::editor::CollectingSink sink;
+  const auto reloaded = reloadFrom(sink, tmp);
+  ASSERT_TRUE(reloaded.tree.has_value());
+
+  const auto& fn = std::get<fluir::pt::FunctionDecl>(reloaded.tree->declarations.at(1));
+  EXPECT_FALSE(fn.body.nodes.contains(1));
+  EXPECT_TRUE(fn.body.nodes.contains(2));
+
+  fs::remove(tmp);
+}
+
+TEST(ModulePage, DeleteAfterADragKeepsTheDraggedPosition) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // Without a syncTreeFromScene() before the edit, the rebuild reverts this drag.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  const Vec2 gripEnd = v.worldToScreen(kOnDragHandle + Vec2{50, 0});
+  page.update(
+    {mouseDown(InputEvent::Button::Left, grip), mouseMove(gripEnd), mouseUp(InputEvent::Button::Left, gripEnd)});
+  ASSERT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+
+  // Select and delete a *different* node: constant id=4, world {210,190,25,25}.
+  page.update({mouseDown(InputEvent::Button::Left, v.worldToScreen(Vec2{213, 208})), deleteKey()});
+  ASSERT_EQ(page.scene().find(1, 4), nullptr);
+
+  ASSERT_NE(page.scene().find(1, 1), nullptr);
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+}
+
+TEST(ModulePage, DeleteOfAConduitSourcePersistsTheConduitRemoval) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const fs::path tmp = fs::temp_directory_path() / "fluir_module_delete_conduit_test.fl";
+  fs::copy_file(kSimpleBinary, tmp, fs::copy_options::overwrite_existing);
+
+  EditorContext ctx;
+  ctx.program = tmp;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  page.draw();
+
+  page.update(
+    {mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideConstant2)),
+     deleteKey()});
+  page.update({mouseDown(InputEvent::Button::Left, page.header().saveButton().bounds().center())});
+
+  fluir::editor::CollectingSink sink;
+  const auto reloaded = reloadFrom(sink, tmp);
+  ASSERT_TRUE(reloaded.tree.has_value());
+
+  const auto& fn = std::get<fluir::pt::FunctionDecl>(reloaded.tree->declarations.at(1));
+  EXPECT_FALSE(fn.body.nodes.contains(2));
+  EXPECT_FALSE(fn.body.conduits.contains(4));  // conduit sourced from constant id=2
+  EXPECT_TRUE(fn.body.conduits.contains(5));   // the sibling wire survives
 
   fs::remove(tmp);
 }

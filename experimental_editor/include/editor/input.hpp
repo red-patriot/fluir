@@ -12,7 +12,7 @@ namespace fluir::editor {
 
   struct InputEvent {
     enum class Type { Quit, KeyDown, KeyUp, MouseDown, MouseUp, MouseMove, Wheel, Resize };
-    enum class Key { Escape, F, Space };
+    enum class Key { Escape, F, Space, Delete };
     enum class Button { Left, Middle, Right };
 
     Type type{};                   ///< The type of the event

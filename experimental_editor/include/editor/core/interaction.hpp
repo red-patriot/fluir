@@ -11,6 +11,8 @@
 
 namespace fluir::editor {
 
+  class GraphScene;
+
   /** Everything an interaction may touch and the actor tree it dispatches into. */
   struct InteractionContext {
     EditorContext& editor;
@@ -67,6 +69,17 @@ namespace fluir::editor {
    private:
     Actor* dragActor_ = nullptr;
     Vec2 lastDragWorld_;
+  };
+
+  /** Left-press sets the scene's selection from whatever was hit; a miss clears it.
+   *  Never consumes: the press still reaches drag and click. */
+  class SelectionInteraction : public Interaction {
+   public:
+    explicit SelectionInteraction(GraphScene& scene) : scene_(scene) { }
+    bool onEvent(const InputEvent& event, InteractionContext& ctx) override;
+
+   private:
+    GraphScene& scene_;
   };
 
   /** Left-press on an actor that claimed no drag: plain click dispatch. */

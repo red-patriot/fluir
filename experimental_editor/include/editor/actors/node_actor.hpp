@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <utility>
 
 #include "compiler/models/id.hpp"
@@ -16,6 +17,8 @@ namespace fluir::editor {
     NodeActor(fluir::FullID id, Rect bounds) : PortActor(id.at(1), bounds), id_(std::move(id)) { }
 
     const fluir::FullID& id() const { return id_; }
+
+    std::optional<fluir::FullID> selectionId() const override { return id_; }
 
     /** This node's body-local location (grid units); the DragHandle mutates it,
      *  and `layout` re-derives `bounds()` from it. */

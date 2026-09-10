@@ -43,8 +43,10 @@ namespace {
   using fluir::editor::GraphScene;
   using fluir::editor::InputEvent;
   using fluir::editor::ModulePage;
+  using fluir::editor::Rect;
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
+  using testutil::hasRect;
   using testutil::RecordingRenderer;
 
   // Replicates the exact fit-to-window transform ModulePage::start() applies
@@ -52,12 +54,22 @@ namespace {
   // test can turn a known world-space point (e.g. a verified actor rect, same
   // values asserted in scene.test.cpp / graph_geometry.test.cpp) into the
   // screen-space InputEvent position that will land on it.
-  Vec2 toScreen(const EditorContext& ctx, const fluir::pt::ParseTree& tree, Vec2 outputSize, Vec2 world) {
+  Viewport fitViewport(const EditorContext& ctx, const fluir::pt::ParseTree& tree, Vec2 outputSize) {
     GraphScene scene;
     scene.build(ctx, tree);
     Viewport v;
     v.fitRect(scene.worldBounds(), outputSize);
-    return v.worldToScreen(world);
+    return v;
+  }
+
+  Vec2 toScreen(const EditorContext& ctx, const fluir::pt::ParseTree& tree, Vec2 outputSize, Vec2 world) {
+    return fitViewport(ctx, tree, outputSize).worldToScreen(world);
+  }
+
+  // `world`'s rect as the renderer sees it under that same fit transform.
+  Rect toScreenRect(const Viewport& v, Rect world) {
+    const Vec2 tl = v.worldToScreen(world.topLeft());
+    return {tl.x, tl.y, world.w * v.scale, world.h * v.scale};
   }
 
   const fs::path kIntConstants = fs::path(TEST_FOLDER) / "read/int_constants.fl";
@@ -70,6 +82,11 @@ namespace {
   // handle grab.
   constexpr Vec2 kInsideActor{80, 195};
   constexpr Vec2 kOutsideEveryActor{-1000, -1000};
+  // The node's own world rect, and the centre of its 15px drag grip.
+  constexpr Rect kActorWorldRect{60, 175, 25, 25};
+  constexpr Vec2 kOnDragHandle{72.5, 187.5};
+  // Inside function main's frame {50,50,500,500}, far from every node.
+  constexpr Vec2 kInsideEmptyFrameArea{400, 400};
 
   InputEvent mouseDown(InputEvent::Button button, Vec2 pos) {
     InputEvent ie;
@@ -94,6 +111,13 @@ namespace {
     return ie;
   }
 
+  InputEvent keyDown(InputEvent::Key key) {
+    InputEvent ie;
+    ie.type = InputEvent::Type::KeyDown;
+    ie.key = key;
+    return ie;
+  }
+
   InputEvent quit() {
     InputEvent ie;
     ie.type = InputEvent::Type::Quit;
@@ -112,17 +136,130 @@ TEST(ModulePage, LeftClickOnActorDoesNotPan) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
+  // A click legitimately adds a selection outline, so the contract is the
+  // clicked node's *screen* rect -- which any pan would move.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Rect nodeScreen = toScreenRect(v, kActorWorldRect);
+
   page.draw();
-  const auto before = renderer.calls;
+  ASSERT_TRUE(hasRect(renderer.calls, nodeScreen));
   renderer.calls.clear();
 
-  const Vec2 clickPos = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
+  const Vec2 clickPos = v.worldToScreen(kInsideActor);
   page.update({mouseDown(InputEvent::Button::Left, clickPos), mouseMove(clickPos + Vec2{50, 50})});
 
   page.draw();
-  const auto after = renderer.calls;
 
-  EXPECT_EQ(before, after) << "plain Left click+drag on a node must not pan the view";
+  EXPECT_TRUE(hasRect(renderer.calls, nodeScreen)) << "plain Left click+drag on a node must not pan the view";
+}
+
+TEST(ModulePage, LeftClickOnNodeSelectsThatNode) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor))});
+
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1, 1}));
+}
+
+TEST(ModulePage, LeftClickOnNodeSelectsTheNodeNotTheEnclosingFrame) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor))});
+
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_NE(*page.scene().selected(), (fluir::FullID{1}));
+  EXPECT_FALSE(page.scene().find(1)->selected());
+  EXPECT_TRUE(page.scene().find(1, 1)->selected());
+}
+
+TEST(ModulePage, LeftClickOnEmptyFrameAreaSelectsTheFrame) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update(
+    {mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideEmptyFrameArea))});
+
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1}));
+  EXPECT_TRUE(page.scene().find(1)->selected());
+}
+
+TEST(ModulePage, LeftClickOnBackgroundClearsTheSelection) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor))});
+  ASSERT_TRUE(page.scene().selected().has_value());
+
+  page.update({mouseDown(InputEvent::Button::Left, kOutsideEveryActor)});
+
+  EXPECT_FALSE(page.scene().selected().has_value());
+  EXPECT_FALSE(page.scene().find(1, 1)->selected());
+}
+
+TEST(ModulePage, PressOnADragHandleAlsoSelectsTheNode) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // SelectionInteraction must not consume the press, or the grip stops dragging.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  page.update({mouseDown(InputEvent::Button::Left, grip),
+               mouseMove(grip + Vec2{50 * v.scale, 0}),
+               mouseUp(InputEvent::Button::Left, grip + Vec2{50 * v.scale, 0})});
+
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1, 1}));
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+}
+
+TEST(ModulePage, SpaceLeftPanOverANodeDoesNotSelect) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const Vec2 panStart = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
+  page.update({keyDown(InputEvent::Key::Space), mouseDown(InputEvent::Button::Left, panStart)});
+
+  EXPECT_FALSE(page.scene().selected().has_value());
 }
 
 TEST(ModulePage, MiddlePanGestureOverActorStillPans) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -25,6 +26,8 @@ namespace fluir::editor {
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
 
     fluir::ID functionId() const { return functionId_; }
+
+    std::optional<fluir::FullID> selectionId() const override { return fluir::FullID{functionId_}; }
     const FlowGraphLocation& location() const { return location_; }
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 

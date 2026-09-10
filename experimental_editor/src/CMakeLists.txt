@@ -94,6 +94,7 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/node_actors.cpp"
     "actors/rail_actors.cpp"
     "actors/scene.cpp"
+    "actors/selection_outline.cpp"
 )
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES

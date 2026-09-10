@@ -2,9 +2,11 @@
 
 #include <concepts>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
@@ -83,6 +85,12 @@ namespace fluir::editor {
     /** Whether a hit that lands on no child resolves to this actor. */
     virtual bool hittable() const { return true; }
 
+    bool selected() const { return selected_; }
+    void setSelected(bool selected) { selected_ = selected; }
+
+    /** The id selecting this actor records, or nullopt when it is not selectable. */
+    virtual std::optional<fluir::FullID> selectionId() const { return std::nullopt; }
+
     /** Re-derives this actor's `bounds()` from its model state, then its
      *  children's. Runs before hit-testing and drawing, never during either. */
     virtual void layout(const EditorContext& ctx) {
@@ -134,6 +142,7 @@ namespace fluir::editor {
 
     Rect bounds_;
     ClipChildren clip_;
+    bool selected_ = false;
     Actor* parent_ = nullptr;
     std::vector<std::unique_ptr<Actor>> children_;
   };

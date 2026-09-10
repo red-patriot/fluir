@@ -2,7 +2,9 @@
 
 #include <algorithm>
 #include <memory>
+#include <optional>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -48,9 +50,12 @@ namespace fluir::editor {
     root_->clearChildren();
     byId_.clear();
     frames_.clear();
+    selected_.reset();
   }
 
   void GraphScene::build(const EditorContext& ctx, const pt::ParseTree& tree) {
+    // Selection is an id, so it outlives the actors clear() destroys.
+    const std::optional<fluir::FullID> wasSelected = selected_;
     clear();
     for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
       const Rect frame = localRect(fn->location, ctx.layout.unitPx);
@@ -102,6 +107,9 @@ namespace fluir::editor {
       }
     }
     layout(ctx);
+    if (wasSelected) {
+      select(*wasSelected);
+    }
   }
 
   Rect GraphScene::worldBounds() const {
@@ -134,6 +142,33 @@ namespace fluir::editor {
   Actor* GraphScene::find(fluir::ID functionId) const {
     const auto it = frames_.find(functionId);
     return it == frames_.end() ? nullptr : it->second;
+  }
+
+  Actor* GraphScene::resolve(const fluir::FullID& id) const {
+    if (id.size() == 1) {
+      return find(id[0]);
+    }
+    return id.size() == 2 ? find(id[0], id[1]) : nullptr;
+  }
+
+  void GraphScene::select(fluir::FullID id) {
+    Actor* actor = resolve(id);
+    if (actor == nullptr) {
+      return;
+    }
+    clearSelection();
+    actor->setSelected(true);
+    selected_ = std::move(id);
+  }
+
+  void GraphScene::clearSelection() {
+    if (!selected_) {
+      return;
+    }
+    if (Actor* actor = resolve(*selected_)) {
+      actor->setSelected(false);
+    }
+    selected_.reset();
   }
 
 }  // namespace fluir::editor

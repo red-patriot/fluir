@@ -11,6 +11,7 @@
 #include <fmt/format.h>
 
 #include "compiler/models/operator.hpp"
+#include "editor/actors/selection_outline.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 
@@ -98,6 +99,10 @@ namespace fluir::editor {
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+
+    if (selected()) {
+      drawSelectionOutline(body, ctx, nodeRect);
+    }
   }
 
   PortSet BinaryActor::ports(const EditorContext& ctx) const {
@@ -122,6 +127,10 @@ namespace fluir::editor {
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+
+    if (selected()) {
+      drawSelectionOutline(body, ctx, nodeRect);
+    }
   }
 
   PortSet UnaryActor::ports(const EditorContext& ctx) const {
@@ -145,6 +154,10 @@ namespace fluir::editor {
     drag_.draw(body, ctx, node_.location, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+
+    if (selected()) {
+      drawSelectionOutline(body, ctx, nodeRect);
+    }
   }
 
   PortSet ConstantActor::ports(const EditorContext& ctx) const {
@@ -212,6 +225,10 @@ namespace fluir::editor {
 
     if (node_._return.has_value()) {
       drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
+    }
+
+    if (selected()) {
+      drawSelectionOutline(body, ctx, nodeRect);
     }
   }
 

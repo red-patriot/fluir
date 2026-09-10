@@ -18,6 +18,7 @@ add_executable(
     module.test.cpp
     header_bar.test.cpp
     splash.test.cpp
+    selection.test.cpp
 )
 
 target_compile_definitions(

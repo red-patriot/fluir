@@ -4,6 +4,7 @@
 
 #include <fmt/format.h>
 
+#include "editor/actors/selection_outline.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
@@ -50,6 +51,10 @@ namespace fluir::editor {
       parentView.toScreen(bounds().topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad}), name_, ctx.theme.text);
 
     drag_.draw(parentView, ctx, location_, header);
+
+    if (selected()) {
+      drawSelectionOutline(parentView, ctx, bounds());
+    }
   }
 
 }  // namespace fluir::editor

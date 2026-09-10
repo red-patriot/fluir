@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -61,11 +62,22 @@ namespace fluir::editor {
     /** Actor owning function `functionId`'s frame, or nullptr. */
     Actor* find(fluir::ID functionId) const;
 
+    /** Marks the actor `id` names as selected; a no-op when it resolves to none. */
+    void select(fluir::FullID id);
+    void clearSelection();
+
+    /** The selected actor's id: the source of truth a rebuild re-applies. */
+    const std::optional<fluir::FullID>& selected() const { return selected_; }
+
    private:
+    /** The actor `id` names -- size 1 is a frame, size 2 a node -- or nullptr. */
+    Actor* resolve(const fluir::FullID& id) const;
+
     // The root spans the whole world: it must not clip or offset its frames.
     std::unique_ptr<ContainerActor> root_ = std::make_unique<ContainerActor>(Rect{0, 0, 0, 0}, Actor::ClipChildren::No);
     std::unordered_map<fluir::FullID, NodeActor*, detail::FullIDHash> byId_;
     std::unordered_map<fluir::ID, FunctionDeclActor*> frames_;
+    std::optional<fluir::FullID> selected_;
   };
 
 }  // namespace fluir::editor

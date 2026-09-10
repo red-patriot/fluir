@@ -1,7 +1,10 @@
 #include "editor/core/interaction.hpp"
 
 #include <cmath>
+#include <optional>
 #include <utility>
+
+#include "editor/actors/scene.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -23,6 +26,17 @@ namespace fluir::editor {
     }
 
     bool isLeft(const InputEvent& event) { return event.button == InputEvent::Button::Left; }
+
+    // Rails and other chrome are hittable but not selectable, so walk up to the
+    // nearest ancestor that names an id -- the enclosing frame.
+    std::optional<fluir::FullID> selectionIdAt(Actor* hit) {
+      for (Actor* actor = hit; actor != nullptr; actor = actor->parent()) {
+        if (std::optional<fluir::FullID> id = actor->selectionId()) {
+          return id;
+        }
+      }
+      return std::nullopt;
+    }
 
   }  // namespace
 
@@ -158,6 +172,18 @@ namespace fluir::editor {
       default:
         return false;
     }
+  }
+
+  bool SelectionInteraction::onEvent(const InputEvent& event, InteractionContext& ctx) {
+    if (event.type != InputEvent::Type::MouseDown || !isLeft(event)) {
+      return false;
+    }
+    if (const std::optional<fluir::FullID> id = selectionIdAt(hitAt(ctx, event.pos).actor)) {
+      scene_.select(*id);
+    } else {
+      scene_.clearSelection();
+    }
+    return false;  // tracked, never consumed
   }
 
   bool ClickInteraction::onEvent(const InputEvent& event, InteractionContext& ctx) {

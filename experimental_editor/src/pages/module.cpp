@@ -25,6 +25,9 @@ namespace fluir::editor {
 
     graph_.setRoot(scene_.root());
     graph_.add(std::make_unique<PanZoomInteraction>());
+    // After PanZoom so a Space+Left pan does not select; before Drag so a press
+    // on a node's grip still selects it.
+    graph_.add(std::make_unique<SelectionInteraction>(scene_));
     graph_.add(std::make_unique<DragInteraction>());
     graph_.add(std::make_unique<ClickInteraction>());
   }

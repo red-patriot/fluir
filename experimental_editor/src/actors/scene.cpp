@@ -2,12 +2,16 @@
 
 #include <algorithm>
 #include <memory>
+#include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include "compiler/models/location.hpp"
 #include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actor.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/actors/port_actor.hpp"
+#include "editor/actors/rail_actors.hpp"
 #include "editor/core/graph_geometry.hpp"
 
 namespace fluir::editor {
@@ -53,10 +57,48 @@ namespace fluir::editor {
       auto& frameActor = root_->add(std::make_unique<FunctionDeclActor>(*fn, frame));
       frames_[frameActor.functionId()] = &frameActor;
 
+      // Every conduit endpoint in this function, by body-scope id: rails and nodes alike.
+      std::unordered_map<fluir::ID, PortActor*> ports;
+
+      if (fn->input) {
+        std::vector<const pt::FunctionDecl::Parameter*> params;
+        params.reserve(fn->input->parameters.size());
+        for (const auto& param : fn->input->parameters) {
+          params.push_back(&param);
+        }
+        std::sort(params.begin(), params.end(), [](const auto* a, const auto* b) { return a->index < b->index; });
+        for (std::size_t row = 0; row < params.size(); ++row) {
+          auto& rail = frameActor.body().add(std::make_unique<ParameterActor>(*params[row], row));
+          ports[rail.portId()] = &rail;
+        }
+      }
+
+      if (fn->output && fn->output->ret) {
+        auto& rail = frameActor.body().add(std::make_unique<ReturnActor>(*fn->output->ret));
+        frameActor.setReturnActor(rail);
+        ports[rail.portId()] = &rail;
+      }
+
       for (const pt::Node* node : sortedNodes(fn->body)) {
         const Rect bounds = localRect(locationOf(*node), ctx.layout.unitPx);
         auto& nodeActor = frameActor.body().add(std::visit(MakeActor{fn->id, bounds}, *node));
         byId_[nodeActor.id()] = &nodeActor;
+        ports[nodeActor.portId()] = &nodeActor;
+      }
+
+      for (const pt::Conduit* conduit : sortedConduits(fn->body)) {
+        const auto source = ports.find(conduit->input);
+        if (source == ports.end()) {
+          continue;  // a dangling source draws nothing; decide it once, not every frame
+        }
+        std::vector<ConduitActor::Target> targets;
+        for (const pt::Conduit::Output& child : conduit->children) {
+          const auto target = ports.find(child.target);
+          if (target != ports.end()) {
+            targets.push_back({target->second, child.index});
+          }
+        }
+        frameActor.body().add(std::make_unique<ConduitActor>(*source->second, std::move(targets)));
       }
     }
     layout(ctx);

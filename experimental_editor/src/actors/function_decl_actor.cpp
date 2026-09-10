@@ -22,6 +22,9 @@ namespace fluir::editor {
     const Rect frame = localRect(location_, ctx.layout.unitPx);
     setBounds(frame);
     body_->setBounds(Rect{0, ctx.layout.headerH(), frame.w, frame.h});
+    if (return_ != nullptr) {
+      return_->setFrameWidth(location_.width);
+    }
     Actor::layout(ctx);
   }
 

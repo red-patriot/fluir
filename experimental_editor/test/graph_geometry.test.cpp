@@ -63,7 +63,7 @@ TEST(GraphGeometry, BodyOriginOffsetsByHeaderHeight) {
 }
 
 TEST(GraphGeometry, AtOriginShiftsLocalRectKeepingSize) {
-  // Matches render_graph.test.cpp's ConstantNode assertion for constant id=1.
+  // Matches graph_draw.test.cpp's ConstantNode assertion for constant id=1.
   const Vec2 body{50, 75};
   const Rect local{10, 100, 25, 25};
   EXPECT_EQ(atOrigin(body, local), (Rect{60, 175, 25, 25}));

@@ -64,4 +64,15 @@ namespace fluir::editor {
     return nodes;
   }
 
+  std::vector<const pt::Conduit*> sortedConduits(const pt::Block& block) {
+    std::vector<const pt::Conduit*> conduits;
+    conduits.reserve(block.conduits.size());
+    for (const auto& entry : block.conduits) {
+      conduits.push_back(&entry.second);
+    }
+    std::sort(
+      conduits.begin(), conduits.end(), [](const pt::Conduit* a, const pt::Conduit* b) { return a->id < b->id; });
+    return conduits;
+  }
+
 }  // namespace fluir::editor

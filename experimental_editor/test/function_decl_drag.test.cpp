@@ -11,16 +11,16 @@
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/layer.hpp"
 #include "editor/core/loader.hpp"
-#include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
 // Dragging a function frame's DragHandle must move the whole frame as one unit:
-// GraphRenderer has to place the frame, rails, body nodes and conduits from the
-// FunctionDeclActor's live location_ (which the DragHandle mutates), not the
-// stale parse-tree decl.location. Contract style: assert observable screen
+// The frame, rails, body nodes and conduits all hang off the FunctionDeclActor's
+// live location_ (which the DragHandle mutates), not the stale parse-tree
+// decl.location. Contract style: assert observable screen
 // geometry (rects, text positions, clip rects), never draw-call counts.
 
 namespace {
@@ -32,7 +32,6 @@ namespace {
 
   using fluir::editor::Actor;
   using fluir::editor::FunctionDeclActor;
-  using fluir::editor::GraphRenderer;
   using fluir::editor::GraphScene;
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
@@ -62,6 +61,13 @@ namespace {
     scene.layout(kCtx);  // layout, not draw, is what reconciles bounds with the new location
   }
 
+  // Draws `scene` through one Layer with an identity viewport, as ModulePage does.
+  void drawScene(const GraphScene& scene, RecordingRenderer& r) {
+    fluir::editor::Layer layer;
+    layer.setRoot(scene.root());
+    layer.draw(r, kCtx, Rect{0, 0, r.outputSize().x, r.outputSize().y});
+  }
+
   long firstIndex(const std::vector<DrawCall>& calls, bool (*pred)(const DrawCall&)) {
     for (std::size_t i = 0; i < calls.size(); ++i) {
       if (pred(calls[i])) {
@@ -74,8 +80,7 @@ namespace {
 }  // namespace
 
 // Bug 1: the body node (and, with it, rails / conduits) must track the dragged
-// frame. Today GraphRenderer re-derives the body origin from decl.location, so
-// the child stays put while the header moves.
+// frame: the body container carries them, so they move with its bounds.
 TEST(FunctionDeclDrag, BodyNodesFollowFrameDrag) {
   const Loaded l = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(l.result.tree.has_value());
@@ -84,14 +89,14 @@ TEST(FunctionDeclDrag, BodyNodesFollowFrameDrag) {
   scene.build(kCtx, *l.result.tree);
 
   RecordingRenderer before;
-  GraphRenderer{kCtx, Viewport{}, before, scene}(*l.result.tree);
+  drawScene(scene, before);
   // binary id=1 pre-drag: bodyOrigin {50,75} + localRect {75,10,25,25}.
   ASSERT_TRUE(hasRect(before.calls, Rect{125, 85, 25, 25}));
 
   dragFrame(scene, 10, 4);  // +50 world px in x, +20 world px in y
 
   RecordingRenderer after;
-  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+  drawScene(scene, after);
 
   // The child node's drawn rect must shift by the same (50,20) world delta.
   EXPECT_TRUE(hasRect(after.calls, Rect{175, 105, 25, 25}));
@@ -108,14 +113,14 @@ TEST(FunctionDeclDrag, FrameNameTracksFrameDrag) {
   scene.build(kCtx, *l.result.tree);
 
   RecordingRenderer before;
-  GraphRenderer{kCtx, Viewport{}, before, scene}(*l.result.tree);
+  drawScene(scene, before);
   // name label pre-drag: header origin {50,50} + textPad {4,4}.
   ASSERT_TRUE(hasTextAt(before.calls, "foo", Vec2{54, 54}));
 
   dragFrame(scene, 10, 4);
 
   RecordingRenderer after;
-  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+  drawScene(scene, after);
 
   // name label must move with the frame: header origin {100,70} + textPad.
   EXPECT_TRUE(hasTextAt(after.calls, "foo", Vec2{104, 74}));
@@ -132,7 +137,7 @@ TEST(FunctionDeclDrag, FrameChromeIsNotScissoredToItsOwnRect) {
   scene.build(kCtx, *l.result.tree);
 
   RecordingRenderer r;  // default output size 800x600
-  GraphRenderer{kCtx, Viewport{}, r, scene}(*l.result.tree);
+  drawScene(scene, r);
 
   const auto pushes = opsOf(r.calls, DrawCall::Op::PushClip);
   ASSERT_FALSE(pushes.empty());
@@ -162,7 +167,7 @@ TEST(FunctionDeclDrag, BodyNodeHitBoundsFollowFrameDrag) {
 
   dragFrame(scene, 10, 4);  // +50 world px in x, +20 in y
   RecordingRenderer after;
-  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+  drawScene(scene, after);
 
   // The pick rect must shift by the same (50,20) world delta as the drawn rect.
   EXPECT_EQ(node->worldBounds(), (Rect{175, 105, 25, 25}));
@@ -177,7 +182,7 @@ TEST(FunctionDeclDrag, BodyNodeHitBoundsMatchDrawnRectAfterFrameDrag) {
 
   dragFrame(scene, 10, 4);
   RecordingRenderer after;
-  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+  drawScene(scene, after);
 
   Actor* node = scene.find(1, 1);
   ASSERT_NE(node, nullptr);
@@ -202,7 +207,7 @@ TEST(FunctionDeclDrag, BodyNodeOwnDragBoundsSurviveRerender) {
   ASSERT_EQ(dragged, (Rect{135, 85, 25, 25}));
 
   RecordingRenderer after;
-  GraphRenderer{kCtx, Viewport{}, after, scene}(*l.result.tree);
+  drawScene(scene, after);
 
   EXPECT_EQ(node->worldBounds(), dragged);
 }
@@ -219,9 +224,9 @@ TEST(FunctionDeclDrag, AtRestRenderDoesNotMoveBodyNodeBounds) {
   const Rect built = node->worldBounds();
 
   RecordingRenderer r1;
-  GraphRenderer{kCtx, Viewport{}, r1, scene}(*l.result.tree);
+  drawScene(scene, r1);
   RecordingRenderer r2;
-  GraphRenderer{kCtx, Viewport{}, r2, scene}(*l.result.tree);
+  drawScene(scene, r2);
 
   EXPECT_EQ(node->worldBounds(), built);
 }

@@ -30,4 +30,7 @@ namespace fluir::editor {
   /** `block`'s nodes, ordered ascending by (location.z, id). */
   std::vector<const pt::Node*> sortedNodes(const pt::Block& block);
 
+  /** `block`'s conduits, ordered ascending by id. */
+  std::vector<const pt::Conduit*> sortedConduits(const pt::Block& block);
+
 }  // namespace fluir::editor

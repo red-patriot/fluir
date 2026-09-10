@@ -6,6 +6,7 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/actors/actor.hpp"
+#include "editor/actors/rail_actors.hpp"
 #include "editor/components/container_actor.hpp"
 #include "editor/components/drag_handle.hpp"
 #include "editor/core/geometry.hpp"
@@ -27,6 +28,10 @@ namespace fluir::editor {
     const FlowGraphLocation& location() const { return location_; }
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
+    /** The frame's width is the frame's state; the return rail needs it to place
+     *  itself, so layout pushes it down. */
+    void setReturnActor(ReturnActor& ret) { return_ = &ret; }
+
     ContainerActor& body() { return *body_; }
     const ContainerActor& body() const { return *body_; }
 
@@ -42,6 +47,7 @@ namespace fluir::editor {
     std::string name_;
     DragHandle drag_;
     ContainerActor* body_;
+    ReturnActor* return_ = nullptr;
     std::string lastClickSummary_;
   };
 

@@ -78,7 +78,6 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/layer.cpp"
     "core/loader.cpp"
     "core/parse_tree_writer.cpp"
-    "core/render_graph.cpp"
     "core/viewport.cpp"
 )
 
@@ -92,6 +91,7 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/function_decl_actor.cpp"
     "actors/node_actor.cpp"
     "actors/node_actors.cpp"
+    "actors/rail_actors.cpp"
     "actors/scene.cpp"
 )
 

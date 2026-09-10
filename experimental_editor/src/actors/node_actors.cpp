@@ -18,7 +18,7 @@ namespace fluir::editor {
   using namespace ::fluir::literals_types;
 
   namespace {
-    // Mirrors render_graph.cpp's private `renderLiteral`: I8 / U8 widen to int
+    // I8 / U8 widen to int
     // so they print as numbers, BOOL prints true/false, and every other
     // arithmetic type goes straight through fmt.
     std::string renderLiteral(const pt::Literal& value) {

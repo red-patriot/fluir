@@ -14,7 +14,6 @@
 #include "editor/core/interaction.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
-#include "editor/core/render_graph.hpp"
 #include "editor/pages/splash.hpp"
 
 namespace fluir::editor {
@@ -96,7 +95,7 @@ namespace fluir::editor {
   int ModulePage::draw() {
     renderer_.beginFrame();
 
-    GraphRenderer{ctx_, graph_.viewport(), renderer_, scene_}(*tree_);
+    graph_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
     hud_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
     renderer_.endFrame();
     return 0;

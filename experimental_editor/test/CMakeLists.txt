@@ -8,7 +8,7 @@ add_executable(
     loader.test.cpp
     parse_tree_writer.test.cpp
     viewport.test.cpp
-    render_graph.test.cpp
+    graph_draw.test.cpp
     graph_geometry.test.cpp
     actor.test.cpp
     node_drag.test.cpp

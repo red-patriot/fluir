@@ -121,7 +121,7 @@ TEST(Scene, BuildResolvesFixtureConstantToVerifiedAbsoluteRect) {
   // int_constants.fl constant id=1: FlowGraphLocation x=2,y=20,w=5,h=5;
   // function main x=10,y=10,z=3,w=100,h=100; unitPx=5 -> functionOrigin
   // {50,50}, bodyOrigin {50,75}, localRect {10,100,25,25} -> absolute
-  // {60,175,25,25}. Same value asserted in render_graph.test.cpp and
+  // {60,175,25,25}. Same value asserted in graph_draw.test.cpp and
   // graph_geometry.test.cpp.
   Actor* hit = scene.topmostAt(Vec2{65, 180});
   ASSERT_NE(hit, nullptr);

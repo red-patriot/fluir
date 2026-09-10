@@ -17,7 +17,6 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/loader.hpp"
-#include "editor/core/render_graph.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
 #include "fixture_loader.hpp"
@@ -64,7 +63,7 @@ namespace {
   const fs::path kIntConstants = fs::path(TEST_FOLDER) / "read/int_constants.fl";
 
   // int_constants.fl constant id=1 absolute rect {60,175,25,25} (verified in
-  // scene.test.cpp / render_graph.test.cpp / graph_geometry.test.cpp). The
+  // scene.test.cpp / graph_draw.test.cpp / graph_geometry.test.cpp). The
   // drag handle is the 15px grip inset one unit from the node's top and right
   // edges -> world {65,180,15,15}; this point sits inside the node body but
   // OUTSIDE that handle, so a Left press here is a plain body click, not a
@@ -247,34 +246,6 @@ TEST(ModulePage, ChildStaysDraggableAfterFrameDrag) {
   child->onDrag(ctx, Vec2{}, Vec2{ctx.layout.unitPx, 0});  // +1 grid unit
   page.scene().layout(ctx);
   EXPECT_EQ(child->worldBounds(), (fluir::editor::Rect{r0.x + ctx.layout.unitPx, r0.y, r0.w, r0.h}));
-}
-
-TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
-  const Loaded l = loadFixture("read/int_constants.fl");
-  ASSERT_TRUE(l.result.tree.has_value());
-
-  EditorContext ctx;
-  ctx.program = kIntConstants;
-  RecordingRenderer pageRenderer;
-  ModulePage page{ctx, pageRenderer};
-  ASSERT_EQ(page.start(), 0);
-
-  page.draw();
-
-  // Replicates the fit-to-window transform ModulePage::start() applies internally
-  // (same helper shape as `toScreen` above), so renderGraph() draws through an
-  // identical Viewport to the one the persistent scene_ was drawn through.
-  GraphScene fitScene;
-  fitScene.build(ctx, *l.result.tree);
-  Viewport v;
-  v.fitRect(fitScene.worldBounds(), pageRenderer.outputSize_);
-  RecordingRenderer directRenderer;
-  fluir::editor::renderGraph(ctx, *l.result.tree, v, directRenderer);
-
-  // write() now also draws the app-level HeaderBar
-  ASSERT_GT(pageRenderer.calls.size(), directRenderer.calls.size());
-  EXPECT_TRUE(std::equal(directRenderer.calls.begin(), directRenderer.calls.end(), pageRenderer.calls.begin()))
-    << "ModulePage's persistent-scene draw path must match renderGraph()'s ephemeral-scene draw path as a prefix";
 }
 
 TEST(ModulePage, LeftClickOnExitButtonClosesPage) {

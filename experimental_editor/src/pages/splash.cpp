@@ -15,8 +15,8 @@ namespace fluir::editor {
   SplashPage::SplashPage(EditorContext& ctx, Renderer& renderer) :
     ctx_(ctx),
     renderer_(renderer),
-    openButton_(static_cast<ButtonActor*>(&root_.add(
-      std::make_unique<ButtonActor>("Open", [this] { openFileDialog(); }, Rect{0, 0, kButtonWidth, kButtonHeight})))) {
+    openButton_(&root_.add(
+      std::make_unique<ButtonActor>("Open", [this] { openFileDialog(); }, Rect{0, 0, kButtonWidth, kButtonHeight}))) {
     layer_.setRoot(root_);
     layer_.add(std::make_unique<ClickInteraction>());
   }

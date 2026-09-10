@@ -16,7 +16,7 @@ namespace fluir::editor {
     functionId_(decl.id),
     location_(decl.location),
     name_(decl.name),
-    body_(static_cast<ContainerActor*>(&add(std::make_unique<ContainerActor>(Rect{0, 0, bounds.w, bounds.h})))) { }
+    body_(&add(std::make_unique<ContainerActor>(Rect{0, 0, bounds.w, bounds.h}))) { }
 
   void FunctionDeclActor::layout(const EditorContext& ctx) {
     const Rect frame = localRect(location_, ctx.layout.unitPx);

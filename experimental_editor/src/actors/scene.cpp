@@ -49,12 +49,12 @@ namespace fluir::editor {
     clear();
     for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
       const Rect frame = localRect(fn->location, ctx.layout.unitPx);
-      auto& frameActor = static_cast<FunctionDeclActor&>(root_->add(std::make_unique<FunctionDeclActor>(*fn, frame)));
+      auto& frameActor = root_->add(std::make_unique<FunctionDeclActor>(*fn, frame));
       frames_[frameActor.functionId()] = &frameActor;
 
       for (const pt::Node* node : sortedNodes(fn->body)) {
         const Rect bounds = localRect(locationOf(*node), ctx.layout.unitPx);
-        auto& nodeActor = static_cast<NodeActor&>(frameActor.body().add(std::visit(MakeActor{fn->id, bounds}, *node)));
+        auto& nodeActor = frameActor.body().add(std::visit(MakeActor{fn->id, bounds}, *node));
         byId_[nodeActor.id()] = &nodeActor;
       }
     }

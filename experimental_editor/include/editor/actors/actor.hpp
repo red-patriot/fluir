@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -34,10 +35,12 @@ namespace fluir::editor {
     void setBounds(Rect bounds) { bounds_ = bounds; }
 
     /** Takes ownership of `child`. */
-    Actor& add(std::unique_ptr<Actor> child) {
+    template <typename ActorType>
+      requires std::derived_from<ActorType, Actor>
+    ActorType& add(std::unique_ptr<ActorType> child) {
       child->parent_ = this;
       children_.push_back(std::move(child));
-      return *children_.back();
+      return static_cast<ActorType&>(*children_.back());
     }
 
     void clearChildren() { children_.clear(); }

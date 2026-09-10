@@ -31,7 +31,6 @@ namespace fluir::editor {
     Actor& operator=(Actor&&) = delete;
 
     const Rect& bounds() const { return bounds_; }
-    Rect& bounds() { return bounds_; }
     void setBounds(Rect bounds) { bounds_ = bounds; }
 
     /** Takes ownership of `child`. */

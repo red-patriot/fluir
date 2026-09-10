@@ -45,6 +45,10 @@ namespace fluir::editor {
     /** The world-space root; children are the function frames. */
     Actor& root() const { return *root_; }
 
+    /** Union of the frames' world bounds ({0,0,0,0} when empty). Reflects live
+     *  actor bounds, so drags are included without a rebuild. */
+    Rect worldBounds() const;
+
     /** Discards all actors. */
     void clear();
 

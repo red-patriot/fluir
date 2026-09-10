@@ -42,8 +42,4 @@ namespace fluir::editor {
   /** Walk `tree` and draw to renderer */
   void renderGraph(const EditorContext& ctx, const pt::ParseTree& tree, const Viewport& view, Renderer& renderer);
 
-  /** World-space axis-aligned bounding box of every function frame in `tree`
-   *  ({0,0,0,0} when there are no functions). Used to fit the view. */
-  Rect graphBounds(const EditorContext& ctx, const pt::ParseTree& tree);
-
 }  // namespace fluir::editor

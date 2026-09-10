@@ -47,7 +47,7 @@ namespace fluir::editor {
     tree_ = *result.tree;
     scene_.build(ctx_, *tree_);
 
-    graph_.viewport().fitRect(graphBounds(ctx_, *tree_), renderer_.outputSize());
+    graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
     layoutChrome();
     return 0;
   }
@@ -64,7 +64,7 @@ namespace fluir::editor {
           return true;
         }
         if (event.key == InputEvent::Key::F) {
-          graph_.viewport().fitRect(graphBounds(ctx_, *tree_), renderer_.outputSize());
+          graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
           return true;
         }
         return false;  // Space is a pan modifier, not an app command

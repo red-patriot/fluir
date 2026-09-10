@@ -1,5 +1,6 @@
 #include "editor/actors/scene.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <variant>
 
@@ -59,6 +60,26 @@ namespace fluir::editor {
       }
     }
     layout(ctx);
+  }
+
+  Rect GraphScene::worldBounds() const {
+    const auto& frames = root_->children();
+    if (frames.empty()) {
+      return {0.0, 0.0, 0.0, 0.0};
+    }
+    Rect box = frames.front()->worldBounds();
+    double minX = box.x;
+    double minY = box.y;
+    double maxX = box.x + box.w;
+    double maxY = box.y + box.h;
+    for (const auto& frame : frames) {
+      const Rect r = frame->worldBounds();
+      minX = std::min(minX, r.x);
+      minY = std::min(minY, r.y);
+      maxX = std::max(maxX, r.x + r.w);
+      maxY = std::max(maxY, r.y + r.h);
+    }
+    return {minX, minY, maxX - minX, maxY - minY};
   }
 
   Actor* GraphScene::topmostAt(Vec2 worldPos) const { return root_->hitTest(worldPos); }

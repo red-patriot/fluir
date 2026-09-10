@@ -12,6 +12,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/actors/scene.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
@@ -40,7 +41,7 @@ namespace {
   using fluir::editor::Actor;
   using fluir::editor::ConstantActor;
   using fluir::editor::EditorContext;
-  using fluir::editor::graphBounds;
+  using fluir::editor::GraphScene;
   using fluir::editor::InputEvent;
   using fluir::editor::ModulePage;
   using fluir::editor::Vec2;
@@ -48,13 +49,15 @@ namespace {
   using testutil::RecordingRenderer;
 
   // Replicates the exact fit-to-window transform ModulePage::start() applies
-  // internally (fitRect(graphBounds(ctx, tree), renderer.outputSize())), so a
+  // internally (fitRect(scene.worldBounds(), renderer.outputSize())), so a
   // test can turn a known world-space point (e.g. a verified actor rect, same
   // values asserted in scene.test.cpp / graph_geometry.test.cpp) into the
   // screen-space InputEvent position that will land on it.
   Vec2 toScreen(const EditorContext& ctx, const fluir::pt::ParseTree& tree, Vec2 outputSize, Vec2 world) {
+    GraphScene scene;
+    scene.build(ctx, tree);
     Viewport v;
-    v.fitRect(graphBounds(ctx, tree), outputSize);
+    v.fitRect(scene.worldBounds(), outputSize);
     return v.worldToScreen(world);
   }
 
@@ -261,8 +264,10 @@ TEST(ModulePage, WriteMatchesRenderGraphForSameTree) {
   // Replicates the fit-to-window transform ModulePage::start() applies internally
   // (same helper shape as `toScreen` above), so renderGraph() draws through an
   // identical Viewport to the one the persistent scene_ was drawn through.
+  GraphScene fitScene;
+  fitScene.build(ctx, *l.result.tree);
   Viewport v;
-  v.fitRect(graphBounds(ctx, *l.result.tree), pageRenderer.outputSize_);
+  v.fitRect(fitScene.worldBounds(), pageRenderer.outputSize_);
   RecordingRenderer directRenderer;
   fluir::editor::renderGraph(ctx, *l.result.tree, v, directRenderer);
 

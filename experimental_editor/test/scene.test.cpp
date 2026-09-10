@@ -19,6 +19,7 @@
 #include "editor/core/geometry.hpp"
 #include "editor/core/loader.hpp"
 #include "fixture_loader.hpp"
+#include "recording_renderer.hpp"
 
 // These tests assert *scene construction and hit-testing*: absolute actor
 // bounds for a real fixture, topmost-first overlap resolution, out-of-bounds
@@ -46,6 +47,7 @@ namespace {
   using fluir::editor::Rect;
   using fluir::editor::UnaryActor;
   using fluir::editor::Vec2;
+  using testutil::expectRectNear;
 
   const EditorContext kCtx;
 
@@ -325,4 +327,71 @@ TEST(Scene, TopmostAtFallsBackToFrameOverEmptyFrameArea) {
   ASSERT_NE(hit, nullptr);
   EXPECT_NE(dynamic_cast<FunctionDeclActor*>(hit), nullptr);
   EXPECT_EQ(dynamic_cast<FunctionDeclActor*>(hit)->functionId(), 1u);
+}
+
+// GraphScene::worldBounds() is the fit-to-view source: it must read live actor
+// bounds, so a drag is reflected without a rebuild or a save.
+
+TEST(SceneBounds, EmptyTreeIsZero) {
+  const Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+  expectRectNear(scene.worldBounds(), Rect{0, 0, 0, 0});
+}
+
+TEST(SceneBounds, SingleFunctionIsItsFrame) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture: x=10 y=10 w=100 h=100 (logical); world px = logical * UNIT_PX (5).
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+  expectRectNear(scene.worldBounds(), Rect{50, 50, 500, 500});
+}
+
+TEST(SceneBounds, MultipleFunctionsUnion) {
+  const Loaded l = loadFixture("read/multiple_empty_functions.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture frames (logical -> world px, * UNIT_PX == 5):
+  //   foo x=10  y=10 w=100 h=100 -> world [ 50, 50 ..  550, 550]
+  //   baz x=330 y=10 w=100 h=100 -> world [1650, 50 .. 2150, 550]
+  //   bar x=210 y=10 w=50  h=70  -> world [1050, 50 .. 1300, 400]
+  // union: min (50, 50), max (2150, 550) -> {50, 50, 2100, 500}.
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+  expectRectNear(scene.worldBounds(), Rect{50, 50, 2100, 500});
+}
+
+TEST(SceneBounds, ScalesWithUnitPx) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  // Fixture: x=10 y=10 w=100 h=100 (logical). With unitPx = 10, world px doubles
+  // relative to the default (5): {100, 100, 1000, 1000}.
+  EditorContext ctx;
+  ctx.layout.unitPx = 10.0;
+  GraphScene scene;
+  scene.build(ctx, *l.result.tree);
+  expectRectNear(scene.worldBounds(), Rect{100, 100, 1000, 1000});
+}
+
+TEST(SceneBounds, ReflectsAFrameDragWithoutASave) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  GraphScene scene;
+  scene.build(kCtx, *l.result.tree);
+
+  // Frame world box {50,50,500,500}; its drag handle sits at the header's right
+  // edge, {530,55,15,15}. Drag it 20 logical units right and 10 down.
+  auto* frame = dynamic_cast<FunctionDeclActor*>(scene.find(1));
+  ASSERT_NE(frame, nullptr);
+  ASSERT_TRUE(frame->onDragStart(kCtx, Vec2{537.5, 62.5}));
+  frame->onDrag(kCtx, Vec2{}, Vec2{20 * kCtx.layout.unitPx, 10 * kCtx.layout.unitPx});
+  scene.layout(kCtx);
+
+  expectRectNear(scene.worldBounds(), Rect{150, 100, 500, 500});
 }

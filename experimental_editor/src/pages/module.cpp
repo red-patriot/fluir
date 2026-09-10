@@ -18,8 +18,7 @@
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
-    ctx_(ctx),
-    renderer_(renderer),
+    Page(ctx, renderer),
     header_(renderer, [this] { onSave(); }, [this] { onSaveAs(); }, [this] { this->shouldClose = true; }) {
     hud_.setRoot(header_);
     hud_.add(std::make_unique<ClickInteraction>());
@@ -30,7 +29,7 @@ namespace fluir::editor {
     graph_.add(std::make_unique<ClickInteraction>());
   }
 
-  int ModulePage::start() {
+  int ModulePage::onStart() {
     reset();
     fluir::Context cctx{
       .currentFile = *ctx_.program,  // TODO: Handle no program
@@ -47,58 +46,16 @@ namespace fluir::editor {
     scene_.build(ctx_, *tree_);
 
     graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
-    layoutChrome();
-    return 0;
+    return 0;  // Page::start() lays the chrome out via onResize().
   }
 
-  bool ModulePage::handleAppEvent(const InputEvent& event) {
-    switch (event.type) {
-      case InputEvent::Type::Quit:
-        ctx_.running = false;
-        return true;
-
-      case InputEvent::Type::KeyDown:
-        if (event.key == InputEvent::Key::Escape) {
-          ctx_.running = false;
-          return true;
-        }
-        if (event.key == InputEvent::Key::F) {
-          graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
-          return true;
-        }
-        return false;  // Space is a pan modifier, not an app command
-
-      case InputEvent::Type::Resize:
-        layoutChrome();
-        return true;
-
-      default:
-        return false;
+  bool ModulePage::onAppEvent(const InputEvent& event) {
+    // Space is a pan modifier, not an app command.
+    if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::F) {
+      graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
+      return true;
     }
-  }
-
-  int ModulePage::update(const std::vector<InputEvent>& events) {
-    for (const auto& ie : events) {
-      if (handleAppEvent(ie)) {
-        continue;
-      }
-      if (hud_.dispatch(ie, ctx_, renderer_.outputSize())) {
-        continue;
-      }
-      graph_.dispatch(ie, ctx_, renderer_.outputSize());
-    }
-
-    scene_.layout(ctx_);  // hit-testing must be correct before the next frame is drawn
-    return 0;
-  }
-
-  int ModulePage::draw() {
-    renderer_.beginFrame();
-
-    graph_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
-    hud_.draw(renderer_, ctx_, Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y});
-    renderer_.endFrame();
-    return 0;
+    return false;
   }
 
   std::unique_ptr<Page> ModulePage::next() {

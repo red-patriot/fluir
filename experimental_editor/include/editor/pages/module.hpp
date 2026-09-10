@@ -19,10 +19,6 @@ namespace fluir::editor {
    public:
     ModulePage(EditorContext& ctx, Renderer& renderer);
 
-    int start() override;
-    int update(const std::vector<InputEvent>& events) override;
-    int draw() override;
-
     std::unique_ptr<Page> next() override;
 
     // Test-only observability: lets tests verify a Left click actually
@@ -34,9 +30,14 @@ namespace fluir::editor {
     // button without a second parallel exit path through ModulePage's API.
     const HeaderBar& header() const { return header_; }
 
+   protected:
+    std::vector<Layer*> layers() override { return {&hud_, &graph_}; }
+    int onStart() override;
+    bool onAppEvent(const InputEvent& event) override;
+    void onResize() override { layoutChrome(); }
+    void afterUpdate() override { scene_.layout(ctx_); }
+
    private:
-    EditorContext& ctx_;
-    Renderer& renderer_;
     std::optional<fluir::pt::ParseTree> tree_;
     GraphScene scene_;
     HeaderBar header_;
@@ -46,9 +47,6 @@ namespace fluir::editor {
 
     void reset();
     void layoutChrome();
-
-    /** Handles app-wide events (quit, fit, resize) before any layer sees them. */
-    bool handleAppEvent(const InputEvent& event);
 
     void onSave();
     void onSaveAs();

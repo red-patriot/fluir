@@ -30,6 +30,13 @@ namespace {
     return ie;
   }
 
+  InputEvent escape() {
+    InputEvent ie;
+    ie.type = InputEvent::Type::KeyDown;
+    ie.key = InputEvent::Key::Escape;
+    return ie;
+  }
+
 }  // namespace
 
 TEST(SplashPage, DrawsOpenButton) {
@@ -61,6 +68,16 @@ TEST(SplashPage, QuitEventStopsTheApp) {
 
   EXPECT_EQ(page.update({quit()}), 0);
   EXPECT_FALSE(ctx.running) << "Quit must reach SplashPage -- it is the app's entry page and never transitions";
+}
+
+TEST(SplashPage, EscapeStopsTheApp) {
+  EditorContext ctx;
+  RecordingRenderer renderer;
+  SplashPage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  EXPECT_EQ(page.update({escape()}), 0);
+  EXPECT_FALSE(ctx.running) << "Escape quits from every page, not just the module page";
 }
 
 TEST(SplashPage, ButtonRecentersOnResize) {

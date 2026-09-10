@@ -83,6 +83,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_PAGE_SOURCES
     "pages/module.cpp"
+    "pages/page.cpp"
     "pages/header_bar.cpp"
     "pages/splash.cpp"
 )

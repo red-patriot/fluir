@@ -18,21 +18,20 @@ namespace fluir::editor {
    public:
     SplashPage(EditorContext& ctx, Renderer& renderer);
 
-    int start() override;
-    int update(const std::vector<InputEvent>& events) override;
-    int draw() override;
     std::unique_ptr<Page> next() override { return std::move(next_); }
 
     // Test-only observability: lets tests locate/click the Open button
     // without a second parallel path through SplashPage's API.
     const ButtonActor& openButton() const { return *openButton_; }
 
+   protected:
+    std::vector<Layer*> layers() override { return {&layer_}; }
+    void onResize() override { layout(); }
+
    private:
     static constexpr int kButtonWidth = 120;
     static constexpr int kButtonHeight = 40;
 
-    EditorContext& ctx_;
-    Renderer& renderer_;
     // The page spans the whole output, so it neither offsets nor clips its button.
     ContainerActor root_{Rect{0, 0, 0, 0}, Actor::ClipChildren::No};
     ButtonActor* openButton_;

@@ -1,5 +1,5 @@
-#ifndef FLUIR_EDITOR_TRANSACTION_DELETE_NODE_HPP
-#define FLUIR_EDITOR_TRANSACTION_DELETE_NODE_HPP
+#ifndef FLUIR_EDITOR_TRANSACTION_DELETE_HPP
+#define FLUIR_EDITOR_TRANSACTION_DELETE_HPP
 
 #include <utility>
 #include <vector>
@@ -10,8 +10,8 @@
 
 namespace fluir::editor {
 
-  /** Deletes one node and every conduit wired to it, as the shipped delete does. */
-  class DeleteNodeTransaction : public Transaction {
+  /** Deletes a frame, or a node and every conduit wired to it, as the shipped delete does. */
+  class DeleteTransaction : public Transaction {
    public:
     /** An operand reset by this delete: the node naming it, and which slot. */
     struct ClearedOperand {
@@ -19,7 +19,7 @@ namespace fluir::editor {
       int slot; /**< 0 = lhs, 1 = rhs */
     };
 
-    explicit DeleteNodeTransaction(fluir::FullID id) : id_(std::move(id)) { }
+    explicit DeleteTransaction(fluir::FullID id) : id_(std::move(id)) { }
 
     bool execute(GraphScene& scene) override;
     bool unexecute(GraphScene& scene) override;

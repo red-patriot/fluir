@@ -99,10 +99,8 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/selection_outline.cpp"
 )
 
-set(FLUIR_EDITOR_TRANSACTION_SOURCES
-    "transaction/delete_function.cpp"
-    "transaction/delete_node.cpp"
-    "transaction/move.cpp"
+set(FLUIR_EDITOR_TRANSACTION_SOURCES "transaction/delete.cpp"
+                                     "transaction/move.cpp"
 )
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES

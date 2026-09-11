@@ -1,4 +1,4 @@
-#include "editor/transaction/delete_node.hpp"
+#include "editor/transaction/delete.hpp"
 
 #include <utility>
 #include <vector>
@@ -25,12 +25,22 @@ namespace fluir::editor {
 
   }  // namespace
 
-  bool DeleteNodeTransaction::execute(GraphScene& scene) {
+  bool DeleteTransaction::execute(GraphScene& scene) {
     removed_.clear();
     clearedOperands_.clear();
+
+    // A frame takes its whole body with it; no wires and no operands to mend.
+    if (id_.size() == 1) {
+      if (dynamic_cast<FunctionDeclActor*>(scene.find(id_)) == nullptr) {
+        return false;
+      }
+      removed_.push_back(scene.detach(id_));
+      return true;
+    }
     if (id_.size() != 2) {
       return false;
     }
+
     auto* frame = dynamic_cast<FunctionDeclActor*>(scene.find(id_[0]));
     if (frame == nullptr || dynamic_cast<NodeActor*>(scene.find(id_)) == nullptr) {
       return false;
@@ -40,11 +50,11 @@ namespace fluir::editor {
     std::vector<fluir::FullID> wires;
     for (const auto& child : frame->body().children()) {
       const auto* conduit = dynamic_cast<const ConduitActor*>(child.get());
-      if (conduit != nullptr && touches(conduit->conduit(), id_[1])) {
+      if (conduit != nullptr && touches(conduit->conduit(), id_.back())) {
         wires.push_back(*conduit->selectionId());
       }
       if (auto* node = dynamic_cast<NodeActor*>(child.get())) {
-        for (const int slot : node->clearOperands(id_[1])) {
+        for (const int slot : node->clearOperands(id_.back())) {
           clearedOperands_.push_back({*node->selectionId(), slot});
         }
       }
@@ -56,7 +66,7 @@ namespace fluir::editor {
     return true;
   }
 
-  bool DeleteNodeTransaction::unexecute(GraphScene& scene) {
+  bool DeleteTransaction::unexecute(GraphScene& scene) {
     if (removed_.empty()) {
       return false;
     }
@@ -69,7 +79,7 @@ namespace fluir::editor {
     }
     for (const ClearedOperand& cleared : clearedOperands_) {
       if (auto* node = dynamic_cast<NodeActor*>(scene.find(cleared.node))) {
-        node->restoreOperand(cleared.slot, id_[1]);
+        node->restoreOperand(cleared.slot, id_.back());
       }
     }
     clearedOperands_.clear();

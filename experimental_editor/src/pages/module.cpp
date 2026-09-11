@@ -16,9 +16,7 @@
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/core/scene_to_tree.hpp"
 #include "editor/pages/splash.hpp"
-#include "editor/transaction/delete_function.hpp"
-#include "editor/transaction/delete_node.hpp"
-#include "editor/transaction/transaction.hpp"
+#include "editor/transaction/delete.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
@@ -94,14 +92,8 @@ namespace fluir::editor {
     if (!scene_.selected()) {
       return;
     }
-    const fluir::FullID id = *scene_.selected();
-    std::unique_ptr<Transaction> edit;
-    if (id.size() == 1) {
-      edit = std::make_unique<DeleteFunctionTransaction>(id[0]);
-    } else if (id.size() == 2) {
-      edit = std::make_unique<DeleteNodeTransaction>(id);
-    }
-    if (edit == nullptr || !edit->execute(scene_)) {
+    DeleteTransaction edit{*scene_.selected()};
+    if (!edit.execute(scene_)) {
       return;
     }
     // The detach frees the actors, in-flight gestures pointing at them included.

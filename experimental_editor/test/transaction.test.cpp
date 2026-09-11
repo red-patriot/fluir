@@ -14,8 +14,7 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/layer.hpp"
 #include "editor/core/scene_to_tree.hpp"
-#include "editor/transaction/delete_function.hpp"
-#include "editor/transaction/delete_node.hpp"
+#include "editor/transaction/delete.hpp"
 #include "editor/transaction/move.hpp"
 #include "recording_renderer.hpp"
 
@@ -27,8 +26,7 @@ namespace {
   using fluir::FlowGraphLocation;
   using fluir::ID;
   using fluir::Operator;
-  using fluir::editor::DeleteFunctionTransaction;
-  using fluir::editor::DeleteNodeTransaction;
+  using fluir::editor::DeleteTransaction;
   using fluir::editor::EditorContext;
   using fluir::editor::GraphScene;
   using fluir::editor::Layer;
@@ -149,13 +147,13 @@ TEST(MoveTransaction, MissChangesNothingAndReturnsFalse) {
   EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
 }
 
-TEST(DeleteNodeTransaction, RoundTripRestoresNodeConduitsOperandsAndDrawOrder) {
+TEST(DeleteTransaction, RoundTripRestoresNodeConduitsOperandsAndDrawOrder) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
   const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
   const auto callsBefore = drawCalls(scene);
 
-  DeleteNodeTransaction uut{fluir::FullID{1, 30}};
+  DeleteTransaction uut{fluir::FullID{1, 30}};
   ASSERT_TRUE(uut.execute(scene));
 
   const fluir::pt::ParseTree after = sceneToParseTree(scene, kHeader);
@@ -174,11 +172,11 @@ TEST(DeleteNodeTransaction, RoundTripRestoresNodeConduitsOperandsAndDrawOrder) {
   EXPECT_EQ(drawCalls(scene), callsBefore);
 }
 
-TEST(DeleteNodeTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
+TEST(DeleteTransaction, RedoOfANodeReachesTheSameStateAsTheFirstExecute) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
 
-  DeleteNodeTransaction uut{fluir::FullID{1, 30}};
+  DeleteTransaction uut{fluir::FullID{1, 30}};
   ASSERT_TRUE(uut.execute(scene));
   const fluir::pt::ParseTree afterFirst = sceneToParseTree(scene, kHeader);
   ASSERT_TRUE(uut.unexecute(scene));
@@ -187,23 +185,23 @@ TEST(DeleteNodeTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
   EXPECT_EQ(sceneToParseTree(scene, kHeader), afterFirst);
 }
 
-TEST(DeleteNodeTransaction, MissChangesNothingAndReturnsFalse) {
+TEST(DeleteTransaction, UnknownNodeIdChangesNothingAndReturnsFalse) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
   const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
 
-  DeleteNodeTransaction uut{fluir::FullID{1, 999}};
+  DeleteTransaction uut{fluir::FullID{1, 999}};
   EXPECT_FALSE(uut.execute(scene));
   EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
 }
 
-TEST(DeleteFunctionTransaction, RoundTripRestoresTheWholeFrame) {
+TEST(DeleteTransaction, RoundTripRestoresTheWholeFrame) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
   const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
   const auto callsBefore = drawCalls(scene);
 
-  DeleteFunctionTransaction uut{1};
+  DeleteTransaction uut{fluir::FullID{1}};
   ASSERT_TRUE(uut.execute(scene));
   EXPECT_TRUE(sceneToParseTree(scene, kHeader).declarations.empty());
 
@@ -214,11 +212,11 @@ TEST(DeleteFunctionTransaction, RoundTripRestoresTheWholeFrame) {
   EXPECT_EQ(drawCalls(scene), callsBefore);
 }
 
-TEST(DeleteFunctionTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
+TEST(DeleteTransaction, RedoOfAFrameReachesTheSameStateAsTheFirstExecute) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
 
-  DeleteFunctionTransaction uut{1};
+  DeleteTransaction uut{fluir::FullID{1}};
   ASSERT_TRUE(uut.execute(scene));
   const fluir::pt::ParseTree afterFirst = sceneToParseTree(scene, kHeader);
   ASSERT_TRUE(uut.unexecute(scene));
@@ -227,12 +225,33 @@ TEST(DeleteFunctionTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
   EXPECT_EQ(sceneToParseTree(scene, kHeader), afterFirst);
 }
 
-TEST(DeleteFunctionTransaction, MissChangesNothingAndReturnsFalse) {
+TEST(DeleteTransaction, UnknownFrameIdChangesNothingAndReturnsFalse) {
   GraphScene scene;
   scene.build(kCtx, makeTree());
   const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
 
-  DeleteFunctionTransaction uut{999};
+  DeleteTransaction uut{fluir::FullID{999}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(DeleteTransaction, EmptyIdChangesNothingAndReturnsFalse) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  DeleteTransaction uut{fluir::FullID{}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+// A conduit id must not be mistaken for a node, which would drag its neighbours out.
+TEST(DeleteTransaction, ConduitIdChangesNothingAndReturnsFalse) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  DeleteTransaction uut{fluir::FullID{1, 40}};
   EXPECT_FALSE(uut.execute(scene));
   EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
 }

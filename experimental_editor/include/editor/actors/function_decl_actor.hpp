@@ -31,7 +31,8 @@ namespace fluir::editor {
     const std::string& name() const { return name_; }
 
     std::optional<fluir::FullID> selectionId() const override { return fluir::FullID{functionId_}; }
-    const FlowGraphLocation& location() const { return location_; }
+    using Actor::location;  // the const overload, hidden by the override below
+    FlowGraphLocation* location() override { return &location_; }
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
     /** The frame's width is the frame's state; the return rail needs it to place
@@ -44,6 +45,7 @@ namespace fluir::editor {
     /** The port `portId` names within this function, or nullptr. */
     PortActor* port(fluir::ID portId) const;
     void registerPort(PortActor& port) { ports_[port.portId()] = &port; }
+    void unregisterPort(fluir::ID portId) { ports_.erase(portId); }
 
    protected:
     void drawSelf(const Subview& parentView, const EditorContext& ctx) const override;

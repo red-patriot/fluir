@@ -38,7 +38,20 @@ namespace fluir::editor {
    *  function. */
   class GraphScene {
    public:
+    /** An actor lifted out of the scene, with what it takes to put it back. */
+    struct DetachedActor {
+      std::unique_ptr<Actor> actor;
+      fluir::FullID parent;  /**< the frame that owned it; empty for a frame itself */
+      std::size_t index = 0; /**< draw-order position to restore */
+    };
+
     void build(const EditorContext& ctx, const pt::ParseTree& tree);
+
+    /** Lifts the actor `id` names out of the scene, indexes included. */
+    DetachedActor detach(const fluir::FullID& id);
+
+    /** Puts a detached actor back where it was. False when it cannot be placed. */
+    bool attach(DetachedActor detached);
 
     /** Re-derives every actor's bounds from its live location. */
     void layout(const EditorContext& ctx) const { root_->layout(ctx); }
@@ -61,6 +74,9 @@ namespace fluir::editor {
 
     /** Actor owning function `functionId`'s frame, or nullptr. */
     Actor* find(fluir::ID functionId) const;
+
+    /** The actor `id` names -- size 1 is a frame, size 2 a node or conduit -- or nullptr. */
+    Actor* find(const fluir::FullID& id) const { return resolve(id); }
 
     /** Marks the actor `id` names as selected; a no-op when it resolves to none. */
     void select(fluir::FullID id);

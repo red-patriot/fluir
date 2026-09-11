@@ -21,6 +21,7 @@ add_executable(
     splash.test.cpp
     selection.test.cpp
     tree_edit.test.cpp
+    transaction.test.cpp
 )
 
 target_compile_definitions(

@@ -99,6 +99,12 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/selection_outline.cpp"
 )
 
+set(FLUIR_EDITOR_TRANSACTION_SOURCES
+    "transaction/delete_function.cpp"
+    "transaction/delete_node.cpp"
+    "transaction/move.cpp"
+)
+
 set(FLUIR_EDITOR_COMPONENT_SOURCES
     "components/button_actor.cpp"
     "components/drag_handle.cpp"
@@ -111,6 +117,7 @@ target_sources(
             ${FLUIR_EDITOR_PAGE_SOURCES}
             ${FLUIR_EDITOR_ACTOR_SOURCES}
             ${FLUIR_EDITOR_COMPONENT_SOURCES}
+            ${FLUIR_EDITOR_TRANSACTION_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"
             "app.cpp"

@@ -100,6 +100,73 @@ namespace fluir::editor {
     }
   }
 
+  GraphScene::DetachedActor GraphScene::detach(const fluir::FullID& id) {
+    Actor* actor = resolve(id);
+    if (actor == nullptr) {
+      return {};
+    }
+    // A stale selection would outlive the actor it names, so drop it here.
+    if (selected_ && !selected_->empty() && !id.empty() && selected_->front() == id.front()) {
+      clearSelection();
+    }
+
+    if (id.size() == 1) {
+      auto* frame = static_cast<FunctionDeclActor*>(actor);
+      DetachedActor detached{nullptr, {}, root_->indexOf(*frame)};
+      // The body goes with the frame, so every id it owns leaves the index too.
+      std::erase_if(byId_, [&id](const auto& entry) { return entry.first.front() == id.front(); });
+      frames_.erase(frame->functionId());
+      detached.actor = root_->detach(*frame);
+      return detached;
+    }
+
+    auto* frame = dynamic_cast<FunctionDeclActor*>(find(id[0]));
+    if (frame == nullptr) {
+      return {};
+    }
+    DetachedActor detached{nullptr, fluir::FullID{id[0]}, frame->body().indexOf(*actor)};
+    byId_.erase(id);
+    if (auto* port = dynamic_cast<PortActor*>(actor)) {
+      frame->unregisterPort(port->portId());
+    }
+    detached.actor = frame->body().detach(*actor);
+    return detached;
+  }
+
+  bool GraphScene::attach(DetachedActor detached) {
+    if (detached.actor == nullptr) {
+      return false;
+    }
+    if (detached.parent.empty()) {
+      auto* frame = dynamic_cast<FunctionDeclActor*>(detached.actor.get());
+      if (frame == nullptr) {
+        return false;
+      }
+      frames_[frame->functionId()] = frame;
+      for (const auto& child : frame->body().children()) {
+        if (const std::optional<fluir::FullID> childId = child->selectionId()) {
+          byId_[*childId] = child.get();
+        }
+      }
+      root_->insert(detached.index, std::move(detached.actor));
+      return true;
+    }
+
+    auto* frame = dynamic_cast<FunctionDeclActor*>(find(detached.parent.front()));
+    if (frame == nullptr) {
+      return false;
+    }
+    Actor* actor = detached.actor.get();
+    if (const std::optional<fluir::FullID> id = actor->selectionId()) {
+      byId_[*id] = actor;
+    }
+    if (auto* port = dynamic_cast<PortActor*>(actor)) {
+      frame->registerPort(*port);
+    }
+    frame->body().insert(detached.index, std::move(detached.actor));
+    return true;
+  }
+
   Rect GraphScene::worldBounds() const {
     const auto& frames = root_->children();
     if (frames.empty()) {

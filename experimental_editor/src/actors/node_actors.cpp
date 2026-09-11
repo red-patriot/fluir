@@ -87,6 +87,21 @@ namespace fluir::editor {
 
   void BinaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("binary {}", stringify(node_.op)); }
 
+  std::vector<int> BinaryActor::clearOperands(fluir::ID nodeId) {
+    std::vector<int> cleared;
+    if (node_.lhs == nodeId) {
+      node_.lhs = fluir::INVALID_ID;
+      cleared.push_back(0);
+    }
+    if (node_.rhs == nodeId) {
+      node_.rhs = fluir::INVALID_ID;
+      cleared.push_back(1);
+    }
+    return cleared;
+  }
+
+  void BinaryActor::restoreOperand(int slot, fluir::ID nodeId) { (slot == 0 ? node_.lhs : node_.rhs) = nodeId; }
+
   void BinaryActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
     const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), ctx.theme.operatorNode);
@@ -114,6 +129,16 @@ namespace fluir::editor {
     NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
 
   void UnaryActor::onClick(Vec2) { lastClickSummary_ = fmt::format("unary {}", stringify(node_.op)); }
+
+  std::vector<int> UnaryActor::clearOperands(fluir::ID nodeId) {
+    if (node_.lhs != nodeId) {
+      return {};
+    }
+    node_.lhs = fluir::INVALID_ID;
+    return {0};
+  }
+
+  void UnaryActor::restoreOperand(int, fluir::ID nodeId) { node_.lhs = nodeId; }
 
   void UnaryActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
     const Rect& nodeRect = bounds();

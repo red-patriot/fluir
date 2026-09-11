@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
@@ -23,20 +24,23 @@ namespace fluir::editor {
 
     /** This node's body-local location (grid units); the DragHandle mutates it,
      *  and `layout` re-derives `bounds()` from it. */
-    virtual const fluir::FlowGraphLocation& location() const = 0;
+    using Actor::location;  // the const overload, hidden by the override below
+    fluir::FlowGraphLocation* location() override = 0;
 
     /** This actor's node, as the parse tree would represent it. */
     virtual pt::Node node() const = 0;
+
+    /** Resets every operand naming `nodeId`; returns the slots cleared (0 = lhs, 1 = rhs). */
+    virtual std::vector<int> clearOperands(fluir::ID nodeId) { return {}; }
+
+    /** Points operand `slot` back at `nodeId`. */
+    virtual void restoreOperand(int slot, fluir::ID nodeId) { }
 
     void layout(const EditorContext& ctx) override;
     bool onDragStart(const EditorContext& ctx, Vec2 position) override;
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
 
    protected:
-    /** `location()` names a plain member of the concrete node, so casting away
-     *  its constness to let the drag move it is well-defined. */ // @CLAUDE let's discuss this rationale here
-    fluir::FlowGraphLocation& mutableLocation() { return const_cast<fluir::FlowGraphLocation&>(location()); }
-
     DragHandle drag_;
 
    private:

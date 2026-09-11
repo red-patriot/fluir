@@ -1,5 +1,6 @@
 #include "editor/actors/actor.hpp"
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
@@ -385,4 +386,76 @@ TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
   EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));  // header band
   EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 50}));  // frame border
   EXPECT_TRUE(hasTextAt(renderer.calls, "foo", Vec2{4, 4}));
+}
+
+// Detach/insert are the undo primitives: removal must hand ownership back, and
+// re-insertion must restore draw order, not append on top.
+
+TEST(ActorTree, DetachTransfersOwnershipAndClearsParent) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  Actor& child = root.add(std::make_unique<StubActor>(Rect{5, 5, 10, 10}));
+
+  std::unique_ptr<Actor> detached = root.detach(child);
+
+  ASSERT_NE(detached, nullptr);
+  EXPECT_EQ(detached.get(), &child);
+  EXPECT_EQ(detached->parent(), nullptr);
+  EXPECT_TRUE(root.children().empty());
+}
+
+TEST(ActorTree, DetachOfANonChildYieldsNothing) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  StubActor stranger{Rect{0, 0, 10, 10}};
+  root.add(std::make_unique<StubActor>(Rect{5, 5, 10, 10}));
+
+  EXPECT_EQ(root.detach(stranger), nullptr);
+  EXPECT_EQ(root.children().size(), 1u);
+}
+
+TEST(ActorTree, IndexOfNamesDrawOrderPosition) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  Actor& first = root.add(std::make_unique<StubActor>(Rect{0, 0, 10, 10}));
+  Actor& middle = root.add(std::make_unique<StubActor>(Rect{1, 1, 10, 10}));
+  Actor& last = root.add(std::make_unique<StubActor>(Rect{2, 2, 10, 10}));
+  StubActor stranger{Rect{0, 0, 10, 10}};
+
+  EXPECT_EQ(root.indexOf(first), 0u);
+  EXPECT_EQ(root.indexOf(middle), 1u);
+  EXPECT_EQ(root.indexOf(last), 2u);
+  EXPECT_EQ(root.indexOf(stranger), root.children().size());
+}
+
+TEST(ActorTree, InsertRestoresDrawOrderOfAMiddleChild) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  root.add(std::make_unique<StubActor>(Rect{0, 0, 10, 10}));
+  Actor& middle = root.add(std::make_unique<StubActor>(Rect{1, 1, 10, 10}));
+  root.add(std::make_unique<StubActor>(Rect{2, 2, 10, 10}));
+
+  const std::size_t index = root.indexOf(middle);
+  Actor& back = root.insert(index, root.detach(middle));
+
+  EXPECT_EQ(&back, &middle);
+  EXPECT_EQ(middle.parent(), &root);
+  EXPECT_EQ(root.indexOf(middle), 1u);
+
+  // Draw order follows children_ order: the middle child paints second.
+  const EditorContext ctx;
+  RecordingRenderer r;
+  const Viewport viewport;
+  {
+    const Subview view{viewport, Rect{0, 0, 1000, 1000}, r};
+    root.draw(view, ctx);
+  }
+  const auto fills = fillsOfSize(r.calls, 10, 10);
+  ASSERT_EQ(fills.size(), 3u);
+  EXPECT_EQ(fills[1].x, 1);
+}
+
+TEST(ActorTree, InsertPastTheEndAppends) {
+  StubActor root{Rect{0, 0, 100, 100}};
+  Actor& only = root.add(std::make_unique<StubActor>(Rect{0, 0, 10, 10}));
+  Actor& added = root.insert(99, std::make_unique<StubActor>(Rect{1, 1, 10, 10}));
+
+  EXPECT_EQ(root.indexOf(only), 0u);
+  EXPECT_EQ(root.indexOf(added), 1u);
 }

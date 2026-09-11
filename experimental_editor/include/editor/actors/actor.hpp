@@ -1,12 +1,15 @@
 #pragma once
 
+#include <algorithm>
 #include <concepts>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
 #include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
@@ -42,6 +45,35 @@ namespace fluir::editor {
       child->parent_ = this;
       children_.push_back(std::move(child));
       return static_cast<ActorType&>(*children_.back());
+    }
+
+    /** Removes `child`, returning ownership. Null when it is not a child of this. */
+    std::unique_ptr<Actor> detach(const Actor& child) {
+      const std::size_t index = indexOf(child);
+      if (index == children_.size()) {
+        return nullptr;
+      }
+      std::unique_ptr<Actor> out = std::move(children_[index]);
+      children_.erase(children_.begin() + static_cast<std::ptrdiff_t>(index));
+      out->parent_ = nullptr;
+      return out;
+    }
+
+    /** Re-inserts at `index`, restoring draw order. */
+    Actor& insert(std::size_t index, std::unique_ptr<Actor> child) {
+      child->parent_ = this;
+      const std::size_t at = std::min(index, children_.size());
+      return **children_.insert(children_.begin() + static_cast<std::ptrdiff_t>(at), std::move(child));
+    }
+
+    /** `child`'s draw-order position, or `children().size()` when it is not a child. */
+    std::size_t indexOf(const Actor& child) const {
+      for (std::size_t i = 0; i < children_.size(); ++i) {
+        if (children_[i].get() == &child) {
+          return i;
+        }
+      }
+      return children_.size();
     }
 
     void clearChildren() { children_.clear(); }
@@ -81,6 +113,10 @@ namespace fluir::editor {
       }
       return hittable() ? this : nullptr;
     }
+
+    /** This actor's position, or nullptr when it is not movable. */
+    virtual FlowGraphLocation* location() { return nullptr; }
+    const FlowGraphLocation* location() const { return const_cast<Actor*>(this)->location(); }
 
     /** Whether a hit that lands on no child resolves to this actor. */
     virtual bool hittable() const { return true; }

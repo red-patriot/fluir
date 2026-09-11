@@ -2,8 +2,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <string>
-#include <variant>
 
 #include <fmt/format.h>
 #include <nfd.h>
@@ -14,8 +14,11 @@
 #include "editor/core/interaction.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
-#include "editor/core/tree_edit.hpp"
+#include "editor/core/scene_to_tree.hpp"
 #include "editor/pages/splash.hpp"
+#include "editor/transaction/delete_function.hpp"
+#include "editor/transaction/delete_node.hpp"
+#include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
@@ -46,9 +49,8 @@ namespace fluir::editor {
       fmt::print(stderr, "parse failed: {}\n", ctx_.program->string());
       return 1;
     }
-    tree_ = *result.tree;
     fileHeader_ = result.tree->header;
-    scene_.build(ctx_, *tree_);
+    scene_.build(ctx_, *result.tree);  // the tree is a load format; the scene is the model
 
     graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
     return 0;  // Page::start() lays the chrome out via onResize().
@@ -77,7 +79,6 @@ namespace fluir::editor {
 
   void ModulePage::reset() {
     graph_.setViewport(Viewport{});
-    tree_.reset();
     fileHeader_ = pt::Header{};
     scene_.clear();
     graph_.reset();
@@ -89,54 +90,28 @@ namespace fluir::editor {
     header_.resize(ctx_, renderer_.outputSize().x);
   }
 
-  void ModulePage::syncTreeFromScene() {
-    if (!tree_) {
-      return;
-    }
-    for (auto& [fnId, decl] : tree_->declarations) {
-      auto& fn = std::get<fluir::pt::FunctionDecl>(decl);
-      if (auto* fa = dynamic_cast<FunctionDeclActor*>(scene_.find(fn.id))) {
-        fn.location = fa->location();
-      }
-      for (auto& [nodeId, node] : fn.body.nodes) {
-        if (auto* na = dynamic_cast<NodeActor*>(scene_.find(fn.id, nodeId))) {
-          std::visit([&](auto& n) { n.location = na->location(); }, node);
-        }
-      }
-    }
-  }
-
   void ModulePage::deleteSelection() {
-    if (!tree_ || !scene_.selected()) {
+    if (!scene_.selected()) {
       return;
     }
-    syncTreeFromScene();  // or the rebuild below reverts every unsaved drag
     const fluir::FullID id = *scene_.selected();
-
-    bool removed = false;
+    std::unique_ptr<Transaction> edit;
     if (id.size() == 1) {
-      removed = deleteFunction(*tree_, id[0]);
-    } else if (auto decl = tree_->declarations.find(id[0]); decl != tree_->declarations.end()) {
-      removed = deleteNode(std::get<fluir::pt::FunctionDecl>(decl->second), id[1]);
+      edit = std::make_unique<DeleteFunctionTransaction>(id[0]);
+    } else if (id.size() == 2) {
+      edit = std::make_unique<DeleteNodeTransaction>(id);
     }
-    if (!removed) {
+    if (edit == nullptr || !edit->execute(scene_)) {
       return;
     }
-
-    scene_.clearSelection();
-    // Every actor pointer dies with the rebuild, in-flight gestures included.
+    // The detach frees the actors, in-flight gestures pointing at them included.
     graph_.reset();
-    scene_.build(ctx_, *tree_);  // no refit: the viewport is the user's, not ours
   }
 
   bool ModulePage::saveToPath(const std::filesystem::path& path) {
-    if (!tree_) {
-      return false;
-    }
-    syncTreeFromScene();
     std::ofstream ofs(path);
     ParseTreeWriter w(ofs);
-    w.write(*tree_);
+    w.write(sceneToParseTree(scene_, fileHeader_));
     if (!w.good()) {
       fmt::print(stderr, "save failed: {}\n", path.string());
       return false;

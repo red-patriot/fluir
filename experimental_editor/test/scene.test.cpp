@@ -537,3 +537,86 @@ TEST(SceneRetention, ConduitActorIsNamedByItsIdAndRetainsItsConduit) {
   EXPECT_EQ(actor->selectionId(), (fluir::FullID{1, 40}));
   EXPECT_EQ(actor->conduit(), conduit);
 }
+
+// detach/attach are the scene's undo primitives: they must keep byId_, the
+// frame registry and draw order consistent, not just the actor tree.
+
+TEST(SceneDetach, DetachRemovesTheActorFromLookupAndFromTheDrawing) {
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+  body.nodes.emplace(11, makeConstant(11, 10, 1, 1, 5, 5));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  RecordingRenderer before;
+  drawScene(scene, before);
+  const std::size_t fillsBefore = testutil::fillsOf(before.calls).size();
+
+  GraphScene::DetachedActor detached = scene.detach(fluir::FullID{1, 10});
+  ASSERT_NE(detached.actor, nullptr);
+  EXPECT_EQ(scene.find(1, 10), nullptr);
+
+  scene.layout(kCtx);
+  RecordingRenderer after;
+  drawScene(scene, after);
+  EXPECT_LT(testutil::fillsOf(after.calls).size(), fillsBefore);
+}
+
+TEST(SceneDetach, AttachRestoresLookupAndDrawOrder) {
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+  body.nodes.emplace(11, makeConstant(11, 10, 1, 1, 5, 5));
+  body.nodes.emplace(12, makeConstant(12, 20, 1, 1, 5, 5));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  RecordingRenderer before;
+  drawScene(scene, before);
+
+  GraphScene::DetachedActor detached = scene.detach(fluir::FullID{1, 11});
+  ASSERT_NE(detached.actor, nullptr);
+  EXPECT_TRUE(scene.attach(std::move(detached)));
+
+  EXPECT_NE(scene.find(1, 11), nullptr);
+
+  scene.layout(kCtx);
+  RecordingRenderer after;
+  drawScene(scene, after);
+  EXPECT_EQ(after.calls, before.calls);  // same primitives, same order
+}
+
+TEST(SceneDetach, DetachingAnUnknownIdYieldsNothing) {
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  EXPECT_EQ(scene.detach(fluir::FullID{1, 999}).actor, nullptr);
+  EXPECT_EQ(scene.detach(fluir::FullID{999}).actor, nullptr);
+  EXPECT_NE(scene.find(1, 10), nullptr);
+}
+
+TEST(SceneDetach, DetachingAFrameTakesItsBodyWithIt) {
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  GraphScene::DetachedActor detached = scene.detach(fluir::FullID{1});
+  ASSERT_NE(detached.actor, nullptr);
+  EXPECT_EQ(scene.find(1), nullptr);
+  EXPECT_EQ(scene.find(1, 10), nullptr);
+
+  scene.layout(kCtx);
+  RecordingRenderer after;
+  drawScene(scene, after);
+  EXPECT_TRUE(testutil::fillsOf(after.calls).empty());
+
+  EXPECT_TRUE(scene.attach(std::move(detached)));
+  EXPECT_NE(scene.find(1), nullptr);
+  EXPECT_NE(scene.find(1, 10), nullptr);
+}

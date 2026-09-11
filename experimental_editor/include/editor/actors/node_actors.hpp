@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
@@ -16,8 +17,12 @@ namespace fluir::editor {
 
     void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
-    const fluir::FlowGraphLocation& location() const override { return node_.location; }
+    using NodeActor::location;
+    fluir::FlowGraphLocation* location() override { return &node_.location; }
     pt::Node node() const override { return node_; }
+
+    std::vector<int> clearOperands(fluir::ID nodeId) override;
+    void restoreOperand(int slot, fluir::ID nodeId) override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -36,8 +41,12 @@ namespace fluir::editor {
 
     void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
-    const fluir::FlowGraphLocation& location() const override { return node_.location; }
+    using NodeActor::location;
+    fluir::FlowGraphLocation* location() override { return &node_.location; }
     pt::Node node() const override { return node_; }
+
+    std::vector<int> clearOperands(fluir::ID nodeId) override;
+    void restoreOperand(int slot, fluir::ID nodeId) override;
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -56,7 +65,8 @@ namespace fluir::editor {
 
     void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
-    const fluir::FlowGraphLocation& location() const override { return node_.location; }
+    using NodeActor::location;
+    fluir::FlowGraphLocation* location() override { return &node_.location; }
     pt::Node node() const override { return node_; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
@@ -76,7 +86,8 @@ namespace fluir::editor {
 
     void onClick(Vec2 position) override;
     PortSet ports(const EditorContext& ctx) const override;
-    const fluir::FlowGraphLocation& location() const override { return node_.location; }
+    using NodeActor::location;
+    fluir::FlowGraphLocation* location() override { return &node_.location; }
     pt::Node node() const override { return node_; }
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }

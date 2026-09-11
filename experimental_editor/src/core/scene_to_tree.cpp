@@ -14,7 +14,7 @@ namespace fluir::editor {
     pt::FunctionDecl functionOf(const FunctionDeclActor& frame) {
       pt::FunctionDecl fn;
       fn.id = frame.functionId();
-      fn.location = frame.location();
+      fn.location = *frame.location();
       fn.name = frame.name();
 
       pt::FunctionDecl::InputBlock input;

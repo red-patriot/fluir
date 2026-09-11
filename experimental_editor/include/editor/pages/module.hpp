@@ -38,7 +38,6 @@ namespace fluir::editor {
     void afterUpdate() override { scene_.layout(ctx_); }
 
    private:
-    std::optional<fluir::pt::ParseTree> tree_;
     pt::Header fileHeader_; /**< document state, with no home in the actor tree */
     GraphScene scene_;
     HeaderBar header_;
@@ -51,7 +50,6 @@ namespace fluir::editor {
 
     void onSave();
     void onSaveAs();
-    void syncTreeFromScene();
     void deleteSelection();
     bool saveToPath(const std::filesystem::path& path);
   };

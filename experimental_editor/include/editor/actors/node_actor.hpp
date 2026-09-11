@@ -3,6 +3,7 @@
 #include <optional>
 #include <utility>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/actors/actor.hpp"
@@ -23,6 +24,9 @@ namespace fluir::editor {
     /** This node's body-local location (grid units); the DragHandle mutates it,
      *  and `layout` re-derives `bounds()` from it. */
     virtual const fluir::FlowGraphLocation& location() const = 0;
+
+    /** This actor's node, as the parse tree would represent it. */
+    virtual pt::Node node() const = 0;
 
     void layout(const EditorContext& ctx) override;
     bool onDragStart(const EditorContext& ctx, Vec2 position) override;

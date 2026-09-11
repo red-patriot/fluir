@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <utility>
 
+#include "editor/actors/function_decl_actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
@@ -23,10 +24,20 @@ namespace fluir::editor {
       body.renderer().fillRect(body.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
     }
 
+    // The nearest FunctionDeclActor ancestor owns the port registry a conduit resolves through.
+    const FunctionDeclActor* enclosingFrame(const Actor* actor) {
+      for (const Actor* a = actor; a != nullptr; a = a->parent()) {
+        if (const auto* frame = dynamic_cast<const FunctionDeclActor*>(a)) {
+          return frame;
+        }
+      }
+      return nullptr;
+    }
+
   }  // namespace
 
   ParameterActor::ParameterActor(const pt::FunctionDecl::Parameter& param, std::size_t row) :
-    PortActor(param.id, Rect{}), label_(param.typeName + " " + param.name), row_(row) { }
+    PortActor(param.id, Rect{}), param_(param), row_(row) { }
 
   void ParameterActor::layout(const EditorContext& ctx) {
     setBounds(Rect{0.0, static_cast<double>(row_) * ctx.layout.railStep(), ctx.layout.paramW(), ctx.layout.railStep()});
@@ -39,10 +50,10 @@ namespace fluir::editor {
   }
 
   void ParameterActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
-    drawRail(body, ctx, bounds(), label_, ports(ctx).outputs.front());
+    drawRail(body, ctx, bounds(), param_.typeName + " " + param_.name, ports(ctx).outputs.front());
   }
 
-  ReturnActor::ReturnActor(const pt::FunctionDecl::Return& ret) : PortActor(ret.id, Rect{}), typeName_(ret.typeName) { }
+  ReturnActor::ReturnActor(const pt::FunctionDecl::Return& ret) : PortActor(ret.id, Rect{}), ret_(ret) { }
 
   void ReturnActor::layout(const EditorContext& ctx) {
     setBounds(Rect{(static_cast<double>(frameWidthUnits_) - ctx.layout.returnInsetUnits) * ctx.layout.unitPx,
@@ -58,22 +69,47 @@ namespace fluir::editor {
   }
 
   void ReturnActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
-    drawRail(body, ctx, bounds(), typeName_, ports(ctx).inputs.front());
+    drawRail(body, ctx, bounds(), ret_.typeName, ports(ctx).inputs.front());
   }
 
-  ConduitActor::ConduitActor(PortActor& source, std::vector<Target> targets) :
-    Actor(Rect{}), source_(&source), targets_(std::move(targets)) { }
+  ConduitActor::ConduitActor(fluir::ID functionId, const pt::Conduit& conduit) :
+    Actor(Rect{}), functionId_(functionId), id_(conduit.id), index_(conduit.index), sourceId_(conduit.input) {
+    targets_.reserve(conduit.children.size());
+    for (const pt::Conduit::Output& child : conduit.children) {
+      targets_.push_back({child.target, child.index});
+    }
+  }
+
+  pt::Conduit ConduitActor::conduit() const {
+    pt::Conduit conduit{.id = id_, .input = sourceId_, .index = index_, .children = {}};
+    conduit.children.reserve(targets_.size());
+    for (const Endpoint& target : targets_) {
+      conduit.children.push_back({.target = target.target, .index = target.index});
+    }
+    return conduit;
+  }
 
   void ConduitActor::layout(const EditorContext& ctx) {
     lines_.clear();
-    const PortSet sourcePorts = source_->ports(ctx);
+    // Endpoints are ids, resolved late: an id naming nothing is a gap in the drawing.
+    const FunctionDeclActor* frame = enclosingFrame(this);
+    const PortActor* sourceActor = frame == nullptr ? nullptr : frame->port(sourceId_);
+    if (sourceActor == nullptr) {
+      setBounds(Rect{});
+      return;
+    }
+    const PortSet sourcePorts = sourceActor->ports(ctx);
     if (sourcePorts.outputs.empty()) {
       setBounds(Rect{});
       return;
     }
     const Vec2 source = sourcePorts.outputs.front();
-    for (const Target& target : targets_) {
-      const PortSet targetPorts = target.actor->ports(ctx);
+    for (const Endpoint& target : targets_) {
+      const PortActor* targetActor = frame->port(target.target);
+      if (targetActor == nullptr) {
+        continue;
+      }
+      const PortSet targetPorts = targetActor->ports(ctx);
       if (target.index < 0 || static_cast<std::size_t>(target.index) >= targetPorts.inputs.size()) {
         continue;
       }

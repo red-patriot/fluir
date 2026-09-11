@@ -1,7 +1,9 @@
 #include "editor/actors/scene.hpp"
 
+#include <cstddef>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -14,9 +16,11 @@
 #include "editor/actors/function_decl_actor.hpp"
 #include "editor/actors/node_actor.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/actors/rail_actors.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/layer.hpp"
 #include "editor/core/loader.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
@@ -39,15 +43,23 @@ namespace {
   using fluir::editor::Actor;
   using fluir::editor::BinaryActor;
   using fluir::editor::CallActor;
+  using fluir::editor::ConduitActor;
   using fluir::editor::ConstantActor;
   using fluir::editor::EditorContext;
   using fluir::editor::FunctionDeclActor;
   using fluir::editor::GraphScene;
+  using fluir::editor::Layer;
   using fluir::editor::NodeActor;
+  using fluir::editor::ParameterActor;
   using fluir::editor::Rect;
+  using fluir::editor::ReturnActor;
   using fluir::editor::UnaryActor;
   using fluir::editor::Vec2;
+  using fluir::editor::Viewport;
+  using testutil::countOf;
+  using testutil::DrawCall;
   using testutil::expectRectNear;
+  using testutil::RecordingRenderer;
 
   const EditorContext kCtx;
 
@@ -107,6 +119,38 @@ namespace {
     call.location = FlowGraphLocation{.x = x, .y = y, .z = z, .width = w, .height = h};
     call.target = "add";
     return call;
+  }
+
+  fluir::pt::Conduit makeConduit(ID id, ID input, std::vector<fluir::pt::Conduit::Output> children) {
+    fluir::pt::Conduit conduit;
+    conduit.id = id;
+    conduit.input = input;
+    conduit.index = 0;
+    conduit.children = std::move(children);
+    return conduit;
+  }
+
+  // Draws `scene` through one Layer, the same path ModulePage uses.
+  void drawScene(const GraphScene& scene, RecordingRenderer& r) {
+    Layer layer;
+    layer.setRoot(scene.root());
+    layer.setViewport(Viewport{});
+    layer.draw(r, kCtx, Rect{0, 0, r.outputSize().x, r.outputSize().y});
+  }
+
+  // Every ConduitActor hanging off function `functionId`'s body.
+  std::size_t conduitCount(const GraphScene& scene, ID functionId) {
+    const auto* frame = dynamic_cast<const FunctionDeclActor*>(scene.find(functionId));
+    if (frame == nullptr) {
+      return 0;
+    }
+    std::size_t count = 0;
+    for (const auto& child : frame->body().children()) {
+      if (dynamic_cast<const ConduitActor*>(child.get()) != nullptr) {
+        ++count;
+      }
+    }
+    return count;
   }
 
 }  // namespace
@@ -394,4 +438,102 @@ TEST(SceneBounds, ReflectsAFrameDragWithoutASave) {
   scene.layout(kCtx);
 
   expectRectNear(scene.worldBounds(), Rect{150, 100, 500, 500});
+}
+
+// Conduits resolve their endpoints by id at layout time, so an endpoint the file
+// leaves dangling is a drawing gap, never a dropped conduit.
+
+TEST(Scene, ConduitWithUnresolvedSourceDrawsNoLine) {
+  fluir::pt::Block body;
+  body.nodes.emplace(30, makeBinary(30, 10, 1, 1, 5, 5));
+  body.conduits.emplace(40, makeConduit(40, 999, {{.target = 30, .index = 0}}));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  EXPECT_EQ(conduitCount(scene, 1), 1u);
+
+  RecordingRenderer r;
+  drawScene(scene, r);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
+}
+
+TEST(Scene, ConduitDrawsOnlyItsResolvableTargets) {
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+  body.nodes.emplace(30, makeBinary(30, 10, 1, 1, 5, 5));
+  body.conduits.emplace(40, makeConduit(40, 10, {{.target = 30, .index = 0}, {.target = 999, .index = 0}}));
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  EXPECT_EQ(conduitCount(scene, 1), 1u);
+
+  RecordingRenderer r;
+  drawScene(scene, r);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 1u);
+}
+
+// The actor tree must retain everything the writer needs, so the parse tree can
+// be regenerated from it rather than kept alive alongside it.
+
+TEST(SceneRetention, NodeActorsReturnTheirParseTreeNode) {
+  const fluir::pt::Binary binary = makeBinary(30, 1, 1, 1, 2, 2);
+  const fluir::pt::Unary unary = makeUnary(31, 10, 1, 1, 2, 2);
+  const fluir::pt::Constant constant = makeConstant(32, 20, 1, 1, 2, 2);
+  fluir::pt::Call call = makeCall(33, 30, 1, 1, 2, 2);
+  call._return = fluir::pt::Call::Return{};
+  call.arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}};
+
+  fluir::pt::Block body;
+  body.nodes.emplace(30, binary);
+  body.nodes.emplace(31, unary);
+  body.nodes.emplace(32, constant);
+  body.nodes.emplace(33, call);
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 300, 100, std::move(body))));
+
+  EXPECT_EQ(dynamic_cast<NodeActor*>(scene.find(1, 30))->node(), fluir::pt::Node{binary});
+  EXPECT_EQ(dynamic_cast<NodeActor*>(scene.find(1, 31))->node(), fluir::pt::Node{unary});
+  EXPECT_EQ(dynamic_cast<NodeActor*>(scene.find(1, 32))->node(), fluir::pt::Node{constant});
+  EXPECT_EQ(dynamic_cast<NodeActor*>(scene.find(1, 33))->node(), fluir::pt::Node{call});
+}
+
+TEST(SceneRetention, RailActorsKeepNameAndTypeApart) {
+  fluir::pt::FunctionDecl fn = makeFunction(1, 100, 100, fluir::pt::Block{});
+  fn.input = fluir::pt::FunctionDecl::InputBlock{{{.id = 5, .index = 0, .name = "lhs", .typeName = "i32"}}};
+  fn.output = fluir::pt::FunctionDecl::OutputBlock{fluir::pt::FunctionDecl::Return{.id = 6, .typeName = "i32"}};
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(fn));
+
+  const auto* frame = dynamic_cast<const FunctionDeclActor*>(scene.find(1));
+  ASSERT_NE(frame, nullptr);
+  EXPECT_EQ(frame->name(), "f");
+
+  const auto* param = dynamic_cast<const ParameterActor*>(frame->port(5));
+  ASSERT_NE(param, nullptr);
+  EXPECT_EQ(param->parameter(), fn.input->parameters.front());
+
+  const auto* ret = dynamic_cast<const ReturnActor*>(frame->port(6));
+  ASSERT_NE(ret, nullptr);
+  EXPECT_EQ(ret->ret(), *fn.output->ret);
+}
+
+TEST(SceneRetention, ConduitActorIsNamedByItsIdAndRetainsItsConduit) {
+  const fluir::pt::Conduit conduit = makeConduit(40, 10, {{.target = 30, .index = 1}});
+
+  fluir::pt::Block body;
+  body.nodes.emplace(10, makeConstant(10, 1, 1, 1, 5, 5));
+  body.nodes.emplace(30, makeBinary(30, 10, 1, 1, 5, 5));
+  body.conduits.emplace(40, conduit);
+
+  GraphScene scene;
+  scene.build(kCtx, singleFunctionTree(makeFunction(1, 100, 100, std::move(body))));
+
+  const auto* actor = dynamic_cast<const ConduitActor*>(scene.find(1, 40));
+  ASSERT_NE(actor, nullptr);
+  EXPECT_EQ(actor->selectionId(), (fluir::FullID{1, 40}));
+  EXPECT_EQ(actor->conduit(), conduit);
 }

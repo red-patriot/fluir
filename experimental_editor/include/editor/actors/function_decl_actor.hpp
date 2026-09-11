@@ -2,11 +2,13 @@
 
 #include <optional>
 #include <string>
+#include <unordered_map>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/actors/actor.hpp"
+#include "editor/actors/port_actor.hpp"
 #include "editor/actors/rail_actors.hpp"
 #include "editor/components/container_actor.hpp"
 #include "editor/components/drag_handle.hpp"
@@ -26,6 +28,7 @@ namespace fluir::editor {
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
 
     fluir::ID functionId() const { return functionId_; }
+    const std::string& name() const { return name_; }
 
     std::optional<fluir::FullID> selectionId() const override { return fluir::FullID{functionId_}; }
     const FlowGraphLocation& location() const { return location_; }
@@ -37,6 +40,10 @@ namespace fluir::editor {
 
     ContainerActor& body() { return *body_; }
     const ContainerActor& body() const { return *body_; }
+
+    /** The port `portId` names within this function, or nullptr. */
+    PortActor* port(fluir::ID portId) const;
+    void registerPort(PortActor& port) { ports_[port.portId()] = &port; }
 
    protected:
     void drawSelf(const Subview& parentView, const EditorContext& ctx) const override;
@@ -51,6 +58,8 @@ namespace fluir::editor {
     DragHandle drag_;
     ContainerActor* body_;
     ReturnActor* return_ = nullptr;
+    // Conduit endpoints are body-scope ids; the frame owns the body, so it owns the lookup.
+    std::unordered_map<fluir::ID, PortActor*> ports_;
     std::string lastClickSummary_;
   };
 

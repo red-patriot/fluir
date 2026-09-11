@@ -47,6 +47,7 @@ namespace fluir::editor {
       return 1;
     }
     tree_ = *result.tree;
+    fileHeader_ = result.tree->header;
     scene_.build(ctx_, *tree_);
 
     graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
@@ -77,6 +78,7 @@ namespace fluir::editor {
   void ModulePage::reset() {
     graph_.setViewport(Viewport{});
     tree_.reset();
+    fileHeader_ = pt::Header{};
     scene_.clear();
     graph_.reset();
     hud_.reset();

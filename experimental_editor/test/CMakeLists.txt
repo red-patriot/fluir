@@ -15,6 +15,7 @@ add_executable(
     function_decl_drag.test.cpp
     button_actor.test.cpp
     scene.test.cpp
+    scene_to_tree.test.cpp
     module.test.cpp
     header_bar.test.cpp
     splash.test.cpp

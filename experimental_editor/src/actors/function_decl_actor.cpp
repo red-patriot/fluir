@@ -29,6 +29,11 @@ namespace fluir::editor {
     Actor::layout(ctx);
   }
 
+  PortActor* FunctionDeclActor::port(fluir::ID portId) const {
+    const auto it = ports_.find(portId);
+    return it == ports_.end() ? nullptr : it->second;
+  }
+
   void FunctionDeclActor::onClick(Vec2) { lastClickSummary_ = fmt::format("function {}", name_); }
 
   bool FunctionDeclActor::onDragStart(const EditorContext& ctx, Vec2 position) {

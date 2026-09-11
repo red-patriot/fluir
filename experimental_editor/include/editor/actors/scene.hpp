@@ -56,7 +56,7 @@ namespace fluir::editor {
     /** Topmost (last-painted) actor containing worldPos, or nullptr. */
     Actor* topmostAt(Vec2 worldPos) const;
 
-    /** Actor owning node `nodeId` in function `functionId`, or nullptr. */
+    /** Actor named `nodeId` -- a node or a conduit -- in function `functionId`, or nullptr. */
     Actor* find(fluir::ID functionId, fluir::ID nodeId) const;
 
     /** Actor owning function `functionId`'s frame, or nullptr. */
@@ -75,7 +75,7 @@ namespace fluir::editor {
 
     // The root spans the whole world: it must not clip or offset its frames.
     std::unique_ptr<ContainerActor> root_ = std::make_unique<ContainerActor>(Rect{0, 0, 0, 0}, Actor::ClipChildren::No);
-    std::unordered_map<fluir::FullID, NodeActor*, detail::FullIDHash> byId_;
+    std::unordered_map<fluir::FullID, Actor*, detail::FullIDHash> byId_;
     std::unordered_map<fluir::ID, FunctionDeclActor*> frames_;
     std::optional<fluir::FullID> selected_;
   };

@@ -39,6 +39,7 @@ namespace fluir::editor {
 
    private:
     std::optional<fluir::pt::ParseTree> tree_;
+    pt::Header fileHeader_; /**< document state, with no home in the actor tree */
     GraphScene scene_;
     HeaderBar header_;
     Layer hud_;   /**< screen space; wins over the graph */

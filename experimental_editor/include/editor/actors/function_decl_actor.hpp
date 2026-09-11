@@ -26,6 +26,8 @@ namespace fluir::editor {
     void onClick(Vec2 position) override;
     bool onDragStart(const EditorContext& ctx, Vec2 position) override;
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
+    void onDragEnd(const EditorContext& ctx, Vec2 position) override;
+    void onDragCancel() override;
 
     fluir::ID functionId() const { return functionId_; }
     const std::string& name() const { return name_; }

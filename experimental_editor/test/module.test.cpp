@@ -865,3 +865,27 @@ TEST(ModulePage, UndoOfADragDoesNotDisturbTheSelection) {
   ASSERT_TRUE(page.scene().selected().has_value());
   EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1, 1}));
 }
+
+TEST(ModulePage, UndoingADeleteMadeDuringADragRestoresTheOriginalPosition) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // Deleting mid-gesture must drop the preview, not leave it to reappear on undo.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  page.update({mouseDown(InputEvent::Button::Left, grip), mouseMove(v.worldToScreen(kOnDragHandle + Vec2{50, 0}))});
+  page.update({deleteKey()});
+  ASSERT_EQ(page.scene().find(1, 1), nullptr);
+
+  ASSERT_TRUE(page.editor().undo());
+  page.scene().layout(ctx);
+
+  ASSERT_NE(page.scene().find(1, 1), nullptr);
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds(), kActorWorldRect);
+}

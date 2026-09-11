@@ -1,3 +1,5 @@
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -7,10 +9,12 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/actors/node_actors.hpp"
+#include "editor/actors/scene.hpp"
 #include "editor/components/drag_handle.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/transaction/transaction.hpp"
 #include "recording_renderer.hpp"
 
 namespace {
@@ -20,8 +24,10 @@ namespace {
   using fluir::Operator;
   using fluir::editor::BinaryActor;
   using fluir::editor::EditorContext;
+  using fluir::editor::GraphScene;
   using fluir::editor::Rect;
   using fluir::editor::Subview;
+  using fluir::editor::Transaction;
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
   using testutil::hasFill;
@@ -56,6 +62,25 @@ namespace {
     return renderer.calls;
   }
 
+  // A scene holding exactly the node the bare actor stands for, so an edit the
+  // actor raises can be applied and read back.
+  fluir::pt::ParseTree makeTree(FlowGraphLocation loc = kNodeLoc) {
+    fluir::pt::Constant constant;
+    constant.id = 1;
+    constant.location = loc;
+    constant.value = fluir::literals_types::I32{0};
+
+    fluir::pt::FunctionDecl fn;
+    fn.id = kFunctionId;
+    fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(constant.id, constant);
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(fn.id, fluir::pt::Declaration{fn});
+    return tree;
+  }
+
 }  // namespace
 
 // handle span = min(3 * unitPx(5), w, h) = min(15, 25, 25) = 15, anchored at
@@ -69,7 +94,7 @@ TEST(NodeDrag, OnDragStartClaimsOnlyOnHandle) {
   EXPECT_FALSE(actor.onDragStart(ctx, Vec2{100, 100}));  // off the node entirely
 }
 
-TEST(NodeDrag, OnDragGridSnapsLocationAndBounds) {
+TEST(NodeDrag, OnDragGridSnapsBounds) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
@@ -137,4 +162,75 @@ TEST(NodeDrag, HandleBlockFitsWithinNode) {
   EXPECT_TRUE(hasFill(calls, handle));
   // The pre-refactor handle was a square anchored at the node's top-left corner.
   EXPECT_FALSE(hasFill(calls, Rect{0, 0, 15, 15}));
+}
+
+TEST(NodeDrag, ADragLeavesTheModelUntouchedUntilRelease) {
+  BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
+  EditorContext ctx;
+
+  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
+  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});  // 10px -> 2 grid units
+  actor.layout(ctx);
+
+  EXPECT_EQ(actor.bounds().x, 10.0) << "the preview moves on screen";
+  EXPECT_EQ(actor.location()->x, 0) << "the model only moves on commit";
+}
+
+TEST(NodeDrag, ReleaseRaisesOneMoveForTheWholeGesture) {
+  BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
+  EditorContext ctx;
+  std::vector<std::unique_ptr<Transaction>> edits;
+  ctx.commit = [&](std::unique_ptr<Transaction> edit) {
+    edits.push_back(std::move(edit));
+    return true;
+  };
+
+  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
+  actor.onDrag(ctx, Vec2{}, Vec2{5, 0});
+  actor.onDrag(ctx, Vec2{}, Vec2{5, 5});
+  actor.onDragEnd(ctx, Vec2{});
+
+  ASSERT_EQ(edits.size(), 1u);
+
+  GraphScene scene;
+  scene.build(ctx, makeTree());
+  ASSERT_TRUE(edits[0]->execute(scene));
+  const fluir::FlowGraphLocation* moved = scene.find(kFunctionId, 1)->location();
+  ASSERT_NE(moved, nullptr);
+  EXPECT_EQ(moved->x, 2);
+  EXPECT_EQ(moved->y, 1);
+}
+
+TEST(NodeDrag, AReleaseThatMovedNothingRaisesNoEdit) {
+  BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
+  EditorContext ctx;
+  std::vector<std::unique_ptr<Transaction>> edits;
+  ctx.commit = [&](std::unique_ptr<Transaction> edit) {
+    edits.push_back(std::move(edit));
+    return true;
+  };
+
+  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
+  actor.onDrag(ctx, Vec2{}, Vec2{3, 3});  // sub-grid: nothing moved
+  actor.onDragEnd(ctx, Vec2{});
+
+  EXPECT_TRUE(edits.empty());
+}
+
+TEST(NodeDrag, CancelDropsThePreview) {
+  BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
+  EditorContext ctx;
+  std::vector<std::unique_ptr<Transaction>> edits;
+  ctx.commit = [&](std::unique_ptr<Transaction> edit) {
+    edits.push_back(std::move(edit));
+    return true;
+  };
+
+  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
+  actor.onDrag(ctx, Vec2{}, Vec2{10, 10});
+  actor.onDragCancel();
+  actor.layout(ctx);
+
+  EXPECT_EQ(actor.bounds(), (Rect{0, 0, 25, 25}));
+  EXPECT_TRUE(edits.empty());
 }

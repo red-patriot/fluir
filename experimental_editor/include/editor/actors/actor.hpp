@@ -149,6 +149,9 @@ namespace fluir::editor {
     /** Called once on MouseUp, ending a claimed drag. */
     virtual void onDragEnd(const EditorContext& ctx, Vec2 position) { }
 
+    /** Called when a claimed drag is dropped without a MouseUp. */
+    virtual void onDragCancel() { }
+
     /** Draws this actor into its parent's view, then its children into a nested
      *  view anchored (and clipped) to `bounds()`. */
     void draw(const Subview& parentView, const EditorContext& ctx) const {

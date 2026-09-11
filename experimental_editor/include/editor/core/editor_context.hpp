@@ -2,7 +2,11 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <functional>
+#include <memory>
 #include <optional>
+
+#include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
 
@@ -62,12 +66,18 @@ namespace fluir::editor {
       int height = 800;
     };
 
+    /** Raises a scene edit. Unset outside a live ModulePage, where edits are dropped. */
+    using TransactionSink = std::function<bool(std::unique_ptr<Transaction>)>;
+
     Layout layout;
     Zoom zoom;
     Theme theme;
     Window window;
     bool running = true;
     std::optional<std::filesystem::path> program;
+    TransactionSink commit;
+
+    bool dispatch(std::unique_ptr<Transaction> edit) const { return commit && commit(std::move(edit)); }
   };
 
 }  // namespace fluir::editor

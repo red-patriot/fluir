@@ -18,6 +18,7 @@ namespace fluir::editor {
   class ModulePage : public Page {
    public:
     ModulePage(EditorContext& ctx, Renderer& renderer);
+    ~ModulePage() override;
 
     std::unique_ptr<Page> next() override;
 

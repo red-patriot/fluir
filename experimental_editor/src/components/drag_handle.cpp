@@ -1,6 +1,9 @@
 #include "editor/components/drag_handle.hpp"
 
+#include <memory>
+
 #include "editor/core/renderer.hpp"
+#include "editor/transaction/move.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -20,10 +23,12 @@ namespace fluir::editor {
                                const FlowGraphLocation& loc,
                                const Rect& nodeRect) {
     accumulator_ = {};
+    dx_ = 0;
+    dy_ = 0;
     return handleBox(nodeRect, loc, ctx).contains(parentLocalPos);
   }
 
-  void DragHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta, FlowGraphLocation& loc) {
+  void DragHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta) {
     accumulator_ = accumulator_ + worldDelta;
     const double unit = ctx.layout.unitPx;
     const int dx = static_cast<int>(accumulator_.x / unit);
@@ -33,8 +38,28 @@ namespace fluir::editor {
     }
     accumulator_.x -= dx * unit;  // keep only the sub-unit remainder
     accumulator_.y -= dy * unit;
-    loc.x += dx;
-    loc.y += dy;
+    dx_ += dx;
+    dy_ += dy;
+  }
+
+  FlowGraphLocation DragHandle::preview(const FlowGraphLocation& loc) const {
+    FlowGraphLocation out = loc;
+    out.x += dx_;
+    out.y += dy_;
+    return out;
+  }
+
+  void DragHandle::commit(const EditorContext& ctx, const FlowGraphLocation& loc, const fluir::FullID& id) {
+    if (dx_ != 0 || dy_ != 0) {
+      ctx.dispatch(std::make_unique<MoveTransaction>(id, loc.x + dx_, loc.y + dy_));
+    }
+    cancel();
+  }
+
+  void DragHandle::cancel() {
+    accumulator_ = {};
+    dx_ = 0;
+    dy_ = 0;
   }
 
   void DragHandle::draw(const Subview& view,

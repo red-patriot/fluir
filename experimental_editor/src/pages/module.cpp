@@ -17,7 +17,7 @@
 #include "editor/core/scene_to_tree.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/transaction/delete.hpp"
-#include "editor/transaction/move.hpp"
+#include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
@@ -31,26 +31,19 @@ namespace fluir::editor {
     // After PanZoom so a Space+Left pan does not select; before Drag so a press
     // on a node's grip still selects it.
     graph_.add(std::make_unique<SelectionInteraction>(editor_.scene()));
-    // The drag already wrote the final position, so put the node back and let
-    // MoveTransaction swap it forward -- a gesture that changed nothing is then
-    // a no-op the editor drops.
-    graph_.add(std::make_unique<DragInteraction>([this](const fluir::FullID& id, int startX, int startY) {
-      Actor* actor = editor_.scene().find(id);
-      FlowGraphLocation* location = actor != nullptr ? actor->location() : nullptr;
-      if (location == nullptr) {
-        return;
-      }
-      const int finalX = location->x;
-      const int finalY = location->y;
-      location->x = startX;
-      location->y = startY;
-      editor_.apply(std::make_unique<MoveTransaction>(id, finalX, finalY));
-    }));
+    graph_.add(std::make_unique<DragInteraction>());
     graph_.add(std::make_unique<ClickInteraction>());
   }
 
+  // The context outlives this page and is shared with the next one, so the sink
+  // must not be left pointing here.
+  ModulePage::~ModulePage() { ctx_.commit = nullptr; }
+
   int ModulePage::onStart() {
     reset();
+    // Installed here, not in the ctor: run() builds the next page before it
+    // destroys this one, so a ctor install would be wiped by the outgoing dtor.
+    ctx_.commit = [this](std::unique_ptr<Transaction> edit) { return editor_.apply(std::move(edit)); };
     fluir::Context cctx{
       .currentFile = *ctx_.program,  // TODO: Handle no program
       .ignoreVersionChecks = true,
@@ -108,11 +101,10 @@ namespace fluir::editor {
     if (!selected) {
       return;
     }
-    if (!editor_.apply(std::make_unique<DeleteTransaction>(*selected))) {
-      return;
-    }
-    // The detach frees the actors, in-flight gestures pointing at them included.
+    // The detach frees the actors, so in-flight gestures pointing at them must
+    // be dropped first -- an abandoned drag preview included.
     graph_.reset();
+    ctx_.dispatch(std::make_unique<DeleteTransaction>(*selected));
   }
 
   bool ModulePage::saveToPath(const std::filesystem::path& path) {

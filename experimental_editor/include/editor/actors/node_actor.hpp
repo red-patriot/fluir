@@ -22,8 +22,8 @@ namespace fluir::editor {
 
     std::optional<fluir::FullID> selectionId() const override { return id_; }
 
-    /** This node's body-local location (grid units); the DragHandle mutates it,
-     *  and `layout` re-derives `bounds()` from it. */
+    /** This node's body-local location (grid units); `layout` re-derives
+     *  `bounds()` from it, shifted by any uncommitted drag preview. */
     using Actor::location;  // the const overload, hidden by the override below
     fluir::FlowGraphLocation* location() override = 0;
 
@@ -39,6 +39,8 @@ namespace fluir::editor {
     void layout(const EditorContext& ctx) override;
     bool onDragStart(const EditorContext& ctx, Vec2 position) override;
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
+    void onDragEnd(const EditorContext& ctx, Vec2 position) override;
+    void onDragCancel() override;
 
    protected:
     DragHandle drag_;

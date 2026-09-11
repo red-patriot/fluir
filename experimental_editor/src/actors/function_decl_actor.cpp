@@ -20,7 +20,7 @@ namespace fluir::editor {
     body_(&add(std::make_unique<ContainerActor>(Rect{0, 0, bounds.w, bounds.h}))) { }
 
   void FunctionDeclActor::layout(const EditorContext& ctx) {
-    const Rect frame = localRect(location_, ctx.layout.unitPx);
+    const Rect frame = localRect(drag_.preview(location_), ctx.layout.unitPx);
     setBounds(frame);
     body_->setBounds(Rect{0, ctx.layout.headerH(), frame.w, frame.h});
     if (return_ != nullptr) {
@@ -40,7 +40,13 @@ namespace fluir::editor {
     return drag_.onDragStart(ctx, position, location_, headerRect(ctx));
   }
 
-  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) { drag_.onDrag(ctx, delta, location_); }
+  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) { drag_.onDrag(ctx, delta); }
+
+  void FunctionDeclActor::onDragEnd(const EditorContext& ctx, Vec2) {
+    drag_.commit(ctx, location_, fluir::FullID{functionId_});
+  }
+
+  void FunctionDeclActor::onDragCancel() { drag_.cancel(); }
 
   Rect FunctionDeclActor::headerRect(const EditorContext& ctx) const {
     return Rect{bounds().x, bounds().y, bounds().w, ctx.layout.headerH()};

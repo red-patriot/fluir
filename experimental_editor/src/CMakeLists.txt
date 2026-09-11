@@ -77,6 +77,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/interaction.cpp"
     "core/layer.cpp"
     "core/loader.cpp"
+    "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
     "core/scene_to_tree.cpp"
     "core/tree_edit.cpp"

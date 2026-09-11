@@ -25,11 +25,11 @@ namespace fluir::editor {
     hud_.setRoot(header_);
     hud_.add(std::make_unique<ClickInteraction>());
 
-    graph_.setRoot(scene_.root());
+    graph_.setRoot(editor_.scene().root());
     graph_.add(std::make_unique<PanZoomInteraction>());
     // After PanZoom so a Space+Left pan does not select; before Drag so a press
     // on a node's grip still selects it.
-    graph_.add(std::make_unique<SelectionInteraction>(scene_));
+    graph_.add(std::make_unique<SelectionInteraction>(editor_.scene()));
     graph_.add(std::make_unique<DragInteraction>());
     graph_.add(std::make_unique<ClickInteraction>());
   }
@@ -48,16 +48,16 @@ namespace fluir::editor {
       return 1;
     }
     fileHeader_ = result.tree->header;
-    scene_.build(ctx_, *result.tree);  // the tree is a load format; the scene is the model
+    editor_.scene().build(ctx_, *result.tree);  // the tree is a load format; the scene is the model
 
-    graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
+    graph_.viewport().fitRect(editor_.scene().worldBounds(), renderer_.outputSize());
     return 0;  // Page::start() lays the chrome out via onResize().
   }
 
   bool ModulePage::onAppEvent(const InputEvent& event) {
     // Space is a pan modifier, not an app command.
     if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::F) {
-      graph_.viewport().fitRect(scene_.worldBounds(), renderer_.outputSize());
+      graph_.viewport().fitRect(editor_.scene().worldBounds(), renderer_.outputSize());
       return true;
     }
     // Delete is a page command, consumed whether or not anything is selected.
@@ -78,7 +78,7 @@ namespace fluir::editor {
   void ModulePage::reset() {
     graph_.setViewport(Viewport{});
     fileHeader_ = pt::Header{};
-    scene_.clear();
+    editor_.reset();
     graph_.reset();
     hud_.reset();
   }
@@ -89,11 +89,11 @@ namespace fluir::editor {
   }
 
   void ModulePage::deleteSelection() {
-    if (!scene_.selected()) {
+    const auto& selected = editor_.scene().selected();
+    if (!selected) {
       return;
     }
-    DeleteTransaction edit{*scene_.selected()};
-    if (!edit.execute(scene_)) {
+    if (!editor_.apply(std::make_unique<DeleteTransaction>(*selected))) {
       return;
     }
     // The detach frees the actors, in-flight gestures pointing at them included.
@@ -103,7 +103,7 @@ namespace fluir::editor {
   bool ModulePage::saveToPath(const std::filesystem::path& path) {
     std::ofstream ofs(path);
     ParseTreeWriter w(ofs);
-    w.write(sceneToParseTree(scene_, fileHeader_));
+    w.write(sceneToParseTree(editor_.scene(), fileHeader_));
     if (!w.good()) {
       fmt::print(stderr, "save failed: {}\n", path.string());
       return false;

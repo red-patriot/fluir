@@ -4,9 +4,9 @@
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
-#include "editor/actors/scene.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/layer.hpp"
+#include "editor/core/module_editor.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
@@ -24,7 +24,7 @@ namespace fluir::editor {
     // Test-only observability: lets tests verify a Left click actually
     // dispatched to the hit actor (Actor::onClick has no other externally
     // visible effect through this page's API).
-    const GraphScene& scene() const { return scene_; }
+    const GraphScene& scene() const { return editor_.scene(); }
 
     // Test-only observability: lets tests locate/click the header's Exit
     // button without a second parallel exit path through ModulePage's API.
@@ -35,11 +35,11 @@ namespace fluir::editor {
     int onStart() override;
     bool onAppEvent(const InputEvent& event) override;
     void onResize() override { layoutChrome(); }
-    void afterUpdate() override { scene_.layout(ctx_); }
+    void afterUpdate() override { editor_.scene().layout(ctx_); }
 
    private:
     pt::Header fileHeader_; /**< document state, with no home in the actor tree */
-    GraphScene scene_;
+    ModuleEditor editor_;
     HeaderBar header_;
     Layer hud_;   /**< screen space; wins over the graph */
     Layer graph_; /**< world space; owns the pan/zoom viewport */

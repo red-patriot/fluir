@@ -17,6 +17,7 @@ add_executable(
     scene.test.cpp
     scene_to_tree.test.cpp
     module.test.cpp
+    module_editor.test.cpp
     header_bar.test.cpp
     splash.test.cpp
     selection.test.cpp

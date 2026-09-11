@@ -758,3 +758,110 @@ TEST(ModulePage, DeleteOfAConduitSourcePersistsTheConduitRemoval) {
 
   fs::remove(tmp);
 }
+
+TEST(ModulePage, ADragIsRecordedAsOneUndoableEdit) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+  ASSERT_FALSE(page.editor().canUndo());
+
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  const Vec2 gripEnd = v.worldToScreen(kOnDragHandle + Vec2{50, 0});
+  page.update(
+    {mouseDown(InputEvent::Button::Left, grip), mouseMove(gripEnd), mouseUp(InputEvent::Button::Left, gripEnd)});
+
+  EXPECT_TRUE(page.editor().canUndo()) << "the whole gesture is one undoable edit";
+}
+
+TEST(ModulePage, UndoAfterADragRestoresTheOriginalPosition) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  const Vec2 gripEnd = v.worldToScreen(kOnDragHandle + Vec2{50, 0});
+  page.update(
+    {mouseDown(InputEvent::Button::Left, grip), mouseMove(gripEnd), mouseUp(InputEvent::Button::Left, gripEnd)});
+  ASSERT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+
+  ASSERT_TRUE(page.editor().undo());
+  page.scene().layout(ctx);
+
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds(), kActorWorldRect);
+}
+
+TEST(ModulePage, RedoAfterUndoingADragReturnsTheNodeToTheDroppedPosition) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  const Vec2 gripEnd = v.worldToScreen(kOnDragHandle + Vec2{50, 0});
+  page.update(
+    {mouseDown(InputEvent::Button::Left, grip), mouseMove(gripEnd), mouseUp(InputEvent::Button::Left, gripEnd)});
+
+  ASSERT_TRUE(page.editor().undo());
+  ASSERT_TRUE(page.editor().redo());
+  page.scene().layout(ctx);
+
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+}
+
+TEST(ModulePage, ADragThatEndsWhereItStartedRecordsNothing) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  page.update({mouseDown(InputEvent::Button::Left, grip), mouseUp(InputEvent::Button::Left, grip)});
+
+  EXPECT_FALSE(page.editor().canUndo());
+  EXPECT_EQ(page.scene().find(1, 1)->worldBounds(), kActorWorldRect);
+}
+
+TEST(ModulePage, UndoOfADragDoesNotDisturbTheSelection) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  const Vec2 gripEnd = v.worldToScreen(kOnDragHandle + Vec2{50, 0});
+  page.update(
+    {mouseDown(InputEvent::Button::Left, grip), mouseMove(gripEnd), mouseUp(InputEvent::Button::Left, gripEnd)});
+  ASSERT_TRUE(page.scene().selected().has_value());
+
+  ASSERT_TRUE(page.editor().undo());
+
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1, 1}));
+}

@@ -1,9 +1,14 @@
 #include "editor/core/interaction.hpp"
 
 #include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/components/container_actor.hpp"
 #include "editor/core/editor_context.hpp"
@@ -47,6 +52,48 @@ namespace {
     int clicks_ = 0;
   };
 
+  // A draggable actor that also has an id and a position, as a node does.
+  class MovableActor : public DraggableActor {
+   public:
+    MovableActor(Rect bounds, fluir::FullID id, int x, int y) :
+      DraggableActor(bounds), id_(std::move(id)), location_{x, y, 0, 5, 5} { }
+
+    bool onDragStart(const EditorContext& ctx, Vec2 pos) override {
+      return claims_ && DraggableActor::onDragStart(ctx, pos);
+    }
+    void onDrag(const EditorContext& ctx, Vec2 pos, Vec2 delta) override {
+      DraggableActor::onDrag(ctx, pos, delta);
+      location_.x += static_cast<int>(delta.x);
+      location_.y += static_cast<int>(delta.y);
+    }
+    fluir::FlowGraphLocation* location() override { return &location_; }
+    std::optional<fluir::FullID> selectionId() const override { return id_; }
+
+    bool claims_ = true;
+
+   private:
+    fluir::FullID id_;
+    fluir::FlowGraphLocation location_;
+  };
+
+  // Claims a drag but names no position: not a move.
+  class PositionlessActor : public DraggableActor {
+   public:
+    PositionlessActor(Rect bounds, fluir::FullID id) : DraggableActor(bounds), id_(std::move(id)) { }
+
+    std::optional<fluir::FullID> selectionId() const override { return id_; }
+
+   private:
+    fluir::FullID id_;
+  };
+
+  // Records every move the drag interaction reports.
+  struct MoveReport {
+    fluir::FullID id;
+    int startX = 0;
+    int startY = 0;
+  };
+
   // Never claims a drag: a press on it is a plain click.
   class InertActor : public Actor {
    public:
@@ -67,9 +114,9 @@ namespace {
     ContainerActor root{Rect{0, 0, 0, 0}, Actor::ClipChildren::No};
     InteractionChain chain;
 
-    Fixture() {
+    explicit Fixture(DragInteraction::MoveCommit onMoveCommit = {}) {
       chain.add(std::make_unique<PanZoomInteraction>());
-      chain.add(std::make_unique<DragInteraction>());
+      chain.add(std::make_unique<DragInteraction>(std::move(onMoveCommit)));
       chain.add(std::make_unique<ClickInteraction>());
     }
 
@@ -196,4 +243,60 @@ TEST(InteractionChain, ResetDropsCaptureAndActorPointers) {
 
   EXPECT_FALSE(f.send(move(Vec2{30, 10})));
   EXPECT_EQ(node.dragged_, (Vec2{0, 0}));
+}
+
+TEST(DragInteraction, ReportsThePreDragPositionOnRelease) {
+  std::vector<MoveReport> reports;
+  Fixture f{[&](const fluir::FullID& id, int startX, int startY) { reports.push_back({id, startX, startY}); }};
+  auto& node = static_cast<MovableActor&>(
+    f.root.add(std::make_unique<MovableActor>(Rect{0, 0, 50, 50}, fluir::FullID{1, 2}, 7, 9)));
+
+  ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
+  ASSERT_TRUE(f.send(move(Vec2{30, 40})));
+  ASSERT_TRUE(f.send(up(InputEvent::Button::Left, Vec2{30, 40})));
+
+  ASSERT_EQ(reports.size(), 1u);
+  EXPECT_EQ(reports[0].id, (fluir::FullID{1, 2}));
+  EXPECT_EQ(reports[0].startX, 7) << "the reported position is the one held at MouseDown";
+  EXPECT_EQ(reports[0].startY, 9);
+  EXPECT_EQ(node.location()->x, 27) << "the drag itself still wrote the final position";
+}
+
+TEST(DragInteraction, DoesNotReportAGestureTheActorRefused) {
+  std::vector<MoveReport> reports;
+  Fixture f{[&](const fluir::FullID& id, int startX, int startY) { reports.push_back({id, startX, startY}); }};
+  auto& node = static_cast<MovableActor&>(
+    f.root.add(std::make_unique<MovableActor>(Rect{0, 0, 50, 50}, fluir::FullID{1, 2}, 7, 9)));
+  node.claims_ = false;
+
+  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
+  f.send(move(Vec2{30, 40}));
+  f.send(up(InputEvent::Button::Left, Vec2{30, 40}));
+
+  EXPECT_TRUE(reports.empty());
+}
+
+TEST(DragInteraction, DoesNotReportAnActorWithNoLocation) {
+  std::vector<MoveReport> reports;
+  Fixture f{[&](const fluir::FullID& id, int startX, int startY) { reports.push_back({id, startX, startY}); }};
+  f.root.add(std::make_unique<PositionlessActor>(Rect{0, 0, 50, 50}, fluir::FullID{1, 2}));
+
+  ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
+  f.send(move(Vec2{30, 40}));
+  ASSERT_TRUE(f.send(up(InputEvent::Button::Left, Vec2{30, 40})));
+
+  EXPECT_TRUE(reports.empty());
+}
+
+TEST(DragInteraction, ResetCancelsThePendingReport) {
+  std::vector<MoveReport> reports;
+  Fixture f{[&](const fluir::FullID& id, int startX, int startY) { reports.push_back({id, startX, startY}); }};
+  f.root.add(std::make_unique<MovableActor>(Rect{0, 0, 50, 50}, fluir::FullID{1, 2}, 7, 9));
+
+  ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
+  f.send(move(Vec2{30, 40}));
+  f.chain.reset();
+  f.send(up(InputEvent::Button::Left, Vec2{30, 40}));
+
+  EXPECT_TRUE(reports.empty());
 }

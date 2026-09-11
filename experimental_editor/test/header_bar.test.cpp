@@ -9,6 +9,7 @@
 #include "editor/components/toolbar_actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/module_editor.hpp"
 #include "editor/core/viewport.hpp"
 #include "recording_renderer.hpp"
 
@@ -19,6 +20,7 @@ namespace {
 
   using fluir::editor::EditorContext;
   using fluir::editor::HeaderBar;
+  using fluir::editor::ModuleEditor;
   using fluir::editor::Rect;
   using fluir::editor::Subview;
   using fluir::editor::ToolbarActor;
@@ -51,14 +53,16 @@ TEST(HeaderBar, DrawShowsBarFillAndProgramName) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.setLabel("example.fl");
   header.resize(ctx, kOutputWidth);
 
   const auto calls = record(renderer, header, ctx);
 
-  // The filename sits to the right of the Save As button.
-  const double textX = header.saveAsButton().bounds().x + header.saveAsButton().bounds().w + ctx.layout.textPad;
+  // The filename sits to the right of the last left-aligned button.
+  const double textX = header.redoButton().bounds().x + header.redoButton().bounds().w + ctx.layout.textPad;
   EXPECT_TRUE(hasFill(calls, Rect{0, 0, kOutputWidth, ctx.layout.chromeHeaderPx}));
   EXPECT_TRUE(hasTextAt(calls, "example.fl", Vec2{textX, ctx.layout.textPad}));
 }
@@ -67,7 +71,9 @@ TEST(HeaderBar, DrawSkipsNameWhenNoLabelIsSet) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.resize(ctx, kOutputWidth);
 
   const auto calls = record(renderer, header, ctx);
@@ -82,7 +88,9 @@ TEST(HeaderBar, LayoutPositionsExitButtonInTopRightCorner) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.resize(ctx, kOutputWidth);
 
   const Rect bounds = header.exitButton().bounds();
@@ -96,7 +104,9 @@ TEST(HeaderBar, LayoutPositionsSaveButtonsInTopLeft) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.resize(ctx, kOutputWidth);
 
   EXPECT_NEAR(header.saveButton().bounds().x, ctx.layout.textPad, 1e-6);
@@ -108,7 +118,9 @@ TEST(HeaderBar, ButtonsSizeThemselvesFromTheirLabels) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.resize(ctx, kOutputWidth);
 
   EXPECT_GT(header.saveAsButton().bounds().w, header.saveButton().bounds().w)
@@ -120,7 +132,9 @@ TEST(HeaderBar, HitTestFindsTheButtonUnderAScreenPoint) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
   header.resize(ctx, kOutputWidth);
 
   EXPECT_EQ(header.hitTest(header.exitButton().bounds().center()), &header.exitButton());
@@ -134,7 +148,10 @@ TEST(HeaderBar, ButtonsInvokeSaveSaveAsAndExitActions) {
   EditorContext ctx;
   RecordingRenderer renderer;
 
-  HeaderBar header(renderer, [&saved] { saved = true; }, [&savedAs] { savedAs = true; }, [&exited] { exited = true; });
+  ModuleEditor editor;
+
+  HeaderBar header(
+    renderer, [&saved] { saved = true; }, [&savedAs] { savedAs = true; }, [&exited] { exited = true; }, editor);
   header.resize(ctx, kOutputWidth);
 
   header.hitTest(header.saveButton().bounds().center())->onClick({});
@@ -150,7 +167,8 @@ TEST(HeaderBar, ButtonsInvokeSaveSaveAsAndExitActions) {
 
 TEST(HeaderBar, ExitButtonZeroSizedBeforeAnyLayout) {
   RecordingRenderer renderer;
-  HeaderBar header(renderer, [] {}, [] {}, [] {});
+  ModuleEditor editor;
+  HeaderBar header(renderer, [] {}, [] {}, [] {}, editor);
 
   // Documents the placeholder pre-layout state: a point can never be "inside"
   // a zero-size Rect (Rect::contains requires strict less-than on the far edge).

@@ -144,6 +144,15 @@ namespace fluir::editor {
           }
           dragActor_ = hit.actor;
           lastDragWorld_ = hit.world;
+          startId_.clear();
+          // An actor that claims a drag but names no position is not a move.
+          const FlowGraphLocation* location = hit.actor->location();
+          if (const std::optional<fluir::FullID> id = hit.actor->selectionId();
+              location != nullptr && id && !id->empty()) {
+            startId_ = *id;
+            startX_ = location->x;
+            startY_ = location->y;
+          }
           return true;
         }
 
@@ -166,6 +175,10 @@ namespace fluir::editor {
           const Vec2 world = ctx.view.screenToWorld(event.pos);
           dragActor_->onDragEnd(ctx.editor, dragActor_->toParentLocal(world));
           dragActor_ = nullptr;
+          if (onMoveCommit_ && !startId_.empty()) {
+            onMoveCommit_(startId_, startX_, startY_);
+          }
+          startId_.clear();
           return true;
         }
 

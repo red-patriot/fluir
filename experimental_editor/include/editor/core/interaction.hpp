@@ -1,8 +1,11 @@
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "compiler/models/id.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
@@ -62,13 +65,25 @@ namespace fluir::editor {
   /** Left-press on an actor that claims the gesture, then move, then release. */
   class DragInteraction : public Interaction {
    public:
+    /** Reports a finished drag: the actor's id and the position it started at. */
+    using MoveCommit = std::function<void(const fluir::FullID& id, int startX, int startY)>;
+
+    explicit DragInteraction(MoveCommit onMoveCommit = {}) : onMoveCommit_(std::move(onMoveCommit)) { }
+
     bool onEvent(const InputEvent& event, InteractionContext& ctx) override;
     bool capturing() const override { return dragActor_ != nullptr; }
-    void reset() override { dragActor_ = nullptr; }
+    void reset() override {
+      dragActor_ = nullptr;
+      startId_.clear();
+    }
 
    private:
     Actor* dragActor_ = nullptr;
     Vec2 lastDragWorld_;
+    fluir::FullID startId_; /**< empty unless the live gesture is a move */
+    int startX_ = 0;
+    int startY_ = 0;
+    MoveCommit onMoveCommit_;
   };
 
   /** Left-press sets the scene's selection from whatever was hit; a miss clears it.

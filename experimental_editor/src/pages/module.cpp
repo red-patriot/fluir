@@ -17,6 +17,7 @@
 #include "editor/core/scene_to_tree.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/transaction/delete.hpp"
+#include "editor/transaction/move.hpp"
 
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
@@ -30,7 +31,21 @@ namespace fluir::editor {
     // After PanZoom so a Space+Left pan does not select; before Drag so a press
     // on a node's grip still selects it.
     graph_.add(std::make_unique<SelectionInteraction>(editor_.scene()));
-    graph_.add(std::make_unique<DragInteraction>());
+    // The drag already wrote the final position, so put the node back and let
+    // MoveTransaction swap it forward -- a gesture that changed nothing is then
+    // a no-op the editor drops.
+    graph_.add(std::make_unique<DragInteraction>([this](const fluir::FullID& id, int startX, int startY) {
+      Actor* actor = editor_.scene().find(id);
+      FlowGraphLocation* location = actor != nullptr ? actor->location() : nullptr;
+      if (location == nullptr) {
+        return;
+      }
+      const int finalX = location->x;
+      const int finalY = location->y;
+      location->x = startX;
+      location->y = startY;
+      editor_.apply(std::make_unique<MoveTransaction>(id, finalX, finalY));
+    }));
     graph_.add(std::make_unique<ClickInteraction>());
   }
 

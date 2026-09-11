@@ -23,6 +23,8 @@ namespace fluir::editor {
     const ButtonActor& saveButton() const { return *saveButton_; }
     const ButtonActor& saveAsButton() const { return *saveAsButton_; }
     const ButtonActor& exitButton() const { return *exitButton_; }
+    const ButtonActor& undoButton() const { return *undo_; }
+    const ButtonActor& redoButton() const { return *redo_; }
 
    private:
     ModuleEditor& editor_;

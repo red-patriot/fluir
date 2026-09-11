@@ -26,6 +26,10 @@ namespace fluir::editor {
     // visible effect through this page's API).
     const GraphScene& scene() const { return editor_.scene(); }
 
+    // Test-only observability: lets tests inspect the edit history a gesture
+    // recorded (undo/redo has no keyboard route yet).
+    ModuleEditor& editor() { return editor_; }
+
     // Test-only observability: lets tests locate/click the header's Exit
     // button without a second parallel exit path through ModulePage's API.
     const HeaderBar& header() const { return header_; }

@@ -6,6 +6,7 @@
 #include "editor/components/toolbar_actor.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/module_editor.hpp"
 #include "editor/core/renderer.hpp"
 
 namespace fluir::editor {
@@ -16,16 +17,20 @@ namespace fluir::editor {
     HeaderBar(Renderer& renderer,
               std::function<void()> onSave,
               std::function<void()> onSaveAs,
-              std::function<void()> onExit);
+              std::function<void()> onExit,
+              ModuleEditor& editor);
 
     const ButtonActor& saveButton() const { return *saveButton_; }
     const ButtonActor& saveAsButton() const { return *saveAsButton_; }
     const ButtonActor& exitButton() const { return *exitButton_; }
 
    private:
+    ModuleEditor& editor_;
     ButtonActor* saveButton_;
     ButtonActor* saveAsButton_;
     ButtonActor* exitButton_;
+    ButtonActor* undo_;
+    ButtonActor* redo_;
   };
 
 }  // namespace fluir::editor

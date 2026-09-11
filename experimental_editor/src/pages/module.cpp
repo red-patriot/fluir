@@ -21,7 +21,7 @@
 namespace fluir::editor {
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
     Page(ctx, renderer),
-    header_(renderer, [this] { onSave(); }, [this] { onSaveAs(); }, [this] { this->shouldClose = true; }) {
+    header_(renderer, [this] { onSave(); }, [this] { onSaveAs(); }, [this] { this->shouldClose = true; }, editor_) {
     hud_.setRoot(header_);
     hud_.add(std::make_unique<ClickInteraction>());
 

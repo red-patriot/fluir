@@ -8,12 +8,19 @@
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
+  struct ButtonOptions {
+    std::function<void()> onClick{};
+    std::function<bool()> isActive{};
+    Rect bounds{};
+  };
 
   /** A clickable labeled button: no fluir id, purely UI chrome. */
   class ButtonActor : public Actor {
    public:
     ButtonActor(std::string label, std::function<void()> action, Rect bounds) :
-      Actor(bounds), label_(std::move(label)), action_(std::move(action)) { }
+      Actor(bounds), label_(std::move(label)), opts_{.onClick = std::move(action), .bounds = bounds} { }
+    ButtonActor(std::string label, ButtonOptions opts) :
+      Actor(opts.bounds), label_(std::move(label)), opts_(std::move(opts)) { }
 
     void onClick(Vec2 position) override;
 
@@ -24,7 +31,7 @@ namespace fluir::editor {
 
    private:
     std::string label_;
-    std::function<void()> action_;
+    ButtonOptions opts_;
   };
 
 }  // namespace fluir::editor

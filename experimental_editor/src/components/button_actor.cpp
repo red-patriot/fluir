@@ -7,13 +7,17 @@
 namespace fluir::editor {
 
   void ButtonActor::onClick(Vec2) {
-    if (action_) {
-      action_();
+    if (opts_.onClick) {
+      opts_.onClick();
     }
   }
 
   void ButtonActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
-    body.renderer().fillRect(body.toScreen(bounds()), ctx.theme.operatorNode);
+    auto color = ctx.theme.buttonEnabled;
+    if (opts_.isActive && !opts_.isActive()) {
+      color = ctx.theme.buttonDisabled;
+    }
+    body.renderer().fillRect(body.toScreen(bounds()), color);
     body.renderer().drawRect(body.toScreen(bounds()), ctx.theme.border);
 
     const Vec2 textPos{bounds().x + ctx.layout.textPad, bounds().y + ctx.layout.textPad};

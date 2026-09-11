@@ -43,6 +43,8 @@ namespace fluir::editor {
 
     struct Theme {
       Color background{24, 26, 31, 255};
+      Color buttonEnabled{75, 107, 210, 255};
+      Color buttonDisabled{95, 95, 95, 255};
       Color border{200, 200, 210, 255};
       Color conduit{150, 180, 220, 255};
       Color text{225, 225, 235, 255};

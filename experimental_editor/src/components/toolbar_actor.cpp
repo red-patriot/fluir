@@ -8,6 +8,7 @@
 namespace fluir::editor {
 
   ButtonActor& ToolbarActor::add(std::string label, std::function<void()> action, Align align) {
+    // TODO: Update options here to allow button options (build button ourselves?)
     auto& button = Actor::add(std::make_unique<ButtonActor>(std::move(label), std::move(action), Rect{0, 0, 0, 0}));
     entries_.push_back(Entry{&button, align});
     return button;

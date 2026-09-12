@@ -20,11 +20,11 @@ namespace fluir::editor {
     body_(&add(std::make_unique<ContainerActor>(Rect{0, 0, bounds.w, bounds.h}))) { }
 
   void FunctionDeclActor::layout(const EditorContext& ctx) {
-    const Rect frame = localRect(drag_.preview(location_), ctx.layout.unitPx);
+    const Rect frame = localRect(previewLocation(), ctx.layout.unitPx);
     setBounds(frame);
     body_->setBounds(Rect{0, ctx.layout.headerH(), frame.w, frame.h});
     if (return_ != nullptr) {
-      return_->setFrameWidth(location_.width);
+      return_->setFrameWidth(previewLocation().width);
     }
     Actor::layout(ctx);
   }
@@ -37,16 +37,25 @@ namespace fluir::editor {
   void FunctionDeclActor::onClick(Vec2) { lastClickSummary_ = fmt::format("function {}", name_); }
 
   bool FunctionDeclActor::onDragStart(const EditorContext& ctx, Vec2 position) {
-    return drag_.onDragStart(ctx, position, location_, headerRect(ctx));
+    const FlowGraphLocation loc = previewLocation();
+    // Short-circuit: the header grip keeps every pixel it shares with the corner grip.
+    return drag_.onDragStart(ctx, position, loc, headerRect(ctx)) || resize_.onDragStart(ctx, position, loc, bounds());
   }
 
-  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) { drag_.onDrag(ctx, delta); }
+  void FunctionDeclActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) {
+    drag_.onDrag(ctx, delta);
+    resize_.onDrag(ctx, delta);
+  }
 
   void FunctionDeclActor::onDragEnd(const EditorContext& ctx, Vec2) {
     drag_.commit(ctx, location_, fluir::FullID{functionId_});
+    resize_.commit(ctx, location_, fluir::FullID{functionId_});
   }
 
-  void FunctionDeclActor::onDragCancel() { drag_.cancel(); }
+  void FunctionDeclActor::onDragCancel() {
+    drag_.cancel();
+    resize_.cancel();
+  }
 
   Rect FunctionDeclActor::headerRect(const EditorContext& ctx) const {
     return Rect{bounds().x, bounds().y, bounds().w, ctx.layout.headerH()};
@@ -61,11 +70,17 @@ namespace fluir::editor {
     parentView.renderer().drawText(
       parentView.toScreen(bounds().topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad}), name_, ctx.theme.text);
 
-    drag_.draw(parentView, ctx, location_, header);
+    drawHandles(parentView, ctx);
 
     if (selected()) {
       drawSelectionOutline(parentView, ctx, bounds());
     }
+  }
+
+  void FunctionDeclActor::drawHandles(const Subview& view, const EditorContext& ctx) const {
+    const FlowGraphLocation loc = previewLocation();
+    drag_.draw(view, ctx, loc, headerRect(ctx));
+    resize_.draw(view, ctx, loc, bounds());
   }
 
 }  // namespace fluir::editor

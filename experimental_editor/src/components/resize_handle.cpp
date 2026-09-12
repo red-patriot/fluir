@@ -7,31 +7,23 @@
 
 namespace fluir::editor {
   namespace {
-    Rect handleBox(const Rect& nodeRect, const FlowGraphLocation& loc, const EditorContext& ctx) {
-      const Rect box = resizeRect(loc);
+    Rect handleBox(const Rect& nodeRect, const Rect& box, const EditorContext& ctx) {
       const auto u = ctx.layout.unitPx;
       return {nodeRect.x + box.x * u, nodeRect.y + box.y * u, box.w * u, box.h * u};
     }
   }  // namespace
 
-  Rect resizeRect(const fluir::FlowGraphLocation& nodeLoc) {
-    return Rect{.x = nodeLoc.width - ResizeHandle::WIDTH,
-                .y = 0,
-                .w = ResizeHandle::WIDTH,
-                .h = static_cast<double>(nodeLoc.height)};
-  }
-
-  bool ResizeHandle::onDragStart(const EditorContext& ctx,
-                                 Vec2 parentLocalPos,
-                                 const FlowGraphLocation& loc,
-                                 const Rect& nodeRect) {
+  bool HorizResizeHandle::onDragStart(const EditorContext& ctx,
+                                      Vec2 parentLocalPos,
+                                      const FlowGraphLocation& loc,
+                                      const Rect& nodeRect) {
     accumulator_ = 0;
     dw_ = 0;
-    active_ = handleBox(nodeRect, loc, ctx).contains(parentLocalPos);
+    active_ = handleBox(nodeRect, rect(loc), ctx).contains(parentLocalPos);
     return active_;
   }
 
-  void ResizeHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta) {
+  void HorizResizeHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta) {
     if (!active_) {
       return;
     }
@@ -45,13 +37,13 @@ namespace fluir::editor {
     dw_ += dw;
   }
 
-  FlowGraphLocation ResizeHandle::preview(const FlowGraphLocation& loc) const {
+  FlowGraphLocation HorizResizeHandle::preview(const FlowGraphLocation& loc) const {
     FlowGraphLocation out = loc;
     out.width = clampSize(loc.width + dw_);
     return out;
   }
 
-  void ResizeHandle::commit(const EditorContext& ctx, const FlowGraphLocation& loc, const fluir::FullID& id) {
+  void HorizResizeHandle::commit(const EditorContext& ctx, const FlowGraphLocation& loc, const fluir::FullID& id) {
     if (active_) {
       const int width = preview(loc).width;
       if (width != loc.width) {
@@ -61,17 +53,85 @@ namespace fluir::editor {
     cancel();
   }
 
-  void ResizeHandle::cancel() {
+  void HorizResizeHandle::cancel() {
     accumulator_ = 0;
     dw_ = 0;
     active_ = false;
   }
 
-  void ResizeHandle::draw(const Subview& view,
-                          const EditorContext& ctx,
-                          const FlowGraphLocation& loc,
-                          const Rect& nodeRect) const {
-    view.renderer().fillRect(view.toScreen(handleBox(nodeRect, loc, ctx)), ctx.theme.border);
+  void HorizResizeHandle::draw(const Subview& view,
+                               const EditorContext& ctx,
+                               const FlowGraphLocation& loc,
+                               const Rect& nodeRect) const {
+    view.renderer().fillRect(view.toScreen(handleBox(nodeRect, rect(loc), ctx)), ctx.theme.border);
+  }
+
+  Rect HorizResizeHandle::rect(const fluir::FlowGraphLocation& nodeLoc) const {
+    return Rect{.x = nodeLoc.width - WIDTH, .y = 0, .w = WIDTH, .h = static_cast<double>(nodeLoc.height)};
+  }
+
+  bool XYResizeHandle::onDragStart(const EditorContext& ctx,
+                                   Vec2 parentLocalPos,
+                                   const FlowGraphLocation& loc,
+                                   const Rect& nodeRect) {
+    accumulator_ = {0.0, 0.0};
+    dw_ = 0;
+    dh_ = 0;
+    active_ = handleBox(nodeRect, rect(loc), ctx).contains(parentLocalPos);
+    return active_;
+  }
+
+  void XYResizeHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta) {
+    if (!active_) {
+      return;
+    }
+    accumulator_ = accumulator_ + worldDelta;
+    const double unit = ctx.layout.unitPx;
+    const int dw = static_cast<int>(accumulator_.x / unit);
+    const int dh = static_cast<int>(accumulator_.y / unit);
+    if (dw == 0 && dh == 0) {
+      return;
+    }
+    accumulator_.x -= dw * unit;  // keep only the sub-unit remainder
+    accumulator_.y -= dh * unit;
+    dw_ += dw;
+    dh_ += dh;
+  }
+
+  FlowGraphLocation XYResizeHandle::preview(const FlowGraphLocation& loc) const {
+    FlowGraphLocation out = loc;
+    out.width = clampSize(loc.width + dw_);
+    out.height = clampSize(loc.height + dh_);
+    return out;
+  }
+
+  void XYResizeHandle::commit(const EditorContext& ctx, const FlowGraphLocation& loc, const fluir::FullID& id) {
+    if (active_) {
+      const int width = preview(loc).width;
+      const int height = preview(loc).height;
+      if (width != loc.width || height != loc.height) {
+        ctx.dispatch(std::make_unique<ResizeTransaction>(id, width, height));
+      }
+    }
+    cancel();
+  }
+
+  void XYResizeHandle::cancel() {
+    accumulator_ = {0.0, 0.0};
+    dw_ = 0;
+    dh_ = 0;
+    active_ = false;
+  }
+
+  void XYResizeHandle::draw(const Subview& view,
+                            const EditorContext& ctx,
+                            const FlowGraphLocation& loc,
+                            const Rect& nodeRect) const {
+    view.renderer().fillRect(view.toScreen(handleBox(nodeRect, rect(loc), ctx)), ctx.theme.border);
+  }
+
+  Rect XYResizeHandle::rect(const fluir::FlowGraphLocation& nodeLoc) const {
+    return Rect{.x = nodeLoc.width - SIZE, .y = nodeLoc.height - SIZE, .w = SIZE, .h = SIZE};
   }
 
 }  // namespace fluir::editor

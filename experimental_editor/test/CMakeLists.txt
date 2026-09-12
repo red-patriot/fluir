@@ -14,6 +14,7 @@ add_executable(
     node_drag.test.cpp
     node_resize.test.cpp
     function_decl_drag.test.cpp
+    function_decl_resize.test.cpp
     button_actor.test.cpp
     scene.test.cpp
     scene_to_tree.test.cpp

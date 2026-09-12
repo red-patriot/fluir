@@ -51,7 +51,7 @@ namespace fluir::editor {
 
    protected:
     DragHandle drag_;
-    ResizeHandle resize_;
+    HorizResizeHandle resize_;
 
    private:
     fluir::FullID id_;

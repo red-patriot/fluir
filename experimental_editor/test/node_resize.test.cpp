@@ -221,7 +221,7 @@ TEST(NodeResize, DrawRendersTheResizeBarFromResizeRect) {
   // -> world {10 + 4*5, 10 + 0, 1*5, 5*5} = {30, 10, 5, 25}.
   const double u = ctx.layout.unitPx;
   const Rect nodeRect{loc.x * u, loc.y * u, loc.width * u, loc.height * u};
-  const Rect rr = fluir::editor::resizeRect(loc);
+  const Rect rr = fluir::editor::HorizResizeHandle{}.rect(loc);
   const Rect bar{nodeRect.x + rr.x * u, nodeRect.y + rr.y * u, rr.w * u, rr.h * u};
 
   EXPECT_EQ(bar, (Rect{30, 10, 5, 25}));

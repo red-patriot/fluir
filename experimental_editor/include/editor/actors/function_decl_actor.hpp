@@ -55,6 +55,7 @@ namespace fluir::editor {
 
    protected:
     void drawSelf(const Subview& parentView, const EditorContext& ctx) const override;
+    void drawOverlay(const Subview& parentView, const EditorContext& ctx) const override;
 
    private:
     /** The header band across the top of the frame, in parent space. */

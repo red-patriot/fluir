@@ -161,16 +161,19 @@ namespace fluir::editor {
       }
       if (clip_ == ClipChildren::No) {
         drawChildren(parentView, ctx);
-        return;
+      } else {
+        const Subview view = parentView.child(bounds_);
+        drawChildren(view, ctx);
       }
-      const Subview view = parentView.child(bounds_);
-      drawChildren(view, ctx);
+      drawOverlay(parentView, ctx);
     }
 
    protected:
     /** Draws this actor's own chrome, in the *parent's* view, so a frame's
      *  border is not clipped away by its own subview. */
     virtual void drawSelf(const Subview& parentView, const EditorContext& ctx) const { }
+    /** Draws overlay components of this actor which will be drawn over all children. */
+    virtual void drawOverlay(const Subview& parentView, const EditorContext& ctx) const { }
 
    private:
     void drawChildren(const Subview& view, const EditorContext& ctx) const {

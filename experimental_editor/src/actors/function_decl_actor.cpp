@@ -63,6 +63,9 @@ namespace fluir::editor {
 
   void FunctionDeclActor::drawSelf(const Subview& parentView, const EditorContext& ctx) const {
     parentView.renderer().fillRect(parentView.toScreen(bounds()), ctx.theme.background);
+  }
+
+  void FunctionDeclActor::drawOverlay(const Subview& parentView, const EditorContext& ctx) const {
     const Rect header = headerRect(ctx);
 
     parentView.renderer().fillRect(parentView.toScreen(header), ctx.theme.funcDeclHeader);

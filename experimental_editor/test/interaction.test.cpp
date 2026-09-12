@@ -122,16 +122,18 @@ TEST(InteractionChain, CaptureReleasesOnMouseUp) {
   EXPECT_EQ(node.dragged_, (Vec2{0, 0}));
 }
 
-TEST(InteractionChain, SpaceLeftPansEvenOverADraggableActor) {
+// Panning is the middle button's alone: Space arms nothing.
+TEST(InteractionChain, SpaceLeftStillDragsTheActorUnderIt) {
   Fixture f;
   auto& node = static_cast<DraggableActor&>(f.root.add(std::make_unique<DraggableActor>(Rect{0, 0, 50, 50})));
 
   f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Space));
   ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
-  EXPECT_FALSE(node.dragging_) << "the pan gesture must win the press";
+  EXPECT_TRUE(node.dragging_);
 
   EXPECT_TRUE(f.send(move(Vec2{30, 40})));
-  EXPECT_EQ(f.view.pan, (Vec2{20, 30}));
+  EXPECT_EQ(node.dragged_, (Vec2{20, 30}));
+  EXPECT_EQ(f.view.pan, (Vec2{0, 0}));
 }
 
 TEST(InteractionChain, MiddleDragPansAndReleases) {
@@ -145,17 +147,6 @@ TEST(InteractionChain, MiddleDragPansAndReleases) {
   ASSERT_TRUE(f.send(up(InputEvent::Button::Middle, Vec2{15, 25})));
   EXPECT_FALSE(f.send(move(Vec2{100, 100})));
   EXPECT_EQ(f.view.pan, (Vec2{5, 15}));
-}
-
-TEST(InteractionChain, SpaceReleaseStopsPanClaimingLeftPresses) {
-  Fixture f;
-  auto& node = static_cast<DraggableActor&>(f.root.add(std::make_unique<DraggableActor>(Rect{0, 0, 50, 50})));
-
-  f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Space));
-  f.send(key(InputEvent::Type::KeyUp, InputEvent::Key::Space));
-
-  ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
-  EXPECT_TRUE(node.dragging_);
 }
 
 TEST(InteractionChain, PressOnANonDraggableActorIsAClick) {

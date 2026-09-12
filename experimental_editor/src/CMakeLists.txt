@@ -76,6 +76,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/graph_geometry.cpp"
     "core/interaction.cpp"
     "core/layer.cpp"
+    "core/literal_text.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
@@ -104,12 +105,14 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/delete.cpp"
     "transaction/move.cpp"
     "transaction/resize.cpp"
+    "transaction/set_constant_value.cpp"
 )
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES
     "components/button_actor.cpp"
     "components/drag_handle.cpp"
     "components/resize_handle.cpp"
+    "components/text_field.cpp"
     "components/toolbar_actor.cpp"
 )
 

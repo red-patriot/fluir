@@ -14,6 +14,19 @@ namespace fluir::editor {
           return InputEvent::Key::Space;
         case SDL_SCANCODE_DELETE:
           return InputEvent::Key::Delete;
+        case SDL_SCANCODE_RETURN:
+        case SDL_SCANCODE_KP_ENTER:
+          return InputEvent::Key::Return;
+        case SDL_SCANCODE_BACKSPACE:
+          return InputEvent::Key::Backspace;
+        case SDL_SCANCODE_LEFT:
+          return InputEvent::Key::Left;
+        case SDL_SCANCODE_RIGHT:
+          return InputEvent::Key::Right;
+        case SDL_SCANCODE_HOME:
+          return InputEvent::Key::Home;
+        case SDL_SCANCODE_END:
+          return InputEvent::Key::End;
         default:
           return std::nullopt;
       }
@@ -85,6 +98,17 @@ namespace fluir::editor {
           out.type = InputEvent::Type::Wheel;
           out.pos = {static_cast<double>(event.wheel.mouse_x), static_cast<double>(event.wheel.mouse_y)};
           out.wheel = {static_cast<double>(event.wheel.x), static_cast<double>(event.wheel.y)};
+          return out;
+        }
+
+      case SDL_EVENT_TEXT_INPUT:
+        {
+          if (!event.text.text) {
+            return std::nullopt;
+          }
+          InputEvent out{};
+          out.type = InputEvent::Type::TextInput;
+          out.text = event.text.text;
           return out;
         }
 

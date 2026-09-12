@@ -27,6 +27,18 @@ namespace fluir::editor {
 
     bool isLeft(const InputEvent& event) { return event.button == InputEvent::Button::Left; }
 
+    bool inTree(const Actor& root, const Actor* target) {
+      if (&root == target) {
+        return true;
+      }
+      for (const auto& child : root.children()) {
+        if (inTree(*child, target)) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     // Rails and other chrome are hittable but not selectable, so walk up to the
     // nearest ancestor that names an id -- the enclosing frame.
     std::optional<fluir::FullID> selectionIdAt(Actor* hit) {
@@ -69,29 +81,21 @@ namespace fluir::editor {
     }
   }
 
+  void InteractionChain::dropFocus() {
+    for (const auto& item : items_) {
+      item->dropFocus();
+    }
+  }
+
   void PanZoomInteraction::reset() {
     panning_ = false;
-    spaceHeld_ = false;
     lastPan_ = Vec2{};
   }
 
   bool PanZoomInteraction::onEvent(const InputEvent& event, InteractionContext& ctx) {
     switch (event.type) {
-      case InputEvent::Type::KeyDown:
-        // Tracked, never consumed: Space is a modifier here, not a command.
-        if (event.key == InputEvent::Key::Space) {
-          spaceHeld_ = true;
-        }
-        return false;
-
-      case InputEvent::Type::KeyUp:
-        if (event.key == InputEvent::Key::Space) {
-          spaceHeld_ = false;
-        }
-        return false;
-
       case InputEvent::Type::MouseDown:
-        if (event.button == InputEvent::Button::Middle || (isLeft(event) && spaceHeld_)) {
+        if (event.button == InputEvent::Button::Middle) {
           panning_ = true;
           lastPan_ = event.pos;
           return true;
@@ -110,7 +114,7 @@ namespace fluir::editor {
         if (!panning_) {
           return false;
         }
-        if (event.button == InputEvent::Button::Middle || isLeft(event)) {
+        if (event.button == InputEvent::Button::Middle) {
           panning_ = false;
           return true;
         }
@@ -125,6 +129,56 @@ namespace fluir::editor {
           }
           return true;
         }
+
+      default:
+        return false;
+    }
+  }
+
+  void FocusInteraction::reset() {
+    if (focused_ != nullptr) {
+      focused_->onBlur();
+      focused_ = nullptr;
+    }
+  }
+
+  void FocusInteraction::dropStale(const Actor& root) {
+    if (focused_ != nullptr && !inTree(root, focused_)) {
+      reset();
+    }
+  }
+
+  bool FocusInteraction::onEvent(const InputEvent& event, InteractionContext& ctx) {
+    switch (event.type) {
+      case InputEvent::Type::MouseDown:
+        {
+          if (!isLeft(event)) {
+            return false;
+          }
+          dropStale(ctx.root);
+          const Hit hit = hitAt(ctx, event.pos);
+          // Re-offer to the actor that already has focus: it may re-aim, or
+          // decline (a press on its grip) and give the focus up.
+          if (hit.actor != nullptr && hit.actor == focused_) {
+            if (!focused_->onFocus(ctx.editor, hit.local)) {
+              reset();
+            }
+            return false;  // tracked, never consumed
+          }
+          reset();
+          if (hit.actor != nullptr && hit.actor->onFocus(ctx.editor, hit.local)) {
+            focused_ = hit.actor;
+          }
+          return false;  // tracked, never consumed
+        }
+
+      case InputEvent::Type::KeyDown:
+        dropStale(ctx.root);
+        return focused_ != nullptr && event.key && focused_->onKey(ctx.editor, *event.key);
+
+      case InputEvent::Type::TextInput:
+        dropStale(ctx.root);
+        return focused_ != nullptr && focused_->onTextInput(ctx.editor, event.text);
 
       default:
         return false;

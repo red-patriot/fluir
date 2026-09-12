@@ -2,9 +2,10 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
-#include <type_traits>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -13,30 +14,14 @@
 #include "compiler/models/operator.hpp"
 #include "editor/actors/selection_outline.hpp"
 #include "editor/core/graph_geometry.hpp"
+#include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
+#include "editor/transaction/set_constant_value.hpp"
 
 namespace fluir::editor {
   using namespace ::fluir::literals_types;
 
   namespace {
-    // I8 / U8 widen to int
-    // so they print as numbers, BOOL prints true/false, and every other
-    // arithmetic type goes straight through fmt.
-    std::string renderLiteral(const pt::Literal& value) {
-      return std::visit(
-        [](auto v) -> std::string {
-          using T = std::decay_t<decltype(v)>;
-          if constexpr (std::is_same_v<T, bool>) {
-            return v ? "true" : "false";
-          } else if constexpr (std::is_same_v<T, std::int8_t> || std::is_same_v<T, std::uint8_t>) {
-            return fmt::format("{}", static_cast<int>(v));
-          } else {
-            return fmt::format("{}", v);
-          }
-        },
-        value);
-    }
-
     struct LiteralColor {
       const EditorContext::Theme& theme_;
 
@@ -164,9 +149,73 @@ namespace fluir::editor {
   }
 
   ConstantActor::ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds) :
-    NodeActor(fluir::FullID{functionId, node.id}, bounds), node_(node) { }
+    NodeActor(fluir::FullID{functionId, node.id}, bounds),
+    node_(node),
+    field_([this] { return editableText(); },
+           [this](const EditorContext& ctx, const std::string& text) { return applyText(ctx, text); }) { }
 
   void ConstantActor::onClick(Vec2) { lastClickSummary_ = fmt::format("constant {}", renderLiteral(node_.value)); }
+
+  std::optional<std::string> ConstantActor::editableText() const {
+    if (!isEditableLiteral(node_.value)) {
+      return std::nullopt;
+    }
+    return renderLiteral(node_.value);
+  }
+
+  bool ConstantActor::applyText(const EditorContext& ctx, const std::string& text) {
+    const std::optional<pt::Literal> parsed = parseLiteralLike(node_.value, text);
+    if (!parsed) {
+      return false;  // reject: the field stays open and invalid
+    }
+    if (*parsed == node_.value) {
+      return true;  // no-op: close, raise nothing
+    }
+    ctx.dispatch(std::make_unique<SetConstantValueTransaction>(id(), *parsed));
+    return true;
+  }
+
+  bool ConstantActor::onFocus(const EditorContext& ctx, Vec2 position) {
+    // A press on a grip starts a gesture, so it must not open an editor.
+    if (onHandles(ctx, position)) {
+      return false;
+    }
+    const double dx = position.x - (bounds().x + ctx.layout.textPad);
+    if (field_.active()) {
+      field_.setCaretFromOffset(dx);
+      return true;
+    }
+    return field_.begin(dx);
+  }
+
+  void ConstantActor::onBlur() { field_.cancel(); }
+
+  bool ConstantActor::onKey(const EditorContext& ctx, InputEvent::Key key) {
+    // An open edit owns every key: text input is always on, so an unhandled key
+    // still arrives as the TextInput the draft wants.
+    if (!field_.active()) {
+      return false;
+    }
+    switch (key) {
+      case InputEvent::Key::Return:
+        field_.commit(ctx);
+        return true;
+      case InputEvent::Key::Escape:
+        field_.cancel();
+        return true;
+      default:
+        field_.onKey(key);
+        return true;
+    }
+  }
+
+  bool ConstantActor::onTextInput(const EditorContext&, std::string_view text) {
+    if (!field_.active()) {
+      return false;
+    }
+    field_.insert(text);
+    return true;
+  }
 
   void ConstantActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
     const Rect& nodeRect = bounds();
@@ -174,7 +223,14 @@ namespace fluir::editor {
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
-    body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
+    if (field_.active()) {
+      field_.draw(body, ctx, textPos);
+      if (field_.invalid()) {
+        body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.error);
+      }
+    } else {
+      body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
+    }
 
     drawHandles(body, ctx, nodeRect);
 

@@ -33,7 +33,7 @@ namespace fluir::editor {
     virtual std::vector<Layer*> layers() = 0;
 
     virtual int onStart() { return 0; }
-    /** Page-specific handling, before any layer sees the event. */
+    /** Page-specific handling, for events no layer consumed. */
     virtual bool onAppEvent(const InputEvent&) { return false; }
     /** Re-lays-out chrome for the current output size. Runs after onStart and on Resize. */
     virtual void onResize() { }

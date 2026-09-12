@@ -5,6 +5,7 @@ add_executable(
     input.test.cpp
     interaction.test.cpp
     layer.test.cpp
+    literal_text.test.cpp
     loader.test.cpp
     parse_tree_writer.test.cpp
     viewport.test.cpp
@@ -13,9 +14,12 @@ add_executable(
     actor.test.cpp
     node_drag.test.cpp
     node_resize.test.cpp
+    constant_edit.test.cpp
+    focus.test.cpp
     function_decl_drag.test.cpp
     function_decl_resize.test.cpp
     button_actor.test.cpp
+    text_field.test.cpp
     scene.test.cpp
     scene_to_tree.test.cpp
     module.test.cpp

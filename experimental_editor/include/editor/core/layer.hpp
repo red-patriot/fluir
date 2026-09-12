@@ -37,6 +37,9 @@ namespace fluir::editor {
     /** Drops gesture state. */
     void reset() { chain_.reset(); }
 
+    /** Gives up keyboard focus, leaving any live gesture alone. */
+    void dropFocus() { chain_.dropFocus(); }
+
    private:
     Viewport viewport_;
     Actor* root_ = nullptr;

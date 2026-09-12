@@ -43,6 +43,10 @@ namespace fluir::editor {
     /** Draws the node's grips into `nodeRect`. */
     void drawHandles(const Subview& view, const EditorContext& ctx, const Rect& nodeRect) const;
 
+    /** True when `parentLocal` lands on either grip. The grips are not actors,
+     *  so callers need this to tell a gesture press from a press on the body. */
+    bool onHandles(const EditorContext& ctx, Vec2 parentLocal) const;
+
     void layout(const EditorContext& ctx) override;
     bool onDragStart(const EditorContext& ctx, Vec2 position) override;
     void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;

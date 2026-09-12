@@ -51,6 +51,7 @@ namespace fluir::editor {
       Color buttonDisabled{95, 95, 95, 255};
       Color border{200, 200, 210, 255};
       Color conduit{150, 180, 220, 255};
+      Color error{224, 68, 68, 255};
       Color text{225, 225, 235, 255};
       Color funcDeclHeader{237, 170, 30, 255};
       Color operatorNode{75, 107, 210, 255};

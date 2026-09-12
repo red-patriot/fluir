@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
@@ -9,22 +10,25 @@
 #include <gtest/gtest.h>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/literal_types.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/actors/node_actors.hpp"
 #include "editor/actors/scene.hpp"
+#include "editor/components/text_field.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "editor/transaction/delete.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
 // These tests assert *ModulePage's MouseDown dispatch*: a plain Left click on
 // an actor is consumed (not treated as a pan gesture), an existing pan
-// gesture (Middle, or Left+Space) still pans even when it starts over a node,
+// gesture (Middle) still pans even when it starts over a node,
 // a Left click outside every actor stays inert, and Quit still forces
 // EditorContext::running false regardless of where the cursor sits. All
 // black-box, via RecordingRenderer's recorded frames and EditorContext state
@@ -43,7 +47,9 @@ namespace {
   using fluir::editor::GraphScene;
   using fluir::editor::InputEvent;
   using fluir::editor::ModulePage;
+  using fluir::editor::NodeActor;
   using fluir::editor::Rect;
+  using fluir::editor::TextField;
   using fluir::editor::Vec2;
   using fluir::editor::Viewport;
   using testutil::countOf;
@@ -130,10 +136,48 @@ namespace {
 
   InputEvent deleteKey() { return keyDown(InputEvent::Key::Delete); }
 
+  InputEvent textInput(std::string text) {
+    InputEvent ie;
+    ie.type = InputEvent::Type::TextInput;
+    ie.text = std::move(text);
+    return ie;
+  }
+
+  InputEvent wheel(Vec2 pos, Vec2 delta) {
+    InputEvent ie;
+    ie.type = InputEvent::Type::Wheel;
+    ie.pos = pos;
+    ie.wheel = delta;
+    return ie;
+  }
+
   InputEvent quit() {
     InputEvent ie;
     ie.type = InputEvent::Type::Quit;
     return ie;
+  }
+
+  // int_constants.fl constant id=2 absolute rect {110,180,25,25}; this point is
+  // in its lower-left, clear of the drag grip {115,185,15,15} and resize bar.
+  constexpr Vec2 kInsideIntConstant2{113, 198};
+
+  /** The in-place editor of function 1's constant `node`, or nullptr. */
+  const TextField* fieldOf(const ModulePage& page, fluir::ID node) {
+    auto* actor = dynamic_cast<ConstantActor*>(page.scene().find(1, node));
+    return actor == nullptr ? nullptr : &actor->field();
+  }
+
+  /** The live literal of function 1's constant `node`, or nullptr. */
+  const fluir::pt::Literal* literalOf(const ModulePage& page, fluir::ID node) {
+    auto* actor = dynamic_cast<ConstantActor*>(page.scene().find(1, node));
+    return actor == nullptr ? nullptr : actor->literal();
+  }
+
+  /** `node`'s literal as an i8, which every int_constants.fl id=1 value is. */
+  int i8Of(const ModulePage& page, fluir::ID node) {
+    const fluir::pt::Literal* literal = literalOf(page, node);
+    EXPECT_NE(literal, nullptr);
+    return literal == nullptr ? 0 : std::get<fluir::literals_types::I8>(*literal);
   }
 
 }  // namespace
@@ -258,7 +302,8 @@ TEST(ModulePage, PressOnADragHandleAlsoSelectsTheNode) {
   EXPECT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
 }
 
-TEST(ModulePage, SpaceLeftPanOverANodeDoesNotSelect) {
+// Space arms nothing: a held Space leaves a Left press an ordinary press.
+TEST(ModulePage, SpaceLeftOverANodeStillSelectsIt) {
   const Loaded l = loadFixture("read/int_constants.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
@@ -268,10 +313,11 @@ TEST(ModulePage, SpaceLeftPanOverANodeDoesNotSelect) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  const Vec2 panStart = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
-  page.update({keyDown(InputEvent::Key::Space), mouseDown(InputEvent::Button::Left, panStart)});
+  const Vec2 start = toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor);
+  page.update({keyDown(InputEvent::Key::Space), mouseDown(InputEvent::Button::Left, start)});
 
-  EXPECT_FALSE(page.scene().selected().has_value());
+  ASSERT_TRUE(page.scene().selected().has_value());
+  EXPECT_EQ(*page.scene().selected(), (fluir::FullID{1, 1}));
 }
 
 TEST(ModulePage, MiddlePanGestureOverActorStillPans) {
@@ -536,12 +582,34 @@ TEST(ModulePage, DeleteRemovesTheSelectedNodeFromTheScene) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
+  // The body click opens this i8 constant's in-place editor, which owns the
+  // keyboard; Escape closes it so Delete is a page command again.
   page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               keyDown(InputEvent::Key::Escape),
                deleteKey()});
 
   EXPECT_EQ(page.scene().find(1, 1), nullptr);
   EXPECT_NE(page.scene().find(1, 2), nullptr);  // its siblings survive
   EXPECT_NE(page.scene().find(1), nullptr);
+}
+
+TEST(ModulePage, DeleteWithNothingFocusedDeletesTheSelection) {
+  const Loaded l = loadFixture("read/int_constants.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  EditorContext ctx;
+  ctx.program = kIntConstants;
+  RecordingRenderer renderer;
+  ModulePage page{ctx, renderer};
+  ASSERT_EQ(page.start(), 0);
+
+  // A press on the drag grip selects without opening an editor, so Delete is
+  // still the page's command.
+  const Viewport v = fitViewport(ctx, *l.result.tree, renderer.outputSize_);
+  const Vec2 grip = v.worldToScreen(kOnDragHandle);
+  page.update({mouseDown(InputEvent::Button::Left, grip), mouseUp(InputEvent::Button::Left, grip), deleteKey()});
+
+  EXPECT_EQ(page.scene().find(1, 1), nullptr);
 }
 
 TEST(ModulePage, DeleteClearsTheSelection) {
@@ -554,7 +622,10 @@ TEST(ModulePage, DeleteClearsTheSelection) {
   ModulePage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
+  // The body click opens this i8 constant's in-place editor, which owns the
+  // keyboard; Escape closes it so Delete is a page command again.
   page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               keyDown(InputEvent::Key::Escape),
                deleteKey()});
 
   EXPECT_FALSE(page.scene().selected().has_value());
@@ -687,7 +758,10 @@ TEST(ModulePage, DeleteThenSavePersistsTheRemoval) {
   ASSERT_EQ(page.start(), 0);
   page.draw();
 
+  // The body click opens this i8 constant's in-place editor, which owns the
+  // keyboard; Escape closes it so Delete is a page command again.
   page.update({mouseDown(InputEvent::Button::Left, toScreen(ctx, *l.result.tree, renderer.outputSize_, kInsideActor)),
+               keyDown(InputEvent::Key::Escape),
                deleteKey()});
   page.update({mouseDown(InputEvent::Button::Left, page.header().saveButton().bounds().center())});
 
@@ -721,7 +795,10 @@ TEST(ModulePage, DeleteAfterADragKeepsTheDraggedPosition) {
   ASSERT_EQ(page.scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
 
   // Select and delete a *different* node: constant id=4, world {210,190,25,25}.
-  page.update({mouseDown(InputEvent::Button::Left, v.worldToScreen(Vec2{213, 208})), deleteKey()});
+  // Escape closes the editor the body click opened, freeing the Delete key.
+  page.update({mouseDown(InputEvent::Button::Left, v.worldToScreen(Vec2{213, 208})),
+               keyDown(InputEvent::Key::Escape),
+               deleteKey()});
   ASSERT_EQ(page.scene().find(1, 4), nullptr);
 
   ASSERT_NE(page.scene().find(1, 1), nullptr);
@@ -888,4 +965,338 @@ TEST(ModulePage, UndoingADeleteMadeDuringADragRestoresTheOriginalPosition) {
 
   ASSERT_NE(page.scene().find(1, 1), nullptr);
   EXPECT_EQ(page.scene().find(1, 1)->worldBounds(), kActorWorldRect);
+}
+
+// In-place constant editing, routed by ModulePage's TextEditRouter: an open
+// edit owns every key and text event, mouse presses only ever open/move/close
+// it, and every existing gesture still runs.
+
+namespace {
+
+  /** A page on int_constants.fl, plus the fit transform its start() applied. */
+  struct EditPage {
+    EditorContext ctx;
+    RecordingRenderer renderer;
+    Loaded loaded = loadFixture("read/int_constants.fl");
+    std::unique_ptr<ModulePage> page;
+    Viewport view;
+
+    explicit EditPage(const fs::path& program = kIntConstants) {
+      ctx.program = program;
+      page = std::make_unique<ModulePage>(ctx, renderer);
+      EXPECT_TRUE(loaded.result.tree.has_value());
+      EXPECT_EQ(page->start(), 0);
+      view = fitViewport(ctx, *loaded.result.tree, renderer.outputSize_);
+    }
+
+    Vec2 at(Vec2 world) const { return view.worldToScreen(world); }
+  };
+
+}  // namespace
+
+TEST(ModulePage, ClickingAConstantOpensItsEditor) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor))});
+
+  const TextField* field = fieldOf(*p.page, 1);
+  ASSERT_NE(field, nullptr);
+  EXPECT_TRUE(field->active());
+  EXPECT_EQ(field->text(), "-5") << "the draft is prefilled from the current value";
+}
+
+TEST(ModulePage, ClickingAConstantStillSelectsIt) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor))});
+
+  ASSERT_TRUE(p.page->scene().selected().has_value());
+  EXPECT_EQ(*p.page->scene().selected(), (fluir::FullID{1, 1}));
+  EXPECT_TRUE(fieldOf(*p.page, 1)->active()) << "activation is additive, not a replacement";
+}
+
+TEST(ModulePage, TypingThenEnterCommitsTheNewConstantValue) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)),
+                  keyDown(InputEvent::Key::End),
+                  textInput("7"),
+                  keyDown(InputEvent::Key::Return)});
+
+  EXPECT_EQ(i8Of(*p.page, 1), -57);
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active()) << "a successful commit closes the editor";
+}
+
+TEST(ModulePage, EnterOnAnInvalidDraftKeepsTheOldValueAndTheEditorOpen) {
+  EditPage p;
+
+  // -5999 is outside i8's range, so the validator rejects the draft.
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)),
+                  keyDown(InputEvent::Key::End),
+                  textInput("999"),
+                  keyDown(InputEvent::Key::Return)});
+
+  EXPECT_EQ(i8Of(*p.page, 1), -5);
+  const TextField* field = fieldOf(*p.page, 1);
+  EXPECT_TRUE(field->active());
+  EXPECT_TRUE(field->invalid());
+  EXPECT_EQ(field->text(), "-5999");
+  EXPECT_FALSE(p.page->editor().canUndo()) << "a rejected commit raises no edit";
+}
+
+TEST(ModulePage, EscapeCancelsTheEditAndLeavesTheValueAlone) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)),
+                  keyDown(InputEvent::Key::End),
+                  textInput("7"),
+                  keyDown(InputEvent::Key::Escape)});
+
+  EXPECT_EQ(i8Of(*p.page, 1), -5);
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active());
+  EXPECT_FALSE(p.page->editor().canUndo());
+}
+
+TEST(ModulePage, EscapeNoLongerStopsTheApp) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::Escape)});
+
+  EXPECT_TRUE(p.ctx.running) << "Escape closes the editor, it is not an app command";
+}
+
+TEST(ModulePage, ClickingAnotherNodeCancelsTheOpenEdit) {
+  EditPage p;
+
+  p.page->update(
+    {mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::End), textInput("7")});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideIntConstant2))});
+
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active());
+  EXPECT_EQ(i8Of(*p.page, 1), -5) << "the abandoned draft raises nothing";
+  EXPECT_TRUE(fieldOf(*p.page, 2)->active()) << "the newly clicked constant opens instead";
+}
+
+TEST(ModulePage, ClickingTheBackgroundCancelsTheOpenEdit) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), textInput("7")});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kOutsideEveryActor))});
+
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active());
+  EXPECT_EQ(i8Of(*p.page, 1), -5);
+}
+
+TEST(ModulePage, ClickingTheHeaderBarCancelsTheOpenEdit) {
+  EditPage p;
+  p.page->draw();  // lays the chrome bar out
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), textInput("7")});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  // Inside the bar but clear of every button (they are inset by textPad).
+  const Rect bar = p.page->header().bounds();
+  ASSERT_GT(bar.w, 0.0);
+  p.page->update({mouseDown(InputEvent::Button::Left, Vec2{bar.x + 1, bar.y + 1})});
+
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active());
+  EXPECT_EQ(i8Of(*p.page, 1), -5);
+}
+
+TEST(ModulePage, DeleteWhileEditingEditsTheDraftInsteadOfDeletingTheNode) {
+  EditPage p;
+
+  p.page->update(
+    {mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::Home), deleteKey()});
+
+  ASSERT_NE(p.page->scene().find(1, 1), nullptr) << "Delete must not reach deleteSelection";
+  const TextField* field = fieldOf(*p.page, 1);
+  ASSERT_TRUE(field->active());
+  EXPECT_EQ(field->text(), "5") << "Delete erased the character at the caret";
+}
+
+TEST(ModulePage, FWhileEditingTypesIntoTheDraftInsteadOfFittingTheView) {
+  EditPage p;
+
+  // Pan away from the fitted view first, so a stray fit would be visible.
+  const Vec2 anchor{400, 300};
+  const Vec2 shift{60, 40};
+  p.page->update({mouseDown(InputEvent::Button::Middle, anchor),
+                  mouseMove(anchor + shift),
+                  mouseUp(InputEvent::Button::Middle, anchor + shift)});
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor) + shift), keyDown(InputEvent::Key::End)});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  // SDL keeps text input on, so an 'f' arrives as both a KeyDown and a TextInput.
+  p.page->update({keyDown(InputEvent::Key::F), textInput("f")});
+
+  EXPECT_EQ(fieldOf(*p.page, 1)->text(), "-5f");
+
+  const Rect fitted = toScreenRect(p.view, kActorWorldRect);
+  const Rect panned{fitted.x + shift.x, fitted.y + shift.y, fitted.w, fitted.h};
+  p.renderer.calls.clear();
+  p.page->draw();
+  EXPECT_TRUE(hasRect(p.renderer.calls, panned)) << "F must not refit the view mid-edit";
+}
+
+TEST(ModulePage, SpaceWhileEditingTypesIntoTheDraft) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::End)});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  p.page->update({keyDown(InputEvent::Key::Space), textInput(" ")});
+  EXPECT_EQ(fieldOf(*p.page, 1)->text(), "-5 ");
+
+  // Nothing pans on a Left drag, Space or no Space.
+  const Vec2 outside = p.at(kOutsideEveryActor);
+  p.page->update({mouseDown(InputEvent::Button::Left, outside), mouseMove(outside + Vec2{50, 50})});
+  p.renderer.calls.clear();
+  p.page->draw();
+
+  EXPECT_TRUE(hasRect(p.renderer.calls, toScreenRect(p.view, kActorWorldRect)));
+}
+
+// A middle-drag pan closes the edit (MouseDown non-Left cancels); the wheel does
+// not, so zoom is what this pins.
+TEST(ModulePage, ZoomingWhileEditingKeepsTheEditorOpen) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::End)});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  const Rect fitted = toScreenRect(p.view, kActorWorldRect);
+  p.renderer.calls.clear();
+  p.page->draw();
+  ASSERT_TRUE(hasRect(p.renderer.calls, fitted));
+
+  // The field re-derives its screen origin every frame, so a view change need
+  // not close it; only key and text events are the editor's.
+  p.page->update({mouseMove(p.at(kInsideActor) + Vec2{5, 5}), wheel(Vec2{400, 300}, Vec2{0, 1})});
+
+  p.renderer.calls.clear();
+  p.page->draw();
+  EXPECT_FALSE(hasRect(p.renderer.calls, fitted)) << "the wheel must reach the graph viewport and zoom it";
+
+  const TextField* field = fieldOf(*p.page, 1);
+  ASSERT_NE(field, nullptr);
+  EXPECT_TRUE(field->active());
+  EXPECT_EQ(field->text(), "-5");
+}
+
+// Space reaches a focused field as text, and is nobody's modifier.
+TEST(ModulePage, SpaceLeftOverAConstantOpensItsEditor) {
+  EditPage p;
+
+  const Vec2 start = p.at(kInsideActor);
+  p.page->update({keyDown(InputEvent::Key::Space), mouseDown(InputEvent::Button::Left, start)});
+
+  ASSERT_NE(fieldOf(*p.page, 1), nullptr);
+  EXPECT_TRUE(fieldOf(*p.page, 1)->active());
+
+  // ...and the drag that follows is the node's, not the view's.
+  const Rect fitted = toScreenRect(p.view, kActorWorldRect);
+  p.page->update({mouseMove(start + Vec2{50, 50})});
+  p.renderer.calls.clear();
+  p.page->draw();
+  EXPECT_TRUE(hasRect(p.renderer.calls, fitted)) << "the view is still where the fit left it";
+}
+
+TEST(ModulePage, PressingAGripMidEditClosesTheFieldAndStartsTheGesture) {
+  EditPage p;
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), textInput("7")});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  const Vec2 grip = p.at(kOnDragHandle);
+  p.page->update({mouseDown(InputEvent::Button::Left, grip),
+                  mouseMove(grip + Vec2{50 * p.view.scale, 0}),
+                  mouseUp(InputEvent::Button::Left, grip + Vec2{50 * p.view.scale, 0})});
+
+  EXPECT_FALSE(fieldOf(*p.page, 1)->active()) << "the grip press is a gesture, not an edit";
+  EXPECT_EQ(i8Of(*p.page, 1), -5) << "the abandoned draft raises nothing";
+  EXPECT_EQ(p.page->scene().find(1, 1)->worldBounds().x, kActorWorldRect.x + 50);
+}
+
+TEST(ModulePage, CommittingAValueIsOneUndoableEdit) {
+  EditPage p;
+  ASSERT_FALSE(p.page->editor().canUndo());
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)),
+                  keyDown(InputEvent::Key::End),
+                  textInput("7"),
+                  keyDown(InputEvent::Key::Return)});
+  ASSERT_TRUE(p.page->editor().canUndo());
+  ASSERT_EQ(i8Of(*p.page, 1), -57);
+
+  ASSERT_TRUE(p.page->editor().undo());
+  EXPECT_EQ(i8Of(*p.page, 1), -5) << "one undo restores the whole typing session";
+  EXPECT_FALSE(p.page->editor().canUndo());
+}
+
+TEST(ModulePage, DeletingTheEditedNodeDropsTheDraft) {
+  EditPage p;
+
+  // constant id=2 survives the delete and stays where the fit transform put it.
+  const Rect survivor = toScreenRect(p.view, Rect{110, 180, 25, 25});
+
+  // Pan off the fitted view first, so the F below has something to undo.
+  p.page->update({mouseDown(InputEvent::Button::Middle, Vec2{400, 300}), mouseMove(Vec2{460, 340})});
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor) + Vec2{60, 40}), textInput("7")});
+  ASSERT_TRUE(fieldOf(*p.page, 1)->active());
+
+  // The actor the router is focused on goes away underneath it.
+  ASSERT_TRUE(p.ctx.dispatch(std::make_unique<fluir::editor::DeleteTransaction>(fluir::FullID{1, 1})));
+  ASSERT_EQ(p.page->scene().find(1, 1), nullptr);
+
+  // A stale focus must release the keyboard: F fits the view again. No mouse
+  // event may intervene, or its own cancel() would mask the dropped focus.
+  p.page->update({keyDown(InputEvent::Key::F)});
+  p.renderer.calls.clear();
+  p.page->draw();
+  EXPECT_TRUE(hasRect(p.renderer.calls, survivor)) << "keys reach the page again once the edited actor is gone";
+
+  // The delete only detached the actor, so an undo hands the very same one back:
+  // the dropped focus must not latch onto it and resume the abandoned draft.
+  ASSERT_TRUE(p.page->editor().undo());
+  p.page->scene().layout(p.ctx);
+  ASSERT_NE(p.page->scene().find(1, 1), nullptr);
+  EXPECT_EQ(i8Of(*p.page, 1), -5);
+
+  const std::string draft = fieldOf(*p.page, 1)->text();
+  p.page->update({textInput("9"), keyDown(InputEvent::Key::Return)});
+  EXPECT_EQ(fieldOf(*p.page, 1)->text(), draft) << "the restored actor is not focused, so nothing types into it";
+  EXPECT_EQ(i8Of(*p.page, 1), -5) << "and Return commits nothing";
+}
+
+TEST(ModulePage, SaveAfterAnEditPersistsTheNewValue) {
+  const fs::path tmp = fs::temp_directory_path() / "fluir_module_constant_edit_test.fl";
+  fs::copy_file(kIntConstants, tmp, fs::copy_options::overwrite_existing);
+
+  EditPage p{tmp};
+  p.page->draw();  // lays out header_/saveButton_ bounds
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor)),
+                  keyDown(InputEvent::Key::End),
+                  textInput("7"),
+                  keyDown(InputEvent::Key::Return)});
+  ASSERT_EQ(i8Of(*p.page, 1), -57);
+
+  p.page->update({mouseDown(InputEvent::Button::Left, p.page->header().saveButton().bounds().center())});
+
+  fluir::editor::CollectingSink sink;
+  const auto reloaded = reloadFrom(sink, tmp);
+  ASSERT_TRUE(reloaded.tree.has_value());
+
+  const auto& fn = std::get<fluir::pt::FunctionDecl>(reloaded.tree->declarations.at(1));
+  const auto& node = std::get<fluir::pt::Constant>(fn.body.nodes.at(1));
+  EXPECT_EQ(std::get<fluir::literals_types::I8>(node.value), -57);
+
+  fs::remove(tmp);
 }

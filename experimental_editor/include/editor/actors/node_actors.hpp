@@ -1,11 +1,14 @@
 #pragma once
 
+#include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/actors/node_actor.hpp"
+#include "editor/components/text_field.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
@@ -67,7 +70,22 @@ namespace fluir::editor {
     PortSet ports(const EditorContext& ctx) const override;
     using NodeActor::location;
     fluir::FlowGraphLocation* location() override { return &node_.location; }
+    pt::Literal* literal() { return &node_.value; }
     pt::Node node() const override { return node_; }
+
+    bool onFocus(const EditorContext& ctx, Vec2 position) override;
+    void onBlur() override;
+    bool onKey(const EditorContext& ctx, InputEvent::Key key) override;
+    bool onTextInput(const EditorContext& ctx, std::string_view text) override;
+
+    /** This constant's in-place editor, for observing an open draft. */
+    const TextField& field() const { return field_; }
+
+    /** This constant's value as editable text, or nullopt when its type is not editable. */
+    std::optional<std::string> editableText() const;
+
+    /** Parses `text` and raises the edit. False rejects the draft. */
+    bool applyText(const EditorContext& ctx, const std::string& text);
 
     const std::string& lastClickSummary() const { return lastClickSummary_; }
 
@@ -77,6 +95,7 @@ namespace fluir::editor {
    private:
     pt::Constant node_;
     std::string lastClickSummary_;
+    TextField field_;
   };
 
   /** Actor for a `pt::Call` node: clicking summarizes the call's target name. */

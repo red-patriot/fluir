@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -13,6 +14,7 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/input.hpp"
 
 namespace fluir::editor {
 
@@ -151,6 +153,19 @@ namespace fluir::editor {
 
     /** Called when a claimed drag is dropped without a MouseUp. */
     virtual void onDragCancel() { }
+
+    /** Optionally take keyboard focus from a press at `position`, in parent
+     *  space. Returning true claims focus, false leaves it unclaimed. */
+    virtual bool onFocus(const EditorContext& ctx, Vec2 position) { return false; }
+
+    /** Called when focus moves away, or the layer's focus is reset. */
+    virtual void onBlur() { }
+
+    /** Handle a key while focused. Returns whether it consumed the key. */
+    virtual bool onKey(const EditorContext& ctx, InputEvent::Key key) { return false; }
+
+    /** Handle UTF-8 text input while focused. Returns whether it consumed it. */
+    virtual bool onTextInput(const EditorContext& ctx, std::string_view text) { return false; }
 
     /** Draws this actor into its parent's view, then its children into a nested
      *  view anchored (and clipped) to `bounds()`. */

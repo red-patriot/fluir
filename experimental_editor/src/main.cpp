@@ -34,6 +34,8 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  SDL_StartTextInput(window);
+
   SDL_Renderer* sdl = SDL_CreateRenderer(window, nullptr);
   if (!sdl) {
     fmt::print(stderr, "SDL_CreateRenderer failed: {}\n", SDL_GetError());

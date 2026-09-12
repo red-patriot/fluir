@@ -27,13 +27,24 @@ namespace fluir::editor {
         onResize();
         continue;
       }
-      if (onAppEvent(event)) {
-        continue;
-      }
+      Layer* consumer = nullptr;
       for (Layer* layer : ordered) {
         if (layer->dispatch(event, ctx_, renderer_.outputSize())) {
+          consumer = layer;
           break;
         }
+      }
+      // A press another layer took is not this one's: it must not keep focus.
+      if (event.type == InputEvent::Type::MouseDown) {
+        for (Layer* layer : ordered) {
+          if (layer != consumer) {
+            layer->dropFocus();
+          }
+        }
+      }
+      // Page commands are the fallback for what no layer wanted.
+      if (consumer == nullptr) {
+        onAppEvent(event);
       }
     }
     afterUpdate();

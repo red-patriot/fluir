@@ -27,9 +27,10 @@ namespace fluir::editor {
     hud_.add(std::make_unique<ClickInteraction>());
 
     graph_.setRoot(editor_.scene().root());
+    // Focus first: a focused field eats its keys before a page command reads them.
+    graph_.add(std::make_unique<FocusInteraction>());
     graph_.add(std::make_unique<PanZoomInteraction>());
-    // After PanZoom so a Space+Left pan does not select; before Drag so a press
-    // on a node's grip still selects it.
+    // Before Drag so a press on a node's grip still selects it.
     graph_.add(std::make_unique<SelectionInteraction>(editor_.scene()));
     graph_.add(std::make_unique<DragInteraction>());
     graph_.add(std::make_unique<ClickInteraction>());
@@ -63,7 +64,6 @@ namespace fluir::editor {
   }
 
   bool ModulePage::onAppEvent(const InputEvent& event) {
-    // Space is a pan modifier, not an app command.
     if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::F) {
       graph_.viewport().fitRect(editor_.scene().worldBounds(), renderer_.outputSize());
       return true;

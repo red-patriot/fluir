@@ -17,6 +17,7 @@
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/resize.hpp"
+#include "editor/transaction/set_constant_value.hpp"
 #include "recording_renderer.hpp"
 
 // The house round trip: apply, assert, reverse, assert the scene is back --
@@ -35,6 +36,7 @@ namespace {
   using fluir::editor::Rect;
   using fluir::editor::ResizeTransaction;
   using fluir::editor::sceneToParseTree;
+  using fluir::editor::SetConstantValueTransaction;
   using fluir::editor::Viewport;
   using testutil::RecordingRenderer;
 
@@ -323,6 +325,60 @@ TEST(DeleteTransaction, ConduitIdChangesNothingAndReturnsFalse) {
   const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
 
   DeleteTransaction uut{fluir::FullID{1, 40}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(SetConstantValueTransaction, SetConstantValueReplacesTheLiteralAndUndoRestoresIt) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::I32{42}};
+  ASSERT_TRUE(uut.execute(scene));
+  EXPECT_NE(sceneToParseTree(scene, kHeader), before);
+  ASSERT_TRUE(uut.unexecute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(SetConstantValueTransaction, SetConstantValueKeepsTheConstantsType) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  // node 10 holds an I32; an F64 is a different alternative, so it must be rejected.
+  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::F64{4.2}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(SetConstantValueTransaction, SetConstantValueToTheSameLiteralChangesNothing) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::I32{0}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(SetConstantValueTransaction, SetConstantValueOnAMissingNodeChangesNothing) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  SetConstantValueTransaction uut{fluir::FullID{1, 999}, fluir::literals_types::I32{42}};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(SetConstantValueTransaction, SetConstantValueOnANonConstantNodeChangesNothing) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  // node 30 is the Binary, which is not a ConstantActor at all.
+  SetConstantValueTransaction uut{fluir::FullID{1, 30}, fluir::literals_types::I32{42}};
   EXPECT_FALSE(uut.execute(scene));
   EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
 }

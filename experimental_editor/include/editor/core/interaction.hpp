@@ -35,6 +35,9 @@ namespace fluir::editor {
 
     /** Drops any state pointing into the actor tree. */
     virtual void reset() { }
+
+    /** Gives up keyboard focus, leaving any live gesture alone. */
+    virtual void dropFocus() { }
   };
 
   /** An ordered set of interactions, first to consume wins. */
@@ -43,13 +46,14 @@ namespace fluir::editor {
     void add(std::unique_ptr<Interaction> interaction);
     bool dispatch(const InputEvent& event, InteractionContext& ctx);
     void reset();
+    void dropFocus();
 
    private:
     std::vector<std::unique_ptr<Interaction>> items_;
     Interaction* captured_ = nullptr;
   };
 
-  /** Middle-drag or Space+Left pans; the wheel zooms within the context's clamp. */
+  /** Middle-drag pans; the wheel zooms within the context's clamp. */
   class PanZoomInteraction : public Interaction {
    public:
     bool onEvent(const InputEvent& event, InteractionContext& ctx) override;
@@ -58,8 +62,23 @@ namespace fluir::editor {
 
    private:
     bool panning_ = false;
-    bool spaceHeld_ = false;
     Vec2 lastPan_;
+  };
+
+  /** Left-press on an actor that claims focus; keys then route to it until a
+   *  press elsewhere, or reset(), blurs it. */
+  class FocusInteraction : public Interaction {
+   public:
+    bool onEvent(const InputEvent& event, InteractionContext& ctx) override;
+    void reset() override;
+    void dropFocus() override { reset(); }
+
+   private:
+    /** Blurs a focused actor that has left the tree, so an undo that reattaches
+     *  it cannot revive the draft. */
+    void dropStale(const Actor& root);
+
+    Actor* focused_ = nullptr;
   };
 
   /** Left-press on an actor that claims the gesture, then move, then release. */

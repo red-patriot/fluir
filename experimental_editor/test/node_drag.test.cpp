@@ -90,7 +90,7 @@ TEST(NodeDrag, OnDragStartClaimsOnlyOnHandle) {
   const EditorContext ctx;
 
   EXPECT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));       // inside the handle
-  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{20, 20}));    // inside the node, off the handle
+  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{12, 22}));    // inside the node, off the handle and the resize bar
   EXPECT_FALSE(actor.onDragStart(ctx, Vec2{100, 100}));  // off the node entirely
 }
 

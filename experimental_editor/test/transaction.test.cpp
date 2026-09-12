@@ -16,6 +16,7 @@
 #include "editor/core/scene_to_tree.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/move.hpp"
+#include "editor/transaction/resize.hpp"
 #include "recording_renderer.hpp"
 
 // The house round trip: apply, assert, reverse, assert the scene is back --
@@ -32,6 +33,7 @@ namespace {
   using fluir::editor::Layer;
   using fluir::editor::MoveTransaction;
   using fluir::editor::Rect;
+  using fluir::editor::ResizeTransaction;
   using fluir::editor::sceneToParseTree;
   using fluir::editor::Viewport;
   using testutil::RecordingRenderer;
@@ -144,6 +146,75 @@ TEST(MoveTransaction, MissChangesNothingAndReturnsFalse) {
   MoveTransaction inPlace{fluir::FullID{1, 10}, 1, 1};
   EXPECT_FALSE(inPlace.execute(scene));
 
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(ResizeTransaction, ResizeSetsTheWidthAndHeight) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+
+  ResizeTransaction uut{fluir::FullID{1, 10}, 9, 7};
+  ASSERT_TRUE(uut.execute(scene));
+
+  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
+  ASSERT_NE(loc, nullptr);
+  EXPECT_EQ(loc->width, 9);
+  EXPECT_EQ(loc->height, 7);
+}
+
+TEST(ResizeTransaction, ResizeUndoRestoresTheOriginalSize) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  ResizeTransaction uut{fluir::FullID{1, 10}, 9, 7};
+  ASSERT_TRUE(uut.execute(scene));
+  EXPECT_NE(sceneToParseTree(scene, kHeader), before);
+  ASSERT_TRUE(uut.unexecute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(ResizeTransaction, ResizeClampsBelowTheMinimum) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+
+  ResizeTransaction uut{fluir::FullID{1, 10}, -3, 0};
+  ASSERT_TRUE(uut.execute(scene));
+
+  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
+  EXPECT_EQ(loc->width, fluir::editor::MIN_SIZE);
+  EXPECT_EQ(loc->height, fluir::editor::MIN_SIZE);
+}
+
+TEST(ResizeTransaction, ResizeClampsAboveTheMaximum) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+
+  ResizeTransaction uut{fluir::FullID{1, 10}, 10'000, 99'999};
+  ASSERT_TRUE(uut.execute(scene));
+
+  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
+  EXPECT_EQ(loc->width, fluir::editor::MAX_SIZE);
+  EXPECT_EQ(loc->height, fluir::editor::MAX_SIZE);
+}
+
+TEST(ResizeTransaction, ResizeToTheCurrentSizeChangesNothing) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  ResizeTransaction uut{fluir::FullID{1, 10}, 5, 5};
+  EXPECT_FALSE(uut.execute(scene));
+  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+}
+
+TEST(ResizeTransaction, ResizeOfAnUnknownIdFails) {
+  GraphScene scene;
+  scene.build(kCtx, makeTree());
+  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+
+  ResizeTransaction unknown{fluir::FullID{1, 999}, 9, 7};
+  EXPECT_FALSE(unknown.execute(scene));
   EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
 }
 

@@ -100,13 +100,16 @@ set(FLUIR_EDITOR_ACTOR_SOURCES
     "actors/selection_outline.cpp"
 )
 
-set(FLUIR_EDITOR_TRANSACTION_SOURCES "transaction/delete.cpp"
-                                     "transaction/move.cpp"
+set(FLUIR_EDITOR_TRANSACTION_SOURCES
+    "transaction/delete.cpp"
+    "transaction/move.cpp"
+    "transaction/resize.cpp"
 )
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES
     "components/button_actor.cpp"
     "components/drag_handle.cpp"
+    "components/resize_handle.cpp"
     "components/toolbar_actor.cpp"
 )
 

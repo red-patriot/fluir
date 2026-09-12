@@ -87,10 +87,10 @@ namespace {
   // int_constants.fl constant id=1 absolute rect {60,175,25,25} (verified in
   // scene.test.cpp / graph_draw.test.cpp / graph_geometry.test.cpp). The
   // drag handle is the 15px grip inset one unit from the node's top and right
-  // edges -> world {65,180,15,15}; this point sits inside the node body but
-  // OUTSIDE that handle, so a Left press here is a plain body click, not a
-  // handle grab.
-  constexpr Vec2 kInsideActor{80, 195};
+  // edges -> world {65,180,15,15}, and the resize bar is the node's last 5px
+  // column -> world {80,175,5,25}; this point sits inside the node body but
+  // OUTSIDE both grips, so a Left press here is a plain body click.
+  constexpr Vec2 kInsideActor{72, 197};
   constexpr Vec2 kOutsideEveryActor{-1000, -1000};
   // The node's own world rect, and the centre of its 15px drag grip.
   constexpr Rect kActorWorldRect{60, 175, 25, 25};

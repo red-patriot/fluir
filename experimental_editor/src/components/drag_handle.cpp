@@ -25,10 +25,14 @@ namespace fluir::editor {
     accumulator_ = {};
     dx_ = 0;
     dy_ = 0;
-    return handleBox(nodeRect, loc, ctx).contains(parentLocalPos);
+    active_ = handleBox(nodeRect, loc, ctx).contains(parentLocalPos);
+    return active_;
   }
 
   void DragHandle::onDrag(const EditorContext& ctx, Vec2 worldDelta) {
+    if (!active_) {
+      return;
+    }
     accumulator_ = accumulator_ + worldDelta;
     const double unit = ctx.layout.unitPx;
     const int dx = static_cast<int>(accumulator_.x / unit);
@@ -50,7 +54,7 @@ namespace fluir::editor {
   }
 
   void DragHandle::commit(const EditorContext& ctx, const FlowGraphLocation& loc, const fluir::FullID& id) {
-    if (dx_ != 0 || dy_ != 0) {
+    if (active_ && (dx_ != 0 || dy_ != 0)) {
       ctx.dispatch(std::make_unique<MoveTransaction>(id, loc.x + dx_, loc.y + dy_));
     }
     cancel();
@@ -60,6 +64,7 @@ namespace fluir::editor {
     accumulator_ = {};
     dx_ = 0;
     dy_ = 0;
+    active_ = false;
   }
 
   void DragHandle::draw(const Subview& view,

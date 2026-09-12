@@ -110,7 +110,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drag_.draw(body, ctx, node_.location, nodeRect);
+    drawHandles(body, ctx, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
@@ -148,7 +148,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drag_.draw(body, ctx, node_.location, nodeRect);
+    drawHandles(body, ctx, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
@@ -176,7 +176,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
 
-    drag_.draw(body, ctx, node_.location, nodeRect);
+    drawHandles(body, ctx, nodeRect);
 
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
 
@@ -244,7 +244,7 @@ namespace fluir::editor {
                                ctx.theme.text);
     }
 
-    drag_.draw(body, ctx, node_.location, nodeRect);
+    drawHandles(body, ctx, nodeRect);
 
     drawDots(argAnchors, ctx.layout.portDot, body, ctx.theme.border);
 

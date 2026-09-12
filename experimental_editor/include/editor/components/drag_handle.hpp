@@ -43,6 +43,7 @@ namespace fluir::editor {
     Vec2 accumulator_{}; /**< sub-unit remainder of the live gesture */
     int dx_ = 0;         /**< whole grid units moved, not yet committed */
     int dy_ = 0;
+    bool active_ = false;
   };
 }  // namespace fluir::editor
 

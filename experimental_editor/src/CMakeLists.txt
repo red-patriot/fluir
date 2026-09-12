@@ -110,10 +110,17 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES
     "components/button_actor.cpp"
-    "components/drag_handle.cpp"
-    "components/resize_handle.cpp"
     "components/text_field.cpp"
     "components/toolbar_actor.cpp"
+)
+
+set(FLUIR_EDITOR_GESTURE_SOURCES
+    "gesture/gesture.cpp"
+    "gesture/gesture_host.cpp"
+    "gesture/grip.cpp"
+    "gesture/inline_edit.cpp"
+    "gesture/move.cpp"
+    "gesture/resize.cpp"
 )
 
 target_sources(
@@ -122,6 +129,7 @@ target_sources(
             ${FLUIR_EDITOR_PAGE_SOURCES}
             ${FLUIR_EDITOR_ACTOR_SOURCES}
             ${FLUIR_EDITOR_COMPONENT_SOURCES}
+            ${FLUIR_EDITOR_GESTURE_SOURCES}
             ${FLUIR_EDITOR_TRANSACTION_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"

@@ -9,7 +9,9 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/gesture/gesture_host.hpp"
 #include "editor/input.hpp"
+#include "stub_gesture.hpp"
 
 // These tests assert the *chain's routing contract*: who consumes an event,
 // who captures the gesture that follows, and when capture is released.
@@ -21,35 +23,36 @@ namespace {
   using fluir::editor::ContainerActor;
   using fluir::editor::DragInteraction;
   using fluir::editor::EditorContext;
+  using fluir::editor::GestureHost;
   using fluir::editor::InputEvent;
   using fluir::editor::InteractionChain;
   using fluir::editor::InteractionContext;
   using fluir::editor::PanZoomInteraction;
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
+  using fluir::editor::Vec2i;
   using fluir::editor::Viewport;
 
-  // Claims a drag anywhere inside itself and records what it received.
+  // A stub gesture edits nothing, so its size is never clamped.
+  constexpr fluir::editor::Limits<Vec2i> kNoLimits{.lower = Vec2i{0, 0}, .upper = Vec2i{1000000, 1000000}};
+
+  // Claims a drag anywhere inside itself and records what its gesture received.
   class DraggableActor : public Actor {
    public:
-    explicit DraggableActor(Rect bounds) : Actor(bounds) { }
+    explicit DraggableActor(Rect bounds) : Actor(bounds), gestures_(*this, {testutil::loggingGrip(log_)}, kNoLimits) { }
 
-    bool onDragStart(const EditorContext&, Vec2) override {
-      dragging_ = true;
-      return true;
-    }
-    void onDrag(const EditorContext&, Vec2, Vec2 delta) override { dragged_ = dragged_ + delta; }
-    void onDragEnd(const EditorContext&, Vec2) override { dragging_ = false; }
-    void onDragCancel() override {
-      dragging_ = false;
-      ++cancels_;
-    }
+    GestureHost* gestures() override { return &gestures_; }
     void onClick(Vec2) override { ++clicks_; }
 
-    bool dragging_ = false;
-    Vec2 dragged_{};
+    bool dragging() const { return gestures_.active(); }
+    Vec2 dragged() const { return log_.delta; }
+    int cancels() const { return log_.cancels; }
+
     int clicks_ = 0;
-    int cancels_ = 0;
+
+   private:
+    testutil::GestureLog log_;
+    GestureHost gestures_;
   };
 
   // Never claims a drag: a press on it is a plain click.
@@ -102,10 +105,10 @@ TEST(InteractionChain, DragCapturesTheGestureThatFollows) {
   auto& node = static_cast<DraggableActor&>(f.root.add(std::make_unique<DraggableActor>(Rect{0, 0, 50, 50})));
 
   ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
-  ASSERT_TRUE(node.dragging_);
+  ASSERT_TRUE(node.dragging());
 
   EXPECT_TRUE(f.send(move(Vec2{30, 10})));
-  EXPECT_EQ(node.dragged_, (Vec2{20, 0}));
+  EXPECT_EQ(node.dragged(), (Vec2{20, 0}));
   EXPECT_EQ(f.view.pan, (Vec2{0, 0})) << "a captured drag must not reach PanZoomInteraction";
 }
 
@@ -115,11 +118,11 @@ TEST(InteractionChain, CaptureReleasesOnMouseUp) {
 
   ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
   ASSERT_TRUE(f.send(up(InputEvent::Button::Left, Vec2{10, 10})));
-  EXPECT_FALSE(node.dragging_);
+  EXPECT_FALSE(node.dragging());
 
   // With capture released, a bare move is nobody's business again.
   EXPECT_FALSE(f.send(move(Vec2{200, 200})));
-  EXPECT_EQ(node.dragged_, (Vec2{0, 0}));
+  EXPECT_EQ(node.dragged(), (Vec2{0, 0}));
 }
 
 // Panning is the middle button's alone: Space arms nothing.
@@ -129,10 +132,10 @@ TEST(InteractionChain, SpaceLeftStillDragsTheActorUnderIt) {
 
   f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Space));
   ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
-  EXPECT_TRUE(node.dragging_);
+  EXPECT_TRUE(node.dragging());
 
   EXPECT_TRUE(f.send(move(Vec2{30, 40})));
-  EXPECT_EQ(node.dragged_, (Vec2{20, 30}));
+  EXPECT_EQ(node.dragged(), (Vec2{20, 30}));
   EXPECT_EQ(f.view.pan, (Vec2{0, 0}));
 }
 
@@ -191,7 +194,7 @@ TEST(InteractionChain, ResetDropsCaptureAndActorPointers) {
   f.chain.reset();
 
   EXPECT_FALSE(f.send(move(Vec2{30, 10})));
-  EXPECT_EQ(node.dragged_, (Vec2{0, 0}));
+  EXPECT_EQ(node.dragged(), (Vec2{0, 0}));
 }
 
 TEST(DragInteraction, ResetCancelsTheActorsDrag) {
@@ -202,6 +205,6 @@ TEST(DragInteraction, ResetCancelsTheActorsDrag) {
   ASSERT_TRUE(f.send(move(Vec2{30, 40})));
   f.chain.reset();
 
-  EXPECT_EQ(node.cancels_, 1) << "a gesture dropped without a MouseUp must reach the actor";
-  EXPECT_FALSE(node.dragging_);
+  EXPECT_EQ(node.cancels(), 1) << "a gesture dropped without a MouseUp must reach the actor";
+  EXPECT_FALSE(node.dragging());
 }

@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -14,9 +13,11 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
-#include "editor/input.hpp"
 
 namespace fluir::editor {
+
+  class GestureHost;
+  class InlineEdit;
 
   /** A node's port anchors, in body-local coordinates. */
   struct PortSet {
@@ -140,32 +141,13 @@ namespace fluir::editor {
     /** Handle a click event at `position`, in parent space. */
     virtual void onClick(Vec2 position) { }
 
-    /** Optionally start dragging a node.
-     * Returning true claims the drag gesture, false leaves unclaimed. */
-    virtual bool onDragStart(const EditorContext& ctx, Vec2 position) { return false; }
+    /** This actor's gestures, or nullptr when it cannot be grabbed. */
+    virtual GestureHost* gestures() { return nullptr; }
+    const GestureHost* gestures() const { return const_cast<Actor*>(this)->gestures(); }
 
-    /** Callback invoked each frame while dragging.
-     * `delta` is the displacement since the last call, in world pixels. */
-    virtual void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) { }
-
-    /** Called once on MouseUp, ending a claimed drag. */
-    virtual void onDragEnd(const EditorContext& ctx, Vec2 position) { }
-
-    /** Called when a claimed drag is dropped without a MouseUp. */
-    virtual void onDragCancel() { }
-
-    /** Optionally take keyboard focus from a press at `position`, in parent
-     *  space. Returning true claims focus, false leaves it unclaimed. */
-    virtual bool onFocus(const EditorContext& ctx, Vec2 position) { return false; }
-
-    /** Called when focus moves away, or the layer's focus is reset. */
-    virtual void onBlur() { }
-
-    /** Handle a key while focused. Returns whether it consumed the key. */
-    virtual bool onKey(const EditorContext& ctx, InputEvent::Key key) { return false; }
-
-    /** Handle UTF-8 text input while focused. Returns whether it consumed it. */
-    virtual bool onTextInput(const EditorContext& ctx, std::string_view text) { return false; }
+    /** This actor's in-place editor, or nullptr when it has none. */
+    virtual InlineEdit* editor() { return nullptr; }
+    const InlineEdit* editor() const { return const_cast<Actor*>(this)->editor(); }
 
     /** Draws this actor into its parent's view, then its children into a nested
      *  view anchored (and clipped) to `bounds()`. */

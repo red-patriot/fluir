@@ -48,16 +48,14 @@ namespace {
   // Drags function id=1's frame handle by (dxUnits, dyUnits) logical units.
   // simple_binary_expr.fl / single_empty_function.fl: foo at x=10 y=10 w=100
   // h=100; unitPx 5 -> frame bounds {50,50,500,500} and drag-handle world box
-  // {530,55,15,15}. DragHandle::onDrag takes a *world-pixel* delta and snaps to
+  // {530,55,15,15}. A drag gesture takes a *world-pixel* delta and snaps to
   // whole units, so a delta of dxUnits*unitPx moves the frame exactly dxUnits.
   void dragFrame(GraphScene& scene, int dxUnits, int dyUnits) {
     auto* frame = dynamic_cast<FunctionDeclActor*>(scene.find(1));
     ASSERT_NE(frame, nullptr);
-    ASSERT_TRUE(frame->onDragStart(kCtx, Vec2{537.5, 62.5}));
-    frame->onDrag(
-      kCtx,
-      Vec2{},
-      Vec2{static_cast<double>(dxUnits) * kCtx.layout.unitPx, static_cast<double>(dyUnits) * kCtx.layout.unitPx});
+    ASSERT_TRUE(frame->gestures()->press(kCtx, Vec2{537.5, 62.5}));
+    frame->gestures()->drag(
+      kCtx, Vec2{static_cast<double>(dxUnits) * kCtx.layout.unitPx, static_cast<double>(dyUnits) * kCtx.layout.unitPx});
     scene.layout(kCtx);  // layout, not draw, is what reconciles bounds with the new location
   }
 
@@ -200,8 +198,8 @@ TEST(FunctionDeclDrag, BodyNodeOwnDragBoundsSurviveRerender) {
   ASSERT_NE(node, nullptr);
   // binary id=1 world rect {125,85,25,25}; its grip is handleBox({125,85,..},{1,1,3,3}) = {130,90,15,15}.
   // Events arrive in the node's parent (body) space, so the world point converts first.
-  ASSERT_TRUE(node->onDragStart(kCtx, node->toParentLocal(Vec2{137, 97})));
-  node->onDrag(kCtx, Vec2{}, Vec2{2 * kCtx.layout.unitPx, 0});  // +2 units in x
+  ASSERT_TRUE(node->gestures()->press(kCtx, node->toParentLocal(Vec2{137, 97})));
+  node->gestures()->drag(kCtx, Vec2{2 * kCtx.layout.unitPx, 0});  // +2 units in x
   scene.layout(kCtx);
   const Rect dragged = node->worldBounds();
   ASSERT_EQ(dragged, (Rect{135, 85, 25, 25}));

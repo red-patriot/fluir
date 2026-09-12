@@ -21,6 +21,7 @@
 #include "editor/core/geometry.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/gesture/inline_edit.hpp"
 #include "editor/input.hpp"
 #include "editor/transaction/delete.hpp"
 #include "fixture_loader.hpp"
@@ -45,6 +46,7 @@ namespace {
   using fluir::editor::ConstantActor;
   using fluir::editor::EditorContext;
   using fluir::editor::GraphScene;
+  using fluir::editor::InlineEdit;
   using fluir::editor::InputEvent;
   using fluir::editor::ModulePage;
   using fluir::editor::NodeActor;
@@ -162,9 +164,9 @@ namespace {
   constexpr Vec2 kInsideIntConstant2{113, 198};
 
   /** The in-place editor of function 1's constant `node`, or nullptr. */
-  const TextField* fieldOf(const ModulePage& page, fluir::ID node) {
+  const InlineEdit* fieldOf(const ModulePage& page, fluir::ID node) {
     auto* actor = dynamic_cast<ConstantActor*>(page.scene().find(1, node));
-    return actor == nullptr ? nullptr : &actor->field();
+    return actor == nullptr ? nullptr : actor->editor();
   }
 
   /** The live literal of function 1's constant `node`, or nullptr. */
@@ -436,9 +438,9 @@ TEST(ModulePage, ChildStaysDraggableAfterFrameDrag) {
   ASSERT_NE(child, nullptr);
   ASSERT_NE(dynamic_cast<ConstantActor*>(child), nullptr);
 
-  ASSERT_TRUE(child->onDragStart(ctx, child->toParentLocal(Vec2{87, 187})));
+  ASSERT_TRUE(child->gestures()->press(ctx, child->toParentLocal(Vec2{87, 187})));
   const fluir::editor::Rect r0 = child->worldBounds();
-  child->onDrag(ctx, Vec2{}, Vec2{ctx.layout.unitPx, 0});  // +1 grid unit
+  child->gestures()->drag(ctx, Vec2{ctx.layout.unitPx, 0});  // +1 grid unit
   page.scene().layout(ctx);
   EXPECT_EQ(child->worldBounds(), (fluir::editor::Rect{r0.x + ctx.layout.unitPx, r0.y, r0.w, r0.h}));
 }
@@ -999,10 +1001,10 @@ TEST(ModulePage, ClickingAConstantOpensItsEditor) {
 
   p.page->update({mouseDown(InputEvent::Button::Left, p.at(kInsideActor))});
 
-  const TextField* field = fieldOf(*p.page, 1);
+  const InlineEdit* field = fieldOf(*p.page, 1);
   ASSERT_NE(field, nullptr);
   EXPECT_TRUE(field->active());
-  EXPECT_EQ(field->text(), "-5") << "the draft is prefilled from the current value";
+  EXPECT_EQ(field->field()->text(), "-5") << "the draft is prefilled from the current value";
 }
 
 TEST(ModulePage, ClickingAConstantStillSelectsIt) {
@@ -1037,10 +1039,10 @@ TEST(ModulePage, EnterOnAnInvalidDraftKeepsTheOldValueAndTheEditorOpen) {
                   keyDown(InputEvent::Key::Return)});
 
   EXPECT_EQ(i8Of(*p.page, 1), -5);
-  const TextField* field = fieldOf(*p.page, 1);
+  const InlineEdit* field = fieldOf(*p.page, 1);
   EXPECT_TRUE(field->active());
-  EXPECT_TRUE(field->invalid());
-  EXPECT_EQ(field->text(), "-5999");
+  EXPECT_TRUE(field->field()->invalid());
+  EXPECT_EQ(field->field()->text(), "-5999");
   EXPECT_FALSE(p.page->editor().canUndo()) << "a rejected commit raises no edit";
 }
 
@@ -1114,9 +1116,9 @@ TEST(ModulePage, DeleteWhileEditingEditsTheDraftInsteadOfDeletingTheNode) {
     {mouseDown(InputEvent::Button::Left, p.at(kInsideActor)), keyDown(InputEvent::Key::Home), deleteKey()});
 
   ASSERT_NE(p.page->scene().find(1, 1), nullptr) << "Delete must not reach deleteSelection";
-  const TextField* field = fieldOf(*p.page, 1);
+  const InlineEdit* field = fieldOf(*p.page, 1);
   ASSERT_TRUE(field->active());
-  EXPECT_EQ(field->text(), "5") << "Delete erased the character at the caret";
+  EXPECT_EQ(field->field()->text(), "5") << "Delete erased the character at the caret";
 }
 
 TEST(ModulePage, FWhileEditingTypesIntoTheDraftInsteadOfFittingTheView) {
@@ -1135,7 +1137,7 @@ TEST(ModulePage, FWhileEditingTypesIntoTheDraftInsteadOfFittingTheView) {
   // SDL keeps text input on, so an 'f' arrives as both a KeyDown and a TextInput.
   p.page->update({keyDown(InputEvent::Key::F), textInput("f")});
 
-  EXPECT_EQ(fieldOf(*p.page, 1)->text(), "-5f");
+  EXPECT_EQ(fieldOf(*p.page, 1)->field()->text(), "-5f");
 
   const Rect fitted = toScreenRect(p.view, kActorWorldRect);
   const Rect panned{fitted.x + shift.x, fitted.y + shift.y, fitted.w, fitted.h};
@@ -1151,7 +1153,7 @@ TEST(ModulePage, SpaceWhileEditingTypesIntoTheDraft) {
   ASSERT_TRUE(fieldOf(*p.page, 1)->active());
 
   p.page->update({keyDown(InputEvent::Key::Space), textInput(" ")});
-  EXPECT_EQ(fieldOf(*p.page, 1)->text(), "-5 ");
+  EXPECT_EQ(fieldOf(*p.page, 1)->field()->text(), "-5 ");
 
   // Nothing pans on a Left drag, Space or no Space.
   const Vec2 outside = p.at(kOutsideEveryActor);
@@ -1183,10 +1185,10 @@ TEST(ModulePage, ZoomingWhileEditingKeepsTheEditorOpen) {
   p.page->draw();
   EXPECT_FALSE(hasRect(p.renderer.calls, fitted)) << "the wheel must reach the graph viewport and zoom it";
 
-  const TextField* field = fieldOf(*p.page, 1);
+  const InlineEdit* field = fieldOf(*p.page, 1);
   ASSERT_NE(field, nullptr);
   EXPECT_TRUE(field->active());
-  EXPECT_EQ(field->text(), "-5");
+  EXPECT_EQ(field->field()->text(), "-5");
 }
 
 // Space reaches a focused field as text, and is nobody's modifier.
@@ -1269,9 +1271,10 @@ TEST(ModulePage, DeletingTheEditedNodeDropsTheDraft) {
   ASSERT_NE(p.page->scene().find(1, 1), nullptr);
   EXPECT_EQ(i8Of(*p.page, 1), -5);
 
-  const std::string draft = fieldOf(*p.page, 1)->text();
+  const std::string draft = fieldOf(*p.page, 1)->field()->text();
   p.page->update({textInput("9"), keyDown(InputEvent::Key::Return)});
-  EXPECT_EQ(fieldOf(*p.page, 1)->text(), draft) << "the restored actor is not focused, so nothing types into it";
+  EXPECT_EQ(fieldOf(*p.page, 1)->field()->text(), draft)
+    << "the restored actor is not focused, so nothing types into it";
   EXPECT_EQ(i8Of(*p.page, 1), -5) << "and Return commits nothing";
 }
 

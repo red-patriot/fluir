@@ -95,7 +95,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drawHandles(body, ctx, nodeRect);
+    gestures_.draw(body, ctx);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 2), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
@@ -133,7 +133,7 @@ namespace fluir::editor {
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
     body.renderer().drawText(body.toScreen(textPos), stringify(node_.op), ctx.theme.text);
 
-    drawHandles(body, ctx, nodeRect);
+    gestures_.draw(body, ctx);
 
     drawDots(edgeAnchors(nodeRect.x, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
@@ -151,8 +151,11 @@ namespace fluir::editor {
   ConstantActor::ConstantActor(fluir::ID functionId, pt::Constant node, Rect bounds) :
     NodeActor(fluir::FullID{functionId, node.id}, bounds),
     node_(node),
-    field_([this] { return editableText(); },
-           [this](const EditorContext& ctx, const std::string& text) { return applyText(ctx, text); }) { }
+    edit_([this] { return editableText(); },
+          [this](const EditorContext& ctx, const std::string& text) { return applyText(ctx, text); },
+          [this](const EditorContext& ctx) {
+            return Vec2{this->bounds().x + ctx.layout.textPad, this->bounds().y + ctx.layout.textPad};
+          }) { }
 
   void ConstantActor::onClick(Vec2) { lastClickSummary_ = fmt::format("constant {}", renderLiteral(node_.value)); }
 
@@ -175,64 +178,22 @@ namespace fluir::editor {
     return true;
   }
 
-  bool ConstantActor::onFocus(const EditorContext& ctx, Vec2 position) {
-    // A press on a grip starts a gesture, so it must not open an editor.
-    if (onHandles(ctx, position)) {
-      return false;
-    }
-    const double dx = position.x - (bounds().x + ctx.layout.textPad);
-    if (field_.active()) {
-      field_.setCaretFromOffset(dx);
-      return true;
-    }
-    return field_.begin(dx);
-  }
-
-  void ConstantActor::onBlur() { field_.cancel(); }
-
-  bool ConstantActor::onKey(const EditorContext& ctx, InputEvent::Key key) {
-    // An open edit owns every key: text input is always on, so an unhandled key
-    // still arrives as the TextInput the draft wants.
-    if (!field_.active()) {
-      return false;
-    }
-    switch (key) {
-      case InputEvent::Key::Return:
-        field_.commit(ctx);
-        return true;
-      case InputEvent::Key::Escape:
-        field_.cancel();
-        return true;
-      default:
-        field_.onKey(key);
-        return true;
-    }
-  }
-
-  bool ConstantActor::onTextInput(const EditorContext&, std::string_view text) {
-    if (!field_.active()) {
-      return false;
-    }
-    field_.insert(text);
-    return true;
-  }
-
   void ConstantActor::drawSelf(const Subview& body, const EditorContext& ctx) const {
     const Rect& nodeRect = bounds();
     body.renderer().fillRect(body.toScreen(nodeRect), std::visit(LiteralColor{ctx.theme}, node_.value));
     body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.border);
 
     const Vec2 textPos{nodeRect.x + ctx.layout.textPad, nodeRect.y + ctx.layout.textPad};
-    if (field_.active()) {
-      field_.draw(body, ctx, textPos);
-      if (field_.invalid()) {
+    if (edit_.active()) {
+      edit_.field()->draw(body, ctx, textPos);
+      if (edit_.field()->invalid()) {
         body.renderer().drawRect(body.toScreen(nodeRect), ctx.theme.error);
       }
     } else {
       body.renderer().drawText(body.toScreen(textPos), renderLiteral(node_.value), ctx.theme.text);
     }
 
-    drawHandles(body, ctx, nodeRect);
+    gestures_.draw(body, ctx);
 
     drawDots(edgeAnchors(nodeRect.x + nodeRect.w, nodeRect, 1), ctx.layout.portDot, body, ctx.theme.border);
 
@@ -300,7 +261,7 @@ namespace fluir::editor {
                                ctx.theme.text);
     }
 
-    drawHandles(body, ctx, nodeRect);
+    gestures_.draw(body, ctx);
 
     drawDots(argAnchors, ctx.layout.portDot, body, ctx.theme.border);
 

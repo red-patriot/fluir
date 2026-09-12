@@ -11,19 +11,6 @@ namespace fluir::editor {
     constexpr double GLYPH_PX = 8.0;  ///< SdlRenderer's debug font is a fixed cell
   }  // namespace
 
-  bool TextField::begin(double dxScreenPx) {
-    const std::optional<std::string> draft = prefill_ ? prefill_() : std::nullopt;
-    if (!draft) {
-      active_ = false;
-      return false;
-    }
-    text_ = *draft;
-    caret_ = indexAt(text_, dxScreenPx);
-    active_ = true;
-    invalid_ = false;
-    return true;
-  }
-
   void TextField::insert(std::string_view utf8) {
     std::string filtered;
     filtered.reserve(utf8.size());
@@ -74,14 +61,8 @@ namespace fluir::editor {
       invalid_ = true;
       return false;
     }
-    active_ = false;
     invalid_ = false;
     return true;
-  }
-
-  void TextField::cancel() {
-    active_ = false;
-    invalid_ = false;
   }
 
   void TextField::draw(const Subview& view, const EditorContext& ctx, Vec2 localTextPos) const {

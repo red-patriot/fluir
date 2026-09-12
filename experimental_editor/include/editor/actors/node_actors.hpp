@@ -2,14 +2,13 @@
 
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/actors/node_actor.hpp"
-#include "editor/components/text_field.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/gesture/inline_edit.hpp"
 
 namespace fluir::editor {
 
@@ -73,13 +72,7 @@ namespace fluir::editor {
     pt::Literal* literal() { return &node_.value; }
     pt::Node node() const override { return node_; }
 
-    bool onFocus(const EditorContext& ctx, Vec2 position) override;
-    void onBlur() override;
-    bool onKey(const EditorContext& ctx, InputEvent::Key key) override;
-    bool onTextInput(const EditorContext& ctx, std::string_view text) override;
-
-    /** This constant's in-place editor, for observing an open draft. */
-    const TextField& field() const { return field_; }
+    InlineEdit* editor() override { return &edit_; }
 
     /** This constant's value as editable text, or nullopt when its type is not editable. */
     std::optional<std::string> editableText() const;
@@ -95,7 +88,7 @@ namespace fluir::editor {
    private:
     pt::Constant node_;
     std::string lastClickSummary_;
-    TextField field_;
+    InlineEdit edit_;
   };
 
   /** Actor for a `pt::Call` node: clicking summarizes the call's target name. */

@@ -4,52 +4,19 @@
 
 namespace fluir::editor {
   namespace {
-    // A grid-unit `box` placed inside `nodeRect`, matching the grips' own draw math.
-    Rect handleBox(const Rect& nodeRect, const Rect& box, double unit) {
-      return {nodeRect.x + box.x * unit, nodeRect.y + box.y * unit, box.w * unit, box.h * unit};
-    }
+    // TODO: Make configurable. A node's height follows its content, so it is unbounded.
+    constexpr Limits<Vec2i> SIZE_UNITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
   }  // namespace
+
+  // The drag grip is listed first, so it keeps every pixel it shares with the bar.
+  NodeActor::NodeActor(fluir::FullID id, Rect bounds) :
+    PortActor(id.at(1), bounds),
+    gestures_(*this, {dragGrip(), horizResizeGrip(SIZE_UNITS)}, SIZE_UNITS),
+    id_(std::move(id)) { }
 
   void NodeActor::layout(const EditorContext& ctx) {
     setBounds(localRect(previewLocation(), ctx.layout.unitPx));
     Actor::layout(ctx);
-  }
-
-  void NodeActor::drawHandles(const Subview& view, const EditorContext& ctx, const Rect& nodeRect) const {
-    const FlowGraphLocation loc = previewLocation();
-    drag_.draw(view, ctx, loc, nodeRect);
-    resize_.draw(view, ctx, loc, nodeRect);
-  }
-
-  bool NodeActor::onHandles(const EditorContext& ctx, Vec2 parentLocal) const {
-    const FlowGraphLocation loc = previewLocation();
-    const double unit = ctx.layout.unitPx;
-    return handleBox(bounds(), dragRect(loc), unit).contains(parentLocal) ||
-           handleBox(bounds(), resize_.rect(loc), unit).contains(parentLocal);
-  }
-
-  bool NodeActor::onDragStart(const EditorContext& ctx, Vec2 position) {
-    if (!onHandles(ctx, position)) {
-      return false;
-    }
-    const FlowGraphLocation loc = previewLocation();
-    // Short-circuit: the drag grip keeps every pixel it shares with the bar.
-    return drag_.onDragStart(ctx, position, loc, bounds()) || resize_.onDragStart(ctx, position, loc, bounds());
-  }
-
-  void NodeActor::onDrag(const EditorContext& ctx, Vec2, Vec2 delta) {
-    drag_.onDrag(ctx, delta);
-    resize_.onDrag(ctx, delta);
-  }
-
-  void NodeActor::onDragEnd(const EditorContext& ctx, Vec2) {
-    drag_.commit(ctx, *location(), *selectionId());
-    resize_.commit(ctx, *location(), *selectionId());
-  }
-
-  void NodeActor::onDragCancel() {
-    drag_.cancel();
-    resize_.cancel();
   }
 
 }  // namespace fluir::editor

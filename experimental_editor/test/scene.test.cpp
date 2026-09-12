@@ -433,8 +433,8 @@ TEST(SceneBounds, ReflectsAFrameDragWithoutASave) {
   // edge, {530,55,15,15}. Drag it 20 logical units right and 10 down.
   auto* frame = dynamic_cast<FunctionDeclActor*>(scene.find(1));
   ASSERT_NE(frame, nullptr);
-  ASSERT_TRUE(frame->onDragStart(kCtx, Vec2{537.5, 62.5}));
-  frame->onDrag(kCtx, Vec2{}, Vec2{20 * kCtx.layout.unitPx, 10 * kCtx.layout.unitPx});
+  ASSERT_TRUE(frame->gestures()->press(kCtx, Vec2{537.5, 62.5}));
+  frame->gestures()->drag(kCtx, Vec2{20 * kCtx.layout.unitPx, 10 * kCtx.layout.unitPx});
   scene.layout(kCtx);
 
   expectRectNear(scene.worldBounds(), Rect{150, 100, 500, 500});

@@ -82,9 +82,9 @@ TEST(FunctionDeclResize, OnDragStartClaimsOnlyOnTheCornerGrip) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  EXPECT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  EXPECT_FALSE(frame->onDragStart(h.ctx, Vec2{300, 300}));    // inside the frame, off both grips
-  EXPECT_FALSE(frame->onDragStart(h.ctx, Vec2{1000, 1000}));  // off the frame entirely
+  EXPECT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  EXPECT_FALSE(frame->gestures()->press(h.ctx, Vec2{300, 300}));    // inside the frame, off both grips
+  EXPECT_FALSE(frame->gestures()->press(h.ctx, Vec2{1000, 1000}));  // off the frame entirely
 }
 
 TEST(FunctionDeclResize, TheHeaderGripStillMovesTheFrame) {
@@ -92,9 +92,9 @@ TEST(FunctionDeclResize, TheHeaderGripStillMovesTheFrame) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kHeaderGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{10, 10});
-  frame->onDragEnd(h.ctx, Vec2{});
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kHeaderGrip));
+  frame->gestures()->drag(h.ctx, Vec2{10, 10});
+  frame->gestures()->release(h.ctx);
 
   ASSERT_EQ(h.edits.size(), 1u);
   ASSERT_TRUE(h.edits[0]->execute(h.scene));
@@ -111,8 +111,8 @@ TEST(FunctionDeclResize, AResizeLeavesTheModelUntouchedUntilRelease) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{10, 10});  // 2 grid units on each axis
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{10, 10});  // 2 grid units on each axis
   h.scene.layout(h.ctx);
 
   EXPECT_EQ(frame->bounds(), (Rect{50, 50, 510, 510})) << "the preview grows on screen";
@@ -125,10 +125,10 @@ TEST(FunctionDeclResize, ReleaseRaisesOneResizeForTheWholeGesture) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{10, 0});
-  frame->onDrag(h.ctx, Vec2{}, Vec2{5, 5});
-  frame->onDragEnd(h.ctx, Vec2{});
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{10, 0});
+  frame->gestures()->drag(h.ctx, Vec2{5, 5});
+  frame->gestures()->release(h.ctx);
 
   ASSERT_EQ(h.edits.size(), 1u);
   ASSERT_TRUE(h.edits[0]->execute(h.scene));
@@ -141,9 +141,9 @@ TEST(FunctionDeclResize, AVerticalDragResizesHeightOnly) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{0, 10});
-  frame->onDragEnd(h.ctx, Vec2{});
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{0, 10});
+  frame->gestures()->release(h.ctx);
 
   ASSERT_EQ(h.edits.size(), 1u);
   ASSERT_TRUE(h.edits[0]->execute(h.scene));
@@ -156,9 +156,9 @@ TEST(FunctionDeclResize, AReleaseThatResizedNothingRaisesNoEdit) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{3, 3});  // sub-grid: nothing resized
-  frame->onDragEnd(h.ctx, Vec2{});
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{3, 3});  // sub-grid: nothing resized
+  frame->gestures()->release(h.ctx);
 
   EXPECT_TRUE(h.edits.empty());
 }
@@ -168,9 +168,9 @@ TEST(FunctionDeclResize, CancelDropsThePreview) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{10, 10});
-  frame->onDragCancel();
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{10, 10});
+  frame->gestures()->cancel();
   h.scene.layout(h.ctx);
 
   EXPECT_EQ(frame->bounds(), (Rect{50, 50, 500, 500}));
@@ -182,14 +182,14 @@ TEST(FunctionDeclResize, PreviewClampsToTheMinimumSize) {
   FunctionDeclActor* frame = h.build();
   ASSERT_NE(frame, nullptr);
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{-1000, -1000});  // -200 grid units, far past zero
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{-1000, -1000});  // -200 grid units, far past zero
   h.scene.layout(h.ctx);
 
   EXPECT_GT(frame->bounds().w, 0);
   EXPECT_GT(frame->bounds().h, 0);
 
-  frame->onDragEnd(h.ctx, Vec2{});
+  frame->gestures()->release(h.ctx);
   ASSERT_EQ(h.edits.size(), 1u);
   ASSERT_TRUE(h.edits[0]->execute(h.scene));
   EXPECT_GT(frame->location()->width, 0);
@@ -228,8 +228,8 @@ TEST(FunctionDeclResize, TheReturnRailTracksTheLivePreview) {
   ASSERT_NE(rail, nullptr);
   const Rect atRest = rail->worldBounds();
 
-  ASSERT_TRUE(frame->onDragStart(h.ctx, kCornerGrip));
-  frame->onDrag(h.ctx, Vec2{}, Vec2{2 * h.ctx.layout.unitPx, 0});
+  ASSERT_TRUE(frame->gestures()->press(h.ctx, kCornerGrip));
+  frame->gestures()->drag(h.ctx, Vec2{2 * h.ctx.layout.unitPx, 0});
   h.scene.layout(h.ctx);
 
   EXPECT_TRUE(h.edits.empty()) << "still mid-gesture";

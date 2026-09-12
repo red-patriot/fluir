@@ -89,18 +89,18 @@ TEST(NodeDrag, OnDragStartClaimsOnlyOnHandle) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  EXPECT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));       // inside the handle
-  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{12, 22}));    // inside the node, off the handle and the resize bar
-  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{100, 100}));  // off the node entirely
+  EXPECT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));       // inside the handle
+  EXPECT_FALSE(actor.gestures()->press(ctx, Vec2{12, 22}));    // inside the node, off the handle and the resize bar
+  EXPECT_FALSE(actor.gestures()->press(ctx, Vec2{100, 100}));  // off the node entirely
 }
 
 TEST(NodeDrag, OnDragGridSnapsBounds) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
-  actor.onDrag(ctx, Vec2{}, Vec2{12, 3});  // 12/5 -> 2 units (10px); 3/5 -> 0 units
-  actor.layout(ctx);                       // bounds follow the location, no draw needed
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
+  actor.gestures()->drag(ctx, Vec2{12, 3});  // 12/5 -> 2 units (10px); 3/5 -> 0 units
+  actor.layout(ctx);                         // bounds follow the location, no draw needed
 
   EXPECT_EQ(actor.bounds(), (Rect{10, 0, 25, 25}));
   EXPECT_TRUE(hasFill(recordDraw(actor, ctx), Rect{10, 0, 25, 25}));
@@ -110,13 +110,13 @@ TEST(NodeDrag, OnDragAccumulatesSubGridRemainder) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
 
-  actor.onDrag(ctx, Vec2{}, Vec2{3, 0});  // 3px < 1 unit -> no move yet
+  actor.gestures()->drag(ctx, Vec2{3, 0});  // 3px < 1 unit -> no move yet
   actor.layout(ctx);
   EXPECT_EQ(actor.bounds().x, 0.0);
 
-  actor.onDrag(ctx, Vec2{}, Vec2{3, 0});  // 6px total -> 1 whole unit (5px)
+  actor.gestures()->drag(ctx, Vec2{3, 0});  // 6px total -> 1 whole unit (5px)
   actor.layout(ctx);
   EXPECT_EQ(actor.bounds().x, 5.0);
 }
@@ -168,8 +168,8 @@ TEST(NodeDrag, ADragLeavesTheModelUntouchedUntilRelease) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   EditorContext ctx;
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});  // 10px -> 2 grid units
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
+  actor.gestures()->drag(ctx, Vec2{10, 0});  // 10px -> 2 grid units
   actor.layout(ctx);
 
   EXPECT_EQ(actor.bounds().x, 10.0) << "the preview moves on screen";
@@ -185,10 +185,10 @@ TEST(NodeDrag, ReleaseRaisesOneMoveForTheWholeGesture) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
-  actor.onDrag(ctx, Vec2{}, Vec2{5, 0});
-  actor.onDrag(ctx, Vec2{}, Vec2{5, 5});
-  actor.onDragEnd(ctx, Vec2{});
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
+  actor.gestures()->drag(ctx, Vec2{5, 0});
+  actor.gestures()->drag(ctx, Vec2{5, 5});
+  actor.gestures()->release(ctx);
 
   ASSERT_EQ(edits.size(), 1u);
 
@@ -210,9 +210,9 @@ TEST(NodeDrag, AReleaseThatMovedNothingRaisesNoEdit) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
-  actor.onDrag(ctx, Vec2{}, Vec2{3, 3});  // sub-grid: nothing moved
-  actor.onDragEnd(ctx, Vec2{});
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
+  actor.gestures()->drag(ctx, Vec2{3, 3});  // sub-grid: nothing moved
+  actor.gestures()->release(ctx);
 
   EXPECT_TRUE(edits.empty());
 }
@@ -226,9 +226,9 @@ TEST(NodeDrag, CancelDropsThePreview) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{5, 5}));
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 10});
-  actor.onDragCancel();
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{5, 5}));
+  actor.gestures()->drag(ctx, Vec2{10, 10});
+  actor.gestures()->cancel();
   actor.layout(ctx);
 
   EXPECT_EQ(actor.bounds(), (Rect{0, 0, 25, 25}));

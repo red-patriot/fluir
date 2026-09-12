@@ -1,6 +1,6 @@
 #include "editor/components/text_field.hpp"
 
-#include <optional>
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -27,16 +27,10 @@ namespace {
 
   constexpr double kGlyphPx = 8.0;  // matches TextField's fixed debug-font cell
 
-  /** Always offers `text`; records how many times the owner was asked. */
-  TextField::Prefill fixedPrefill(std::string text, int& calls) {
-    return [text, &calls]() -> std::optional<std::string> {
-      ++calls;
-      return text;
-    };
-  }
-
-  TextField::Prefill declinedPrefill() {
-    return []() -> std::optional<std::string> { return std::nullopt; };
+  /** A draft opened on `text`, with the caret where a click at `dxScreenPx` puts it. */
+  TextField openField(std::string text, double dxScreenPx = 0.0, TextField::Commit commit = {}) {
+    const std::size_t caret = TextField::indexAt(text, dxScreenPx);
+    return TextField{std::move(text), caret, std::move(commit)};
   }
 
   /** Records every draft it is asked to validate; always returns `accept`. */
@@ -49,38 +43,8 @@ namespace {
 
 }  // namespace
 
-TEST(TextField, BeginPrefillsTheDraftFromTheOwner) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("42", prefillCalls), TextField::Commit{});
-
-  EXPECT_TRUE(field.begin(0.0));
-
-  EXPECT_EQ(prefillCalls, 1);
-  EXPECT_TRUE(field.active());
-  EXPECT_EQ(field.text(), "42");
-}
-
-TEST(TextField, BeginPlacesTheCaretAtTheNearestGapToTheClick) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("ab", prefillCalls), TextField::Commit{});
-
-  // Gaps sit at screen x = 0, 8, 16; a click at x=5 is nearer the gap at 8.
-  field.begin(5.0);
-
-  EXPECT_EQ(field.caret(), 1u);
-}
-
-TEST(TextField, BeginIsDeclinedWhenTheOwnerHasNoEditableText) {
-  TextField field(declinedPrefill(), TextField::Commit{});
-
-  EXPECT_FALSE(field.begin(0.0));
-  EXPECT_FALSE(field.active());
-}
-
 TEST(TextField, TypingInsertsAtTheCaret) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("ac", prefillCalls), TextField::Commit{});
-  field.begin(kGlyphPx);  // caret at index 1, between 'a' and 'c'
+  TextField field = openField("ac", kGlyphPx);  // caret at index 1, between 'a' and 'c'
 
   field.insert("b");
 
@@ -89,9 +53,7 @@ TEST(TextField, TypingInsertsAtTheCaret) {
 }
 
 TEST(TextField, InsertIgnoresControlCharacters) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("", prefillCalls), TextField::Commit{});
-  field.begin(0.0);
+  TextField field = openField("", 0.0);
 
   field.insert("\n\t");
   EXPECT_EQ(field.text(), "");
@@ -103,9 +65,7 @@ TEST(TextField, InsertIgnoresControlCharacters) {
 }
 
 TEST(TextField, BackspaceDeletesBeforeTheCaretAndDeleteDeletesAfter) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("abc", prefillCalls), TextField::Commit{});
-  field.begin(0.0);
+  TextField field = openField("abc", 0.0);
   field.onKey(InputEvent::Key::Right);  // caret at 1, between 'a' and 'b'
 
   EXPECT_TRUE(field.onKey(InputEvent::Key::Backspace));
@@ -118,9 +78,7 @@ TEST(TextField, BackspaceDeletesBeforeTheCaretAndDeleteDeletesAfter) {
 }
 
 TEST(TextField, BackspaceAtTheStartAndDeleteAtTheEndLeaveTheDraftAlone) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("ab", prefillCalls), TextField::Commit{});
-  field.begin(0.0);  // caret at 0
+  TextField field = openField("ab", 0.0);  // caret at 0
 
   EXPECT_TRUE(field.onKey(InputEvent::Key::Backspace));
   EXPECT_EQ(field.text(), "ab");
@@ -133,9 +91,7 @@ TEST(TextField, BackspaceAtTheStartAndDeleteAtTheEndLeaveTheDraftAlone) {
 }
 
 TEST(TextField, LeftAndRightMoveTheCaretAndClampAtTheEnds) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("ab", prefillCalls), TextField::Commit{});
-  field.begin(0.0);  // caret at 0
+  TextField field = openField("ab", 0.0);  // caret at 0
 
   EXPECT_TRUE(field.onKey(InputEvent::Key::Left));
   EXPECT_EQ(field.caret(), 0u);  // clamped at the start
@@ -152,9 +108,7 @@ TEST(TextField, LeftAndRightMoveTheCaretAndClampAtTheEnds) {
 }
 
 TEST(TextField, HomeAndEndJumpToTheDraftEnds) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("abcd", prefillCalls), TextField::Commit{});
-  field.begin(2 * kGlyphPx);  // caret starts in the middle
+  TextField field = openField("abcd", 2 * kGlyphPx);  // caret starts in the middle
 
   EXPECT_TRUE(field.onKey(InputEvent::Key::Home));
   EXPECT_EQ(field.caret(), 0u);
@@ -163,40 +117,32 @@ TEST(TextField, HomeAndEndJumpToTheDraftEnds) {
   EXPECT_EQ(field.caret(), 4u);
 }
 
-TEST(TextField, CommitRunsTheValidatorOnceAndClosesTheField) {
-  int prefillCalls = 0;
+TEST(TextField, CommitRunsTheValidatorOnce) {
   std::vector<std::string> seen;
-  TextField field(fixedPrefill("42", prefillCalls), recordingCommit(true, seen));
-  field.begin(0.0);
+  TextField field = openField("42", 0.0, recordingCommit(true, seen));
 
   const EditorContext ctx;
   EXPECT_TRUE(field.commit(ctx));
 
   ASSERT_EQ(seen.size(), 1u);
   EXPECT_EQ(seen[0], "42");
-  EXPECT_FALSE(field.active());
   EXPECT_FALSE(field.invalid());
 }
 
-TEST(TextField, ARejectedCommitKeepsTheDraftOpenAndMarksItInvalid) {
-  int prefillCalls = 0;
+TEST(TextField, ARejectedCommitMarksTheDraftInvalid) {
   std::vector<std::string> seen;
-  TextField field(fixedPrefill("abc", prefillCalls), recordingCommit(false, seen));
-  field.begin(0.0);
+  TextField field = openField("abc", 0.0, recordingCommit(false, seen));
 
   const EditorContext ctx;
   EXPECT_FALSE(field.commit(ctx));
 
-  EXPECT_TRUE(field.active());
   EXPECT_TRUE(field.invalid());
   EXPECT_EQ(field.text(), "abc");
 }
 
 TEST(TextField, EditingAfterARejectionClearsTheInvalidMark) {
-  int prefillCalls = 0;
   std::vector<std::string> seen;
-  TextField field(fixedPrefill("abc", prefillCalls), recordingCommit(false, seen));
-  field.begin(0.0);
+  TextField field = openField("abc", 0.0, recordingCommit(false, seen));
   const EditorContext ctx;
   field.commit(ctx);
   ASSERT_TRUE(field.invalid());
@@ -206,22 +152,8 @@ TEST(TextField, EditingAfterARejectionClearsTheInvalidMark) {
   EXPECT_FALSE(field.invalid());
 }
 
-TEST(TextField, CancelClosesTheFieldWithoutRunningTheValidator) {
-  int prefillCalls = 0;
-  std::vector<std::string> seen;
-  TextField field(fixedPrefill("abc", prefillCalls), recordingCommit(true, seen));
-  field.begin(0.0);
-
-  field.cancel();
-
-  EXPECT_FALSE(field.active());
-  EXPECT_TRUE(seen.empty());
-}
-
 TEST(TextField, DrawsTheDraftAndACaretAtTheCaretIndex) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("abc", prefillCalls), TextField::Commit{});
-  field.begin(0.0);
+  TextField field = openField("abc", 0.0);
   field.onKey(InputEvent::Key::Right);
   field.onKey(InputEvent::Key::Right);  // caret at 2
 
@@ -239,9 +171,7 @@ TEST(TextField, DrawsTheDraftAndACaretAtTheCaretIndex) {
 }
 
 TEST(TextField, TheCaretTracksTheTextOriginAtAnyZoom) {
-  int prefillCalls = 0;
-  TextField field(fixedPrefill("abc", prefillCalls), TextField::Commit{});
-  field.begin(0.0);
+  TextField field = openField("abc", 0.0);
   field.onKey(InputEvent::Key::Right);  // caret at 1
 
   const EditorContext ctx;

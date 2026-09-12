@@ -11,9 +11,9 @@
 #include "editor/actors/port_actor.hpp"
 #include "editor/actors/rail_actors.hpp"
 #include "editor/components/container_actor.hpp"
-#include "editor/components/drag_handle.hpp"
-#include "editor/components/resize_handle.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/gesture/gesture_host.hpp"
+#include "editor/gesture/grip.hpp"
 
 namespace fluir::editor {
 
@@ -25,10 +25,10 @@ namespace fluir::editor {
 
     void layout(const EditorContext& ctx) override;
     void onClick(Vec2 position) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 position) override;
-    void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
-    void onDragEnd(const EditorContext& ctx, Vec2 position) override;
-    void onDragCancel() override;
+    GestureHost* gestures() override { return &gestures_; }
+
+    /** This frame's location with any live gesture applied. */
+    fluir::FlowGraphLocation previewLocation() const { return gestures_.preview(location_); }
 
     fluir::ID functionId() const { return functionId_; }
     const std::string& name() const { return name_; }
@@ -50,9 +50,6 @@ namespace fluir::editor {
     void registerPort(PortActor& port) { ports_[port.portId()] = &port; }
     void unregisterPort(fluir::ID portId) { ports_.erase(portId); }
 
-    /** This node's location with any live gesture preview applied. */
-    fluir::FlowGraphLocation previewLocation() const { return resize_.preview(drag_.preview(location_)); }
-
    protected:
     void drawSelf(const Subview& parentView, const EditorContext& ctx) const override;
     void drawOverlay(const Subview& parentView, const EditorContext& ctx) const override;
@@ -61,13 +58,10 @@ namespace fluir::editor {
     /** The header band across the top of the frame, in parent space. */
     Rect headerRect(const EditorContext& ctx) const;
 
-    void drawHandles(const Subview& view, const EditorContext& ctx) const;
-
     fluir::ID functionId_;
     FlowGraphLocation location_;
     std::string name_;
-    DragHandle drag_;
-    XYResizeHandle resize_{Limits{.lower = Vec2{15, 15}, .upper = Vec2{1000, 1000}}};
+    GestureHost gestures_;
     ContainerActor* body_;
     ReturnActor* return_ = nullptr;
     // Conduit endpoints are body-scope ids; the frame owns the body, so it owns the lookup.

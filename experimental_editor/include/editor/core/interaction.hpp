@@ -15,6 +15,7 @@
 namespace fluir::editor {
 
   class GraphScene;
+  class TextField;
 
   /** Everything an interaction may touch and the actor tree it dispatches into. */
   struct InteractionContext {
@@ -65,8 +66,9 @@ namespace fluir::editor {
     Vec2 lastPan_;
   };
 
-  /** Left-press on an actor that claims focus; keys then route to it until a
-   *  press elsewhere, or reset(), blurs it. */
+  /** Left-press on an actor that opens an in-place edit; keys then route to that
+   *  draft until a press elsewhere, Return, Escape or reset() closes it. The key
+   *  policy lives here so no actor has to restate it. */
   class FocusInteraction : public Interaction {
    public:
     bool onEvent(const InputEvent& event, InteractionContext& ctx) override;
@@ -77,6 +79,12 @@ namespace fluir::editor {
     /** Blurs a focused actor that has left the tree, so an undo that reattaches
      *  it cannot revive the draft. */
     void dropStale(const Actor& root);
+
+    /** Opens `actor`'s editor at `parentLocal`, unless a grip claims that press. */
+    static bool openEdit(const EditorContext& ctx, Actor& actor, Vec2 parentLocal);
+
+    /** The focused actor's open draft, or nullptr. */
+    TextField* openDraft();
 
     Actor* focused_ = nullptr;
   };

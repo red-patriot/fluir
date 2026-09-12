@@ -7,15 +7,21 @@
 
 #include "editor/actors/actor.hpp"
 #include "editor/components/container_actor.hpp"
+#include "editor/components/text_field.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/interaction.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/gesture/gesture_host.hpp"
+#include "editor/gesture/inline_edit.hpp"
 #include "editor/input.hpp"
+#include "stub_gesture.hpp"
 
 // These tests assert the *focus contract*: which actor a press hands the
-// keyboard to, when it is taken away again, and that claiming focus never
-// costs the actor the selection/drag/click dispatch it would otherwise get.
+// keyboard to, when it is taken away again, that claiming focus never costs the
+// actor the selection/drag/click dispatch it would otherwise get, and the key
+// policy FocusInteraction owns -- Return commits, Escape cancels, the rest go
+// to the draft.
 
 namespace {
 
@@ -25,49 +31,54 @@ namespace {
   using fluir::editor::DragInteraction;
   using fluir::editor::EditorContext;
   using fluir::editor::FocusInteraction;
+  using fluir::editor::GestureHost;
+  using fluir::editor::InlineEdit;
   using fluir::editor::InputEvent;
   using fluir::editor::InteractionChain;
   using fluir::editor::InteractionContext;
   using fluir::editor::PanZoomInteraction;
   using fluir::editor::Rect;
+  using fluir::editor::TextField;
   using fluir::editor::Vec2;
+  using fluir::editor::Vec2i;
   using fluir::editor::Viewport;
 
-  // Claims focus anywhere inside itself and records what it was handed.
+  // A stub gesture edits nothing, so its size is never clamped.
+  constexpr fluir::editor::Limits<Vec2i> kNoLimits{.lower = Vec2i{0, 0}, .upper = Vec2i{1000000, 1000000}};
+
+  // Opens a draft anywhere inside itself, and records what it commits.
   class FocusableActor : public Actor {
    public:
     explicit FocusableActor(Rect bounds) : Actor(bounds) { }
 
-    bool onFocus(const EditorContext&, Vec2 position) override {
-      lastFocusPos_ = position;
-      focused_ = claimsFocus_;
-      return claimsFocus_;
-    }
-    void onBlur() override { focused_ = false; }
-    bool onKey(const EditorContext&, InputEvent::Key key) override {
-      keys_.push_back(key);
-      return true;
-    }
-    bool onTextInput(const EditorContext&, std::string_view text) override {
-      typed_ += text;
-      return true;
-    }
+    InlineEdit* editor() override { return &edit_; }
+    GestureHost* gestures() override { return claimsDrag_ ? &gestures_ : nullptr; }
     void onClick(Vec2) override { ++clicks_; }
-    bool onDragStart(const EditorContext&, Vec2) override {
-      dragging_ = claimsDrag_;
-      return claimsDrag_;
-    }
-    void onDragEnd(const EditorContext&, Vec2) override { dragging_ = false; }
-    void onDragCancel() override { dragging_ = false; }
+
+    bool focused() const { return edit_.active(); }
+    bool dragging() const { return gestures_.active(); }
+    /** The open draft's text, or "" when nothing is open. */
+    std::string draft() const { return edit_.active() ? edit_.field()->text() : std::string{}; }
+    /** The open draft's caret, or 0 when nothing is open. */
+    std::size_t caret() const { return edit_.active() ? edit_.field()->caret() : 0u; }
 
     bool claimsFocus_ = true;
     bool claimsDrag_ = false; /**< a drag captures the chain, so keys stop flowing */
-    bool focused_ = false;
-    bool dragging_ = false;
-    Vec2 lastFocusPos_{};
-    std::vector<InputEvent::Key> keys_;
-    std::string typed_;
+    bool accepts_ = true;     /**< whether this actor's validator takes the draft */
+    std::string prefill_;     /**< what a press opens the draft on */
+    std::vector<std::string> committed_;
     int clicks_ = 0;
+
+   private:
+    InlineEdit edit_{[this] { return claimsFocus_ ? std::optional<std::string>{prefill_} : std::nullopt; },
+                     [this](const EditorContext&, const std::string& text) {
+                       committed_.push_back(text);
+                       return accepts_;
+                     }};
+    testutil::GestureLog log_;
+    // The grip is the actor's right half, so a press left of x = 25 is a body
+    // press that opens the draft and one right of it is a gesture press.
+    GestureHost gestures_{*this, {testutil::loggingGrip(log_, Rect{5, 0, 5, 10})}, kNoLimits};
   };
 
   // Never claims focus: a press on it is a plain click.
@@ -117,13 +128,44 @@ TEST(Focus, APressOnAClaimingActorGivesItTheKeyboard) {
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 20}));
-  ASSERT_TRUE(actor.focused_);
-  EXPECT_EQ(actor.lastFocusPos_, (Vec2{10, 20})) << "the press arrives in the actor's parent space";
+  ASSERT_TRUE(actor.focused());
+
+  EXPECT_TRUE(f.send(text("hi")));
+  EXPECT_EQ(actor.draft(), "hi");
 
   EXPECT_TRUE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Return)));
-  EXPECT_TRUE(f.send(text("hi")));
-  EXPECT_EQ(actor.keys_, std::vector<InputEvent::Key>{InputEvent::Key::Return});
-  EXPECT_EQ(actor.typed_, "hi");
+  EXPECT_EQ(actor.committed_, std::vector<std::string>{"hi"});
+  EXPECT_FALSE(actor.focused()) << "an accepted commit closes the draft";
+}
+
+TEST(Focus, EscapeClosesTheDraftWithoutCommitting) {
+  Fixture f;
+  auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
+
+  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
+  f.send(text("hi"));
+
+  EXPECT_TRUE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Escape)));
+
+  EXPECT_FALSE(actor.focused());
+  EXPECT_TRUE(actor.committed_.empty());
+}
+
+// The validator is the actor's own; a rejection is not the policy's business
+// beyond leaving the draft where the user can fix it.
+TEST(Focus, ARejectedCommitKeepsTheDraftFocused) {
+  Fixture f;
+  auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
+  actor.accepts_ = false;
+
+  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
+  f.send(text("no"));
+
+  EXPECT_TRUE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::Return)));
+
+  EXPECT_TRUE(actor.focused()) << "a rejected draft stays open to be fixed";
+  EXPECT_EQ(actor.draft(), "no");
+  EXPECT_EQ(actor.committed_, std::vector<std::string>{"no"});
 }
 
 TEST(Focus, KeysAreUnconsumedUntilSomethingIsFocused) {
@@ -132,8 +174,20 @@ TEST(Focus, KeysAreUnconsumedUntilSomethingIsFocused) {
 
   EXPECT_FALSE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::F)));
   EXPECT_FALSE(f.send(text("x")));
-  EXPECT_TRUE(actor.keys_.empty());
-  EXPECT_EQ(actor.typed_, "");
+  EXPECT_FALSE(actor.focused());
+}
+
+// An actor may hold an editor and still have nothing to edit -- a float
+// constant, say. It declines, and the keyboard stays unowned.
+TEST(Focus, AnEditorWithNothingEditableClaimsNoFocus) {
+  Fixture f;
+  auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
+  actor.claimsFocus_ = false;
+
+  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
+
+  EXPECT_FALSE(actor.focused());
+  EXPECT_FALSE(f.send(text("x")));
 }
 
 TEST(Focus, APressOnANonClaimingActorLeavesNoFocus) {
@@ -151,11 +205,11 @@ TEST(Focus, APressElsewhereBlursTheFocusedActor) {
   f.root.add(std::make_unique<PlainActor>(Rect{100, 0, 50, 50}));
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  ASSERT_TRUE(actor.focused_);
+  ASSERT_TRUE(actor.focused());
 
   f.send(down(InputEvent::Button::Left, Vec2{110, 10}));
 
-  EXPECT_FALSE(actor.focused_);
+  EXPECT_FALSE(actor.focused());
   EXPECT_FALSE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::F)));
 }
 
@@ -166,39 +220,58 @@ TEST(Focus, KeysReachOnlyTheFocusedActor) {
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
   f.send(text("a"));
+  EXPECT_EQ(first.draft(), "a");
+
   f.send(down(InputEvent::Button::Left, Vec2{110, 10}));
   f.send(text("b"));
 
-  EXPECT_EQ(first.typed_, "a");
-  EXPECT_EQ(second.typed_, "b");
-  EXPECT_FALSE(first.focused_);
-  EXPECT_TRUE(second.focused_);
+  EXPECT_EQ(second.draft(), "b");
+  EXPECT_FALSE(first.focused()) << "the press elsewhere dropped the first draft";
+  EXPECT_TRUE(second.focused());
 }
 
 TEST(Focus, RePressingTheFocusedActorReOffersFocusWithoutBlurring) {
   Fixture f;
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
 
-  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  f.send(down(InputEvent::Button::Left, Vec2{30, 10}));
+  actor.prefill_ = "abcd";  // 8px glyphs, so the caret reports where the press landed
 
-  EXPECT_TRUE(actor.focused_);
-  EXPECT_EQ(actor.lastFocusPos_, (Vec2{30, 10})) << "the second press re-aims the same focus";
+  f.send(down(InputEvent::Button::Left, Vec2{8, 10}));
+  ASSERT_EQ(actor.caret(), 1u);
+
+  f.send(down(InputEvent::Button::Left, Vec2{16, 10}));
+
+  EXPECT_TRUE(actor.focused());
+  EXPECT_EQ(actor.draft(), "abcd") << "the draft survives the second press";
+  EXPECT_EQ(actor.caret(), 2u) << "the second press re-aims the same focus";
 }
 
-// A re-press the focused actor declines (its grip, say) gives the focus up.
-TEST(Focus, ADeclinedReOfferBlursTheFocusedActor) {
+// A press on a grip is a gesture, never an edit -- even on the actor that
+// already holds the keyboard, which gives the focus up.
+TEST(Focus, APressOnAGripBlursTheFocusedActor) {
   Fixture f;
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
+  actor.claimsDrag_ = true;
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  ASSERT_TRUE(actor.focused_);
+  ASSERT_TRUE(actor.focused()) << "the body press opened a draft";
 
-  actor.claimsFocus_ = false;
   f.send(down(InputEvent::Button::Left, Vec2{30, 10}));
 
-  EXPECT_FALSE(actor.focused_);
+  EXPECT_FALSE(actor.focused());
+  EXPECT_TRUE(actor.dragging()) << "the same press started the gesture instead";
   EXPECT_FALSE(f.send(text("x")));
+}
+
+TEST(Focus, APressOnAGripNeverOpensADraft) {
+  Fixture f;
+  auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
+  actor.claimsDrag_ = true;
+
+  f.send(down(InputEvent::Button::Left, Vec2{30, 10}));
+
+  EXPECT_FALSE(actor.focused());
+  EXPECT_TRUE(actor.dragging());
 }
 
 TEST(Focus, ResetBlursTheFocusedActor) {
@@ -206,40 +279,36 @@ TEST(Focus, ResetBlursTheFocusedActor) {
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  ASSERT_TRUE(actor.focused_);
+  ASSERT_TRUE(actor.focused());
 
   f.chain.reset();
 
-  EXPECT_FALSE(actor.focused_);
+  EXPECT_FALSE(actor.focused());
   EXPECT_FALSE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::F)));
 }
 
-TEST(Focus, DropFocusBlursWithoutTouchingGestureState) {
+TEST(Focus, DropFocusLeavesALiveGestureAlone) {
   Fixture f;
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
   actor.claimsDrag_ = true;
 
-  f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  ASSERT_TRUE(actor.focused_);
-  ASSERT_TRUE(actor.dragging_);
+  f.send(down(InputEvent::Button::Left, Vec2{30, 10}));
+  ASSERT_TRUE(actor.dragging());
 
   f.chain.dropFocus();
 
-  EXPECT_FALSE(actor.focused_);
-  EXPECT_TRUE(actor.dragging_) << "dropping focus is not a gesture cancel";
+  EXPECT_TRUE(actor.dragging()) << "dropping focus is not a gesture cancel";
 }
 
-// Focus is additive: the press it claims still feeds drag and click.
+// Focus is additive: the press it claims still feeds selection and click.
 TEST(Focus, ClaimingFocusDoesNotConsumeThePress) {
   Fixture f;
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
-  actor.claimsDrag_ = true;
 
   ASSERT_TRUE(f.send(down(InputEvent::Button::Left, Vec2{10, 10})));
-  EXPECT_TRUE(actor.dragging_) << "the drag still claimed the same press";
 
-  f.send(up(InputEvent::Button::Left, Vec2{10, 10}));
-  EXPECT_TRUE(actor.focused_) << "ending the gesture does not end the edit";
+  EXPECT_TRUE(actor.focused());
+  EXPECT_EQ(actor.clicks_, 1) << "the click still saw the same press";
 }
 
 // Space is an ordinary key: a focused field eats it, nothing else wants it.
@@ -254,7 +323,7 @@ TEST(Focus, SpaceIsJustAKeyForTheFocusedActor) {
 
   f.send(key(InputEvent::Type::KeyUp, InputEvent::Key::Space));
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  EXPECT_TRUE(actor.focused_) << "the press is an edit: nothing pans on Space";
+  EXPECT_TRUE(actor.focused()) << "the press is an edit: nothing pans on Space";
   EXPECT_EQ(f.view.pan, (Vec2{0, 0}));
 }
 
@@ -264,16 +333,16 @@ TEST(Focus, DetachingTheFocusedActorDropsTheFocus) {
   auto& actor = static_cast<FocusableActor&>(f.root.add(std::make_unique<FocusableActor>(Rect{0, 0, 50, 50})));
 
   f.send(down(InputEvent::Button::Left, Vec2{10, 10}));
-  ASSERT_TRUE(actor.focused_);
+  ASSERT_TRUE(actor.focused());
 
   std::unique_ptr<Actor> detached = f.root.detach(actor);
   ASSERT_NE(detached, nullptr);
 
   EXPECT_FALSE(f.send(key(InputEvent::Type::KeyDown, InputEvent::Key::F)));
-  EXPECT_FALSE(actor.focused_);
+  EXPECT_FALSE(actor.focused());
 
   // Re-attaching must not revive the focus the detach dropped.
   f.root.insert(0, std::move(detached));
   EXPECT_FALSE(f.send(text("x")));
-  EXPECT_EQ(actor.typed_, "");
+  EXPECT_FALSE(actor.focused());
 }

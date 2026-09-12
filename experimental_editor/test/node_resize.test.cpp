@@ -87,9 +87,9 @@ TEST(NodeResize, OnDragStartClaimsOnlyOnTheRightEdgeBar) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   const EditorContext ctx;
 
-  EXPECT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));     // on the bar, clear of the drag grip
-  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{12, 22}));    // inside the node, off both grips
-  EXPECT_FALSE(actor.onDragStart(ctx, Vec2{100, 100}));  // off the node entirely
+  EXPECT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));     // on the bar, clear of the drag grip
+  EXPECT_FALSE(actor.gestures()->press(ctx, Vec2{12, 22}));    // inside the node, off both grips
+  EXPECT_FALSE(actor.gestures()->press(ctx, Vec2{100, 100}));  // off the node entirely
 }
 
 TEST(NodeResize, TheDragGripWinsWhereTheGripsOverlap) {
@@ -101,9 +101,9 @@ TEST(NodeResize, TheDragGripWinsWhereTheGripsOverlap) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{19, 10}));  // the drag grip's rightmost pixels
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});
-  actor.onDragEnd(ctx, Vec2{});
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{19, 10}));  // the drag grip's rightmost pixels
+  actor.gestures()->drag(ctx, Vec2{10, 0});
+  actor.gestures()->release(ctx);
 
   ASSERT_EQ(edits.size(), 1u);
 
@@ -120,8 +120,8 @@ TEST(NodeResize, AResizeLeavesTheModelUntouchedUntilRelease) {
   BinaryActor actor(kFunctionId, makeBinary(), Rect{0, 0, 25, 25});
   EditorContext ctx;
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});  // 10px -> 2 grid units wider
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));
+  actor.gestures()->drag(ctx, Vec2{10, 0});  // 10px -> 2 grid units wider
   actor.layout(ctx);
 
   EXPECT_EQ(actor.bounds().w, 35.0) << "the preview grows on screen";
@@ -137,10 +137,10 @@ TEST(NodeResize, ReleaseRaisesOneResizeForTheWholeGesture) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});
-  actor.onDrag(ctx, Vec2{}, Vec2{5, 5});
-  actor.onDragEnd(ctx, Vec2{});
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));
+  actor.gestures()->drag(ctx, Vec2{10, 0});
+  actor.gestures()->drag(ctx, Vec2{5, 5});
+  actor.gestures()->release(ctx);
 
   ASSERT_EQ(edits.size(), 1u);
 
@@ -162,9 +162,9 @@ TEST(NodeResize, AReleaseThatResizedNothingRaisesNoEdit) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));
-  actor.onDrag(ctx, Vec2{}, Vec2{3, 3});  // sub-grid: nothing resized
-  actor.onDragEnd(ctx, Vec2{});
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));
+  actor.gestures()->drag(ctx, Vec2{3, 3});  // sub-grid: nothing resized
+  actor.gestures()->release(ctx);
 
   EXPECT_TRUE(edits.empty());
 }
@@ -178,9 +178,9 @@ TEST(NodeResize, CancelDropsThePreview) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));
-  actor.onDrag(ctx, Vec2{}, Vec2{10, 0});
-  actor.onDragCancel();
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));
+  actor.gestures()->drag(ctx, Vec2{10, 0});
+  actor.gestures()->cancel();
   actor.layout(ctx);
 
   EXPECT_EQ(actor.bounds(), (Rect{0, 0, 25, 25}));
@@ -196,13 +196,13 @@ TEST(NodeResize, PreviewClampsToTheMinimumWidth) {
     return true;
   };
 
-  ASSERT_TRUE(actor.onDragStart(ctx, Vec2{22, 22}));
-  actor.onDrag(ctx, Vec2{}, Vec2{-100, 0});  // -20 grid units, far past zero
+  ASSERT_TRUE(actor.gestures()->press(ctx, Vec2{22, 22}));
+  actor.gestures()->drag(ctx, Vec2{-100, 0});  // -20 grid units, far past zero
   actor.layout(ctx);
 
   EXPECT_EQ(actor.bounds().w, 4 * ctx.layout.unitPx);
 
-  actor.onDragEnd(ctx, Vec2{});
+  actor.gestures()->release(ctx);
   ASSERT_EQ(edits.size(), 1u);
 
   GraphScene scene;

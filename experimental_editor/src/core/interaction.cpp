@@ -5,6 +5,9 @@
 #include <utility>
 
 #include "editor/actors/scene.hpp"
+#include "editor/components/text_field.hpp"
+#include "editor/gesture/gesture_host.hpp"
+#include "editor/gesture/inline_edit.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -137,9 +140,19 @@ namespace fluir::editor {
 
   void FocusInteraction::reset() {
     if (focused_ != nullptr) {
-      focused_->onBlur();
+      focused_->editor()->end();
       focused_ = nullptr;
     }
+  }
+
+  // A press on a grip starts a gesture, so it must never open an editor.
+  bool FocusInteraction::openEdit(const EditorContext& ctx, Actor& actor, Vec2 parentLocal) {
+    const GestureHost* gestures = actor.gestures();
+    if (gestures != nullptr && gestures->onGrip(ctx, parentLocal)) {
+      return false;
+    }
+    InlineEdit* editor = actor.editor();
+    return editor != nullptr && editor->begin(ctx, parentLocal);
   }
 
   void FocusInteraction::dropStale(const Actor& root) {
@@ -147,6 +160,8 @@ namespace fluir::editor {
       reset();
     }
   }
+
+  TextField* FocusInteraction::openDraft() { return focused_ == nullptr ? nullptr : focused_->editor()->field(); }
 
   bool FocusInteraction::onEvent(const InputEvent& event, InteractionContext& ctx) {
     switch (event.type) {
@@ -160,25 +175,52 @@ namespace fluir::editor {
           // Re-offer to the actor that already has focus: it may re-aim, or
           // decline (a press on its grip) and give the focus up.
           if (hit.actor != nullptr && hit.actor == focused_) {
-            if (!focused_->onFocus(ctx.editor, hit.local)) {
+            if (!openEdit(ctx.editor, *focused_, hit.local)) {
               reset();
             }
             return false;  // tracked, never consumed
           }
           reset();
-          if (hit.actor != nullptr && hit.actor->onFocus(ctx.editor, hit.local)) {
+          if (hit.actor != nullptr && openEdit(ctx.editor, *hit.actor, hit.local)) {
             focused_ = hit.actor;
           }
           return false;  // tracked, never consumed
         }
 
       case InputEvent::Type::KeyDown:
-        dropStale(ctx.root);
-        return focused_ != nullptr && event.key && focused_->onKey(ctx.editor, *event.key);
+        {
+          dropStale(ctx.root);
+          TextField* draft = openDraft();
+          if (draft == nullptr || !event.key) {
+            return false;
+          }
+          switch (*event.key) {
+            case InputEvent::Key::Return:
+              if (draft->commit(ctx.editor)) {
+                reset();
+              }
+              return true;
+            case InputEvent::Key::Escape:
+              reset();
+              return true;
+            default:
+              // An open draft owns every key: text input is always on, so an
+              // unhandled key still arrives as the TextInput the draft wants.
+              draft->onKey(*event.key);
+              return true;
+          }
+        }
 
       case InputEvent::Type::TextInput:
-        dropStale(ctx.root);
-        return focused_ != nullptr && focused_->onTextInput(ctx.editor, event.text);
+        {
+          dropStale(ctx.root);
+          TextField* draft = openDraft();
+          if (draft == nullptr) {
+            return false;
+          }
+          draft->insert(event.text);
+          return true;
+        }
 
       default:
         return false;
@@ -187,7 +229,7 @@ namespace fluir::editor {
 
   void DragInteraction::reset() {
     if (dragActor_ != nullptr) {
-      dragActor_->onDragCancel();
+      dragActor_->gestures()->cancel();
       dragActor_ = nullptr;
     }
   }
@@ -200,7 +242,8 @@ namespace fluir::editor {
             return false;
           }
           const Hit hit = hitAt(ctx, event.pos);
-          if (hit.actor == nullptr || !hit.actor->onDragStart(ctx.editor, hit.local)) {
+          GestureHost* gestures = hit.actor == nullptr ? nullptr : hit.actor->gestures();
+          if (gestures == nullptr || !gestures->press(ctx.editor, hit.local)) {
             return false;
           }
           dragActor_ = hit.actor;
@@ -214,7 +257,7 @@ namespace fluir::editor {
             return false;
           }
           const Vec2 world = ctx.view.screenToWorld(event.pos);
-          dragActor_->onDrag(ctx.editor, dragActor_->toParentLocal(world), world - lastDragWorld_);
+          dragActor_->gestures()->drag(ctx.editor, world - lastDragWorld_);
           lastDragWorld_ = world;
           return true;
         }
@@ -224,8 +267,7 @@ namespace fluir::editor {
           if (dragActor_ == nullptr || !isLeft(event)) {
             return false;
           }
-          const Vec2 world = ctx.view.screenToWorld(event.pos);
-          dragActor_->onDragEnd(ctx.editor, dragActor_->toParentLocal(world));
+          dragActor_->gestures()->release(ctx.editor);
           dragActor_ = nullptr;
           return true;
         }

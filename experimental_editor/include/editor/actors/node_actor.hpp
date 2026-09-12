@@ -9,15 +9,15 @@
 #include "compiler/models/location.hpp"
 #include "editor/actors/actor.hpp"
 #include "editor/actors/port_actor.hpp"
-#include "editor/components/drag_handle.hpp"
-#include "editor/components/resize_handle.hpp"
+#include "editor/gesture/gesture_host.hpp"
+#include "editor/gesture/grip.hpp"
 
 namespace fluir::editor {
 
   /** An Actor representing a node in the data-flow diagram. */
   class NodeActor : public PortActor {
    public:
-    NodeActor(fluir::FullID id, Rect bounds) : PortActor(id.at(1), bounds), id_(std::move(id)) { }
+    NodeActor(fluir::FullID id, Rect bounds);
 
     const fluir::FullID& id() const { return id_; }
 
@@ -37,25 +37,14 @@ namespace fluir::editor {
     /** Points operand `slot` back at `nodeId`. */
     virtual void restoreOperand(int slot, fluir::ID nodeId) { }
 
-    /** This node's location with any live gesture preview applied. */
-    fluir::FlowGraphLocation previewLocation() const { return resize_.preview(drag_.preview(*location())); }
-
-    /** Draws the node's grips into `nodeRect`. */
-    void drawHandles(const Subview& view, const EditorContext& ctx, const Rect& nodeRect) const;
-
-    /** True when `parentLocal` lands on either grip. The grips are not actors,
-     *  so callers need this to tell a gesture press from a press on the body. */
-    bool onHandles(const EditorContext& ctx, Vec2 parentLocal) const;
+    /** This node's location with any live gesture applied. */
+    fluir::FlowGraphLocation previewLocation() const { return gestures_.preview(*location()); }
 
     void layout(const EditorContext& ctx) override;
-    bool onDragStart(const EditorContext& ctx, Vec2 position) override;
-    void onDrag(const EditorContext& ctx, Vec2 position, Vec2 delta) override;
-    void onDragEnd(const EditorContext& ctx, Vec2 position) override;
-    void onDragCancel() override;
+    GestureHost* gestures() override { return &gestures_; }
 
    protected:
-    DragHandle drag_;
-    HorizResizeHandle resize_{Limits{4, 1000}};  // TODO: Make configurable
+    GestureHost gestures_;
 
    private:
     fluir::FullID id_;

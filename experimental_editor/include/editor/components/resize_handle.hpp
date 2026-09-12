@@ -13,6 +13,8 @@ namespace fluir::editor {
    public:
     static constexpr double WIDTH = 1;
 
+    explicit HorizResizeHandle(Limits<int> limits) : limits_(limits) { }
+
     /** True if `parentLocalPos` lands on the bar drawn inside `nodeRect`. */
     bool onDragStart(const EditorContext& ctx, Vec2 parentLocalPos, const FlowGraphLocation& loc, const Rect& nodeRect);
 
@@ -37,6 +39,7 @@ namespace fluir::editor {
     Rect rect(const fluir::FlowGraphLocation& nodeLoc) const;
 
    private:
+    Limits<int> limits_;
     double accumulator_ = 0; /**< sub-unit remainder of the live gesture */
     int dw_ = 0;             /**< whole grid units widened, not yet committed */
     bool active_ = false;
@@ -46,6 +49,8 @@ namespace fluir::editor {
   class XYResizeHandle {
    public:
     static constexpr double SIZE = 3;
+
+    explicit XYResizeHandle(Limits<Vec2> limits) : limits_(limits) { }
 
     /** True if `parentLocalPos` lands on the bar drawn inside `nodeRect`. */
     bool onDragStart(const EditorContext& ctx, Vec2 parentLocalPos, const FlowGraphLocation& loc, const Rect& nodeRect);
@@ -73,6 +78,7 @@ namespace fluir::editor {
     Rect rect(const fluir::FlowGraphLocation& nodeLoc) const;
 
    private:
+    Limits<Vec2> limits_;
     Vec2 accumulator_ = {0.0, 0.0}; /**< sub-unit remainder of the live gesture */
     int dw_ = 0;                    /**< whole grid units widened, not yet committed */
     int dh_ = 0;                    /**< whole grid units heightened, not yet committed */

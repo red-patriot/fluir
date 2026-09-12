@@ -31,4 +31,10 @@ namespace fluir::editor {
     friend constexpr bool operator==(const Rect&, const Rect&) = default;
   };
 
+  template <typename T>
+  struct Limits {
+    T lower;
+    T upper;
+  };
+
 }  // namespace fluir::editor

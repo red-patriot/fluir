@@ -66,7 +66,7 @@ namespace fluir::editor {
     FlowGraphLocation location_;
     std::string name_;
     DragHandle drag_;
-    XYResizeHandle resize_;
+    XYResizeHandle resize_{Limits{.lower = Vec2{15, 15}, .upper = Vec2{1000, 1000}}};
     ContainerActor* body_;
     ReturnActor* return_ = nullptr;
     // Conduit endpoints are body-scope ids; the frame owns the body, so it owns the lookup.

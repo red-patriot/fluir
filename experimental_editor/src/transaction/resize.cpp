@@ -7,7 +7,7 @@
 
 namespace fluir::editor {
 
-  int clampSize(int size) { return std::clamp(size, MIN_SIZE, MAX_SIZE); }
+  int ResizeTransaction::clampSize(int size) { return std::clamp(size, MIN_SIZE, MAX_SIZE); }
 
   bool ResizeTransaction::execute(GraphScene& scene) {
     Actor* actor = scene.find(id_);

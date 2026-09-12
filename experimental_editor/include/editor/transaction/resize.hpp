@@ -13,11 +13,11 @@ namespace fluir::editor {
   constexpr int MIN_SIZE = 4;
   constexpr int MAX_SIZE = 1000;
 
-  /** `size` clamped to the range an edit may produce. */
-  int clampSize(int size);
-
   /** Resizes an actor to (width, height). Self-inverting: the swap is its own reverse. */
   class ResizeTransaction : public Transaction {
+    /** `size` clamped to the range an edit may produce. */
+    static int clampSize(int size);
+
    public:
     ResizeTransaction(fluir::FullID id, int width, int height) :
       id_(std::move(id)), width_(clampSize(width)), height_(clampSize(height)) { }

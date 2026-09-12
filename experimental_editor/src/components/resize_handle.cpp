@@ -39,7 +39,7 @@ namespace fluir::editor {
 
   FlowGraphLocation HorizResizeHandle::preview(const FlowGraphLocation& loc) const {
     FlowGraphLocation out = loc;
-    out.width = clampSize(loc.width + dw_);
+    out.width = std::clamp(loc.width + dw_, limits_.lower, limits_.upper);
     return out;
   }
 
@@ -100,8 +100,9 @@ namespace fluir::editor {
 
   FlowGraphLocation XYResizeHandle::preview(const FlowGraphLocation& loc) const {
     FlowGraphLocation out = loc;
-    out.width = clampSize(loc.width + dw_);
-    out.height = clampSize(loc.height + dh_);
+    // TODO: Vec2 is a template
+    out.width = std::clamp(loc.width + dw_, (int)limits_.lower.x, (int)limits_.upper.x);
+    out.height = std::clamp(loc.height + dh_, (int)limits_.lower.y, (int)limits_.upper.y);
     return out;
   }
 

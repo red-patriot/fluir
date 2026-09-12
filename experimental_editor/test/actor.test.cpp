@@ -372,7 +372,7 @@ TEST(ActorTree, DrawNestsChildrenInsideTheParentsClippedView) {
 }
 
 TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
-  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 10, 50});
+  FunctionDeclActor actor(makeFunctionDecl(), Rect{0, 0, 75, 75});
 
   const EditorContext ctx;
   actor.layout(ctx);
@@ -383,8 +383,8 @@ TEST(Actor, FunctionDeclActorDrawsHeaderBorderAndName) {
     actor.draw(frame, ctx);
   }
 
-  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 25, 25}));  // header band
-  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 25, 50}));  // frame border
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{0, 0, 75, 75}));  // header band
+  EXPECT_TRUE(hasRect(renderer.calls, Rect{0, 0, 75, 75}));  // frame border
   EXPECT_TRUE(hasTextAt(renderer.calls, "foo", Vec2{4, 4}));
 }
 

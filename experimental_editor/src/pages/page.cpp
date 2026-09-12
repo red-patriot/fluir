@@ -19,8 +19,7 @@ namespace fluir::editor {
   int Page::update(const std::vector<InputEvent>& events) {
     const std::vector<Layer*> ordered = layers();
     for (const InputEvent& event : events) {
-      if (event.type == InputEvent::Type::Quit ||
-          (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::Escape)) {
+      if (event.type == InputEvent::Type::Quit) {
         ctx_.running = false;
         continue;
       }

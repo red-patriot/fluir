@@ -70,14 +70,14 @@ TEST(SplashPage, QuitEventStopsTheApp) {
   EXPECT_FALSE(ctx.running) << "Quit must reach SplashPage -- it is the app's entry page and never transitions";
 }
 
-TEST(SplashPage, EscapeStopsTheApp) {
+TEST(SplashPage, EscapeDoesNotStopTheApp) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
   EXPECT_EQ(page.update({escape()}), 0);
-  EXPECT_FALSE(ctx.running) << "Escape quits from every page, not just the module page";
+  EXPECT_TRUE(ctx.running) << "Escape is an ordinary key event -- only Quit stops the app";
 }
 
 TEST(SplashPage, ButtonRecentersOnResize) {

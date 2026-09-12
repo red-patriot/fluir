@@ -25,7 +25,7 @@
 // These tests assert *ModulePage's MouseDown dispatch*: a plain Left click on
 // an actor is consumed (not treated as a pan gesture), an existing pan
 // gesture (Middle, or Left+Space) still pans even when it starts over a node,
-// a Left click outside every actor stays inert, and Quit/Escape still forces
+// a Left click outside every actor stays inert, and Quit still forces
 // EditorContext::running false regardless of where the cursor sits. All
 // black-box, via RecordingRenderer's recorded frames and EditorContext state
 // -- ModulePage exposes no scene/actor accessors.

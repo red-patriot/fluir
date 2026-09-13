@@ -63,7 +63,49 @@ if (TARGET nfd)
     set_target_properties(nfd PROPERTIES SYSTEM TRUE)
 endif ()
 
+set(SDLTTF_VENDORED
+    ON
+    CACHE BOOL
+          ""
+          FORCE
+)
+foreach (
+    opt
+    SDLTTF_HARFBUZZ
+    SDLTTF_PLUTOSVG
+    SDLTTF_SAMPLES
+    SDLTTF_INSTALL
+)
+    set(${opt}
+        OFF
+        CACHE BOOL
+              ""
+              FORCE
+    )
+endforeach ()
+set(BUILD_SHARED_LIBS
+    OFF
+    CACHE BOOL
+          ""
+          FORCE
+)
+FetchContent_Declare(
+    SDL3_ttf
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
+    GIT_TAG release-3.2.2
+    GIT_SHALLOW TRUE
+    GIT_SUBMODULES "external/freetype"
+)
+FetchContent_MakeAvailable(SDL3_ttf)
+
+# SDL_ttf's headers are third-party: consume them as system includes so our own
+# -Werror -pedantic warnings don't fire on them.
+if (TARGET SDL3_ttf-static)
+    set_target_properties(SDL3_ttf-static PROPERTIES SYSTEM TRUE)
+endif ()
+
 include(strict-warnings)
+include(embed-file)
 
 add_library(fluir.libeditor)
 
@@ -126,10 +168,17 @@ target_sources(
             "app.cpp"
 )
 
+fluir_embed_file(
+    fluir.libeditor
+    "assets/fonts/DejaVuSansMono.ttf"
+    fluir::editor::assets::dejaVuSansMono
+)
+
 target_link_libraries(
     fluir.libeditor
     PUBLIC fmt::fmt
            SDL3::SDL3
+           SDL3_ttf::SDL3_ttf
            nfd
            fluir::compiler
 )

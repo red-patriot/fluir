@@ -7,6 +7,9 @@
 
 namespace fluir::editor {
 
+  /** Monospace cell width of the UI font, in screen px. Tools map clicks with it, having no renderer. */
+  inline constexpr double GLYPH_PX = 8.0;
+
   /** Sink for drawing primitives, in screen-space pixels. */
   class Renderer {
    public:
@@ -24,6 +27,8 @@ namespace fluir::editor {
     virtual void fillRect(Rect screen, const Color& color) = 0;
     virtual void drawLine(Vec2 a, Vec2 b, const Color& color) = 0;
     virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color) = 0;
+    /** Text from `screen`'s top-left, wrapped at `screen.w`; glyphs are UI size x `scale`. Caller clips. */
+    virtual void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) = 0;
 
     /** Screen-px size `text` would occupy if drawn. */
     virtual Vec2 measureText(std::string_view text) = 0;

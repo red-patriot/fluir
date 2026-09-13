@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <string>
 #include <variant>
 
 #include "compiler/models/operator.hpp"
@@ -89,9 +90,9 @@ namespace fluir::editor {
     std::string label(const pt::Unary& n) { return std::string{stringify(n.op)}; }
     std::string label(const pt::Constant& n) { return renderLiteral(n.value); }
     std::string label(const pt::Call& n) { return n.target; }
-    std::string label(const pt::Comment&) { return "//"; }
+    std::string label(const pt::Comment&) { return {}; }
 
-    // Call argument names, one per row; other kinds carry nothing extra.
+    // Call argument names, one per row; comment text wrapped in its box; other kinds carry nothing extra.
     void drawExtras(const auto&, const Rect&, const Subview&, const EditorContext&) { }
     void drawExtras(const pt::Call& call, const Rect& r, const Subview& view, const EditorContext& ctx) {
       const std::vector<const pt::Call::Argument*> args = sortedArgs(call);
@@ -101,12 +102,25 @@ namespace fluir::editor {
       }
     }
 
+    void drawExtras(const pt::Comment& comment, const Rect& r, const Subview& view, const EditorContext& ctx) {
+      if (comment.text.empty()) {
+        return;
+      }
+      const double pad = ctx.layout.textPad;
+      const Rect textRect{r.x + pad, r.y + pad, r.w - 2 * pad, r.h - 2 * pad};
+      const Subview clipped = view.child(textRect);
+      clipped.renderer().drawTextWrapped(
+        clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);
+    }
+
     void drawKind(const auto& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
       Renderer& r = view.renderer();
       r.fillRect(view.toScreen(world), color(n, ctx.theme));
       r.drawRect(view.toScreen(world), ctx.theme.border);
       const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
-      r.drawText(view.toScreen(textPos), label(n), ctx.theme.text);
+      if (const std::string text = label(n); !text.empty()) {
+        r.drawText(view.toScreen(textPos), text, ctx.theme.text);
+      }
       drawExtras(n, world, view, ctx);
       const PortSet anchorsOf = anchors(n, world, ctx.layout);
       for (const auto* side : {&anchorsOf.inputs, &anchorsOf.outputs}) {

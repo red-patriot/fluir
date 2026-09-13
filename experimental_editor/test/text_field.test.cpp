@@ -8,6 +8,7 @@
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/renderer.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
 #include "recording_renderer.hpp"
@@ -25,7 +26,7 @@ namespace {
   using testutil::hasTextAt;
   using testutil::RecordingRenderer;
 
-  constexpr double kGlyphPx = 8.0;  // matches TextField's fixed debug-font cell
+  using fluir::editor::GLYPH_PX;
 
   /** A draft opened on `text`, with the caret where a click at `dxScreenPx` puts it. */
   TextField openField(std::string text, double dxScreenPx = 0.0) {
@@ -36,7 +37,7 @@ namespace {
 }  // namespace
 
 TEST(TextField, TypingInsertsAtTheCaret) {
-  TextField field = openField("ac", kGlyphPx);  // caret at index 1, between 'a' and 'c'
+  TextField field = openField("ac", GLYPH_PX);  // caret at index 1, between 'a' and 'c'
 
   field.insert("b");
 
@@ -100,7 +101,7 @@ TEST(TextField, LeftAndRightMoveTheCaretAndClampAtTheEnds) {
 }
 
 TEST(TextField, HomeAndEndJumpToTheDraftEnds) {
-  TextField field = openField("abcd", 2 * kGlyphPx);  // caret starts in the middle
+  TextField field = openField("abcd", 2 * GLYPH_PX);  // caret starts in the middle
 
   EXPECT_TRUE(field.onKey(InputEvent::Key::Home));
   EXPECT_EQ(field.caret(), 0u);
@@ -143,7 +144,7 @@ TEST(TextField, DrawsTheDraftAndACaretAtTheCaretIndex) {
   }
 
   EXPECT_TRUE(hasTextAt(renderer.calls, "abc", localTextPos));
-  EXPECT_TRUE(hasFill(renderer.calls, Rect{localTextPos.x + kGlyphPx * 2, localTextPos.y, 1.0, kGlyphPx}));
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{localTextPos.x + GLYPH_PX * 2, localTextPos.y, 1.0, GLYPH_PX}));
 }
 
 TEST(TextField, TheCaretTracksTheTextOriginAtAnyZoom) {
@@ -164,5 +165,5 @@ TEST(TextField, TheCaretTracksTheTextOriginAtAnyZoom) {
   EXPECT_TRUE(hasTextAt(renderer.calls, "abc", origin));
   // Caret geometry stays anchored at `origin` and in unscaled glyph px, not
   // multiplied by the viewport's scale.
-  EXPECT_TRUE(hasFill(renderer.calls, Rect{origin.x + kGlyphPx, origin.y, 1.0, kGlyphPx}));
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{origin.x + GLYPH_PX, origin.y, 1.0, GLYPH_PX}));
 }

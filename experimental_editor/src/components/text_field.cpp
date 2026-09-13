@@ -7,10 +7,6 @@
 #include "editor/core/renderer.hpp"
 
 namespace fluir::editor {
-  namespace {
-    constexpr double GLYPH_PX = 8.0;  ///< SdlRenderer's debug font is a fixed cell
-  }  // namespace
-
   void TextField::insert(std::string_view utf8) {
     std::string filtered;
     filtered.reserve(utf8.size());

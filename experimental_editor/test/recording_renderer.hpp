@@ -13,12 +13,13 @@
 namespace testutil {
 
   struct DrawCall {
-    enum class Op { Rect, Fill, Line, Text, PushClip, PopClip };
+    enum class Op { Rect, Fill, Line, Text, TextWrapped, PushClip, PopClip };
     Op op;
-    fluir::editor::Rect rect;  // Rect / Fill / PushClip
+    fluir::editor::Rect rect;  // Rect / Fill / PushClip / TextWrapped
     fluir::editor::Vec2 a;     // Line a / Text pos
     fluir::editor::Vec2 b;     // Line b
-    std::string text;          // Text
+    std::string text;          // Text / TextWrapped
+    double scale = 1.0;        // TextWrapped
     friend bool operator==(const DrawCall&, const DrawCall&) = default;
   };
 
@@ -43,6 +44,12 @@ namespace testutil {
     }
     void drawText(fluir::editor::Vec2 pos, std::string_view t, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Text, {}, pos, {}, std::string{t}});
+    }
+    void drawTextWrapped(fluir::editor::Rect r,
+                         std::string_view t,
+                         double scale,
+                         const fluir::editor::Color&) override {
+      calls.push_back({DrawCall::Op::TextWrapped, r, {}, {}, std::string{t}, scale});
     }
     fluir::editor::Vec2 measureText(std::string_view t) override { return {static_cast<double>(t.size()) * 8.0, 8.0}; }
     void pushClip(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::PushClip, r, {}, {}, {}}); }
@@ -137,6 +144,16 @@ namespace testutil {
                         double tol = 1e-6) {
     for (const auto& c : opsOf(calls, DrawCall::Op::Text)) {
       if (c.text == s && detail::vecNear(c.a, at, tol)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  inline bool hasWrappedText(
+    const std::vector<DrawCall>& calls, std::string_view s, fluir::editor::Rect rect, double scale, double tol = 1e-6) {
+    for (const auto& c : opsOf(calls, DrawCall::Op::TextWrapped)) {
+      if (c.text == s && detail::rectNear(c.rect, rect, tol) && std::abs(c.scale - scale) <= tol) {
         return true;
       }
     }

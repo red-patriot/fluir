@@ -44,6 +44,7 @@ namespace {
   using testutil::hasLine;
   using testutil::hasRect;
   using testutil::hasTextAt;
+  using testutil::hasWrappedText;
   using testutil::RecordingRenderer;
   using testutil::textStrings;
 
@@ -86,11 +87,60 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 125, 125}));
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
-  EXPECT_TRUE(hasTextAt(r.calls, "//", Vec2{54, 54}));
+  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 54, 117, 117}, 1.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{54, 54, 117, 117}).size(), 1u);
+  EXPECT_TRUE(textStrings(r.calls).empty());             // no "//" label
   EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));  // move grip
   EXPECT_TRUE(hasFill(r.calls, Rect{170, 50, 5, 125}));  // resize bar
   EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());       // no ports
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
+}
+
+TEST(GraphDraw, CommentTextScalesWithZoom) {
+  const Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{.scale = 2}, r);
+
+  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{108, 108, 234, 234}, 2.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{108, 108, 234, 234}).size(), 1u);
+}
+
+TEST(GraphDraw, CommentTextPassesThroughVerbatim) {
+  const Loaded l = loadFixture("read/comment_with_whitespace_and_punctuation.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasWrappedText(r.calls, "Hello there! This is a simple comment!", Rect{54, 54, 117, 117}, 1.0));
+}
+
+TEST(GraphDraw, EmptyCommentDrawsNoText) {
+  const Loaded l = loadFixture("read/empty_comment_data.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::TextWrapped), 0u);
+  EXPECT_TRUE(textStrings(r.calls).empty());
+}
+
+// in_body_comment_only.fl: main at (0,0) 100x100; comment 2 at body units (5,5) 25x25 -> {25,50,125,125}.
+TEST(GraphDraw, InBodyCommentWrapsInsideItsBox) {
+  const Loaded l = loadFixture("read/in_body_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{25, 50, 125, 125}));
+  EXPECT_TRUE(hasWrappedText(r.calls, "note", Rect{29, 54, 117, 117}, 1.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{29, 54, 117, 117}).size(), 1u);
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{0, 25, 500, 500}).empty());  // function body clip
 }
 
 TEST(GraphDraw, SelectedTopLevelCommentIsOutlined) {

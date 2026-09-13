@@ -116,6 +116,7 @@ target_include_directories(
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
+    "core/identifier.cpp"
     "core/literal_text.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
@@ -127,7 +128,9 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/delete.cpp"
+    "transaction/edit_call_node.cpp"
     "transaction/move.cpp"
+    "transaction/rename.cpp"
     "transaction/resize.cpp"
     "transaction/set_constant_value.cpp"
 )

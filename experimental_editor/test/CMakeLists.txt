@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(
     fluir.editor.test
+    identifier.test.cpp
     input.test.cpp
     literal_text.test.cpp
     loader.test.cpp

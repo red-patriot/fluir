@@ -66,18 +66,44 @@ namespace {
 
 }  // namespace
 
-TEST(GraphDraw, EmptyOfFunctionsEmitsNoFrames) {
+TEST(GraphDraw, EmptyTreeDrawsNothing) {
+  RecordingRenderer r;
+  drawTree(kCtx, fluir::pt::ParseTree{}, Viewport{}, r);
+
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Rect), 0u);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 0u);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 0u);
+  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
+}
+
+// top_level_comment_only.fl: comment 1 at units (10,10) 25x25 -> {50,50,125,125}, no header offset.
+TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
   const Loaded l = loadFixture("read/top_level_comment_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // The root view still opens its output-rect clip; nothing is drawn into it.
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Rect), 0u);
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 0u);
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 0u);
-  EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
+  EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 125, 125}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
+  EXPECT_TRUE(hasTextAt(r.calls, "//", Vec2{54, 54}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));  // move grip
+  EXPECT_TRUE(hasFill(r.calls, Rect{170, 50, 5, 125}));  // resize bar
+  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());       // no ports
+  EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
+}
+
+TEST(GraphDraw, SelectedTopLevelCommentIsOutlined) {
+  const Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer unselected;
+  RecordingRenderer selected;
+  drawTree(kCtx, *l.result.tree, Viewport{}, unselected);
+  drawTree(kCtx, *l.result.tree, Viewport{}, selected, fluir::FullID{1});
+
+  EXPECT_FALSE(hasRect(unselected.calls, Rect{48, 48, 129, 129}));
+  EXPECT_TRUE(hasRect(selected.calls, Rect{48, 48, 129, 129}));
 }
 
 TEST(GraphDraw, SingleEmptyFunctionFrameAndHeader) {

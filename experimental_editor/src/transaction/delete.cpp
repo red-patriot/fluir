@@ -16,9 +16,9 @@ namespace fluir::editor {
   }  // namespace
 
   bool DeleteTransaction::execute(pt::ParseTree& tree) {
-    if (functionAt(tree, path_) != nullptr) {
+    if (declarationAt(tree, path_) != nullptr) {
       const auto it = tree.declarations.find(path_.front());
-      function_ = std::move(it->second);
+      declaration_ = std::move(it->second);
       tree.declarations.erase(it);
       return true;
     }
@@ -47,9 +47,9 @@ namespace fluir::editor {
   }
 
   bool DeleteTransaction::unexecute(pt::ParseTree& tree) {
-    if (function_) {
-      tree.declarations.insert_or_assign(path_.front(), std::move(*function_));
-      function_.reset();
+    if (declaration_) {
+      tree.declarations.insert_or_assign(path_.front(), std::move(*declaration_));
+      declaration_.reset();
       return true;
     }
 

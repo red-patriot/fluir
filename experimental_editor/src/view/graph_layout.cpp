@@ -48,6 +48,14 @@ namespace fluir::editor {
       return std::visit([](const auto& n) { return n.id; }, node);
     }
 
+    // A node's body, then its grips over it.
+    void pushNodeBoxes(
+      const FullID& path, const Rect& rect, const std::optional<Rect>& clip, double unit, std::vector<Box>& out) {
+      out.push_back({path, Part::Body, rect, clip});
+      out.push_back({path, Part::ResizeX, resizeBar(rect, unit), clip});
+      out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
+    }
+
     // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
     // A container node lays out its own blocks here once one exists.
     void layoutBlock(const pt::Block& block,
@@ -60,9 +68,7 @@ namespace fluir::editor {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        out.push_back({path, Part::Body, rect, clip});
-        out.push_back({path, Part::ResizeX, resizeBar(rect, layout.unitPx), clip});
-        out.push_back({path, Part::MoveGrip, moveGrip(rect, layout.unitPx), clip});
+        pushNodeBoxes(path, rect, clip, layout.unitPx, out);
         ports[idOf(*node)] = editor::ports(*node, rect, layout);
       }
 
@@ -132,8 +138,13 @@ namespace fluir::editor {
 
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
     std::vector<Box> out;
-    for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
-      layoutFunction(*fn, layout, out);
+    for (const pt::Declaration* decl : sortedDeclarations(tree)) {
+      if (const auto* fn = std::get_if<pt::FunctionDecl>(decl)) {
+        layoutFunction(*fn, layout, out);
+      } else if (const auto* comment = std::get_if<pt::Comment>(decl)) {
+        pushNodeBoxes(
+          FullID{comment->id}, localRect(comment->location, layout.unitPx), std::nullopt, layout.unitPx, out);
+      }
     }
     return out;
   }
@@ -151,7 +162,8 @@ namespace fluir::editor {
     bool any = false;
     double minX = 0, minY = 0, maxX = 0, maxY = 0;
     for (const Box& box : boxes) {
-      if (box.part != Part::Frame) {
+      // A function's body box is its frame.
+      if (box.part != Part::Body || box.path.size() != 1) {
         continue;
       }
       const Rect& r = box.world;

@@ -184,6 +184,70 @@ TEST(GraphLayout, RailsAndWiresAreNotHittable) {
   EXPECT_EQ(onWire->path.size(), 1u);
 }
 
+// top_level_comment_only.fl: comment 1 at units (10,10) 25x25, no header offset.
+TEST(GraphLayout, TopLevelCommentLaysOutAtItsWorldRect) {
+  const testutil::Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  const Box* hit = hitAt(boxes, Vec2{60, 150});
+
+  ASSERT_NE(hit, nullptr);
+  EXPECT_EQ(hit->part, Part::Body);
+  EXPECT_EQ(hit->path, (FullID{1}));
+  EXPECT_FALSE(hit->clip.has_value());
+  expectRectNear(hit->world, Rect{50, 50, 125, 125});
+}
+
+TEST(GraphLayout, TopLevelCommentGripsAreHittable) {
+  const testutil::Loaded l = loadFixture("read/top_level_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  // Move grip {155,55,15,15}; resize bar {170,50,5,125}.
+  const Box* move = hitAt(boxes, Vec2{160, 60});
+  const Box* resize = hitAt(boxes, Vec2{172, 150});
+
+  ASSERT_NE(move, nullptr);
+  ASSERT_NE(resize, nullptr);
+  EXPECT_EQ(move->part, Part::MoveGrip);
+  EXPECT_EQ(move->path, (FullID{1}));
+  EXPECT_EQ(resize->part, Part::ResizeX);
+  EXPECT_EQ(resize->path, (FullID{1}));
+}
+
+TEST(GraphLayout, TopLevelDeclarationsInterleaveByZ) {
+  const auto treeWith = [](int fnZ) {
+    fluir::pt::FunctionDecl fn = makeFunction(1);
+    fn.location.z = fnZ;
+    fluir::pt::ParseTree tree = treeOf({fn});
+    tree.declarations.emplace(2,
+                              fluir::pt::Declaration{fluir::pt::Comment{
+                                .id = 2, .location = {.x = 10, .y = 10, .z = 1, .width = 25, .height = 25}}});
+    return tree;
+  };
+  const std::vector<Box> commentAbove = layoutGraph(treeWith(0), kCtx.layout);
+  const std::vector<Box> functionAbove = layoutGraph(treeWith(5), kCtx.layout);
+
+  ASSERT_NE(pathAt(commentAbove, Vec2{60, 100}), nullptr);
+  ASSERT_NE(pathAt(functionAbove, Vec2{60, 100}), nullptr);
+  EXPECT_EQ(*pathAt(commentAbove, Vec2{60, 100}), (FullID{2}));
+  EXPECT_EQ(*pathAt(functionAbove, Vec2{60, 100}), (FullID{1}));
+}
+
+// mixed_comments.fl: body comment 1 at {100,125,125,125}; top-level comment 2 at {5250,50,125,125}.
+TEST(GraphLayout, BodyAndTopLevelCommentsAreBothHittable) {
+  const testutil::Loaded l = loadFixture("read/mixed_comments.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+
+  ASSERT_NE(pathAt(boxes, Vec2{150, 200}), nullptr);
+  ASSERT_NE(pathAt(boxes, Vec2{5300, 150}), nullptr);
+  EXPECT_EQ(*pathAt(boxes, Vec2{150, 200}), (FullID{1, 1}));
+  EXPECT_EQ(*pathAt(boxes, Vec2{5300, 150}), (FullID{2}));
+}
+
 TEST(GraphBounds, EmptyTreeIsZero) {
   expectRectNear(graphBounds(layoutGraph(fluir::pt::ParseTree{}, kCtx.layout)), Rect{0, 0, 0, 0});
 }
@@ -200,6 +264,16 @@ TEST(GraphBounds, MultipleFunctionsUnion) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   expectRectNear(graphBounds(layoutGraph(*l.result.tree, kCtx.layout)), Rect{50, 50, 2100, 500});
+}
+
+TEST(GraphBounds, CoversTopLevelComments) {
+  const testutil::Loaded only = loadFixture("read/top_level_comment_only.fl");
+  const testutil::Loaded mixed = loadFixture("read/mixed_comments.fl");
+  ASSERT_TRUE(only.result.tree.has_value());
+  ASSERT_TRUE(mixed.result.tree.has_value());
+
+  expectRectNear(graphBounds(layoutGraph(*only.result.tree, kCtx.layout)), Rect{50, 50, 125, 125});
+  expectRectNear(graphBounds(layoutGraph(*mixed.result.tree, kCtx.layout)), Rect{50, 50, 5325, 500});
 }
 
 TEST(GraphBounds, ScalesWithUnitPx) {

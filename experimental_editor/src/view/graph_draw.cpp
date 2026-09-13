@@ -1,6 +1,7 @@
 #include "editor/view/graph_draw.hpp"
 
 #include <string>
+#include <variant>
 
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
@@ -47,6 +48,11 @@ namespace fluir::editor {
         case Part::Body:
           if (functionAt(tree, box.path) != nullptr) {
             r.fillRect(view.toScreen(box.world), ctx.theme.background);
+          } else if (const auto* comment = std::get_if<pt::Comment>(declarationAt(tree, box.path))) {
+            drawComment(*comment, box.world, view, ctx);
+            if (selected) {
+              drawOutline(view, ctx, box.world);
+            }
           } else if (const pt::Node* node = nodeAt(tree, box.path)) {
             drawNode(*node, box.world, view, ctx);
             if (selected) {

@@ -29,7 +29,7 @@ namespace fluir::editor {
   /** The last-painted hittable box containing `world`, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
 
-  /** Union of the functions' frames; {0,0,0,0} when there are none. */
+  /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);
 
 }  // namespace fluir::editor

@@ -4,12 +4,16 @@
 
 namespace fluir::editor {
 
-  pt::FunctionDecl* functionAt(pt::ParseTree& tree, const FullID& path) {
+  pt::Declaration* declarationAt(pt::ParseTree& tree, const FullID& path) {
     if (path.size() != 1) {
       return nullptr;
     }
     const auto it = tree.declarations.find(path.front());
-    return it == tree.declarations.end() ? nullptr : std::get_if<pt::FunctionDecl>(&it->second);
+    return it == tree.declarations.end() ? nullptr : &it->second;
+  }
+
+  pt::FunctionDecl* functionAt(pt::ParseTree& tree, const FullID& path) {
+    return std::get_if<pt::FunctionDecl>(declarationAt(tree, path));
   }
 
   // Nested containers (loops, conditionals) resolve here once they exist.
@@ -31,8 +35,8 @@ namespace fluir::editor {
   }
 
   FlowGraphLocation* locationAt(pt::ParseTree& tree, const FullID& path) {
-    if (pt::FunctionDecl* fn = functionAt(tree, path)) {
-      return &fn->location;
+    if (pt::Declaration* decl = declarationAt(tree, path)) {
+      return std::visit([](auto& d) { return &d.location; }, *decl);
     }
     pt::Node* node = nodeAt(tree, path);
     return node == nullptr ? nullptr : std::visit([](auto& n) { return &n.location; }, *node);
@@ -41,6 +45,10 @@ namespace fluir::editor {
   FullID parentOf(const FullID& path) { return path.empty() ? FullID{} : FullID(path.begin(), path.end() - 1); }
 
   // Const overloads share the mutable lookups; none of them writes.
+  const pt::Declaration* declarationAt(const pt::ParseTree& tree, const FullID& path) {
+    return declarationAt(const_cast<pt::ParseTree&>(tree), path);
+  }
+
   const pt::FunctionDecl* functionAt(const pt::ParseTree& tree, const FullID& path) {
     return functionAt(const_cast<pt::ParseTree&>(tree), path);
   }

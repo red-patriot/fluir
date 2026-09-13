@@ -101,6 +101,21 @@ namespace fluir::editor {
       }
     }
 
+    void drawKind(const auto& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
+      Renderer& r = view.renderer();
+      r.fillRect(view.toScreen(world), color(n, ctx.theme));
+      r.drawRect(view.toScreen(world), ctx.theme.border);
+      const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
+      r.drawText(view.toScreen(textPos), label(n), ctx.theme.text);
+      drawExtras(n, world, view, ctx);
+      const PortSet anchorsOf = anchors(n, world, ctx.layout);
+      for (const auto* side : {&anchorsOf.inputs, &anchorsOf.outputs}) {
+        for (const Vec2& anchor : *side) {
+          r.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
+        }
+      }
+    }
+
   }  // namespace
 
   PortSet ports(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
@@ -112,22 +127,11 @@ namespace fluir::editor {
   }
 
   void drawNode(const pt::Node& node, Rect world, const Subview& view, const EditorContext& ctx) {
-    Renderer& r = view.renderer();
-    r.fillRect(view.toScreen(world), nodeColor(node, ctx.theme));
-    r.drawRect(view.toScreen(world), ctx.theme.border);
-    std::visit(
-      [&](const auto& n) {
-        const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
-        r.drawText(view.toScreen(textPos), label(n), ctx.theme.text);
-        drawExtras(n, world, view, ctx);
-      },
-      node);
-    const PortSet anchorsOf = ports(node, world, ctx.layout);
-    for (const auto* side : {&anchorsOf.inputs, &anchorsOf.outputs}) {
-      for (const Vec2& anchor : *side) {
-        r.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
-      }
-    }
+    std::visit([&](const auto& n) { drawKind(n, world, view, ctx); }, node);
+  }
+
+  void drawComment(const pt::Comment& comment, Rect world, const Subview& view, const EditorContext& ctx) {
+    drawKind(comment, world, view, ctx);
   }
 
 }  // namespace fluir::editor

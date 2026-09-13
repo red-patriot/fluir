@@ -21,21 +21,27 @@ namespace fluir::editor {
   }
 
   // Deterministic order: (location.z, id).
-  std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree) {
-    std::vector<const pt::FunctionDecl*> funcs;
-    funcs.reserve(tree.declarations.size());
+  std::vector<const pt::Declaration*> sortedDeclarations(const pt::ParseTree& tree) {
+    std::vector<const pt::Declaration*> decls;
+    decls.reserve(tree.declarations.size());
     for (const auto& entry : tree.declarations) {
-      if (const auto* fn = std::get_if<pt::FunctionDecl>(&entry.second)) {
-        funcs.push_back(fn);
-      }
+      decls.push_back(&entry.second);
     }
-    std::sort(funcs.begin(), funcs.end(), [](const pt::FunctionDecl* a, const pt::FunctionDecl* b) {
-      if (a->location.z != b->location.z) {
-        return a->location.z < b->location.z;
+    std::sort(decls.begin(), decls.end(), [](const pt::Declaration* a, const pt::Declaration* b) {
+      const auto zOf = [](const pt::Declaration& d) {
+        return std::visit([](const auto& decl) { return decl.location.z; }, d);
+      };
+      const auto idOf = [](const pt::Declaration& d) {
+        return std::visit([](const auto& decl) { return decl.id; }, d);
+      };
+      const int za = zOf(*a);
+      const int zb = zOf(*b);
+      if (za != zb) {
+        return za < zb;
       }
-      return a->id < b->id;
+      return idOf(*a) < idOf(*b);
     });
-    return funcs;
+    return decls;
   }
 
   // Deterministic order: (location.z, id).

@@ -11,7 +11,7 @@
 
 namespace fluir::editor {
 
-  /** Deletes a function, or a node and every reference to it. Keeps only what it touched. */
+  /** Deletes a top-level declaration, or a node and every reference to it. Keeps only what it touched. */
   class DeleteTransaction : public Transaction {
    public:
     explicit DeleteTransaction(fluir::FullID path) : path_(std::move(path)) { }
@@ -21,7 +21,7 @@ namespace fluir::editor {
 
    private:
     fluir::FullID path_;
-    std::optional<pt::Declaration> function_;
+    std::optional<pt::Declaration> declaration_;
     std::optional<pt::Node> node_;
     std::vector<pt::Conduit> conduits_; /**< touched conduits, as they were */
     std::vector<pt::Node> referrers_;   /**< nodes whose operands named it, as they were */

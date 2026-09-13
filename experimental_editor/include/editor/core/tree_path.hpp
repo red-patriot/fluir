@@ -6,6 +6,10 @@
 
 namespace fluir::editor {
 
+  /** The top-level declaration a one-segment path names, or nullptr. */
+  pt::Declaration* declarationAt(pt::ParseTree& tree, const FullID& path);
+  const pt::Declaration* declarationAt(const pt::ParseTree& tree, const FullID& path);
+
   /** The function a one-segment path names, or nullptr. */
   pt::FunctionDecl* functionAt(pt::ParseTree& tree, const FullID& path);
   const pt::FunctionDecl* functionAt(const pt::ParseTree& tree, const FullID& path);
@@ -18,7 +22,7 @@ namespace fluir::editor {
   pt::Node* nodeAt(pt::ParseTree& tree, const FullID& path);
   const pt::Node* nodeAt(const pt::ParseTree& tree, const FullID& path);
 
-  /** The location of whatever the path names -- function or node -- or nullptr. */
+  /** The location of whatever the path names or nullptr. */
   FlowGraphLocation* locationAt(pt::ParseTree& tree, const FullID& path);
   const FlowGraphLocation* locationAt(const pt::ParseTree& tree, const FullID& path);
 

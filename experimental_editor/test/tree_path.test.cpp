@@ -17,6 +17,7 @@ namespace {
   using fluir::FlowGraphLocation;
   using fluir::FullID;
   using fluir::editor::blockOf;
+  using fluir::editor::declarationAt;
   using fluir::editor::functionAt;
   using fluir::editor::locationAt;
   using fluir::editor::nodeAt;
@@ -24,8 +25,9 @@ namespace {
 
   constexpr FlowGraphLocation kFnLoc{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
   constexpr FlowGraphLocation kNodeLoc{.x = 3, .y = 4, .z = 1, .width = 5, .height = 6};
+  constexpr FlowGraphLocation kCommentLoc{.x = 7, .y = 8, .z = 2, .width = 9, .height = 10};
 
-  // Function 1 holds constant 10 and conduit 40; function 2 is empty.
+  // Function 1 holds constant 10 and conduit 40; function 2 is empty; comment 3 is top level.
   fluir::pt::ParseTree makeTree() {
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
@@ -40,6 +42,7 @@ namespace {
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{fn});
     tree.declarations.emplace(2, fluir::pt::Declaration{empty});
+    tree.declarations.emplace(3, fluir::pt::Declaration{fluir::pt::Comment{.id = 3, .location = kCommentLoc}});
     return tree;
   }
 
@@ -60,6 +63,32 @@ TEST(TreePath, FunctionAtMissesUnknownIdsAndOtherDepths) {
   EXPECT_EQ(functionAt(tree, FullID{999}), nullptr);
   EXPECT_EQ(functionAt(tree, FullID{}), nullptr);
   EXPECT_EQ(functionAt(tree, FullID{1, 10}), nullptr);
+}
+
+TEST(TreePath, DeclarationAtResolvesFunctionsAndComments) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  const fluir::pt::Declaration* fn = declarationAt(tree, FullID{1});
+  const fluir::pt::Declaration* comment = declarationAt(std::as_const(tree), FullID{3});
+
+  ASSERT_NE(fn, nullptr);
+  ASSERT_NE(comment, nullptr);
+  EXPECT_TRUE(std::holds_alternative<fluir::pt::FunctionDecl>(*fn));
+  EXPECT_TRUE(std::holds_alternative<fluir::pt::Comment>(*comment));
+}
+
+TEST(TreePath, DeclarationAtMissesUnknownIdsAndOtherDepths) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(declarationAt(tree, FullID{999}), nullptr);
+  EXPECT_EQ(declarationAt(tree, FullID{}), nullptr);
+  EXPECT_EQ(declarationAt(tree, FullID{1, 10}), nullptr);
+}
+
+TEST(TreePath, FunctionAtMissesATopLevelComment) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(functionAt(tree, FullID{3}), nullptr);
 }
 
 TEST(TreePath, BlockOfAFunctionIsItsBody) {
@@ -108,6 +137,16 @@ TEST(TreePath, LocationAtResolvesFunctionsAndNodes) {
   ASSERT_NE(nodeLoc, nullptr);
   EXPECT_EQ(*fnLoc, kFnLoc);
   EXPECT_EQ(*nodeLoc, kNodeLoc);
+}
+
+TEST(TreePath, LocationAtResolvesAndWritesATopLevelComment) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  ASSERT_NE(locationAt(tree, FullID{3}), nullptr);
+  EXPECT_EQ(*locationAt(tree, FullID{3}), kCommentLoc);
+  locationAt(tree, FullID{3})->x = 42;
+
+  EXPECT_EQ(locationAt(std::as_const(tree), FullID{3})->x, 42);
 }
 
 TEST(TreePath, LocationAtIsWritable) {

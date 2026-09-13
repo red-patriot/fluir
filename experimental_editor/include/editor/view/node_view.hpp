@@ -21,6 +21,9 @@ namespace fluir::editor {
   /** Draws `node`'s body at `world`: fill, border, label and port dots. */
   void drawNode(const pt::Node& node, Rect world, const Subview& view, const EditorContext& ctx);
 
+  /** Draws a top-level `comment` at `world`. */
+  void drawComment(const pt::Comment& comment, Rect world, const Subview& view, const EditorContext& ctx);
+
   /** `node`'s fill color. */
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme);
 

@@ -75,6 +75,16 @@ namespace {
     return tree;
   }
 
+  // makeTree plus top-level comment 5.
+  fluir::pt::ParseTree makeTreeWithComment() {
+    fluir::pt::ParseTree tree = makeTree();
+    tree.declarations.emplace(
+      5,
+      fluir::pt::Declaration{fluir::pt::Comment{
+        .id = 5, .location = FlowGraphLocation{.x = 3, .y = 4, .z = 1, .width = 25, .height = 25}, .text = "hi"}});
+    return tree;
+  }
+
   const fluir::pt::Block& bodyOf(const fluir::pt::ParseTree& tree) {
     return std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body;
   }
@@ -100,6 +110,18 @@ TEST(MoveTransaction, MovesAFunction) {
   ASSERT_TRUE(uut.execute(tree));
 
   EXPECT_EQ(locationAt(tree, FullID{1})->x, 7);
+}
+
+TEST(MoveTransaction, MovesATopLevelComment) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  MoveTransaction uut{FullID{5}, 7, 9};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(locationAt(tree, FullID{5})->x, 7);
+  EXPECT_EQ(locationAt(tree, FullID{5})->y, 9);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }
 
 TEST(MoveTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
@@ -210,6 +232,22 @@ TEST(DeleteTransaction, RedoOfAFunctionReachesTheSameStateAsTheFirstExecute) {
   ASSERT_TRUE(uut.unexecute(tree));
   ASSERT_TRUE(uut.execute(tree));
 
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(DeleteTransaction, RoundTripAndRedoOfATopLevelComment) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  DeleteTransaction uut{FullID{5}};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_FALSE(tree.declarations.contains(5));
+  EXPECT_TRUE(tree.declarations.contains(1));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
   EXPECT_EQ(tree, afterFirst);
 }
 

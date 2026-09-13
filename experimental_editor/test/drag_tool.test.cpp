@@ -215,6 +215,25 @@ TEST(DragTool, DragDeltasAreMeasuredInWorldSpace) {
   EXPECT_EQ(h.loc(kBinary).x, 17);
 }
 
+// top_level_comment_only.fl: comment 1 at units (10,10) 25x25 -> {50,50,125,125}; move grip {155,55,15,15}.
+TEST(DragTool, AMoveGripDragMovesATopLevelComment) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/top_level_comment_only.fl");
+  const auto before = state.editor.tree();
+  DragTool tool;
+  const Vec2 grip{162.5, 62.5};
+
+  ASSERT_TRUE(send(tool, state, down(grip)));
+  send(tool, state, move(grip + Vec2{10, 5}));
+  EXPECT_TRUE(send(tool, state, up(grip + Vec2{10, 5})));
+
+  EXPECT_EQ(locationAt(state.editor.tree(), FullID{1})->x, 12);
+  EXPECT_EQ(locationAt(state.editor.tree(), FullID{1})->y, 11);
+  ASSERT_TRUE(state.editor.undo());
+  EXPECT_EQ(state.editor.tree(), before);
+  EXPECT_FALSE(state.editor.canUndo());
+}
+
 // Undo or delete under a live gesture must not crash or record a stale edit.
 TEST(DragTool, ReleaseAfterThePathVanishedRecordsNothing) {
   Harness h;

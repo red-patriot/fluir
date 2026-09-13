@@ -21,8 +21,8 @@ namespace fluir::editor {
   /** A `portDot`-sized square centered on `anchor`. */
   Rect dotRect(Vec2 anchor, double portDot);
 
-  /** `tree`'s function declarations, ordered ascending by (location.z, id). */
-  std::vector<const pt::FunctionDecl*> sortedFunctions(const pt::ParseTree& tree);
+  /** `tree`'s declarations, ordered ascending by (location.z, id). */
+  std::vector<const pt::Declaration*> sortedDeclarations(const pt::ParseTree& tree);
 
   /** `block`'s nodes, ordered ascending by (location.z, id). */
   std::vector<const pt::Node*> sortedNodes(const pt::Block& block);

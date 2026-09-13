@@ -17,6 +17,14 @@
 namespace fluir::pt {
   using namespace literals_types;
 
+  struct Comment {
+    ID id;
+    FlowGraphLocation location;
+    std::string text;
+
+    friend bool operator==(const Comment& lhs, const Comment& rhs) = default;
+  };
+
   struct Constant {
     ID id;
     FlowGraphLocation location;
@@ -83,7 +91,7 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant, Call>;
+  using Node = std::variant<Binary, Unary, Constant, Call, Comment>;
   struct Block {
     using Nodes = std::unordered_map<ID, Node>;
     using Conduits = std::unordered_map<ID, Conduit>;
@@ -138,7 +146,7 @@ namespace fluir::pt {
     friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
   };
 
-  using Declaration = std::variant<FunctionDecl>;  // TODO: Support other top-level declarations here
+  using Declaration = std::variant<FunctionDecl, Comment>;  // TODO: Support other top-level declarations here
 
   struct Header {
     Version version{.major = 0, .minor = 0, .patch = 0};

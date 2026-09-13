@@ -256,6 +256,7 @@ TEST(ModulePage, DeleteRemovesTheSelectedNodeItsConduitsAndTheSelection) {
   Harness h{kSimpleBinary};
   h.press(kConstant2Body);
   ASSERT_EQ(h.page->state().selection, (FullID{1, 2}));
+  h.send({key(InputEvent::Key::Escape)});  // close the f64 draft so Delete reaches the page
 
   h.send({key(InputEvent::Key::Delete)});
 
@@ -278,9 +279,12 @@ TEST(ModulePage, DeleteOfAFrameRemovesTheWholeFunction) {
 TEST(ModulePage, DeleteKeepsTheCurrentViewport) {
   Harness h{kSimpleBinary};
   h.press(kConstant2Body);
+  h.send({key(InputEvent::Key::Escape)});  // close the f64 draft so Delete reaches the page
   const Viewport before = h.page->state().view;
 
   h.send({key(InputEvent::Key::Delete)});
+
+  EXPECT_EQ(nodeAt(h.tree(), FullID{1, 2}), nullptr);
 
   EXPECT_EQ(h.page->state().view.pan, before.pan);
   EXPECT_EQ(h.page->state().view.scale, before.scale);

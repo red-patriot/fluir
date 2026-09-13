@@ -73,8 +73,9 @@ namespace fluir::editor {
     switch (key) {
       case InputEvent::Key::Return:
         {
+          // TODO: Allow this to be more general
           const pt::Literal& value = constantAt(state.editor.tree(), path_)->value;
-          const std::optional<pt::Literal> parsed = parseLiteralLike(value, field_->text());
+          const std::optional<pt::Literal> parsed = tryParseLiteral(value, field_->text());
           if (!parsed) {
             field_->reject();
             return true;

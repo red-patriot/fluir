@@ -142,7 +142,7 @@ TEST(TextEditTool, KeysAndTextAreIgnoredUntilAFieldIsOpen) {
 TEST(TextEditTool, NothingOpensOnNonEditableNodesGripsOrEmptySpace) {
   Harness h;
 
-  for (const Vec2 at : {kFloatBody, kBinaryBody, kGrip, Vec2{300, 300}, Vec2{-10, -10}}) {
+  for (const Vec2 at : {kBinaryBody, kGrip, Vec2{300, 300}, Vec2{-10, -10}}) {
     h.send(down(at));
     EXPECT_EQ(h.tool.field(), nullptr) << "press at (" << at.x << "," << at.y << ")";
   }
@@ -186,6 +186,34 @@ TEST(TextEditTool, ADraftPastTheTypesRangeIsRejected) {
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_TRUE(h.tool.field()->invalid());
   EXPECT_EQ(h.value(FullID{1, 13}), fluir::pt::Literal{fluir::literals_types::I8{42}});
+}
+
+TEST(TextEditTool, AnF64ConstantEditsAndUndoes) {
+  Harness h;
+  const FullID path{1, 11};
+  h.send(down(kFloatBody));
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "1.5");
+
+  h.send(text("2"));  // 21.5
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.value(path), fluir::pt::Literal{fluir::literals_types::F64{21.5}});
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.value(path), fluir::pt::Literal{fluir::literals_types::F64{1.5}});
+}
+
+TEST(TextEditTool, AMalformedF64DraftStaysOpenAndInvalid) {
+  Harness h;
+  h.send(down(kFloatBody));
+  h.send(text("."));  // .1.5
+
+  h.send(key(InputEvent::Key::Return));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_TRUE(h.tool.field()->invalid());
+  EXPECT_EQ(h.value(FullID{1, 11}), fluir::pt::Literal{fluir::literals_types::F64{1.5}});
 }
 
 TEST(TextEditTool, OtherKeysEditTheDraft) {

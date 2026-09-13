@@ -20,6 +20,11 @@ namespace fluir::editor {
     using tinyxml2::XMLDocument;
     using tinyxml2::XMLElement;
 
+    template <typename... Fs>
+    struct Overloaded : Fs... {
+      using Fs::operator()...;
+    };
+
     struct TwoSpacePrinter : tinyxml2::XMLPrinter {
       void PrintSpace(int depth) override {
         for (int i = 0; i < depth; ++i)
@@ -104,6 +109,13 @@ namespace fluir::editor {
       }
     }
 
+    void appendComment(XMLElement* parent, const fluir::pt::Comment& comment) {
+      XMLElement* el = parent->InsertNewChildElement("comment");
+      setId(el, comment.id);
+      setLocation(el, comment.location);
+      el->SetText(comment.text.c_str());
+    }
+
     void appendNode(XMLElement* parent, const fluir::pt::Node& node) {
       std::visit(
         [&](const auto& n) {
@@ -116,6 +128,8 @@ namespace fluir::editor {
             appendUnary(parent, n);
           else if constexpr (std::is_same_v<T, fluir::pt::Call>)
             appendCall(parent, n);
+          else if constexpr (std::is_same_v<T, fluir::pt::Comment>)
+            appendComment(parent, n);
         },
         node);
     }
@@ -176,13 +190,6 @@ namespace fluir::editor {
       appendBlock(el, fn.body);
     }
 
-    void appendFunction(XMLElement* parent, const fluir::pt::Comment& comment) {
-      XMLElement* el = parent->InsertNewChildElement("comment");
-      setId(el, comment.id);
-      setLocation(el, comment.location);
-      el->SetText(comment.text.c_str());
-    }
-
   }  // namespace
 
   ParseTreeWriter::ParseTreeWriter(std::ostream& out) : out_(out) { }
@@ -201,7 +208,11 @@ namespace fluir::editor {
     version->InsertNewChildElement("patch")->SetText(int(tree.header.version.patch));
 
     for (fluir::ID id : sortedIds(tree.declarations)) {
-      std::visit([&](const auto& decl) { appendFunction(root, decl); }, tree.declarations.at(id));
+      std::visit(Overloaded{
+                   [&](const fluir::pt::FunctionDecl& fn) { appendFunction(root, fn); },
+                   [&](const fluir::pt::Comment& comment) { appendComment(root, comment); },
+                 },
+                 tree.declarations.at(id));
     }
 
     TwoSpacePrinter printer;

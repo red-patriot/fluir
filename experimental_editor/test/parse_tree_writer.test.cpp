@@ -13,6 +13,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
+#include "editor/transaction/edit_comment.hpp"
 
 namespace {
 
@@ -31,7 +32,7 @@ namespace {
   //   conduits            -- also <f64>6.7890</f64> (trailing zero cannot come
   //                          back from a double) and <segment> (parser rejects).
   //   inputs_and_outputs  -- two <return>; pt::FunctionDecl allows one.
-  //   *comment* (5 files) -- <comment> is not represented in the parse tree.
+  //   nested_comments     -- body lists constant 2 before comment 1; ascending ids.
   const std::vector<std::string> kGoldenSubset{
     "single_function",
     "binary_add",
@@ -43,6 +44,10 @@ namespace {
     "function_output",
     "signed_constants",
     "unsigned_constants",
+    "function_comment",
+    "simple_comment",
+    "top_level_comment",
+    "empty_comment",
   };
 
   fluir::editor::LoadResult parse(fluir::editor::CollectingSink& sink, std::string_view src) {
@@ -110,4 +115,21 @@ TEST(ParseTreeWriter, WritesToFilePath) {
   }
   EXPECT_EQ(readFile(tmp), expected);
   fs::remove(tmp);
+}
+
+TEST(ParseTreeWriter, WritesEditedCommentsBackReadably) {
+  fluir::editor::CollectingSink sink;
+  auto loaded = parse(sink, readFile(fs::path(TEST_FOLDER) / "write" / "nested_comments.fl"));
+  ASSERT_TRUE(loaded.tree.has_value());
+  fluir::pt::ParseTree edited = *loaded.tree;
+  ASSERT_TRUE((fluir::editor::EditCommentTransaction{fluir::FullID{2}, "Top, edited: <&> 'quoted'!"}).execute(edited));
+  ASSERT_TRUE(
+    (fluir::editor::EditCommentTransaction{fluir::FullID{1, 1}, "  body edit, with spaces  "}).execute(edited));
+
+  std::ostringstream out;
+  fluir::editor::ParseTreeWriter(out).write(edited);
+  const auto reloaded = parse(sink, out.str());
+  ASSERT_TRUE(reloaded.tree.has_value()) << out.str();
+  EXPECT_TRUE(sink.empty());
+  EXPECT_EQ(*reloaded.tree, edited);
 }

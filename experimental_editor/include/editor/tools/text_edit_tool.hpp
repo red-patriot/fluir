@@ -7,8 +7,8 @@
 
 namespace fluir::editor {
 
-  /** Left-press on a constant, call label or function header opens a draft; Return commits, Escape or a press
-   *  elsewhere closes. */
+  /** Left-press on a constant, call label or argument row, function header or parameter rail opens a draft; Return
+   *  commits, Escape or a press elsewhere closes. */
   class TextEditTool : public Tool {
    public:
     bool onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) override;
@@ -18,11 +18,19 @@ namespace fluir::editor {
     /** The open draft, or nullptr. */
     const TextField* field() const { return field_ ? &*field_ : nullptr; }
 
+    /** What a draft edits: `index` names a parameter (path = function) or argument (path = call). */
+    struct Target {
+      FullID path;
+      std::optional<int> index;
+
+      friend bool operator==(const Target&, const Target&) = default;
+    };
+
    private:
     void onPress(const InputEvent& event, EditorState& state, std::span<const Box> boxes);
     bool onKey(InputEvent::Key key, EditorState& state);
 
-    FullID path_;
+    Target target_;
     std::optional<TextField> field_;
   };
 

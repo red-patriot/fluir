@@ -10,11 +10,13 @@
 #include "compiler/models/operator.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/delete.hpp"
+#include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/resize.hpp"
 #include "editor/transaction/set_constant_value.hpp"
+#include "editor/transaction/update_func_param.hpp"
 
 // The house round trip: apply, assert, reverse, assert the tree is back.
 
@@ -25,6 +27,7 @@ namespace {
   using fluir::ID;
   using fluir::Operator;
   using fluir::editor::DeleteTransaction;
+  using fluir::editor::EditCallArgumentTransaction;
   using fluir::editor::EditCallNodeTransaction;
   using fluir::editor::functionAt;
   using fluir::editor::locationAt;
@@ -33,6 +36,7 @@ namespace {
   using fluir::editor::RenameTransaction;
   using fluir::editor::ResizeTransaction;
   using fluir::editor::SetConstantValueTransaction;
+  using fluir::editor::UpdateFuncParamTransaction;
 
   fluir::pt::Constant makeConstant(ID id, int x, int y) {
     return fluir::pt::Constant{.id = id,
@@ -60,7 +64,7 @@ namespace {
                            .location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5},
                            .target = "g",
                            ._return = fluir::pt::Call::Return{},
-                           .arguments = {{.name = "a", .index = 0}}};
+                           .arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}}};
   }
 
   fluir::pt::Conduit makeConduit(ID id, ID input, std::vector<fluir::pt::Conduit::Output> children) {
@@ -69,11 +73,15 @@ namespace {
 
   // Two constants feed binary 30, whose result feeds unary 31. Conduit 44 fans
   // out to both 30 and 31, so deleting 30 only strips one of its targets. Call 32 targets "g".
+  // Function 1 takes parameters x (index 0) and y (index 1).
   fluir::pt::ParseTree makeTree() {
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
+    fn.input =
+      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 2, .index = 0, .name = "x", .typeName = "i32"},
+                                                         {.id = 3, .index = 1, .name = "y", .typeName = "i32"}}};
     fn.body.nodes.emplace(10, makeConstant(10, 1, 1));
     fn.body.nodes.emplace(11, makeConstant(11, 1, 10));
     fn.body.nodes.emplace(30, makeBinary(30, 10, 1, 10, 11));
@@ -383,5 +391,62 @@ TEST(EditCallNodeTransaction, SameTargetMissingNodeNonCallOrInvalidTargetChangeN
   EXPECT_FALSE((EditCallNodeTransaction{FullID{1, 30}, "h"}).execute(tree));
   EXPECT_FALSE((EditCallNodeTransaction{FullID{1, 32}, "a-b"}).execute(tree));
   EXPECT_FALSE((EditCallNodeTransaction{FullID{1, 32}, ""}).execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(UpdateFuncParamTransaction, RenamesTheParameterAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  UpdateFuncParamTransaction uut{FullID{1}, 1, "z"};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto& params = functionAt(tree, FullID{1})->input->parameters;
+  EXPECT_EQ(params[1].name, "z");
+  EXPECT_EQ(params[1].typeName, "i32");
+  EXPECT_EQ(params[0], functionAt(before, FullID{1})->input->parameters[0]);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(UpdateFuncParamTransaction, SameNameUnresolvedTargetsOrInvalidNamesChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, "y"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{999}, 1, "z"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1, 30}, 1, "z"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{5}, 1, "z"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 7, "z"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, "1x"}).execute(tree));
+  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, ""}).execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditCallArgumentTransaction, RenamesTheArgumentAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+  const auto original = std::get<fluir::pt::Call>(*nodeAt(tree, FullID{1, 32}));
+
+  EditCallArgumentTransaction uut{FullID{1, 32}, 1, "c"};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto& call = std::get<fluir::pt::Call>(*nodeAt(tree, FullID{1, 32}));
+  EXPECT_EQ(call.arguments[1].name, "c");
+  EXPECT_EQ(call.arguments[0], original.arguments[0]);
+  EXPECT_EQ(call.target, original.target);
+  EXPECT_EQ(call._return, original._return);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditCallArgumentTransaction, SameNameMissingNodeNonCallMissingIndexOrInvalidNameChangeNothing) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 1, "b"}).execute(tree));
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 999}, 1, "c"}).execute(tree));
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 30}, 1, "c"}).execute(tree));
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 7, "c"}).execute(tree));
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 1, "1x"}).execute(tree));
+  EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 1, ""}).execute(tree));
   EXPECT_EQ(tree, before);
 }

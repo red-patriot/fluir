@@ -20,8 +20,9 @@
 // Function 1 at the origin, body from y 25. Constant 10 (I32 42) at units (4,4)
 // 10x5 -> {20,45,50,25}, text origin {24,49}, move grip {50,50,15,15}.
 // Glyphs are 8 px, so a press 8 px past the origin puts the caret after one glyph.
-// Function "f" header {0,0,500,25}, text origin {4,4}. Call 14 ("g", one argument) at units (30,20)
-// 10x10 -> {150,125,50,50}, label row {150,125,50,25}, text origin {154,129}, argument row from y 150.
+// Function "f" header {0,0,500,25}, text origin {4,4}. Params x, y: rails {0,25,75,25}, {0,50,75,25}; return rail
+// {475,25,25,25}. Call 14 ("g", arguments a, b) at units (30,20) 10x15 -> {150,125,50,75}, label row
+// {150,125,50,25}, text origin {154,129}, argument rows from y 150 and 175.
 
 namespace {
 
@@ -53,6 +54,11 @@ namespace {
   constexpr Vec2 kFnName{4, 4};
   constexpr Vec2 kCallLabel{154, 129};
   constexpr Vec2 kCallArgRow{154, 154};
+  constexpr Vec2 kCallArgRow1{154, 179};
+  constexpr Vec2 kParamRail1{4, 54};
+  constexpr Vec2 kReturnRail{479, 29};
+  const Rect kParamRail1Rect{0, 50, 75, 25};
+  const Rect kCallArgRow1Rect{150, 175, 50, 25};
   const Rect kHeaderRect{0, 0, 500, 25};
   const Rect kCallLabelRect{150, 125, 50, 25};
 
@@ -65,6 +71,11 @@ namespace {
     fn.id = 1;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
+    fn.input =
+      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 2, .index = 0, .name = "x", .typeName = "i32"},
+                                                         {.id = 3, .index = 1, .name = "y", .typeName = "i32"}}};
+    fn.output =
+      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "i32"}};
     fn.body.nodes.emplace(10, constant(10, 4, fluir::literals_types::I32{42}));
     fn.body.nodes.emplace(11, constant(11, 20, fluir::literals_types::F64{1.5}));
     fn.body.nodes.emplace(
@@ -74,9 +85,9 @@ namespace {
     fn.body.nodes.emplace(13, constant(13, 40, fluir::literals_types::I8{42}));
     fn.body.nodes.emplace(14,
                           fluir::pt::Call{.id = 14,
-                                          .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 10},
+                                          .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 15},
                                           .target = "g",
-                                          .arguments = {{.name = "a", .index = 0}}});
+                                          .arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}}});
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{fn});
     return tree;
@@ -98,6 +109,15 @@ namespace {
 
     const std::string& callTarget() const {
       return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).target;
+    }
+
+    // Vector position equals `index` in this tree.
+    const std::string& paramName(std::size_t index) const {
+      return fluir::editor::functionAt(state.editor.tree(), kFn)->input->parameters[index].name;
+    }
+
+    const std::string& argName(std::size_t index) const {
+      return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).arguments[index].name;
     }
 
     std::vector<testutil::DrawCall> draw() const {
@@ -387,10 +407,109 @@ TEST(TextEditTool, APressOnACallsLabelOpensItsTarget) {
   EXPECT_EQ(h.tool.field()->text(), "g");
 }
 
-TEST(TextEditTool, APressOnACallsArgumentRowsOpensNothing) {
+TEST(TextEditTool, APressOnACallsArgumentRowOpensItsName) {
   Harness h;
 
+  EXPECT_FALSE(h.send(down(kCallArgRow1)));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "b");
+}
+
+TEST(TextEditTool, ReturnRenamesTheArgumentUndoably) {
+  Harness h;
+  h.send(down(kCallArgRow1));
+  h.send(key(InputEvent::Key::End));
+  h.send(text("c"));
+
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.argName(1), "bc");
+  EXPECT_EQ(h.argName(0), "a");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.argName(1), "b");
+}
+
+TEST(TextEditTool, AnInvalidArgumentNameStaysOpenAndInvalid) {
+  Harness h;
+  h.send(down(kCallArgRow1));
+  h.send(text("-"));  // -b
+
+  h.send(key(InputEvent::Key::Return));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_TRUE(h.tool.field()->invalid());
+  EXPECT_EQ(h.argName(1), "b");
+  EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(TextEditTool, RePressingTheOpenArgumentKeepsTheDraftAndAnotherArgumentOpensItself) {
+  Harness h;
+  h.send(down(kCallArgRow1));
+  h.send(text("c"));
+
+  h.send(down(kCallArgRow1 + Vec2{8, 0}));
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "cb");
+  EXPECT_EQ(h.tool.field()->caret(), 1u);
+
   h.send(down(kCallArgRow));
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "a");
+}
+
+TEST(TextEditTool, APressOnAParameterRailOpensItsName) {
+  Harness h;
+
+  EXPECT_FALSE(h.send(down(kParamRail1)));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "y");
+}
+
+TEST(TextEditTool, ReturnRenamesTheParameterUndoably) {
+  Harness h;
+  h.send(down(kParamRail1));
+  h.send(key(InputEvent::Key::End));
+  h.send(text("z"));
+
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.paramName(1), "yz");
+  EXPECT_EQ(h.paramName(0), "x");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.paramName(1), "y");
+}
+
+TEST(TextEditTool, AnInvalidParameterNameStaysOpenAndInvalid) {
+  Harness h;
+  h.send(down(kParamRail1));
+  h.send(text("1"));  // 1y
+
+  h.send(key(InputEvent::Key::Return));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_TRUE(h.tool.field()->invalid());
+  EXPECT_EQ(h.paramName(1), "y");
+  EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(TextEditTool, APressOnTheReturnRailOpensNothing) {
+  Harness h;
+
+  h.send(down(kReturnRail));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+}
+
+TEST(TextEditTool, TheParameterDraftClosesWhenItsFunctionVanishes) {
+  Harness h;
+  h.send(down(kParamRail1));
+  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kFn)));
+
+  EXPECT_FALSE(h.send(text("7")));
 
   EXPECT_EQ(h.tool.field(), nullptr);
 }
@@ -436,9 +555,13 @@ TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
   struct Case {
     Vec2 at;
     std::string_view committed;
+    std::string_view draft;
     Rect cover;
   };
-  for (const Case& c : {Case{kFnName, "f", kHeaderRect}, Case{kCallLabel, "g", kCallLabelRect}}) {
+  for (const Case& c : {Case{kFnName, "f", "xf", kHeaderRect},
+                        Case{kCallLabel, "g", "xg", kCallLabelRect},
+                        Case{kParamRail1, "i32 y", "xy", kParamRail1Rect},
+                        Case{kCallArgRow1, "b", "xb", kCallArgRow1Rect}}) {
     Harness h;
     h.send(down(c.at));
     h.send(text("x"));
@@ -446,7 +569,7 @@ TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
     const auto calls = h.draw();
 
     const long value = textIndex(calls, c.committed, c.at);
-    const long draft = textIndex(calls, std::string{"x"} + std::string{c.committed}, c.at);
+    const long draft = textIndex(calls, c.draft, c.at);
     ASSERT_GE(value, 0) << c.committed;
     ASSERT_GT(draft, value) << c.committed;
     const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [&](const testutil::DrawCall& d) {

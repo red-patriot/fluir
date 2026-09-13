@@ -1,24 +1,28 @@
 #include "editor/tools/text_edit_tool.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "editor/core/identifier.hpp"
 #include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/set_constant_value.hpp"
 #include "editor/transaction/transaction.hpp"
+#include "editor/transaction/update_func_param.hpp"
 #include "editor/view/node_view.hpp"
 
-// Editable kinds: a constant's literal, a call's target and a function's name. A new kind adds a branch to
-// `labelRect`, `draftText` and `commit` below.
+// Editable kinds: a constant's literal, a call's target and argument names, and a function's name and parameter
+// names. A new kind adds a branch to `targetAt`, `labelRect`, `draftText` and `commit` below.
 
 namespace fluir::editor {
   namespace {
@@ -33,28 +37,143 @@ namespace fluir::editor {
       return node == nullptr ? nullptr : std::get_if<pt::Call>(node);
     }
 
-    // Where the editable text sits inside a body box: the draft opens on a press there and covers it while drawn.
-    std::optional<Rect> labelRect(const pt::ParseTree& tree, const Box& body, const EditorContext::Layout& layout) {
-      if (functionAt(tree, body.path) != nullptr) {
-        return Rect{body.world.x, body.world.y, body.world.w, layout.headerH()};
+    const pt::FunctionDecl::Parameter* paramAt(const pt::FunctionDecl& fn, int index) {
+      if (!fn.input) {
+        return nullptr;
       }
-      if (callAt(tree, body.path) != nullptr) {
-        return Rect{body.world.x, body.world.y, body.world.w, std::min(body.world.h, layout.railStep())};
+      const auto it = std::ranges::find(fn.input->parameters, index, &pt::FunctionDecl::Parameter::index);
+      return it == fn.input->parameters.end() ? nullptr : &*it;
+    }
+
+    const pt::Call::Argument* argumentAt(const pt::Call& call, int index) {
+      const auto it = std::ranges::find(call.arguments, index, &pt::Call::Argument::index);
+      return it == call.arguments.end() ? nullptr : &*it;
+    }
+
+    std::vector<const pt::Call::Argument*> sortedArguments(const pt::Call& call) {
+      std::vector<const pt::Call::Argument*> args;
+      for (const auto& arg : call.arguments) {
+        args.push_back(&arg);
       }
-      if (const pt::Constant* constant = constantAt(tree, body.path); constant && isEditableLiteral(constant->value)) {
-        return body.world;
+      std::ranges::sort(args, {}, &pt::Call::Argument::index);
+      return args;
+    }
+
+    std::size_t argumentRow(const pt::Call& call, int index) {
+      const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
+      const auto it = std::ranges::find(args, index, &pt::Call::Argument::index);
+      return static_cast<std::size_t>(it - args.begin()) + 1;
+    }
+
+    const Box* findBox(std::span<const Box> boxes, Part part, const FullID& path) {
+      const auto it = std::ranges::find_if(boxes, [&](const Box& b) { return b.part == part && b.path == path; });
+      return it == boxes.end() ? nullptr : &*it;
+    }
+
+    // What a press at `world` opens, or nullopt.
+    std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree,
+                                                 std::span<const Box> boxes,
+                                                 Vec2 world,
+                                                 const EditorContext::Layout& layout) {
+      const Box* hit = hitAt(boxes, world);
+      if (hit == nullptr || hit->part != Part::Body) {
+        return std::nullopt;
+      }
+      if (const pt::FunctionDecl* fn = functionAt(tree, hit->path)) {
+        if (world.y < hit->world.y + layout.headerH()) {
+          return TextEditTool::Target{hit->path, std::nullopt};
+        }
+        for (const Box& rail : boxes) {
+          if (rail.part != Part::Rail || parentOf(rail.path) != hit->path || !rail.world.contains(world) ||
+              (rail.clip && !rail.clip->contains(world))) {
+            continue;
+          }
+          if (fn->input) {
+            for (const auto& param : fn->input->parameters) {
+              if (param.id == rail.path.back()) {
+                return TextEditTool::Target{hit->path, param.index};
+              }
+            }
+          }
+        }
+        return std::nullopt;
+      }
+      if (const pt::Call* call = callAt(tree, hit->path)) {
+        const auto row = static_cast<std::size_t>((world.y - hit->world.y) / layout.railStep());
+        if (row == 0) {
+          return TextEditTool::Target{hit->path, std::nullopt};
+        }
+        const std::vector<const pt::Call::Argument*> args = sortedArguments(*call);
+        if (row > args.size()) {
+          return std::nullopt;
+        }
+        return TextEditTool::Target{hit->path, args[row - 1]->index};
+      }
+      if (const pt::Constant* constant = constantAt(tree, hit->path); constant && isEditableLiteral(constant->value)) {
+        return TextEditTool::Target{hit->path, std::nullopt};
       }
       return std::nullopt;
     }
 
-    std::optional<std::string> draftText(const pt::ParseTree& tree, const FullID& path) {
-      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
-        return fn->name;
+    // Where the target's text sits and the clip it draws under; the draft covers it while drawn.
+    struct Label {
+      Rect rect;
+      std::optional<Rect> clip;
+    };
+
+    std::optional<Label> labelRect(const pt::ParseTree& tree,
+                                   std::span<const Box> boxes,
+                                   const TextEditTool::Target& target,
+                                   const EditorContext::Layout& layout) {
+      if (const pt::FunctionDecl* fn = functionAt(tree, target.path); fn && target.index) {
+        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
+        FullID railPath = target.path;
+        railPath.push_back(param == nullptr ? INVALID_ID : param->id);
+        const Box* rail = param == nullptr ? nullptr : findBox(boxes, Part::Rail, railPath);
+        return rail == nullptr ? std::nullopt : std::optional<Label>{Label{rail->world, rail->clip}};
       }
-      if (const pt::Call* call = callAt(tree, path)) {
-        return call->target;
+      const Box* body = findBox(boxes, Part::Body, target.path);
+      if (body == nullptr) {
+        return std::nullopt;
       }
-      if (const pt::Constant* constant = constantAt(tree, path); constant && isEditableLiteral(constant->value)) {
+      const Rect& r = body->world;
+      if (functionAt(tree, target.path) != nullptr) {
+        return Label{{r.x, r.y, r.w, layout.headerH()}, body->clip};
+      }
+      if (const pt::Call* call = callAt(tree, target.path)) {
+        if (!target.index) {
+          return Label{{r.x, r.y, r.w, std::min(r.h, layout.railStep())}, body->clip};
+        }
+        if (argumentAt(*call, *target.index) == nullptr) {
+          return std::nullopt;
+        }
+        const double top = r.y + static_cast<double>(argumentRow(*call, *target.index)) * layout.railStep();
+        return Label{{r.x, top, r.w, layout.railStep()}, body->clip};
+      }
+      if (const pt::Constant* constant = constantAt(tree, target.path);
+          constant && isEditableLiteral(constant->value)) {
+        return Label{r, body->clip};
+      }
+      return std::nullopt;
+    }
+
+    std::optional<std::string> draftText(const pt::ParseTree& tree, const TextEditTool::Target& target) {
+      if (const pt::FunctionDecl* fn = functionAt(tree, target.path)) {
+        if (!target.index) {
+          return fn->name;
+        }
+        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
+        return param == nullptr ? std::nullopt : std::optional{param->name};
+      }
+      if (const pt::Call* call = callAt(tree, target.path)) {
+        if (!target.index) {
+          return call->target;
+        }
+        const pt::Call::Argument* arg = argumentAt(*call, *target.index);
+        return arg == nullptr ? std::nullopt : std::optional{arg->name};
+      }
+      if (const pt::Constant* constant = constantAt(tree, target.path);
+          constant && isEditableLiteral(constant->value)) {
         return renderLiteral(constant->value);
       }
       return std::nullopt;
@@ -62,19 +181,22 @@ namespace fluir::editor {
 
     // The edit `text` commits: nullopt rejects the draft, a null edit means the value is unchanged.
     std::optional<std::unique_ptr<Transaction>> commit(const pt::ParseTree& tree,
-                                                       const FullID& path,
+                                                       const TextEditTool::Target& target,
                                                        const std::string& text) {
-      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
+      const FullID& path = target.path;
+      if (functionAt(tree, path) != nullptr || callAt(tree, path) != nullptr) {
         if (!isValidIdentifier(text)) {
           return std::nullopt;
         }
-        return text == fn->name ? nullptr : std::make_unique<RenameTransaction>(path, text);
-      }
-      if (const pt::Call* call = callAt(tree, path)) {
-        if (!isValidIdentifier(text)) {
-          return std::nullopt;
+        if (text == *draftText(tree, target)) {
+          return nullptr;
         }
-        return text == call->target ? nullptr : std::make_unique<EditCallNodeTransaction>(path, text);
+        if (functionAt(tree, path) != nullptr) {
+          return target.index ? std::make_unique<UpdateFuncParamTransaction>(path, *target.index, text) :
+                                std::unique_ptr<Transaction>{std::make_unique<RenameTransaction>(path, text)};
+        }
+        return target.index ? std::make_unique<EditCallArgumentTransaction>(path, *target.index, text) :
+                              std::unique_ptr<Transaction>{std::make_unique<EditCallNodeTransaction>(path, text)};
       }
       const pt::Literal& value = constantAt(tree, path)->value;
       const std::optional<pt::Literal> parsed = tryParseLiteral(value, text);
@@ -84,6 +206,7 @@ namespace fluir::editor {
       return *parsed == value ? nullptr : std::make_unique<SetConstantValueTransaction>(path, *parsed);
     }
 
+    // A function's name or parameter sits on header chrome; everything else on its node.
     Color coverColor(const pt::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
       if (functionAt(tree, path) != nullptr) {
         return theme.funcDeclHeader;
@@ -100,7 +223,7 @@ namespace fluir::editor {
 
   bool TextEditTool::onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
     // An undo or delete may have removed what the draft edits.
-    if (field_ && !draftText(state.editor.tree(), path_)) {
+    if (field_ && !draftText(state.editor.tree(), target_)) {
       field_.reset();
     }
     switch (event.type) {
@@ -123,22 +246,23 @@ namespace fluir::editor {
   }
 
   void TextEditTool::onPress(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
+    const pt::ParseTree& tree = state.editor.tree();
     const Vec2 world = state.view.screenToWorld(event.pos);
-    const Box* hit = hitAt(boxes, world);
-    const std::optional<Rect> label =
-      hit != nullptr && hit->part == Part::Body ? labelRect(state.editor.tree(), *hit, state.ctx.layout) : std::nullopt;
-    if (!label || !label->contains(world)) {
+    const std::optional<Target> target = targetAt(tree, boxes, world, state.ctx.layout);
+    const std::optional<Label> label =
+      target ? labelRect(tree, boxes, *target, state.ctx.layout) : std::optional<Label>{};
+    if (!label || !label->rect.contains(world)) {
       field_.reset();
       return;
     }
     // Glyphs are fixed screen px, so the caret offset is measured on screen.
-    const double dx = (world.x - textOrigin(*label, state.ctx.layout).x) * state.view.scale;
-    if (field_ && path_ == hit->path) {
+    const double dx = (world.x - textOrigin(label->rect, state.ctx.layout).x) * state.view.scale;
+    if (field_ && target_ == *target) {
       field_->setCaretFromOffset(dx);
       return;
     }
-    const std::string text = *draftText(state.editor.tree(), hit->path);
-    path_ = hit->path;
+    const std::string text = *draftText(tree, *target);
+    target_ = *target;
     field_.emplace(text, TextField::indexAt(text, dx));
   }
 
@@ -146,7 +270,7 @@ namespace fluir::editor {
     switch (key) {
       case InputEvent::Key::Return:
         {
-          std::optional<std::unique_ptr<Transaction>> edit = commit(state.editor.tree(), path_, field_->text());
+          std::optional<std::unique_ptr<Transaction>> edit = commit(state.editor.tree(), target_, field_->text());
           if (!edit) {
             field_->reject();
             return true;
@@ -173,26 +297,21 @@ namespace fluir::editor {
       return;
     }
     const pt::ParseTree& tree = state.editor.tree();
-    const auto body =
-      std::ranges::find_if(boxes, [this](const Box& b) { return b.part == Part::Body && b.path == path_; });
-    if (body == boxes.end()) {
-      return;
-    }
-    const std::optional<Rect> label = labelRect(tree, *body, state.ctx.layout);
+    const std::optional<Label> label = labelRect(tree, boxes, target_, state.ctx.layout);
     if (!label) {
       return;
     }
     Renderer& r = view.renderer();
-    if (body->clip) {
-      r.pushClip(view.toScreen(*body->clip));
+    if (label->clip) {
+      r.pushClip(view.toScreen(*label->clip));
     }
-    r.fillRect(view.toScreen(*label), coverColor(tree, path_, state.ctx.theme));
-    r.drawRect(view.toScreen(*label), state.ctx.theme.border);
-    field_->draw(view, state.ctx, textOrigin(*label, state.ctx.layout));
+    r.fillRect(view.toScreen(label->rect), coverColor(tree, target_.path, state.ctx.theme));
+    r.drawRect(view.toScreen(label->rect), state.ctx.theme.border);
+    field_->draw(view, state.ctx, textOrigin(label->rect, state.ctx.layout));
     if (field_->invalid()) {
-      r.drawRect(view.toScreen(*label), state.ctx.theme.error);
+      r.drawRect(view.toScreen(label->rect), state.ctx.theme.error);
     }
-    if (body->clip) {
+    if (label->clip) {
       r.popClip();
     }
   }

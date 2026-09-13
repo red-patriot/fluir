@@ -128,11 +128,13 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/delete.cpp"
+    "transaction/edit_call_argument.cpp"
     "transaction/edit_call_node.cpp"
     "transaction/move.cpp"
     "transaction/rename.cpp"
     "transaction/resize.cpp"
     "transaction/set_constant_value.cpp"
+    "transaction/update_func_param.cpp"
 )
 
 set(FLUIR_EDITOR_PAGE_SOURCES

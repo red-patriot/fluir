@@ -3,34 +3,25 @@ find_package(GTest REQUIRED)
 add_executable(
     fluir.editor.test
     input.test.cpp
-    interaction.test.cpp
-    layer.test.cpp
     literal_text.test.cpp
     loader.test.cpp
     parse_tree_writer.test.cpp
     viewport.test.cpp
-    graph_draw.test.cpp
     graph_geometry.test.cpp
-    actor.test.cpp
-    node_drag.test.cpp
-    node_resize.test.cpp
-    constant_edit.test.cpp
-    focus.test.cpp
-    function_decl_drag.test.cpp
-    function_decl_resize.test.cpp
-    button_actor.test.cpp
+    graph_layout.test.cpp
+    graph_draw.test.cpp
     text_field.test.cpp
-    inline_edit.test.cpp
-    gesture.test.cpp
-    gesture_host.test.cpp
-    scene.test.cpp
-    scene_to_tree.test.cpp
+    toolbar.test.cpp
+    tool_chain.test.cpp
+    pan_zoom_tool.test.cpp
+    select_tool.test.cpp
+    drag_tool.test.cpp
+    text_edit_tool.test.cpp
     module.test.cpp
-    module_editor.test.cpp
-    header_bar.test.cpp
     splash.test.cpp
-    selection.test.cpp
+    module_editor.test.cpp
     tree_edit.test.cpp
+    tree_path.test.cpp
     transaction.test.cpp
 )
 

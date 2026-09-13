@@ -19,8 +19,9 @@ namespace {
   using fluir::FlowGraphLocation;
   using fluir::ID;
   using fluir::Operator;
-  using fluir::editor::deleteFunction;
   using fluir::editor::deleteNode;
+  using fluir::editor::hasOperand;
+  using fluir::editor::touches;
 
   fluir::pt::FunctionDecl makeFunction(ID id, fluir::pt::Block body) {
     fluir::pt::FunctionDecl fn;
@@ -29,12 +30,6 @@ namespace {
     fn.name = "f";
     fn.body = std::move(body);
     return fn;
-  }
-
-  fluir::pt::ParseTree singleFunctionTree(fluir::pt::FunctionDecl fn) {
-    fluir::pt::ParseTree tree;
-    tree.declarations.emplace(fn.id, fluir::pt::Declaration{fn});
-    return tree;
   }
 
   fluir::pt::Constant makeConstant(ID id) {
@@ -72,10 +67,6 @@ namespace {
     return conduit;
   }
 
-  fluir::pt::FunctionDecl& functionIn(fluir::pt::ParseTree& tree, ID id) {
-    return std::get<fluir::pt::FunctionDecl>(tree.declarations.at(id));
-  }
-
 }  // namespace
 
 TEST(TreeEdit, DeleteNodeRemovesItFromTheBody) {
@@ -84,7 +75,7 @@ TEST(TreeEdit, DeleteNodeRemovesItFromTheBody) {
   body.nodes.emplace(11, makeConstant(11));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 10));
+  EXPECT_TRUE(deleteNode(fn.body, 10));
 
   EXPECT_FALSE(fn.body.nodes.contains(10));
   EXPECT_TRUE(fn.body.nodes.contains(11));
@@ -96,7 +87,7 @@ TEST(TreeEdit, DeleteNodeReturnsFalseForUnknownIdAndLeavesTheBodyIntact) {
   body.conduits.emplace(100, makeConduit(100, 10, {{.target = 11, .index = 0}}));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_FALSE(deleteNode(fn, 999));
+  EXPECT_FALSE(deleteNode(fn.body, 999));
 
   EXPECT_EQ(fn.body.nodes.size(), 1u);
   EXPECT_EQ(fn.body.conduits.size(), 1u);
@@ -109,7 +100,7 @@ TEST(TreeEdit, DeleteNodeErasesConduitsSourcedFromIt) {
   body.conduits.emplace(100, makeConduit(100, 10, {{.target = 11, .index = 0}}));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 10));
+  EXPECT_TRUE(deleteNode(fn.body, 10));
 
   EXPECT_TRUE(fn.body.conduits.empty());
 }
@@ -122,7 +113,7 @@ TEST(TreeEdit, DeleteNodeDropsOnlyTheMatchingTargetFromAMultiTargetConduit) {
   body.conduits.emplace(100, makeConduit(100, 10, {{.target = 11, .index = 0}, {.target = 12, .index = 1}}));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 11));
+  EXPECT_TRUE(deleteNode(fn.body, 11));
 
   ASSERT_TRUE(fn.body.conduits.contains(100));
   const auto& children = fn.body.conduits.at(100).children;
@@ -138,7 +129,7 @@ TEST(TreeEdit, DeleteNodeErasesAConduitWhoseLastTargetItWas) {
   body.conduits.emplace(100, makeConduit(100, 10, {{.target = 11, .index = 0}}));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 11));
+  EXPECT_TRUE(deleteNode(fn.body, 11));
 
   EXPECT_TRUE(fn.body.conduits.empty());
   EXPECT_TRUE(fn.body.nodes.contains(10));
@@ -153,7 +144,7 @@ TEST(TreeEdit, DeleteNodeKeepsAnAlreadyChildlessConduit) {
   body.conduits.emplace(100, makeConduit(100, 10, {}));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 11));
+  EXPECT_TRUE(deleteNode(fn.body, 11));
 
   EXPECT_TRUE(fn.body.conduits.contains(100));
 }
@@ -165,7 +156,7 @@ TEST(TreeEdit, DeleteNodeResetsBinaryLhsThatReferencedIt) {
   body.nodes.emplace(12, makeConstant(12));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 10));
+  EXPECT_TRUE(deleteNode(fn.body, 10));
 
   const auto& binary = std::get<fluir::pt::Binary>(fn.body.nodes.at(11));
   EXPECT_EQ(binary.lhs, fluir::INVALID_ID);
@@ -179,7 +170,7 @@ TEST(TreeEdit, DeleteNodeResetsBinaryRhsThatReferencedIt) {
   body.nodes.emplace(12, makeConstant(12));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 10));
+  EXPECT_TRUE(deleteNode(fn.body, 10));
 
   const auto& binary = std::get<fluir::pt::Binary>(fn.body.nodes.at(11));
   EXPECT_EQ(binary.rhs, fluir::INVALID_ID);
@@ -192,7 +183,7 @@ TEST(TreeEdit, DeleteNodeResetsUnaryLhsThatReferencedIt) {
   body.nodes.emplace(11, makeUnary(11, 10));
   fluir::pt::FunctionDecl fn = makeFunction(1, std::move(body));
 
-  EXPECT_TRUE(deleteNode(fn, 10));
+  EXPECT_TRUE(deleteNode(fn.body, 10));
 
   EXPECT_EQ(std::get<fluir::pt::Unary>(fn.body.nodes.at(11)).lhs, fluir::INVALID_ID);
 }
@@ -208,40 +199,25 @@ TEST(TreeEdit, DeleteNodeLeavesOtherFunctionsUntouched) {
   fluir::pt::FunctionDecl a = makeFunction(1, std::move(bodyA));
   fluir::pt::FunctionDecl b = makeFunction(2, std::move(bodyB));
 
-  EXPECT_TRUE(deleteNode(a, 10));
+  EXPECT_TRUE(deleteNode(a.body, 10));
 
   EXPECT_TRUE(a.body.nodes.empty());
   EXPECT_TRUE(b.body.nodes.contains(10));
   EXPECT_TRUE(b.body.conduits.contains(100));
 }
 
-TEST(TreeEdit, DeleteFunctionRemovesTheDeclarationAndItsBody) {
-  fluir::pt::Block body;
-  body.nodes.emplace(10, makeConstant(10));
-  fluir::pt::ParseTree tree = singleFunctionTree(makeFunction(1, std::move(body)));
+TEST(TreeEdit, TouchesMatchesTheSourceOrAnyTarget) {
+  const fluir::pt::Conduit conduit = makeConduit(100, 10, {{.target = 11, .index = 0}, {.target = 12, .index = 1}});
 
-  EXPECT_TRUE(deleteFunction(tree, 1));
-
-  EXPECT_TRUE(tree.declarations.empty());
+  EXPECT_TRUE(touches(conduit, 10));
+  EXPECT_TRUE(touches(conduit, 12));
+  EXPECT_FALSE(touches(conduit, 13));
 }
 
-TEST(TreeEdit, DeleteFunctionReturnsFalseForUnknownId) {
-  fluir::pt::ParseTree tree = singleFunctionTree(makeFunction(1, fluir::pt::Block{}));
-
-  EXPECT_FALSE(deleteFunction(tree, 999));
-
-  EXPECT_EQ(tree.declarations.size(), 1u);
-}
-
-TEST(TreeEdit, DeleteFunctionLeavesOtherFunctionsIntact) {
-  fluir::pt::Block bodyB;
-  bodyB.nodes.emplace(10, makeConstant(10));
-
-  fluir::pt::ParseTree tree = singleFunctionTree(makeFunction(1, fluir::pt::Block{}));
-  tree.declarations.emplace(2, fluir::pt::Declaration{makeFunction(2, std::move(bodyB))});
-
-  EXPECT_TRUE(deleteFunction(tree, 1));
-
-  ASSERT_EQ(tree.declarations.size(), 1u);
-  EXPECT_TRUE(functionIn(tree, 2).body.nodes.contains(10));
+TEST(TreeEdit, HasOperandMatchesBinaryAndUnaryOperandsOnly) {
+  EXPECT_TRUE(hasOperand(makeBinary(11, 10, 12), 10));
+  EXPECT_TRUE(hasOperand(makeBinary(11, 12, 10), 10));
+  EXPECT_TRUE(hasOperand(makeUnary(11, 10), 10));
+  EXPECT_FALSE(hasOperand(makeUnary(11, 12), 10));
+  EXPECT_FALSE(hasOperand(makeConstant(10), 10));  // its own id is not an operand
 }

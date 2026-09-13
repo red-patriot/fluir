@@ -6,13 +6,12 @@
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
-#include "editor/core/layer.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/input.hpp"
 
 namespace fluir::editor {
-  /** Owns the frame lifecycle every page shares: start, event dispatch and the
-   *  beginFrame/endFrame bracket. Subclasses supply their layers and hooks. */
+  /** Owns the frame lifecycle every page shares: start, Quit/Resize handling and
+   *  the beginFrame/endFrame bracket. Subclasses supply the hooks. */
   class Page {
    public:
     Page(EditorContext& ctx, Renderer& renderer) : ctx_(ctx), renderer_(renderer) { }
@@ -29,21 +28,18 @@ namespace fluir::editor {
     virtual std::unique_ptr<Page> next() { return nullptr; }
 
    protected:
-    /** Topmost first: dispatch walks this order, draw walks it reversed. */
-    virtual std::vector<Layer*> layers() = 0;
-
     virtual int onStart() { return 0; }
-    /** Page-specific handling, for events no layer consumed. */
-    virtual bool onAppEvent(const InputEvent&) { return false; }
+    /** Every event but Quit and Resize. */
+    virtual void onEvent(const InputEvent&) { }
     /** Re-lays-out chrome for the current output size. Runs after onStart and on Resize. */
     virtual void onResize() { }
-    /** Runs once after each batch of events, e.g. to re-layout the scene. */
-    virtual void afterUpdate() { }
+    /** Draws inside the frame bracket. */
+    virtual void onDraw() = 0;
+
+    Rect outputRect() const;
 
     EditorContext& ctx_;
     Renderer& renderer_;
-
-    Rect outputRect() const;
   };
 }  // namespace fluir::editor
 

@@ -1,19 +1,22 @@
+#include "editor/view/graph_draw.hpp"
+
 #include <algorithm>
 #include <filesystem>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "compiler/utility/context.hpp"
-#include "editor/actors/scene.hpp"
 #include "editor/core/collecting_sink.hpp"
-#include "editor/core/layer.hpp"
 #include "editor/core/loader.hpp"
+#include "editor/core/viewport.hpp"
+#include "editor/view/graph_layout.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
-// These tests drive the display list directly: GraphScene::build + Layer::draw,
+// These tests drive the display list directly: layoutGraph + drawGraph,
 // the same path ModulePage uses. They assert *what is drawn where*: which primitive (rect / fill /
 // line / text / clip), at what geometry, with what text. They use the
 // `testutil` attribute-lookup matchers (hasRect, hasFill, hasTextAt, hasLine,
@@ -50,18 +53,15 @@ namespace {
 
   const fluir::editor::EditorContext kCtx;
 
-  // Builds the scene for `tree` and draws it through one Layer, exactly as
-  // ModulePage does.
+  // Lays `tree` out and draws it into one root view, exactly as ModulePage does.
   void drawTree(const fluir::editor::EditorContext& ctx,
                 const fluir::pt::ParseTree& tree,
                 const Viewport& viewport,
-                RecordingRenderer& r) {
-    fluir::editor::GraphScene scene;
-    scene.build(ctx, tree);
-    fluir::editor::Layer layer;
-    layer.setRoot(scene.root());
-    layer.setViewport(viewport);
-    layer.draw(r, ctx, Rect{0, 0, r.outputSize().x, r.outputSize().y});
+                RecordingRenderer& r,
+                const std::optional<fluir::FullID>& selection = std::nullopt) {
+    const std::vector<fluir::editor::Box> boxes = fluir::editor::layoutGraph(tree, ctx.layout);
+    const fluir::editor::Subview root{viewport, Rect{0, 0, r.outputSize().x, r.outputSize().y}, r};
+    fluir::editor::drawGraph(root, tree, boxes, selection, ctx);
   }
 
 }  // namespace
@@ -73,7 +73,7 @@ TEST(GraphDraw, EmptyOfFunctionsEmitsNoFrames) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // The layer still opens its output-rect clip; nothing is drawn into it.
+  // The root view still opens its output-rect clip; nothing is drawn into it.
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Rect), 0u);
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 0u);
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Text), 0u);
@@ -328,7 +328,7 @@ TEST(GraphDraw, ClipWrapsBodyForFunctionWithNodes) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // The body container clips its children (nodes, rails, conduits) to the body rect.
+  // Body content (nodes, rails, conduits) is clipped to the body rect.
   EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 75, 500, 500}).empty());
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::PushClip), countOf(r.calls, DrawCall::Op::PopClip));
   EXPECT_TRUE(hasRect(r.calls, Rect{125, 85, 25, 25}));  // binary node body rect
@@ -346,4 +346,53 @@ TEST(GraphDraw, DeterministicWithBodyAndWires) {
   EXPECT_EQ(a.calls, b.calls);
   EXPECT_FALSE(testutil::opsOf(a.calls, DrawCall::Op::Line).empty());
   EXPECT_FALSE(testutil::opsOf(a.calls, DrawCall::Op::PushClip).empty());
+}
+
+TEST(GraphDraw, NodeGripsAreDrawn) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  // Binary {125,85,25,25}: move grip {130,90,15,15}; resize bar {145,85,5,25}.
+  EXPECT_TRUE(hasFill(r.calls, Rect{130, 90, 15, 15}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{145, 85, 5, 25}));
+}
+
+TEST(GraphDraw, FunctionGripsAreDrawn) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  // Frame {50,50,500,500}: header move grip {530,55,15,15}; corner {535,535,15,15}.
+  EXPECT_TRUE(hasFill(r.calls, Rect{530, 55, 15, 15}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{535, 535, 15, 15}));
+}
+
+TEST(GraphDraw, SelectedNodeIsOutlined) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer unselected;
+  RecordingRenderer selected;
+  drawTree(kCtx, *l.result.tree, Viewport{}, unselected);
+  drawTree(kCtx, *l.result.tree, Viewport{}, selected, fluir::FullID{1, 1});
+
+  // Binary {125,85,25,25} outset by selectionPad (2), then by one more px.
+  EXPECT_FALSE(hasRect(unselected.calls, Rect{123, 83, 29, 29}));
+  EXPECT_TRUE(hasRect(selected.calls, Rect{123, 83, 29, 29}));
+  EXPECT_TRUE(hasRect(selected.calls, Rect{122, 82, 31, 31}));
+}
+
+TEST(GraphDraw, SelectedFunctionIsOutlined) {
+  const Loaded l = loadFixture("read/single_empty_function.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r, fluir::FullID{1});
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{48, 48, 504, 504}));
 }

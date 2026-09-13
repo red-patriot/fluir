@@ -74,31 +74,13 @@ target_include_directories(
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
-    "core/interaction.cpp"
-    "core/layer.cpp"
     "core/literal_text.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
-    "core/scene_to_tree.cpp"
     "core/tree_edit.cpp"
+    "core/tree_path.cpp"
     "core/viewport.cpp"
-)
-
-set(FLUIR_EDITOR_PAGE_SOURCES
-    "pages/module.cpp"
-    "pages/page.cpp"
-    "pages/header_bar.cpp"
-    "pages/splash.cpp"
-)
-
-set(FLUIR_EDITOR_ACTOR_SOURCES
-    "actors/function_decl_actor.cpp"
-    "actors/node_actor.cpp"
-    "actors/node_actors.cpp"
-    "actors/rail_actors.cpp"
-    "actors/scene.cpp"
-    "actors/selection_outline.cpp"
 )
 
 set(FLUIR_EDITOR_TRANSACTION_SOURCES
@@ -108,29 +90,37 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/set_constant_value.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES
-    "components/button_actor.cpp"
-    "components/text_field.cpp"
-    "components/toolbar_actor.cpp"
+set(FLUIR_EDITOR_PAGE_SOURCES
+    "pages/module.cpp"
+    "pages/page.cpp"
+    "pages/splash.cpp"
 )
 
-set(FLUIR_EDITOR_GESTURE_SOURCES
-    "gesture/gesture.cpp"
-    "gesture/gesture_host.cpp"
-    "gesture/grip.cpp"
-    "gesture/inline_edit.cpp"
-    "gesture/move.cpp"
-    "gesture/resize.cpp"
+set(FLUIR_EDITOR_COMPONENT_SOURCES "components/text_field.cpp")
+
+set(FLUIR_EDITOR_VIEW_SOURCES
+    "view/graph_draw.cpp"
+    "view/graph_layout.cpp"
+    "view/node_view.cpp"
+    "view/toolbar.cpp"
+)
+
+set(FLUIR_EDITOR_TOOL_SOURCES
+    "tools/drag_tool.cpp"
+    "tools/pan_zoom_tool.cpp"
+    "tools/select_tool.cpp"
+    "tools/text_edit_tool.cpp"
+    "tools/tool.cpp"
 )
 
 target_sources(
     fluir.libeditor
     PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
-            ${FLUIR_EDITOR_PAGE_SOURCES}
-            ${FLUIR_EDITOR_ACTOR_SOURCES}
             ${FLUIR_EDITOR_COMPONENT_SOURCES}
-            ${FLUIR_EDITOR_GESTURE_SOURCES}
             ${FLUIR_EDITOR_TRANSACTION_SOURCES}
+            ${FLUIR_EDITOR_VIEW_SOURCES}
+            ${FLUIR_EDITOR_TOOL_SOURCES}
+            ${FLUIR_EDITOR_PAGE_SOURCES}
             "sdl_renderer.cpp"
             "input.cpp"
             "app.cpp"

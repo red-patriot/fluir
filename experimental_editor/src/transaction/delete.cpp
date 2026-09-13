@@ -1,88 +1,72 @@
 #include "editor/transaction/delete.hpp"
 
 #include <utility>
-#include <vector>
+#include <variant>
 
-#include "editor/actors/function_decl_actor.hpp"
-#include "editor/actors/node_actor.hpp"
-#include "editor/actors/rail_actors.hpp"
+#include "editor/core/tree_edit.hpp"
+#include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
   namespace {
 
-    // A conduit is wired to `nodeId` when it is sourced from it or lands on it.
-    bool touches(const pt::Conduit& conduit, fluir::ID nodeId) {
-      if (conduit.input == nodeId) {
-        return true;
-      }
-      for (const pt::Conduit::Output& child : conduit.children) {
-        if (child.target == nodeId) {
-          return true;
-        }
-      }
-      return false;
+    fluir::ID idOf(const pt::Node& node) {
+      return std::visit([](const auto& n) { return n.id; }, node);
     }
 
   }  // namespace
 
-  bool DeleteTransaction::execute(GraphScene& scene) {
-    removed_.clear();
-    clearedOperands_.clear();
-
-    // A frame takes its whole body with it; no wires and no operands to mend.
-    if (id_.size() == 1) {
-      if (dynamic_cast<FunctionDeclActor*>(scene.find(id_)) == nullptr) {
-        return false;
-      }
-      removed_.push_back(scene.detach(id_));
+  bool DeleteTransaction::execute(pt::ParseTree& tree) {
+    if (functionAt(tree, path_) != nullptr) {
+      const auto it = tree.declarations.find(path_.front());
+      function_ = std::move(it->second);
+      tree.declarations.erase(it);
       return true;
     }
-    if (id_.size() != 2) {
+
+    pt::Block* block = blockOf(tree, parentOf(path_));
+    const pt::Node* node = nodeAt(tree, path_);
+    if (block == nullptr || node == nullptr) {
       return false;
     }
-
-    auto* frame = dynamic_cast<FunctionDeclActor*>(scene.find(id_[0]));
-    if (frame == nullptr || dynamic_cast<NodeActor*>(scene.find(id_)) == nullptr) {
-      return false;
-    }
-
-    // Collect first: detaching rewrites the child list being walked.
-    std::vector<fluir::FullID> wires;
-    for (const auto& child : frame->body().children()) {
-      const auto* conduit = dynamic_cast<const ConduitActor*>(child.get());
-      if (conduit != nullptr && touches(conduit->conduit(), id_.back())) {
-        wires.push_back(*conduit->selectionId());
-      }
-      if (auto* node = dynamic_cast<NodeActor*>(child.get())) {
-        for (const int slot : node->clearOperands(id_.back())) {
-          clearedOperands_.push_back({*node->selectionId(), slot});
-        }
+    // Keep everything the delete will rewrite, as it was, before rewriting it.
+    const fluir::ID nodeId = path_.back();
+    node_ = *node;
+    conduits_.clear();
+    referrers_.clear();
+    for (const auto& [id, conduit] : block->conduits) {
+      if (touches(conduit, nodeId)) {
+        conduits_.push_back(conduit);
       }
     }
-    for (const fluir::FullID& wire : wires) {
-      removed_.push_back(scene.detach(wire));
+    for (const auto& [id, other] : block->nodes) {
+      if (hasOperand(other, nodeId)) {
+        referrers_.push_back(other);
+      }
     }
-    removed_.push_back(scene.detach(id_));
-    return true;
+    return deleteNode(*block, nodeId);
   }
 
-  bool DeleteTransaction::unexecute(GraphScene& scene) {
-    if (removed_.empty()) {
+  bool DeleteTransaction::unexecute(pt::ParseTree& tree) {
+    if (function_) {
+      tree.declarations.insert_or_assign(path_.front(), std::move(*function_));
+      function_.reset();
+      return true;
+    }
+
+    pt::Block* block = blockOf(tree, parentOf(path_));
+    if (block == nullptr || !node_) {
       return false;
     }
-    // Indices were recorded as each detach happened, so undo them last-first.
-    while (!removed_.empty()) {
-      if (!scene.attach(std::move(removed_.back()))) {
-        return false;
-      }
-      removed_.pop_back();
+    block->nodes.insert_or_assign(path_.back(), std::move(*node_));
+    node_.reset();
+    for (pt::Conduit& conduit : conduits_) {
+      block->conduits.insert_or_assign(conduit.id, std::move(conduit));
     }
-    for (const ClearedOperand& cleared : clearedOperands_) {
-      if (auto* node = dynamic_cast<NodeActor*>(scene.find(cleared.node))) {
-        node->restoreOperand(cleared.slot, id_.back());
-      }
+    for (pt::Node& referrer : referrers_) {
+      block->nodes.insert_or_assign(idOf(referrer), std::move(referrer));
     }
-    clearedOperands_.clear();
+    conduits_.clear();
+    referrers_.clear();
     return true;
   }
 

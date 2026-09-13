@@ -18,56 +18,37 @@ namespace {
   using testutil::hasTextAt;
   using testutil::RecordingRenderer;
 
-  InputEvent quit() {
-    InputEvent ie;
-    ie.type = InputEvent::Type::Quit;
-    return ie;
-  }
-
-  InputEvent resize() {
-    InputEvent ie;
-    ie.type = InputEvent::Type::Resize;
-    return ie;
-  }
-
-  InputEvent escape() {
-    InputEvent ie;
-    ie.type = InputEvent::Type::KeyDown;
-    ie.key = InputEvent::Key::Escape;
-    return ie;
-  }
-
 }  // namespace
 
-TEST(SplashPage, DrawsOpenButton) {
+TEST(SplashPage, DrawsTheOpenButton) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
   ASSERT_EQ(page.draw(), 0);
 
-  const Vec2 textPos = page.openButton().bounds().topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad};
-  EXPECT_TRUE(hasTextAt(renderer.calls, "Open", textPos));
-  EXPECT_TRUE(hasFill(renderer.calls, page.openButton().bounds()));
+  const Rect open = page.openButtonRect();
+  EXPECT_TRUE(hasTextAt(renderer.calls, "Open", open.topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad}));
+  EXPECT_TRUE(hasFill(renderer.calls, open));
 }
 
-TEST(SplashPage, NextStaysNullUntilOpenIsWired) {
+TEST(SplashPage, NextStaysNullUntilAFileIsOpened) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  EXPECT_EQ(page.next(), nullptr) << "next() is null until Open is clicked and a file is chosen";
+  EXPECT_EQ(page.next(), nullptr);
 }
 
-TEST(SplashPage, QuitEventStopsTheApp) {
+TEST(SplashPage, QuitStopsTheApp) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  EXPECT_EQ(page.update({quit()}), 0);
-  EXPECT_FALSE(ctx.running) << "Quit must reach SplashPage -- it is the app's entry page and never transitions";
+  EXPECT_EQ(page.update({InputEvent{.type = InputEvent::Type::Quit}}), 0);
+  EXPECT_FALSE(ctx.running);
 }
 
 TEST(SplashPage, EscapeDoesNotStopTheApp) {
@@ -76,22 +57,20 @@ TEST(SplashPage, EscapeDoesNotStopTheApp) {
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
 
-  EXPECT_EQ(page.update({escape()}), 0);
-  EXPECT_TRUE(ctx.running) << "Escape is an ordinary key event -- only Quit stops the app";
+  EXPECT_EQ(page.update({InputEvent{.type = InputEvent::Type::KeyDown, .key = InputEvent::Key::Escape}}), 0);
+  EXPECT_TRUE(ctx.running);
 }
 
-TEST(SplashPage, ButtonRecentersOnResize) {
+TEST(SplashPage, TheButtonRecentersOnResize) {
   EditorContext ctx;
   RecordingRenderer renderer;
   SplashPage page{ctx, renderer};
   ASSERT_EQ(page.start(), 0);
-  ASSERT_EQ(page.draw(), 0);
-  const Rect before = page.openButton().bounds();
+  const Rect before = page.openButtonRect();
 
   renderer.outputSize_ = Vec2{1200, 900};
-  ASSERT_EQ(page.update({resize()}), 0);
-  const Rect after = page.openButton().bounds();
+  ASSERT_EQ(page.update({InputEvent{.type = InputEvent::Type::Resize}}), 0);
 
-  EXPECT_NE(before, after) << "a Resize event must re-layout the button, not leave it frozen";
-  EXPECT_EQ(after.center(), (Vec2{600, 450}));
+  EXPECT_NE(page.openButtonRect(), before);
+  EXPECT_EQ(page.openButtonRect().center(), (Vec2{600, 450}));
 }

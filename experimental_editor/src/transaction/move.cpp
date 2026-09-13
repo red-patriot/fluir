@@ -2,16 +2,12 @@
 
 #include <utility>
 
-#include "editor/actors/actor.hpp"
+#include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
 
-  bool MoveTransaction::execute(GraphScene& scene) {
-    Actor* actor = scene.find(id_);
-    if (actor == nullptr) {
-      return false;
-    }
-    FlowGraphLocation* location = actor->location();
+  bool MoveTransaction::execute(pt::ParseTree& tree) {
+    FlowGraphLocation* location = locationAt(tree, path_);
     if (location == nullptr || (location->x == x_ && location->y == y_)) {
       return false;
     }

@@ -16,7 +16,6 @@ namespace {
   using fluir::editor::atOrigin;
   using fluir::editor::bodyOrigin;
   using fluir::editor::dotRect;
-  using fluir::editor::functionOrigin;
   using fluir::editor::localRect;
   using fluir::editor::Rect;
   using fluir::editor::sortedFunctions;
@@ -49,12 +48,6 @@ TEST(GraphGeometry, LocalRectScalesLocationByUnitPx) {
   // int_constants.fl constant id=1: x=2 y=20 w=5 h=5, unitPx=5.
   const FlowGraphLocation loc{.x = 2, .y = 20, .z = 1, .width = 5, .height = 5};
   EXPECT_EQ(localRect(loc, 5.0), (Rect{10, 100, 25, 25}));
-}
-
-TEST(GraphGeometry, FunctionOriginScalesLocationByUnitPx) {
-  // int_constants.fl function main: x=10 y=10 z=3 w=100 h=100, unitPx=5.
-  const FlowGraphLocation loc{.x = 10, .y = 10, .z = 3, .width = 100, .height = 100};
-  EXPECT_EQ(functionOrigin(loc, 5.0), (Vec2{50, 50}));
 }
 
 TEST(GraphGeometry, BodyOriginOffsetsByHeaderHeight) {

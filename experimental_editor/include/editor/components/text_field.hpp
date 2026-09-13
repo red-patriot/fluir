@@ -2,7 +2,6 @@
 #define FLUIR_EDITOR_COMPONENTS_TEXT_FIELD_HPP
 
 #include <cstddef>
-#include <functional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -14,15 +13,10 @@
 
 namespace fluir::editor {
 
-  /** An open draft and its caret. Constructing one opens the edit and destroying
-   *  it cancels. Validates edits via a callback. */
+  /** An open draft and its caret. Constructing one opens the edit and destroying it cancels. */
   class TextField {
    public:
-    /** Validates and applies the draft; false rejects and keeps it open. */
-    using Commit = std::function<bool(const EditorContext&, const std::string&)>;
-
-    TextField(std::string text, std::size_t caret, Commit commit) :
-      text_(std::move(text)), caret_(caret), commit_(std::move(commit)) { }
+    TextField(std::string text, std::size_t caret) : text_(std::move(text)), caret_(caret) { }
 
     bool invalid() const { return invalid_; }
 
@@ -38,9 +32,8 @@ namespace fluir::editor {
 
     void setCaretFromOffset(double dxScreenPx);
 
-    /** Runs the validator once. True lets the owner close the field; false marks
-     *  it `invalid()` and keeps the draft. */
-    bool commit(const EditorContext& ctx);
+    /** Marks the draft invalid until the next edit. */
+    void reject() { invalid_ = true; }
 
     void draw(const Subview& view, const EditorContext& ctx, Vec2 localTextPos) const;
 
@@ -50,7 +43,6 @@ namespace fluir::editor {
    private:
     std::string text_;
     std::size_t caret_ = 0;
-    Commit commit_;
     bool invalid_ = false;
   };
 

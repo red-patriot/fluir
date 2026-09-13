@@ -5,21 +5,21 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
-#include "editor/actors/scene.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
 
-  /** Replaces a constant's literal. Self-inverting: the swap is its own reverse. */
+  /** Replaces a constant's literal, keeping its type. Self-inverting: the swap is its own reverse. */
   class SetConstantValueTransaction : public Transaction {
    public:
-    SetConstantValueTransaction(fluir::FullID id, pt::Literal value) : id_(std::move(id)), value_(std::move(value)) { }
+    SetConstantValueTransaction(fluir::FullID path, pt::Literal value) :
+      path_(std::move(path)), value_(std::move(value)) { }
 
-    bool execute(GraphScene& scene) override;
-    bool unexecute(GraphScene& scene) override { return execute(scene); }
+    bool execute(pt::ParseTree& tree) override;
+    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
 
    private:
-    fluir::FullID id_;
+    fluir::FullID path_;
     pt::Literal value_;
   };
 

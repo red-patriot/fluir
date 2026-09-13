@@ -22,46 +22,53 @@ namespace fluir::editor {
       return emptied;
     }
 
-    void resetOperands(pt::Node& node, fluir::ID nodeId) {
+    // Constant and Call carry no operand ids.
+    template <typename Visit>
+    void forOperands(pt::Node& node, Visit visit) {
       std::visit(
-        [nodeId](auto& n) {
+        [&visit](auto& n) {
           using T = std::decay_t<decltype(n)>;
           if constexpr (std::is_same_v<T, pt::Binary>) {
-            if (n.lhs == nodeId) {
-              n.lhs = fluir::INVALID_ID;
-            }
-            if (n.rhs == nodeId) {
-              n.rhs = fluir::INVALID_ID;
-            }
+            visit(n.lhs);
+            visit(n.rhs);
           } else if constexpr (std::is_same_v<T, pt::Unary>) {
-            if (n.lhs == nodeId) {
-              n.lhs = fluir::INVALID_ID;
-            }
+            visit(n.lhs);
           }
-          // Constant and Call carry no operand ids.
         },
         node);
     }
 
   }  // namespace
 
-  bool deleteNode(pt::FunctionDecl& fn, fluir::ID nodeId) {
-    if (fn.body.nodes.erase(nodeId) == 0) {
+  bool deleteNode(pt::Block& block, fluir::ID nodeId) {
+    if (block.nodes.erase(nodeId) == 0) {
       return false;
     }
-    std::erase_if(fn.body.conduits, [nodeId](const auto& entry) { return entry.second.input == nodeId; });
-    for (const fluir::ID conduitId : stripTargets(fn.body, nodeId)) {
-      fn.body.conduits.erase(conduitId);
+    std::erase_if(block.conduits, [nodeId](const auto& entry) { return entry.second.input == nodeId; });
+    for (const fluir::ID conduitId : stripTargets(block, nodeId)) {
+      block.conduits.erase(conduitId);
     }
-    for (auto& [id, node] : fn.body.nodes) {
-      resetOperands(node, nodeId);
+    for (auto& [id, node] : block.nodes) {
+      forOperands(node, [nodeId](fluir::ID& operand) {
+        if (operand == nodeId) {
+          operand = fluir::INVALID_ID;
+        }
+      });
     }
     return true;
   }
 
-  bool deleteFunction(pt::ParseTree& tree, fluir::ID functionId) {
-    // Node ids are body-scoped, so nothing outside the declaration refers in.
-    return tree.declarations.erase(functionId) > 0;
+  bool touches(const pt::Conduit& conduit, fluir::ID nodeId) {
+    return conduit.input == nodeId || std::ranges::any_of(conduit.children, [nodeId](const pt::Conduit::Output& out) {
+             return out.target == nodeId;
+           });
+  }
+
+  bool hasOperand(const pt::Node& node, fluir::ID nodeId) {
+    bool found = false;
+    pt::Node copy = node;
+    forOperands(copy, [&found, nodeId](fluir::ID& operand) { found = found || operand == nodeId; });
+    return found;
   }
 
 }  // namespace fluir::editor

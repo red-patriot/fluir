@@ -4,113 +4,122 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <fmt/format.h>
 #include <nfd.h>
 
 #include "compiler/utility/context.hpp"
-#include "editor/actors/function_decl_actor.hpp"
-#include "editor/actors/node_actors.hpp"
-#include "editor/core/interaction.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
-#include "editor/core/scene_to_tree.hpp"
 #include "editor/pages/splash.hpp"
+#include "editor/tools/drag_tool.hpp"
+#include "editor/tools/pan_zoom_tool.hpp"
+#include "editor/tools/select_tool.hpp"
+#include "editor/tools/text_edit_tool.hpp"
 #include "editor/transaction/delete.hpp"
-#include "editor/transaction/transaction.hpp"
+#include "editor/view/graph_draw.hpp"
+#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor {
-  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) :
-    Page(ctx, renderer),
-    header_(renderer, [this] { onSave(); }, [this] { onSaveAs(); }, [this] { this->shouldClose = true; }, editor_) {
-    hud_.setRoot(header_);
-    hud_.add(std::make_unique<ClickInteraction>());
 
-    graph_.setRoot(editor_.scene().root());
-    // Focus first: a focused field eats its keys before a page command reads them.
-    graph_.add(std::make_unique<FocusInteraction>());
-    graph_.add(std::make_unique<PanZoomInteraction>());
-    // Before Drag so a press on a node's grip still selects it.
-    graph_.add(std::make_unique<SelectionInteraction>(editor_.scene()));
-    graph_.add(std::make_unique<DragInteraction>());
-    graph_.add(std::make_unique<ClickInteraction>());
+  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : Page(ctx, renderer), state_{ctx} {
+    // An open draft takes keys first; selection sees a press before a grip claims it.
+    tools_.add(std::make_unique<TextEditTool>());
+    tools_.add(std::make_unique<PanZoomTool>());
+    tools_.add(std::make_unique<SelectTool>());
+    tools_.add(std::make_unique<DragTool>());
+
+    header_.buttons = {
+      Button{.label = "Save", .onClick = [this] { onSave(); }},
+      Button{.label = "Save As", .onClick = [this] { onSaveAs(); }},
+      Button{.label = "Undo",
+             .onClick = [this] { state_.editor.undo(); },
+             .enabled = [this] { return state_.editor.canUndo(); }},
+      Button{.label = "Redo",
+             .onClick = [this] { state_.editor.redo(); },
+             .enabled = [this] { return state_.editor.canRedo(); }},
+      Button{.label = "Exit", .onClick = [this] { shouldClose_ = true; }, .align = Button::Align::Right},
+    };
   }
 
-  // The context outlives this page and is shared with the next one, so the sink
-  // must not be left pointing here.
-  ModulePage::~ModulePage() { ctx_.commit = nullptr; }
-
   int ModulePage::onStart() {
-    reset();
-    // Installed here, not in the ctor: run() builds the next page before it
-    // destroys this one, so a ctor install would be wiped by the outgoing dtor.
-    ctx_.commit = [this](std::unique_ptr<Transaction> edit) { return editor_.apply(std::move(edit)); };
+    if (!ctx_.program) {
+      fmt::print(stderr, "no program to open\n");
+      return 1;
+    }
     fluir::Context cctx{
-      .currentFile = *ctx_.program,  // TODO: Handle no program
+      .currentFile = *ctx_.program,
       .ignoreVersionChecks = true,
     };
-
     const auto result = loadFile(cctx, *ctx_.program);
-
     if (!result.tree) {
       fmt::print(stderr, "parse failed: {}\n", ctx_.program->string());
       return 1;
     }
-    fileHeader_ = result.tree->header;
-    editor_.scene().build(ctx_, *result.tree);  // the tree is a load format; the scene is the model
-
-    graph_.viewport().fitRect(editor_.scene().worldBounds(), renderer_.outputSize());
-    return 0;  // Page::start() lays the chrome out via onResize().
+    state_.editor.load(*result.tree);
+    fitView();
+    return 0;  // Page::start() lays the header out via onResize().
   }
 
-  bool ModulePage::onAppEvent(const InputEvent& event) {
-    if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::F) {
-      graph_.viewport().fitRect(editor_.scene().worldBounds(), renderer_.outputSize());
-      return true;
+  void ModulePage::onEvent(const InputEvent& event) {
+    // The header sits over the graph: a press on it is the header's alone, and page commands never
+    // run under a live gesture or draft.
+    if (event.type == InputEvent::Type::MouseDown && headerLayout_.bar.contains(event.pos)) {
+      tools_.cancel(state_);
+      if (const auto index = buttonAt(headerLayout_, event.pos)) {
+        header_.buttons[*index].onClick();
+      }
+      return;
     }
-    // Delete is a page command, consumed whether or not anything is selected.
-    if (event.type == InputEvent::Type::KeyDown && event.key == InputEvent::Key::Delete) {
+    const std::vector<Box> boxes = layoutGraph(state_.editor.tree(), ctx_.layout);
+    if (tools_.dispatch(event, state_, boxes) || event.type != InputEvent::Type::KeyDown) {
+      return;
+    }
+    if (event.key == InputEvent::Key::F) {
+      fitView();
+    } else if (event.key == InputEvent::Key::Delete) {
       deleteSelection();
-      return true;
     }
-    return false;
+  }
+
+  void ModulePage::onResize() {
+    header_.label = ctx_.program ? ctx_.program->filename().string() : std::string{};
+    headerLayout_ = layoutToolbar(header_, renderer_.outputSize().x, ctx_.layout, renderer_);
+  }
+
+  void ModulePage::onDraw() {
+    const std::vector<Box> boxes = layoutGraph(state_.editor.tree(), ctx_.layout);
+    {
+      const Subview graph{state_.view, outputRect(), renderer_};
+      drawGraph(graph, state_.editor.tree(), boxes, state_.selection, ctx_);
+      tools_.draw(graph, state_, boxes);
+    }
+    drawToolbar(renderer_, header_, headerLayout_, ctx_);
   }
 
   std::unique_ptr<Page> ModulePage::next() {
-    if (shouldClose) {
-      return std::make_unique<SplashPage>(ctx_, renderer_);
-    }
-    return nullptr;
+    return shouldClose_ ? std::make_unique<SplashPage>(ctx_, renderer_) : nullptr;
   }
 
-  void ModulePage::reset() {
-    graph_.setViewport(Viewport{});
-    fileHeader_ = pt::Header{};
-    editor_.reset();
-    graph_.reset();
-    hud_.reset();
-  }
-
-  void ModulePage::layoutChrome() {
-    header_.setLabel(ctx_.program ? ctx_.program->filename().string() : std::string{});
-    header_.resize(ctx_, renderer_.outputSize().x);
+  void ModulePage::fitView() {
+    state_.view = Viewport{};
+    state_.view.fitRect(graphBounds(layoutGraph(state_.editor.tree(), ctx_.layout)), renderer_.outputSize());
   }
 
   void ModulePage::deleteSelection() {
-    const auto& selected = editor_.scene().selected();
-    if (!selected) {
+    if (!state_.selection) {
       return;
     }
-    // The detach frees the actors, so in-flight gestures pointing at them must
-    // be dropped first -- an abandoned drag preview included.
-    graph_.reset();
-    ctx_.dispatch(std::make_unique<DeleteTransaction>(*selected));
+    tools_.cancel(state_);
+    state_.editor.apply(std::make_unique<DeleteTransaction>(*state_.selection));
+    state_.selection.reset();
   }
 
   bool ModulePage::saveToPath(const std::filesystem::path& path) {
     std::ofstream ofs(path);
     ParseTreeWriter w(ofs);
-    w.write(sceneToParseTree(editor_.scene(), fileHeader_));
+    w.write(state_.editor.tree());
     if (!w.good()) {
       fmt::print(stderr, "save failed: {}\n", path.string());
       return false;
@@ -136,7 +145,7 @@ namespace fluir::editor {
       NFD_FreePathU8(outPath);
       if (saveToPath(chosen)) {
         ctx_.program = chosen;
-        layoutChrome();  // the bar shows the new filename
+        onResize();  // the bar shows the new filename
       }
     } else if (result == NFD_ERROR) {
       fmt::print(stderr, "file dialog failed: {}\n", NFD_GetError());

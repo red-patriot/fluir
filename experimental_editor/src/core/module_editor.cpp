@@ -18,13 +18,23 @@ namespace fluir::editor {
 
   }  // namespace
 
+  void ModuleEditor::load(pt::ParseTree tree) {
+    tree_ = std::move(tree);
+    undone_.clear();
+    redone_.clear();
+  }
+
   bool ModuleEditor::apply(std::unique_ptr<Transaction> edit) {
-    if (!edit->execute(scene_)) {
+    if (!edit->execute(tree_)) {
       return false;
     }
+    record(std::move(edit));
+    return true;
+  }
+
+  void ModuleEditor::record(std::unique_ptr<Transaction> edit) {
     push(undone_, std::move(edit));
     redone_.clear();
-    return true;
   }
 
   bool ModuleEditor::undo() {
@@ -33,8 +43,8 @@ namespace fluir::editor {
     }
     std::unique_ptr<Transaction> edit = std::move(undone_.back());
     undone_.pop_back();
-    // A failed reversal means the scene is not what the history assumes.
-    if (!edit->unexecute(scene_)) {
+    // A failed reversal means the tree is not what the history assumes.
+    if (!edit->unexecute(tree_)) {
       undone_.clear();
       redone_.clear();
       return false;
@@ -49,19 +59,13 @@ namespace fluir::editor {
     }
     std::unique_ptr<Transaction> edit = std::move(redone_.back());
     redone_.pop_back();
-    if (!edit->execute(scene_)) {
+    if (!edit->execute(tree_)) {
       undone_.clear();
       redone_.clear();
       return false;
     }
     push(undone_, std::move(edit));
     return true;
-  }
-
-  void ModuleEditor::reset() {
-    scene_.clear();
-    undone_.clear();
-    redone_.clear();
   }
 
 }  // namespace fluir::editor

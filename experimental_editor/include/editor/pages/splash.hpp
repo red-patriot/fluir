@@ -2,15 +2,11 @@
 #define FLUIR_EDITOR_PAGES_SPLASH_HPP
 
 #include <memory>
-#include <vector>
 
-#include "editor/components/button_actor.hpp"
-#include "editor/components/container_actor.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/core/layer.hpp"
 #include "editor/core/renderer.hpp"
-#include "editor/input.hpp"
 #include "editor/pages/page.hpp"
+#include "editor/view/toolbar.hpp"
 
 namespace fluir::editor {
   /** Landing page shown before a program is opened. */
@@ -20,25 +16,19 @@ namespace fluir::editor {
 
     std::unique_ptr<Page> next() override { return std::move(next_); }
 
-    // Test-only observability: lets tests locate/click the Open button
-    // without a second parallel path through SplashPage's API.
-    const ButtonActor& openButton() const { return *openButton_; }
+    // Test-only observability: where the Open button sits.
+    Rect openButtonRect() const { return openRect_; }
 
    protected:
-    std::vector<Layer*> layers() override { return {&layer_}; }
-    void onResize() override { layout(); }
+    void onEvent(const InputEvent& event) override;
+    void onResize() override;
+    void onDraw() override;
 
    private:
-    static constexpr int kButtonWidth = 120;
-    static constexpr int kButtonHeight = 40;
-
-    // The page spans the whole output, so it neither offsets nor clips its button.
-    ContainerActor root_{Rect{0, 0, 0, 0}, Actor::ClipChildren::No};
-    ButtonActor* openButton_;
-    Layer layer_;
+    Button open_;
+    Rect openRect_;
     std::unique_ptr<Page> next_;
 
-    void layout();
     void openFileDialog();
   };
 }  // namespace fluir::editor

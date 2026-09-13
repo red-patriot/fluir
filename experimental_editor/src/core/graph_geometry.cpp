@@ -12,10 +12,6 @@ namespace fluir::editor {
             static_cast<double>(loc.height) * unitPx};
   }
 
-  Vec2 functionOrigin(const FlowGraphLocation& loc, double unitPx) {
-    return {static_cast<double>(loc.x) * unitPx, static_cast<double>(loc.y) * unitPx};
-  }
-
   Vec2 bodyOrigin(Vec2 functionOrigin, double headerH) { return functionOrigin + Vec2{0.0, headerH}; }
 
   Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }

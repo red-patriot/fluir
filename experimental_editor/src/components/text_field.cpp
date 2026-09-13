@@ -56,15 +56,6 @@ namespace fluir::editor {
 
   void TextField::setCaretFromOffset(double dxScreenPx) { caret_ = indexAt(text_, dxScreenPx); }
 
-  bool TextField::commit(const EditorContext& ctx) {
-    if (!commit_ || !commit_(ctx, text_)) {
-      invalid_ = true;
-      return false;
-    }
-    invalid_ = false;
-    return true;
-  }
-
   void TextField::draw(const Subview& view, const EditorContext& ctx, Vec2 localTextPos) const {
     const Vec2 origin = view.toScreen(localTextPos);
     view.renderer().drawText(origin, text_, ctx.theme.text);

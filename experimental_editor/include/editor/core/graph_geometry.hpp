@@ -11,10 +11,7 @@ namespace fluir::editor {
   /** A node's local-space rect: `loc`'s (x,y,w,h) each scaled by `unitPx`. */
   Rect localRect(const FlowGraphLocation& loc, double unitPx);
 
-  /** A function frame's world-space top-left origin: `loc`'s (x,y) scaled by `unitPx`. */
-  Vec2 functionOrigin(const FlowGraphLocation& loc, double unitPx);
-
-  /** Body content origin: `functionOrigin` shifted down by the header band's height, since
+  /** Body content origin: a frame's top-left shifted down by the header band's height, since
    *  body content is rendered below the header so nodes don't render over it. */
   Vec2 bodyOrigin(Vec2 functionOrigin, double headerH);
 

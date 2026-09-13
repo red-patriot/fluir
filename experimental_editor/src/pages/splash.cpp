@@ -6,19 +6,30 @@
 #include <fmt/format.h>
 #include <nfd.h>
 
-#include "editor/core/interaction.hpp"
-#include "editor/core/viewport.hpp"
 #include "editor/pages/module.hpp"
 
 namespace fluir::editor {
+  namespace {
+    constexpr double BUTTON_WIDTH = 120;
+    constexpr double BUTTON_HEIGHT = 40;
+  }  // namespace
 
   SplashPage::SplashPage(EditorContext& ctx, Renderer& renderer) :
-    Page(ctx, renderer),
-    openButton_(&root_.add(
-      std::make_unique<ButtonActor>("Open", [this] { openFileDialog(); }, Rect{0, 0, kButtonWidth, kButtonHeight}))) {
-    layer_.setRoot(root_);
-    layer_.add(std::make_unique<ClickInteraction>());
+    Page(ctx, renderer), open_{.label = "Open", .onClick = [this] { openFileDialog(); }} { }
+
+  void SplashPage::onEvent(const InputEvent& event) {
+    if (event.type == InputEvent::Type::MouseDown && event.button == InputEvent::Button::Left &&
+        openRect_.contains(event.pos)) {
+      open_.onClick();
+    }
   }
+
+  void SplashPage::onResize() {
+    const Vec2 size = renderer_.outputSize();
+    openRect_ = Rect{size.x / 2 - BUTTON_WIDTH / 2, size.y / 2 - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT};
+  }
+
+  void SplashPage::onDraw() { drawButton(renderer_, open_, openRect_, ctx_); }
 
   void SplashPage::openFileDialog() {
     nfdu8filteritem_t filter{"Fluir Program", "fl"};
@@ -32,12 +43,6 @@ namespace fluir::editor {
     } else if (result == NFD_ERROR) {
       fmt::print(stderr, "file dialog failed: {}\n", NFD_GetError());
     }
-  }
-
-  void SplashPage::layout() {
-    const Vec2 outputSize = renderer_.outputSize();
-    openButton_->setBounds(
-      Rect{outputSize.x / 2 - kButtonWidth / 2, outputSize.y / 2 - kButtonHeight / 2, kButtonWidth, kButtonHeight});
   }
 
 }  // namespace fluir::editor

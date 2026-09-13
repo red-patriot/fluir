@@ -4,21 +4,20 @@
 #include <utility>
 
 #include "compiler/models/id.hpp"
-#include "editor/actors/scene.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
 
-  /** Moves an actor to (x, y). Self-inverting: the swap is its own reverse. */
+  /** Moves whatever `path` names to (x, y). Self-inverting: the swap is its own reverse. */
   class MoveTransaction : public Transaction {
    public:
-    MoveTransaction(fluir::FullID id, int x, int y) : id_(std::move(id)), x_(x), y_(y) { }
+    MoveTransaction(fluir::FullID path, int x, int y) : path_(std::move(path)), x_(x), y_(y) { }
 
-    bool execute(GraphScene& scene) override;
-    bool unexecute(GraphScene& scene) override { return execute(scene); }
+    bool execute(pt::ParseTree& tree) override;
+    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
 
    private:
-    fluir::FullID id_;
+    fluir::FullID path_;
     int x_;
     int y_;
   };

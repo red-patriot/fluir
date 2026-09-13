@@ -28,17 +28,9 @@ namespace {
   constexpr double kGlyphPx = 8.0;  // matches TextField's fixed debug-font cell
 
   /** A draft opened on `text`, with the caret where a click at `dxScreenPx` puts it. */
-  TextField openField(std::string text, double dxScreenPx = 0.0, TextField::Commit commit = {}) {
+  TextField openField(std::string text, double dxScreenPx = 0.0) {
     const std::size_t caret = TextField::indexAt(text, dxScreenPx);
-    return TextField{std::move(text), caret, std::move(commit)};
-  }
-
-  /** Records every draft it is asked to validate; always returns `accept`. */
-  TextField::Commit recordingCommit(bool accept, std::vector<std::string>& seen) {
-    return [accept, &seen](const EditorContext&, const std::string& text) {
-      seen.push_back(text);
-      return accept;
-    };
+    return TextField{std::move(text), caret};
   }
 
 }  // namespace
@@ -117,37 +109,21 @@ TEST(TextField, HomeAndEndJumpToTheDraftEnds) {
   EXPECT_EQ(field.caret(), 4u);
 }
 
-TEST(TextField, CommitRunsTheValidatorOnce) {
-  std::vector<std::string> seen;
-  TextField field = openField("42", 0.0, recordingCommit(true, seen));
-
-  const EditorContext ctx;
-  EXPECT_TRUE(field.commit(ctx));
-
-  ASSERT_EQ(seen.size(), 1u);
-  EXPECT_EQ(seen[0], "42");
+TEST(TextField, ARejectedDraftIsInvalid) {
+  TextField field = openField("abc", 0.0);
   EXPECT_FALSE(field.invalid());
-}
 
-TEST(TextField, ARejectedCommitMarksTheDraftInvalid) {
-  std::vector<std::string> seen;
-  TextField field = openField("abc", 0.0, recordingCommit(false, seen));
-
-  const EditorContext ctx;
-  EXPECT_FALSE(field.commit(ctx));
+  field.reject();
 
   EXPECT_TRUE(field.invalid());
-  EXPECT_EQ(field.text(), "abc");
+  EXPECT_EQ(field.text(), "abc") << "a rejection keeps the draft";
 }
 
 TEST(TextField, EditingAfterARejectionClearsTheInvalidMark) {
-  std::vector<std::string> seen;
-  TextField field = openField("abc", 0.0, recordingCommit(false, seen));
-  const EditorContext ctx;
-  field.commit(ctx);
-  ASSERT_TRUE(field.invalid());
+  TextField field = openField("abc", 0.0);
+  field.reject();
 
-  field.insert("x");
+  field.insert("d");
 
   EXPECT_FALSE(field.invalid());
 }

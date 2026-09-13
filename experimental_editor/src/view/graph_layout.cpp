@@ -1,0 +1,167 @@
+#include "editor/view/graph_layout.hpp"
+
+#include <algorithm>
+#include <cstddef>
+#include <unordered_map>
+#include <variant>
+
+#include "editor/core/graph_geometry.hpp"
+#include "editor/view/node_view.hpp"
+
+namespace fluir::editor {
+  namespace {
+    // Grip sizes, in grid units.
+    constexpr double DRAG_SIZE = 3;
+    constexpr double DRAG_INSET = 1;
+    constexpr double RESIZE_BAR_WIDTH = 1;
+    constexpr double RESIZE_CORNER_SIZE = 3;
+
+    using Ports = std::unordered_map<fluir::ID, PortSet>;
+
+    Rect moveGrip(const Rect& frame, double unit) {
+      return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
+              frame.y + DRAG_INSET * unit,
+              DRAG_SIZE * unit,
+              DRAG_SIZE * unit};
+    }
+
+    Rect resizeBar(const Rect& r, double unit) {
+      return {r.x + r.w - RESIZE_BAR_WIDTH * unit, r.y, RESIZE_BAR_WIDTH * unit, r.h};
+    }
+
+    Rect resizeCorner(const Rect& r, double unit) {
+      const double size = RESIZE_CORNER_SIZE * unit;
+      return {r.x + r.w - size, r.y + r.h - size, size, size};
+    }
+
+    FullID childOf(const FullID& parent, fluir::ID id) {
+      FullID out = parent;
+      out.push_back(id);
+      return out;
+    }
+
+    const FlowGraphLocation& locationOf(const pt::Node& node) {
+      return std::visit([](const auto& n) -> const FlowGraphLocation& { return n.location; }, node);
+    }
+
+    fluir::ID idOf(const pt::Node& node) {
+      return std::visit([](const auto& n) { return n.id; }, node);
+    }
+
+    // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
+    // A container node lays out its own blocks here once one exists.
+    void layoutBlock(const pt::Block& block,
+                     const FullID& parent,
+                     Vec2 origin,
+                     const Rect& clip,
+                     const EditorContext::Layout& layout,
+                     Ports& ports,
+                     std::vector<Box>& out) {
+      for (const pt::Node* node : sortedNodes(block)) {
+        const FullID path = childOf(parent, idOf(*node));
+        const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
+        out.push_back({path, Part::Body, rect, clip});
+        out.push_back({path, Part::ResizeX, resizeBar(rect, layout.unitPx), clip});
+        out.push_back({path, Part::MoveGrip, moveGrip(rect, layout.unitPx), clip});
+        ports[idOf(*node)] = editor::ports(*node, rect, layout);
+      }
+
+      // A dangling endpoint is a legitimate authoring state: it just draws no line.
+      for (const pt::Conduit* conduit : sortedConduits(block)) {
+        const auto source = ports.find(conduit->input);
+        if (source == ports.end() || source->second.outputs.empty()) {
+          continue;
+        }
+        const Vec2 from = source->second.outputs.front();
+        for (const pt::Conduit::Output& target : conduit->children) {
+          const auto sink = ports.find(target.target);
+          if (sink == ports.end() || target.index < 0 ||
+              static_cast<std::size_t>(target.index) >= sink->second.inputs.size()) {
+            continue;
+          }
+          const Vec2 to = sink->second.inputs[static_cast<std::size_t>(target.index)];
+          out.push_back(
+            {childOf(parent, conduit->id), Part::Wire, Rect{from.x, from.y, to.x - from.x, to.y - from.y}, clip});
+        }
+      }
+    }
+
+    void layoutFunction(const pt::FunctionDecl& fn, const EditorContext::Layout& layout, std::vector<Box>& out) {
+      const FullID path{fn.id};
+      const double unit = layout.unitPx;
+      const Rect frame = localRect(fn.location, unit);
+      const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
+      const Rect clip{frame.x, origin.y, frame.w, frame.h};
+      out.push_back({path, Part::Body, frame, std::nullopt});
+
+      Ports ports;
+      if (fn.input) {
+        std::vector<const pt::FunctionDecl::Parameter*> params;
+        for (const auto& param : fn.input->parameters) {
+          params.push_back(&param);
+        }
+        std::ranges::sort(params, {}, &pt::FunctionDecl::Parameter::index);
+        for (std::size_t row = 0; row < params.size(); ++row) {
+          const Rect rail{
+            origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
+          out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
+          ports[params[row]->id] = PortSet{{}, {Vec2{rail.x + rail.w, rail.y + rail.h * 0.5}}};
+        }
+      }
+      if (fn.output && fn.output->ret) {
+        const Rect rail{origin.x + (fn.location.width - layout.returnInsetUnits) * unit,
+                        origin.y,
+                        layout.railStep(),
+                        layout.railStep()};
+        out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
+        ports[fn.output->ret->id] = PortSet{{Vec2{rail.x, rail.y + rail.h * 0.5}}, {}};
+      }
+
+      layoutBlock(fn.body, path, origin, clip, layout, ports, out);
+
+      // The frame's chrome paints, and so hits, over its body.
+      const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
+      out.push_back({path, Part::Frame, frame, std::nullopt});
+      out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), std::nullopt});
+      out.push_back({path, Part::MoveGrip, moveGrip(header, unit), std::nullopt});
+    }
+
+    bool hittable(Part part) { return part != Part::Frame && part != Part::Rail && part != Part::Wire; }
+
+  }  // namespace
+
+  std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
+    std::vector<Box> out;
+    for (const pt::FunctionDecl* fn : sortedFunctions(tree)) {
+      layoutFunction(*fn, layout, out);
+    }
+    return out;
+  }
+
+  const Box* hitAt(std::span<const Box> boxes, Vec2 world) {
+    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
+      if (hittable(it->part) && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
+        return &*it;
+      }
+    }
+    return nullptr;
+  }
+
+  Rect graphBounds(std::span<const Box> boxes) {
+    bool any = false;
+    double minX = 0, minY = 0, maxX = 0, maxY = 0;
+    for (const Box& box : boxes) {
+      if (box.part != Part::Frame) {
+        continue;
+      }
+      const Rect& r = box.world;
+      minX = any ? std::min(minX, r.x) : r.x;
+      minY = any ? std::min(minY, r.y) : r.y;
+      maxX = any ? std::max(maxX, r.x + r.w) : r.x + r.w;
+      maxY = any ? std::max(maxY, r.y + r.h) : r.y + r.h;
+      any = true;
+    }
+    return {minX, minY, maxX - minX, maxY - minY};
+  }
+
+}  // namespace fluir::editor

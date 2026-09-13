@@ -1,33 +1,30 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_DELETE_HPP
 #define FLUIR_EDITOR_TRANSACTION_DELETE_HPP
 
+#include <optional>
 #include <utility>
 #include <vector>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
-#include "editor/actors/scene.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
 
-  /** Deletes a frame, or a node and every conduit wired to it, as the shipped delete does. */
+  /** Deletes a function, or a node and every reference to it. Keeps only what it touched. */
   class DeleteTransaction : public Transaction {
    public:
-    /** An operand reset by this delete: the node naming it, and which slot. */
-    struct ClearedOperand {
-      fluir::FullID node;
-      int slot; /**< 0 = lhs, 1 = rhs */
-    };
+    explicit DeleteTransaction(fluir::FullID path) : path_(std::move(path)) { }
 
-    explicit DeleteTransaction(fluir::FullID id) : id_(std::move(id)) { }
-
-    bool execute(GraphScene& scene) override;
-    bool unexecute(GraphScene& scene) override;
+    bool execute(pt::ParseTree& tree) override;
+    bool unexecute(pt::ParseTree& tree) override;
 
    private:
-    fluir::FullID id_;
-    std::vector<GraphScene::DetachedActor> removed_; /**< detach order; undone last-first */
-    std::vector<ClearedOperand> clearedOperands_;
+    fluir::FullID path_;
+    std::optional<pt::Declaration> function_;
+    std::optional<pt::Node> node_;
+    std::vector<pt::Conduit> conduits_; /**< touched conduits, as they were */
+    std::vector<pt::Node> referrers_;   /**< nodes whose operands named it, as they were */
   };
 
 }  // namespace fluir::editor

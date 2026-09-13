@@ -5,10 +5,13 @@
 
 namespace fluir::editor {
 
-  /** Erases `nodeId` from `fn` and every reference to it. False if it was not there. */
-  bool deleteNode(pt::FunctionDecl& fn, fluir::ID nodeId);
+  /** Erases `nodeId` from `block` and every reference to it. False if it was not there. */
+  bool deleteNode(pt::Block& block, fluir::ID nodeId);
 
-  /** Erases function `functionId` and its whole body. False if it was not there. */
-  bool deleteFunction(pt::ParseTree& tree, fluir::ID functionId);
+  /** Whether `conduit` is sourced from or lands on `nodeId`. */
+  bool touches(const pt::Conduit& conduit, fluir::ID nodeId);
+
+  /** Whether `node` names `nodeId` as an operand. */
+  bool hasOperand(const pt::Node& node, fluir::ID nodeId);
 
 }  // namespace fluir::editor

@@ -1,8 +1,6 @@
 #include "editor/transaction/transaction.hpp"
 
-#include <cstddef>
-#include <utility>
-#include <vector>
+#include <variant>
 
 #include <gtest/gtest.h>
 
@@ -10,76 +8,53 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
-#include "editor/actors/scene.hpp"
-#include "editor/core/editor_context.hpp"
-#include "editor/core/layer.hpp"
-#include "editor/core/scene_to_tree.hpp"
+#include "editor/core/tree_path.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/resize.hpp"
 #include "editor/transaction/set_constant_value.hpp"
-#include "recording_renderer.hpp"
 
-// The house round trip: apply, assert, reverse, assert the scene is back --
-// asserted through sceneToParseTree, a complete description of the scene.
+// The house round trip: apply, assert, reverse, assert the tree is back.
 
 namespace {
 
   using fluir::FlowGraphLocation;
+  using fluir::FullID;
   using fluir::ID;
   using fluir::Operator;
   using fluir::editor::DeleteTransaction;
-  using fluir::editor::EditorContext;
-  using fluir::editor::GraphScene;
-  using fluir::editor::Layer;
+  using fluir::editor::locationAt;
   using fluir::editor::MoveTransaction;
-  using fluir::editor::Rect;
   using fluir::editor::ResizeTransaction;
-  using fluir::editor::sceneToParseTree;
   using fluir::editor::SetConstantValueTransaction;
-  using fluir::editor::Viewport;
-  using testutil::RecordingRenderer;
-
-  const EditorContext kCtx;
-  const fluir::pt::Header kHeader{.version = {0, 1, 3}};
 
   fluir::pt::Constant makeConstant(ID id, int x, int y) {
-    fluir::pt::Constant constant;
-    constant.id = id;
-    constant.location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5};
-    constant.value = fluir::literals_types::I32{0};
-    return constant;
+    return fluir::pt::Constant{.id = id,
+                               .location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5},
+                               .value = fluir::literals_types::I32{0}};
   }
 
   fluir::pt::Binary makeBinary(ID id, int x, int y, ID lhs, ID rhs) {
-    fluir::pt::Binary binary;
-    binary.id = id;
-    binary.location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5};
-    binary.lhs = lhs;
-    binary.rhs = rhs;
-    binary.op = Operator::PLUS;
-    return binary;
+    return fluir::pt::Binary{.id = id,
+                             .location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5},
+                             .lhs = lhs,
+                             .rhs = rhs,
+                             .op = Operator::PLUS};
   }
 
   fluir::pt::Unary makeUnary(ID id, int x, int y, ID lhs) {
-    fluir::pt::Unary unary;
-    unary.id = id;
-    unary.location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5};
-    unary.lhs = lhs;
-    unary.op = Operator::MINUS;
-    return unary;
+    return fluir::pt::Unary{.id = id,
+                            .location = FlowGraphLocation{.x = x, .y = y, .z = 1, .width = 5, .height = 5},
+                            .lhs = lhs,
+                            .op = Operator::MINUS};
   }
 
-  fluir::pt::Conduit makeConduit(ID id, ID input, ID target, int index) {
-    fluir::pt::Conduit conduit;
-    conduit.id = id;
-    conduit.input = input;
-    conduit.children.push_back({.target = target, .index = index});
-    return conduit;
+  fluir::pt::Conduit makeConduit(ID id, ID input, std::vector<fluir::pt::Conduit::Output> children) {
+    return fluir::pt::Conduit{.id = id, .input = input, .index = 0, .children = std::move(children)};
   }
 
-  // One function: two constants feeding a binary, whose result feeds a unary.
-  // Conduit 42 touches neither constant 10 nor binary 30, so it is the control.
+  // Two constants feed binary 30, whose result feeds unary 31. Conduit 44 fans
+  // out to both 30 and 31, so deleting 30 only strips one of its targets.
   fluir::pt::ParseTree makeTree() {
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
@@ -89,296 +64,201 @@ namespace {
     fn.body.nodes.emplace(11, makeConstant(11, 1, 10));
     fn.body.nodes.emplace(30, makeBinary(30, 10, 1, 10, 11));
     fn.body.nodes.emplace(31, makeUnary(31, 20, 1, 30));
-    fn.body.conduits.emplace(40, makeConduit(40, 10, 30, 0));
-    fn.body.conduits.emplace(41, makeConduit(41, 11, 30, 1));
-    fn.body.conduits.emplace(42, makeConduit(42, 11, 31, 0));
-    fn.body.conduits.emplace(43, makeConduit(43, 30, 31, 0));
+    fn.body.conduits.emplace(40, makeConduit(40, 10, {{.target = 30, .index = 0}}));
+    fn.body.conduits.emplace(42, makeConduit(42, 11, {{.target = 31, .index = 0}}));
+    fn.body.conduits.emplace(43, makeConduit(43, 30, {{.target = 31, .index = 0}}));
+    fn.body.conduits.emplace(44, makeConduit(44, 11, {{.target = 30, .index = 1}, {.target = 31, .index = 0}}));
 
     fluir::pt::ParseTree tree;
-    tree.header = kHeader;
+    tree.header = fluir::pt::Header{.version = {0, 1, 3}};
     tree.declarations.emplace(fn.id, fluir::pt::Declaration{fn});
     return tree;
   }
 
-  std::vector<testutil::DrawCall> drawCalls(const GraphScene& scene) {
-    RecordingRenderer r;
-    Layer layer;
-    layer.setRoot(scene.root());
-    layer.setViewport(Viewport{});
-    layer.draw(r, kCtx, Rect{0, 0, r.outputSize().x, r.outputSize().y});
-    return r.calls;
+  const fluir::pt::Block& bodyOf(const fluir::pt::ParseTree& tree) {
+    return std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body;
   }
 
 }  // namespace
 
-TEST(MoveTransaction, RoundTripRestoresTheScene) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(MoveTransaction, RoundTripRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  MoveTransaction uut{fluir::FullID{1, 10}, 7, 9};
-  ASSERT_TRUE(uut.execute(scene));
-  EXPECT_NE(sceneToParseTree(scene, kHeader), before);
-  ASSERT_TRUE(uut.unexecute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  MoveTransaction uut{FullID{1, 10}, 7, 9};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(locationAt(tree, FullID{1, 10})->x, 7);
+  EXPECT_EQ(locationAt(tree, FullID{1, 10})->y, 9);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(MoveTransaction, MovesAFunction) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  MoveTransaction uut{FullID{1}, 7, 9};
+  ASSERT_TRUE(uut.execute(tree));
+
+  EXPECT_EQ(locationAt(tree, FullID{1})->x, 7);
 }
 
 TEST(MoveTransaction, RedoReachesTheSameStateAsTheFirstExecute) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
+  fluir::pt::ParseTree tree = makeTree();
 
-  MoveTransaction uut{fluir::FullID{1, 10}, 7, 9};
-  ASSERT_TRUE(uut.execute(scene));
-  const fluir::pt::ParseTree afterFirst = sceneToParseTree(scene, kHeader);
-  ASSERT_TRUE(uut.unexecute(scene));
-  ASSERT_TRUE(uut.execute(scene));
+  MoveTransaction uut{FullID{1, 10}, 7, 9};
+  ASSERT_TRUE(uut.execute(tree));
+  const fluir::pt::ParseTree afterFirst = tree;
+  ASSERT_TRUE(uut.unexecute(tree));
+  ASSERT_TRUE(uut.execute(tree));
 
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), afterFirst);
+  EXPECT_EQ(tree, afterFirst);
 }
 
 TEST(MoveTransaction, MissChangesNothingAndReturnsFalse) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  MoveTransaction unknown{fluir::FullID{1, 999}, 7, 9};
-  EXPECT_FALSE(unknown.execute(scene));
+  MoveTransaction unknown{FullID{1, 999}, 7, 9};
+  EXPECT_FALSE(unknown.execute(tree));
 
   // A drag that ended where it started is a no-op swap, not an edit.
-  MoveTransaction inPlace{fluir::FullID{1, 10}, 1, 1};
-  EXPECT_FALSE(inPlace.execute(scene));
+  MoveTransaction inPlace{FullID{1, 10}, 1, 1};
+  EXPECT_FALSE(inPlace.execute(tree));
 
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  EXPECT_EQ(tree, before);
 }
 
-TEST(ResizeTransaction, ResizeSetsTheWidthAndHeight) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
+TEST(ResizeTransaction, RoundTripRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  ResizeTransaction uut{fluir::FullID{1, 10}, 9, 7};
-  ASSERT_TRUE(uut.execute(scene));
-
-  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
-  ASSERT_NE(loc, nullptr);
-  EXPECT_EQ(loc->width, 9);
-  EXPECT_EQ(loc->height, 7);
-}
-
-TEST(ResizeTransaction, ResizeUndoRestoresTheOriginalSize) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-
-  ResizeTransaction uut{fluir::FullID{1, 10}, 9, 7};
-  ASSERT_TRUE(uut.execute(scene));
-  EXPECT_NE(sceneToParseTree(scene, kHeader), before);
-  ASSERT_TRUE(uut.unexecute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-}
-
-TEST(ResizeTransaction, ResizeClampsBelowTheMinimum) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-
-  ResizeTransaction uut{fluir::FullID{1, 10}, -3, 0};
-  ASSERT_TRUE(uut.execute(scene));
-
-  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
-  EXPECT_EQ(loc->width, fluir::editor::MIN_SIZE);
-  EXPECT_EQ(loc->height, fluir::editor::MIN_SIZE);
-}
-
-TEST(ResizeTransaction, ResizeClampsAboveTheMaximum) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-
-  ResizeTransaction uut{fluir::FullID{1, 10}, 10'000, 99'999};
-  ASSERT_TRUE(uut.execute(scene));
-
-  const fluir::FlowGraphLocation* loc = scene.find(1, 10)->location();
-  EXPECT_EQ(loc->width, fluir::editor::MAX_SIZE);
-  EXPECT_EQ(loc->height, fluir::editor::MAX_SIZE);
+  ResizeTransaction uut{FullID{1, 10}, 9, 7};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(locationAt(tree, FullID{1, 10})->width, 9);
+  EXPECT_EQ(locationAt(tree, FullID{1, 10})->height, 7);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }
 
 TEST(ResizeTransaction, ResizeToTheCurrentSizeChangesNothing) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  ResizeTransaction uut{fluir::FullID{1, 10}, 5, 5};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  ResizeTransaction uut{FullID{1, 10}, 5, 5};
+  EXPECT_FALSE(uut.execute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-TEST(ResizeTransaction, ResizeOfAnUnknownIdFails) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(ResizeTransaction, ResizeOfAnUnknownPathFails) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  ResizeTransaction unknown{fluir::FullID{1, 999}, 9, 7};
-  EXPECT_FALSE(unknown.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  ResizeTransaction unknown{FullID{1, 999}, 9, 7};
+  EXPECT_FALSE(unknown.execute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-TEST(DeleteTransaction, RoundTripRestoresNodeConduitsOperandsAndDrawOrder) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-  const auto callsBefore = drawCalls(scene);
+TEST(DeleteTransaction, RoundTripRestoresNodeConduitsAndOperands) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  DeleteTransaction uut{fluir::FullID{1, 30}};
-  ASSERT_TRUE(uut.execute(scene));
+  DeleteTransaction uut{FullID{1, 30}};
+  ASSERT_TRUE(uut.execute(tree));
 
-  const fluir::pt::ParseTree after = sceneToParseTree(scene, kHeader);
-  const auto& body = std::get<fluir::pt::FunctionDecl>(after.declarations.at(1)).body;
+  const fluir::pt::Block& body = bodyOf(tree);
   EXPECT_EQ(body.nodes.count(30), 0u);
-  EXPECT_EQ(body.conduits.count(40), 0u);  // targeted the node
-  EXPECT_EQ(body.conduits.count(41), 0u);  // targeted the node
-  EXPECT_EQ(body.conduits.count(43), 0u);  // sourced from the node
-  EXPECT_EQ(body.conduits.count(42), 1u);  // the control, untouched
+  EXPECT_EQ(body.conduits.count(40), 0u);               // targeted the node
+  EXPECT_EQ(body.conduits.count(43), 0u);               // sourced from the node
+  EXPECT_EQ(body.conduits.count(42), 1u);               // the control, untouched
+  ASSERT_EQ(body.conduits.at(44).children.size(), 1u);  // only the matching target stripped
   EXPECT_EQ(std::get<fluir::pt::Unary>(body.nodes.at(31)).lhs, fluir::INVALID_ID);
 
-  ASSERT_TRUE(uut.unexecute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-
-  scene.layout(kCtx);
-  EXPECT_EQ(drawCalls(scene), callsBefore);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }
 
 TEST(DeleteTransaction, RedoOfANodeReachesTheSameStateAsTheFirstExecute) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
+  fluir::pt::ParseTree tree = makeTree();
 
-  DeleteTransaction uut{fluir::FullID{1, 30}};
-  ASSERT_TRUE(uut.execute(scene));
-  const fluir::pt::ParseTree afterFirst = sceneToParseTree(scene, kHeader);
-  ASSERT_TRUE(uut.unexecute(scene));
-  ASSERT_TRUE(uut.execute(scene));
+  DeleteTransaction uut{FullID{1, 30}};
+  ASSERT_TRUE(uut.execute(tree));
+  const fluir::pt::ParseTree afterFirst = tree;
+  ASSERT_TRUE(uut.unexecute(tree));
+  ASSERT_TRUE(uut.execute(tree));
 
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), afterFirst);
+  EXPECT_EQ(tree, afterFirst);
 }
 
-TEST(DeleteTransaction, UnknownNodeIdChangesNothingAndReturnsFalse) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(DeleteTransaction, RoundTripRestoresTheWholeFunction) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  DeleteTransaction uut{fluir::FullID{1, 999}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  DeleteTransaction uut{FullID{1}};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_TRUE(tree.declarations.empty());
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-TEST(DeleteTransaction, RoundTripRestoresTheWholeFrame) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-  const auto callsBefore = drawCalls(scene);
+TEST(DeleteTransaction, RedoOfAFunctionReachesTheSameStateAsTheFirstExecute) {
+  fluir::pt::ParseTree tree = makeTree();
 
-  DeleteTransaction uut{fluir::FullID{1}};
-  ASSERT_TRUE(uut.execute(scene));
-  EXPECT_TRUE(sceneToParseTree(scene, kHeader).declarations.empty());
+  DeleteTransaction uut{FullID{1}};
+  ASSERT_TRUE(uut.execute(tree));
+  const fluir::pt::ParseTree afterFirst = tree;
+  ASSERT_TRUE(uut.unexecute(tree));
+  ASSERT_TRUE(uut.execute(tree));
 
-  ASSERT_TRUE(uut.unexecute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-
-  scene.layout(kCtx);
-  EXPECT_EQ(drawCalls(scene), callsBefore);
+  EXPECT_EQ(tree, afterFirst);
 }
 
-TEST(DeleteTransaction, RedoOfAFrameReachesTheSameStateAsTheFirstExecute) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
+TEST(DeleteTransaction, UnresolvedPathsChangeNothingAndReturnFalse) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  DeleteTransaction uut{fluir::FullID{1}};
-  ASSERT_TRUE(uut.execute(scene));
-  const fluir::pt::ParseTree afterFirst = sceneToParseTree(scene, kHeader);
-  ASSERT_TRUE(uut.unexecute(scene));
-  ASSERT_TRUE(uut.execute(scene));
-
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), afterFirst);
+  EXPECT_FALSE((DeleteTransaction{FullID{1, 999}}).execute(tree));
+  EXPECT_FALSE((DeleteTransaction{FullID{999}}).execute(tree));
+  EXPECT_FALSE((DeleteTransaction{FullID{}}).execute(tree));
+  // A conduit id must not be mistaken for a node.
+  EXPECT_FALSE((DeleteTransaction{FullID{1, 40}}).execute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-TEST(DeleteTransaction, UnknownFrameIdChangesNothingAndReturnsFalse) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(DeleteTransaction, UnexecuteWithoutExecuteReturnsFalse) {
+  fluir::pt::ParseTree tree = makeTree();
 
-  DeleteTransaction uut{fluir::FullID{999}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  EXPECT_FALSE((DeleteTransaction{FullID{1, 30}}).unexecute(tree));
 }
 
-TEST(DeleteTransaction, EmptyIdChangesNothingAndReturnsFalse) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(SetConstantValueTransaction, ReplacesTheLiteralAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  DeleteTransaction uut{fluir::FullID{}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  SetConstantValueTransaction uut{FullID{1, 10}, fluir::literals_types::I32{42}};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(std::get<fluir::pt::Constant>(bodyOf(tree).nodes.at(10)).value,
+            fluir::pt::Literal{fluir::literals_types::I32{42}});
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-// A conduit id must not be mistaken for a node, which would drag its neighbours out.
-TEST(DeleteTransaction, ConduitIdChangesNothingAndReturnsFalse) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(SetConstantValueTransaction, KeepsTheConstantsType) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  DeleteTransaction uut{fluir::FullID{1, 40}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  // Node 10 holds an I32; an F64 is a different alternative, so it is rejected.
+  SetConstantValueTransaction uut{FullID{1, 10}, fluir::literals_types::F64{4.2}};
+  EXPECT_FALSE(uut.execute(tree));
+  EXPECT_EQ(tree, before);
 }
 
-TEST(SetConstantValueTransaction, SetConstantValueReplacesTheLiteralAndUndoRestoresIt) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
+TEST(SetConstantValueTransaction, SameLiteralMissingNodeOrNonConstantChangeNothing) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
 
-  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::I32{42}};
-  ASSERT_TRUE(uut.execute(scene));
-  EXPECT_NE(sceneToParseTree(scene, kHeader), before);
-  ASSERT_TRUE(uut.unexecute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-}
-
-TEST(SetConstantValueTransaction, SetConstantValueKeepsTheConstantsType) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-
-  // node 10 holds an I32; an F64 is a different alternative, so it must be rejected.
-  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::F64{4.2}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-}
-
-TEST(SetConstantValueTransaction, SetConstantValueToTheSameLiteralChangesNothing) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-
-  SetConstantValueTransaction uut{fluir::FullID{1, 10}, fluir::literals_types::I32{0}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-}
-
-TEST(SetConstantValueTransaction, SetConstantValueOnAMissingNodeChangesNothing) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-
-  SetConstantValueTransaction uut{fluir::FullID{1, 999}, fluir::literals_types::I32{42}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
-}
-
-TEST(SetConstantValueTransaction, SetConstantValueOnANonConstantNodeChangesNothing) {
-  GraphScene scene;
-  scene.build(kCtx, makeTree());
-  const fluir::pt::ParseTree before = sceneToParseTree(scene, kHeader);
-
-  // node 30 is the Binary, which is not a ConstantActor at all.
-  SetConstantValueTransaction uut{fluir::FullID{1, 30}, fluir::literals_types::I32{42}};
-  EXPECT_FALSE(uut.execute(scene));
-  EXPECT_EQ(sceneToParseTree(scene, kHeader), before);
+  EXPECT_FALSE((SetConstantValueTransaction{FullID{1, 10}, fluir::literals_types::I32{0}}).execute(tree));
+  EXPECT_FALSE((SetConstantValueTransaction{FullID{1, 999}, fluir::literals_types::I32{42}}).execute(tree));
+  EXPECT_FALSE((SetConstantValueTransaction{FullID{1, 30}, fluir::literals_types::I32{42}}).execute(tree));
+  EXPECT_EQ(tree, before);
 }

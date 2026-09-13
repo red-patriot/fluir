@@ -1,0 +1,132 @@
+#include "editor/core/tree_path.hpp"
+
+#include <utility>
+#include <variant>
+
+#include <gtest/gtest.h>
+
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
+
+// Path resolution against a hand-built tree: a path names a function, or a
+// node inside its parent's block. A path that resolves to nothing is nullptr.
+
+namespace {
+
+  using fluir::FlowGraphLocation;
+  using fluir::FullID;
+  using fluir::editor::blockOf;
+  using fluir::editor::functionAt;
+  using fluir::editor::locationAt;
+  using fluir::editor::nodeAt;
+  using fluir::editor::parentOf;
+
+  constexpr FlowGraphLocation kFnLoc{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+  constexpr FlowGraphLocation kNodeLoc{.x = 3, .y = 4, .z = 1, .width = 5, .height = 6};
+
+  // Function 1 holds constant 10 and conduit 40; function 2 is empty.
+  fluir::pt::ParseTree makeTree() {
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = kFnLoc;
+    fn.body.nodes.emplace(10,
+                          fluir::pt::Constant{.id = 10, .location = kNodeLoc, .value = fluir::literals_types::I32{0}});
+    fn.body.conduits.emplace(40, fluir::pt::Conduit{.id = 40, .input = 10});
+
+    fluir::pt::FunctionDecl empty;
+    empty.id = 2;
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(1, fluir::pt::Declaration{fn});
+    tree.declarations.emplace(2, fluir::pt::Declaration{empty});
+    return tree;
+  }
+
+}  // namespace
+
+TEST(TreePath, FunctionAtResolvesAOneSegmentPath) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  const fluir::pt::FunctionDecl* fn = functionAt(tree, FullID{1});
+
+  ASSERT_NE(fn, nullptr);
+  EXPECT_EQ(fn->id, 1u);
+}
+
+TEST(TreePath, FunctionAtMissesUnknownIdsAndOtherDepths) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(functionAt(tree, FullID{999}), nullptr);
+  EXPECT_EQ(functionAt(tree, FullID{}), nullptr);
+  EXPECT_EQ(functionAt(tree, FullID{1, 10}), nullptr);
+}
+
+TEST(TreePath, BlockOfAFunctionIsItsBody) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  const fluir::pt::Block* block = blockOf(tree, FullID{1});
+
+  ASSERT_NE(block, nullptr);
+  EXPECT_TRUE(block->nodes.contains(10));
+}
+
+TEST(TreePath, BlockOfAPlainNodeOrMissIsNull) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(blockOf(tree, FullID{1, 10}), nullptr);
+  EXPECT_EQ(blockOf(tree, FullID{999}), nullptr);
+  EXPECT_EQ(blockOf(tree, FullID{}), nullptr);
+}
+
+TEST(TreePath, NodeAtResolvesANodeInsideItsParentsBlock) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  const fluir::pt::Node* node = nodeAt(tree, FullID{1, 10});
+
+  ASSERT_NE(node, nullptr);
+  EXPECT_TRUE(std::holds_alternative<fluir::pt::Constant>(*node));
+}
+
+TEST(TreePath, NodeAtMissesUnknownNodesConduitsAndShortPaths) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(nodeAt(tree, FullID{1, 999}), nullptr);
+  EXPECT_EQ(nodeAt(tree, FullID{2, 10}), nullptr);  // ids are body-scoped
+  EXPECT_EQ(nodeAt(tree, FullID{1, 40}), nullptr);  // a conduit is not a node
+  EXPECT_EQ(nodeAt(tree, FullID{1}), nullptr);
+  EXPECT_EQ(nodeAt(tree, FullID{1, 10, 11}), nullptr);  // a constant has no block
+}
+
+TEST(TreePath, LocationAtResolvesFunctionsAndNodes) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  const FlowGraphLocation* fnLoc = locationAt(tree, FullID{1});
+  const FlowGraphLocation* nodeLoc = locationAt(tree, FullID{1, 10});
+
+  ASSERT_NE(fnLoc, nullptr);
+  ASSERT_NE(nodeLoc, nullptr);
+  EXPECT_EQ(*fnLoc, kFnLoc);
+  EXPECT_EQ(*nodeLoc, kNodeLoc);
+}
+
+TEST(TreePath, LocationAtIsWritable) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  locationAt(tree, FullID{1, 10})->x = 42;
+
+  EXPECT_EQ(locationAt(std::as_const(tree), FullID{1, 10})->x, 42);
+}
+
+TEST(TreePath, LocationAtMissIsNull) {
+  fluir::pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(locationAt(tree, FullID{}), nullptr);
+  EXPECT_EQ(locationAt(tree, FullID{1, 40}), nullptr);
+}
+
+TEST(TreePath, ParentOfDropsTheLastSegment) {
+  EXPECT_EQ(parentOf(FullID{1, 10}), FullID{1});
+  EXPECT_EQ(parentOf(FullID{1}), FullID{});
+  EXPECT_EQ(parentOf(FullID{}), FullID{});
+}

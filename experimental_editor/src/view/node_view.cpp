@@ -45,6 +45,7 @@ namespace fluir::editor {
     PortSet anchors(const pt::Binary&, const Rect& r, const EditorContext::Layout&) {
       return {edgeAnchors(r.x, r, 2), edgeAnchors(r.x + r.w, r, 1)};
     }
+    PortSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; };
     PortSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
       return {edgeAnchors(r.x, r, 1), edgeAnchors(r.x + r.w, r, 1)};
     }
@@ -82,11 +83,13 @@ namespace fluir::editor {
       return std::visit(LiteralColor{theme}, c.value);
     }
     Color color(const pt::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
+    Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 
     std::string label(const pt::Binary& n) { return std::string{stringify(n.op)}; }
     std::string label(const pt::Unary& n) { return std::string{stringify(n.op)}; }
     std::string label(const pt::Constant& n) { return renderLiteral(n.value); }
     std::string label(const pt::Call& n) { return n.target; }
+    std::string label(const pt::Comment&) { return "//"; }
 
     // Call argument names, one per row; other kinds carry nothing extra.
     void drawExtras(const auto&, const Rect&, const Subview&, const EditorContext&) { }

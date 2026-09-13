@@ -176,6 +176,13 @@ namespace fluir::editor {
       appendBlock(el, fn.body);
     }
 
+    void appendFunction(XMLElement* parent, const fluir::pt::Comment& comment) {
+      XMLElement* el = parent->InsertNewChildElement("comment");
+      setId(el, comment.id);
+      setLocation(el, comment.location);
+      el->SetText(comment.text.c_str());
+    }
+
   }  // namespace
 
   ParseTreeWriter::ParseTreeWriter(std::ostream& out) : out_(out) { }

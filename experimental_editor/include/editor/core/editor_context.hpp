@@ -56,6 +56,7 @@ namespace fluir::editor {
       Color floatNode{139, 31, 255, 255};
       Color callNode{31, 117, 255, 255};
       Color headerBackground{34, 37, 45, 255};
+      Color commentNode{95, 95, 95, 255};
     };
 
     struct Window {

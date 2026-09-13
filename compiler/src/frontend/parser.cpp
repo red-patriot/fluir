@@ -199,7 +199,8 @@ namespace fluir {
   WithID<pt::Comment> Parser::comment(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
-    std::string_view text = element->GetText();
+
+    std::string_view text = element->GetText() ? element->GetText() : "";
 
     return {id, pt::Comment{.id = id, .location = location, .text = std::string{text}}};
   }

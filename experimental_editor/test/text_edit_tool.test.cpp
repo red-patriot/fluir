@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -19,6 +20,8 @@
 // Function 1 at the origin, body from y 25. Constant 10 (I32 42) at units (4,4)
 // 10x5 -> {20,45,50,25}, text origin {24,49}, move grip {50,50,15,15}.
 // Glyphs are 8 px, so a press 8 px past the origin puts the caret after one glyph.
+// Function "f" header {0,0,500,25}, text origin {4,4}. Call 14 ("g", one argument) at units (30,20)
+// 10x10 -> {150,125,50,50}, label row {150,125,50,25}, text origin {154,129}, argument row from y 150.
 
 namespace {
 
@@ -45,6 +48,13 @@ namespace {
   constexpr Vec2 kBinaryBody{154, 49};
   constexpr Vec2 kI8Body{24, 229};
   const Rect kIntRect{20, 45, 50, 25};
+  const FullID kFn{1};
+  const FullID kCall{1, 14};
+  constexpr Vec2 kFnName{4, 4};
+  constexpr Vec2 kCallLabel{154, 129};
+  constexpr Vec2 kCallArgRow{154, 154};
+  const Rect kHeaderRect{0, 0, 500, 25};
+  const Rect kCallLabelRect{150, 125, 50, 25};
 
   fluir::pt::Constant constant(ID id, int y, fluir::pt::Literal value) {
     return {.id = id, .location = FlowGraphLocation{.x = 4, .y = y, .z = 1, .width = 10, .height = 5}, .value = value};
@@ -54,6 +64,7 @@ namespace {
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
     fn.body.nodes.emplace(10, constant(10, 4, fluir::literals_types::I32{42}));
     fn.body.nodes.emplace(11, constant(11, 20, fluir::literals_types::F64{1.5}));
     fn.body.nodes.emplace(
@@ -61,6 +72,11 @@ namespace {
       fluir::pt::Binary{
         .id = 12, .location = {.x = 30, .y = 4, .z = 1, .width = 10, .height = 5}, .op = fluir::Operator::PLUS});
     fn.body.nodes.emplace(13, constant(13, 40, fluir::literals_types::I8{42}));
+    fn.body.nodes.emplace(14,
+                          fluir::pt::Call{.id = 14,
+                                          .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 10},
+                                          .target = "g",
+                                          .arguments = {{.name = "a", .index = 0}}});
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{fn});
     return tree;
@@ -76,6 +92,12 @@ namespace {
 
     fluir::pt::Literal value(const FullID& path) const {
       return std::get<fluir::pt::Constant>(*nodeAt(state.editor.tree(), path)).value;
+    }
+
+    const std::string& fnName() const { return fluir::editor::functionAt(state.editor.tree(), kFn)->name; }
+
+    const std::string& callTarget() const {
+      return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).target;
     }
 
     std::vector<testutil::DrawCall> draw() const {
@@ -318,4 +340,118 @@ TEST(TextEditTool, AnInvalidDraftDrawsAnExtraErrorOutline) {
     });
   };
   EXPECT_GT(outlines(invalid.draw()), outlines(valid.draw()));
+}
+
+TEST(TextEditTool, APressOnAFunctionHeaderOpensItsName) {
+  Harness h;
+
+  EXPECT_FALSE(h.send(down(kFnName)));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "f");
+}
+
+TEST(TextEditTool, ReturnRenamesTheFunctionUndoably) {
+  Harness h;
+  h.send(down(kFnName));
+  h.send(key(InputEvent::Key::End));
+  h.send(text("oo"));
+
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.fnName(), "foo");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.fnName(), "f");
+}
+
+TEST(TextEditTool, AnInvalidFunctionNameStaysOpenAndInvalid) {
+  Harness h;
+  h.send(down(kFnName));
+  h.send(text("1"));  // 1f
+
+  h.send(key(InputEvent::Key::Return));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_TRUE(h.tool.field()->invalid());
+  EXPECT_EQ(h.fnName(), "f");
+  EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(TextEditTool, APressOnACallsLabelOpensItsTarget) {
+  Harness h;
+
+  EXPECT_FALSE(h.send(down(kCallLabel)));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "g");
+}
+
+TEST(TextEditTool, APressOnACallsArgumentRowsOpensNothing) {
+  Harness h;
+
+  h.send(down(kCallArgRow));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+}
+
+TEST(TextEditTool, ReturnRetargetsTheCallUndoably) {
+  Harness h;
+  h.send(down(kCallLabel));
+  h.send(key(InputEvent::Key::End));
+  h.send(text("h"));
+
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.callTarget(), "gh");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.callTarget(), "g");
+}
+
+TEST(TextEditTool, AnInvalidCallTargetStaysOpenAndInvalid) {
+  Harness h;
+  h.send(down(kCallLabel));
+  h.send(text("-"));  // -g
+
+  h.send(key(InputEvent::Key::Return));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_TRUE(h.tool.field()->invalid());
+  EXPECT_EQ(h.callTarget(), "g");
+  EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(TextEditTool, TheNameDraftClosesWhenItsFunctionVanishes) {
+  Harness h;
+  h.send(down(kFnName));
+  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kFn)));
+
+  EXPECT_FALSE(h.send(text("7")));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+}
+
+TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
+  struct Case {
+    Vec2 at;
+    std::string_view committed;
+    Rect cover;
+  };
+  for (const Case& c : {Case{kFnName, "f", kHeaderRect}, Case{kCallLabel, "g", kCallLabelRect}}) {
+    Harness h;
+    h.send(down(c.at));
+    h.send(text("x"));
+
+    const auto calls = h.draw();
+
+    const long value = textIndex(calls, c.committed, c.at);
+    const long draft = textIndex(calls, std::string{"x"} + std::string{c.committed}, c.at);
+    ASSERT_GE(value, 0) << c.committed;
+    ASSERT_GT(draft, value) << c.committed;
+    const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [&](const testutil::DrawCall& d) {
+      return d.op == testutil::DrawCall::Op::Fill && d.rect == c.cover;
+    });
+    EXPECT_NE(cover, calls.begin() + draft) << c.committed;
+  }
 }

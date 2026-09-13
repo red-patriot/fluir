@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string_view>
 
 #include "editor/core/editor_context.hpp"
@@ -29,6 +30,10 @@ namespace fluir::editor {
     virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color) = 0;
     /** Text from `screen`'s top-left, wrapped at `screen.w`; glyphs are UI size x `scale`. Caller clips. */
     virtual void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) = 0;
+    /** Caret byte index nearest `point` in `text` laid out as `drawTextWrapped` would. */
+    virtual std::size_t wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) = 0;
+    /** 1 px wide caret before byte `index` of `text` laid out as `drawTextWrapped` would. */
+    virtual Rect wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) = 0;
 
     /** Screen-px size `text` would occupy if drawn. */
     virtual Vec2 measureText(std::string_view text) = 0;

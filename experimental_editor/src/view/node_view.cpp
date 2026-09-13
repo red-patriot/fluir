@@ -106,8 +106,7 @@ namespace fluir::editor {
       if (comment.text.empty()) {
         return;
       }
-      const double pad = ctx.layout.textPad;
-      const Rect textRect{r.x + pad, r.y + pad, r.w - 2 * pad, r.h - 2 * pad};
+      const Rect textRect = commentTextRect(r, ctx.layout);
       const Subview clipped = view.child(textRect);
       clipped.renderer().drawTextWrapped(
         clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);
@@ -134,6 +133,11 @@ namespace fluir::editor {
 
   PortSet ports(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
     return std::visit([&](const auto& n) { return anchors(n, world, layout); }, node);
+  }
+
+  Rect commentTextRect(Rect world, const EditorContext::Layout& layout) {
+    const double pad = layout.textPad;
+    return {world.x + pad, world.y + pad, world.w - 2 * pad, world.h - 2 * pad};
   }
 
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme) {

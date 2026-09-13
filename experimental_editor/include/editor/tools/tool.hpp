@@ -15,12 +15,16 @@
 
 namespace fluir::editor {
 
+  class Renderer;
+
   /** Everything a tool may read or change. */
   struct EditorState {
     const EditorContext& ctx;
     ModuleEditor editor;
     std::optional<FullID> selection;
     Viewport view;
+    /** Wrapped-text layout queries; null puts the caret at the end. */
+    Renderer* text = nullptr;
   };
 
   /** One way of handling graph input. */

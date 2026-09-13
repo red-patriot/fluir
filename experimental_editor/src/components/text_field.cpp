@@ -52,11 +52,24 @@ namespace fluir::editor {
 
   void TextField::setCaretFromOffset(double dxScreenPx) { caret_ = indexAt(text_, dxScreenPx); }
 
+  void TextField::setCaret(std::size_t index) { caret_ = std::min(index, text_.size()); }
+
   void TextField::draw(const Subview& view, const EditorContext& ctx, Vec2 localTextPos) const {
     const Vec2 origin = view.toScreen(localTextPos);
     view.renderer().drawText(origin, text_, ctx.theme.text);
     view.renderer().fillRect(Rect{origin.x + GLYPH_PX * static_cast<double>(caret_), origin.y, 1.0, GLYPH_PX},
                              ctx.theme.text);
+  }
+
+  void TextField::drawWrapped(const Subview& view, const EditorContext& ctx, Rect localTextRect) const {
+    const Subview clipped = view.child(localTextRect);
+    const Rect screen = clipped.toScreen(Rect{0, 0, localTextRect.w, localTextRect.h});
+    const double scale = clipped.composed().scale;
+    Renderer& r = clipped.renderer();
+    if (!text_.empty()) {
+      r.drawTextWrapped(screen, text_, scale, ctx.theme.text);
+    }
+    r.fillRect(r.wrappedCaretRect(screen, text_, scale, caret_), ctx.theme.text);
   }
 
   std::size_t TextField::indexAt(const std::string& text, double dxScreenPx) {

@@ -31,6 +31,8 @@ namespace fluir::editor {
     void drawLine(Vec2 a, Vec2 b, const Color& color) override;
     void drawText(Vec2 topLeft, std::string_view text, const Color& color) override;
     void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) override;
+    std::size_t wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) override;
+    Rect wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) override;
     Vec2 measureText(std::string_view text) override;
     void pushClip(Rect screen) override;
     void popClip() override;
@@ -48,6 +50,9 @@ namespace fluir::editor {
 
     /** The embedded font at `px`, opened once per 0.5px bucket. */
     TTF_Font* fontAt(double px);
+
+    /** `text` laid out as `drawTextWrapped` would, or nullptr. Caller destroys. */
+    TTF_Text* wrappedText(Rect screen, std::string_view text, double scale);
 
     /** Draw `text` at `topLeft` with `font`, wrapping at `wrapWidth` px (0 = no wrap). */
     void drawTtf(TTF_Font* font, Vec2 topLeft, std::string_view text, int wrapWidth, const Color& color);

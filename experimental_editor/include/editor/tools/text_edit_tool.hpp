@@ -7,8 +7,8 @@
 
 namespace fluir::editor {
 
-  /** Left-press on a constant, call label or argument row, function header or parameter rail opens a draft; Return
-   *  commits, Escape or a press elsewhere closes. */
+  /** Left-press on a constant, call label or argument row, function header, parameter rail or comment opens a draft;
+   *  Return commits, Escape or a press elsewhere closes. */
   class TextEditTool : public Tool {
    public:
     bool onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) override;

@@ -24,6 +24,7 @@
 namespace fluir::editor {
 
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : Page(ctx, renderer), state_{ctx} {
+    state_.text = &renderer_;
     // An open draft takes keys first; selection sees a press before a grip claims it.
     tools_.add(std::make_unique<TextEditTool>());
     tools_.add(std::make_unique<PanZoomTool>());

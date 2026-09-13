@@ -24,6 +24,9 @@ namespace fluir::editor {
   /** Draws a top-level `comment` at `world`. */
   void drawComment(const pt::Comment& comment, Rect world, const Subview& view, const EditorContext& ctx);
 
+  /** Where a comment at `world` wraps its text. */
+  Rect commentTextRect(Rect world, const EditorContext::Layout& layout);
+
   /** `node`'s fill color. */
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme);
 

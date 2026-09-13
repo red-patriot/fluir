@@ -23,6 +23,9 @@
 // Function "f" header {0,0,500,25}, text origin {4,4}. Params x, y: rails {0,25,75,25}, {0,50,75,25}; return rail
 // {475,25,25,25}. Call 14 ("g", arguments a, b) at units (30,20) 10x15 -> {150,125,50,75}, label row
 // {150,125,50,25}, text origin {154,129}, argument rows from y 150 and 175.
+// Top-level comment 20 ("hi there") at units (40,40) 20x10 -> {200,200,100,50}, text rect {204,204,92,42}. In-body
+// comment 16 ("inner") at units (60,4) 20x10 -> {300,45,100,50}, text rect {304,49,92,42}. The recorder lays wrapped
+// text out in 8 px cells.
 
 namespace {
 
@@ -61,6 +64,12 @@ namespace {
   const Rect kCallArgRow1Rect{150, 175, 50, 25};
   const Rect kHeaderRect{0, 0, 500, 25};
   const Rect kCallLabelRect{150, 125, 50, 25};
+  const FullID kComment{20};
+  const FullID kInnerComment{1, 16};
+  const Rect kCommentRect{200, 200, 100, 50};
+  const Rect kCommentTextRect{204, 204, 92, 42};
+  constexpr Vec2 kCommentText{220, 205};  // cell column 2 of row 0
+  constexpr Vec2 kInnerCommentText{304, 49};
 
   fluir::pt::Constant constant(ID id, int y, fluir::pt::Literal value) {
     return {.id = id, .location = FlowGraphLocation{.x = 4, .y = y, .z = 1, .width = 10, .height = 5}, .value = value};
@@ -88,16 +97,27 @@ namespace {
                                           .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 15},
                                           .target = "g",
                                           .arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}}});
+    fn.body.nodes.emplace(
+      16,
+      fluir::pt::Comment{.id = 16, .location = {.x = 60, .y = 4, .z = 1, .width = 20, .height = 10}, .text = "inner"});
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{fn});
+    tree.declarations.emplace(
+      20,
+      fluir::pt::Declaration{fluir::pt::Comment{
+        .id = 20, .location = {.x = 40, .y = 40, .z = 2, .width = 20, .height = 10}, .text = "hi there"}});
     return tree;
   }
 
   struct Harness {
     EditorState state{kCtx};
     TextEditTool tool;
+    mutable testutil::RecordingRenderer recorder;
 
-    Harness() { state.editor.load(makeTree()); }
+    Harness() {
+      state.editor.load(makeTree());
+      state.text = &recorder;
+    }
 
     bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
 
@@ -118,6 +138,13 @@ namespace {
 
     const std::string& argName(std::size_t index) const {
       return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).arguments[index].name;
+    }
+
+    const std::string& commentText(const FullID& path) const {
+      if (path.size() == 1) {
+        return std::get<fluir::pt::Comment>(state.editor.tree().declarations.at(path[0])).text;
+      }
+      return std::get<fluir::pt::Comment>(*nodeAt(state.editor.tree(), path)).text;
     }
 
     std::vector<testutil::DrawCall> draw() const {
@@ -577,4 +604,132 @@ TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
     });
     EXPECT_NE(cover, calls.begin() + draft) << c.committed;
   }
+}
+
+TEST(TextEditTool, APressOnACommentOpensItsTextWithTheCaretAtThePress) {
+  Harness h;
+
+  EXPECT_FALSE(h.send(down(kCommentText)));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "hi there");
+  EXPECT_EQ(h.tool.field()->caret(), 2u);
+}
+
+TEST(TextEditTool, WithoutTextLayoutACommentOpensWithTheCaretAtTheEnd) {
+  Harness h;
+  h.state.text = nullptr;
+
+  h.send(down(kCommentText));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->caret(), 8u);
+}
+
+TEST(TextEditTool, ReturnEditsTheCommentUndoably) {
+  Harness h;
+  h.send(down(kCommentText));
+  h.send(key(InputEvent::Key::End));
+  h.send(text(", you! (ok?)"));
+
+  EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.commentText(kComment), "hi there, you! (ok?)");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.commentText(kComment), "hi there");
+}
+
+TEST(TextEditTool, AnEmptyCommentCommits) {
+  Harness h;
+  h.send(down(kCommentText));
+  h.send(key(InputEvent::Key::End));
+  for (int i = 0; i < 8; ++i) {
+    h.send(key(InputEvent::Key::Backspace));
+  }
+
+  h.send(key(InputEvent::Key::Return));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+  EXPECT_EQ(h.commentText(kComment), "");
+}
+
+TEST(TextEditTool, AnUnchangedCommentOrEscapeClosesWithoutAnEdit) {
+  for (const InputEvent::Key k : {InputEvent::Key::Return, InputEvent::Key::Escape}) {
+    Harness h;
+    h.send(down(kCommentText));
+    if (k == InputEvent::Key::Escape) {
+      h.send(text("x"));
+    }
+
+    h.send(key(k));
+
+    EXPECT_EQ(h.tool.field(), nullptr);
+    EXPECT_EQ(h.commentText(kComment), "hi there");
+    EXPECT_FALSE(h.state.editor.canUndo());
+  }
+}
+
+TEST(TextEditTool, RePressingTheOpenCommentKeepsTheDraftAndReAimsTheCaret) {
+  Harness h;
+  h.send(down(kCommentText));
+  h.send(text("x"));
+
+  h.send(down(kCommentText + Vec2{16, 0}));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "hix there");
+  EXPECT_EQ(h.tool.field()->caret(), 4u);
+}
+
+TEST(TextEditTool, TheCommentDraftClosesWhenTheCommentVanishes) {
+  Harness h;
+  h.send(down(kCommentText));
+  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kComment)));
+
+  EXPECT_FALSE(h.send(text("7")));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
+}
+
+TEST(TextEditTool, AnInBodyCommentOpensAndCommits) {
+  Harness h;
+  h.send(down(kInnerCommentText));
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->text(), "inner");
+
+  h.send(key(InputEvent::Key::End));
+  h.send(text(" text"));
+  h.send(key(InputEvent::Key::Return));
+
+  EXPECT_EQ(h.commentText(kInnerComment), "inner text");
+  ASSERT_TRUE(h.state.editor.undo());
+  EXPECT_EQ(h.commentText(kInnerComment), "inner");
+}
+
+TEST(TextEditTool, TheCommentDraftIsDrawnWrappedOverTheCommittedText) {
+  Harness h;
+  h.send(down(kCommentText));
+  h.send(text("x"));
+
+  const auto calls = h.draw();
+
+  const auto wrappedIndex = [&](std::string_view s) {
+    for (std::size_t i = 0; i < calls.size(); ++i) {
+      if (calls[i].op == testutil::DrawCall::Op::TextWrapped && calls[i].text == s &&
+          calls[i].rect == kCommentTextRect && calls[i].scale == 1.0) {
+        return static_cast<long>(i);
+      }
+    }
+    return -1L;
+  };
+  const long value = wrappedIndex("hi there");
+  const long draft = wrappedIndex("hix there");
+  ASSERT_GE(value, 0);
+  ASSERT_GT(draft, value);
+  const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [](const testutil::DrawCall& c) {
+    return c.op == testutil::DrawCall::Op::Fill && c.rect == kCommentRect;
+  });
+  EXPECT_NE(cover, calls.begin() + draft);
+  EXPECT_TRUE(testutil::hasFill(calls, h.recorder.wrappedCaretRect(kCommentTextRect, "hix there", 1.0, 3)));
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <string>
@@ -51,6 +52,27 @@ namespace testutil {
                          const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::TextWrapped, r, {}, {}, std::string{t}, scale});
     }
+    // Monospace fallback for wrapped layout: 8*scale cells, wrapping per character.
+    std::size_t wrappedIndexAt(fluir::editor::Rect r,
+                               std::string_view t,
+                               double scale,
+                               fluir::editor::Vec2 p) override {
+      const double cell = 8.0 * scale;
+      const double cols = wrapColumns(r, cell);
+      const double row = std::max(0.0, std::floor((p.y - r.y) / cell));
+      const double col = std::clamp(std::round((p.x - r.x) / cell), 0.0, cols);
+      return std::min(static_cast<std::size_t>(row * cols + col), t.size());
+    }
+    fluir::editor::Rect wrappedCaretRect(fluir::editor::Rect r,
+                                         std::string_view t,
+                                         double scale,
+                                         std::size_t index) override {
+      const double cell = 8.0 * scale;
+      const auto cols = static_cast<std::size_t>(wrapColumns(r, cell));
+      const std::size_t i = std::min(index, t.size());
+      return {r.x + static_cast<double>(i % cols) * cell, r.y + static_cast<double>(i / cols) * cell, 1.0, cell};
+    }
+    static double wrapColumns(fluir::editor::Rect r, double cell) { return std::max(1.0, std::floor(r.w / cell)); }
     fluir::editor::Vec2 measureText(std::string_view t) override { return {static_cast<double>(t.size()) * 8.0, 8.0}; }
     void pushClip(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::PushClip, r, {}, {}, {}}); }
     void popClip() override { calls.push_back({DrawCall::Op::PopClip, {}, {}, {}, {}}); }

@@ -150,6 +150,52 @@ namespace fluir::editor {
     drawTtf(fontAt(uiPx_ * scale), screen.topLeft(), text, static_cast<int>(std::lround(screen.w)), color);
   }
 
+  TTF_Text* SdlRenderer::wrappedText(Rect screen, std::string_view text, double scale) {
+    if (screen.w < 1.0 || scale <= 0.0) {
+      return nullptr;
+    }
+    TTF_Text* t = TTF_CreateText(engine_, fontAt(uiPx_ * scale), text.empty() ? "" : text.data(), text.size());
+    if (t != nullptr) {
+      TTF_SetTextWrapWidth(t, static_cast<int>(std::lround(screen.w)));
+    }
+    return t;
+  }
+
+  // Index rule from SDL_ttf's examples/editbox.c GetCursorTextIndex.
+  std::size_t SdlRenderer::wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) {
+    TTF_Text* t = wrappedText(screen, text, scale);
+    if (t == nullptr) {
+      return 0;
+    }
+    std::size_t index = 0;
+    TTF_SubString sub;
+    const int x = static_cast<int>(std::lround(point.x - screen.x));
+    const int y = static_cast<int>(std::lround(point.y - screen.y));
+    if (TTF_GetTextSubStringForPoint(t, x, y, &sub)) {
+      const bool atEnd = (sub.flags & (TTF_SUBSTRING_LINE_END | TTF_SUBSTRING_TEXT_END)) != 0;
+      const bool before = atEnd || x < sub.rect.x + sub.rect.w / 2;
+      index = static_cast<std::size_t>(std::max(0, before ? sub.offset : sub.offset + sub.length));
+    }
+    TTF_DestroyText(t);
+    return std::min(index, text.size());
+  }
+
+  Rect SdlRenderer::wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) {
+    TTF_Text* t = wrappedText(screen, text, scale);
+    if (t == nullptr) {
+      return {screen.x, screen.y, 1.0, 0.0};
+    }
+    Rect caret{screen.x, screen.y, 1.0, 0.0};
+    TTF_SubString sub;
+    if (TTF_GetTextSubString(t, static_cast<int>(std::min(index, text.size())), &sub)) {
+      // An empty text's end cluster may have no height; fall back to a line.
+      const int h = sub.rect.h > 0 ? sub.rect.h : TTF_GetFontHeight(fontAt(uiPx_ * scale));
+      caret = {screen.x + sub.rect.x, screen.y + sub.rect.y, 1.0, static_cast<double>(h)};
+    }
+    TTF_DestroyText(t);
+    return caret;
+  }
+
   Vec2 SdlRenderer::measureText(std::string_view text) {
     int w = 0;
     int h = 0;

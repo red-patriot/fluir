@@ -1,5 +1,6 @@
 #include "editor/transaction/transaction.hpp"
 
+#include <string>
 #include <variant>
 
 #include <gtest/gtest.h>
@@ -12,6 +13,7 @@
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
+#include "editor/transaction/edit_comment.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/resize.hpp"
@@ -29,6 +31,7 @@ namespace {
   using fluir::editor::DeleteTransaction;
   using fluir::editor::EditCallArgumentTransaction;
   using fluir::editor::EditCallNodeTransaction;
+  using fluir::editor::EditCommentTransaction;
   using fluir::editor::functionAt;
   using fluir::editor::locationAt;
   using fluir::editor::MoveTransaction;
@@ -448,5 +451,60 @@ TEST(EditCallArgumentTransaction, SameNameMissingNodeNonCallMissingIndexOrInvali
   EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 7, "c"}).execute(tree));
   EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 1, "1x"}).execute(tree));
   EXPECT_FALSE((EditCallArgumentTransaction{FullID{1, 32}, 1, ""}).execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  const std::string& commentText(const fluir::pt::ParseTree& tree, const FullID& path) {
+    if (path.size() == 1) {
+      return std::get<fluir::pt::Comment>(tree.declarations.at(path[0])).text;
+    }
+    return std::get<fluir::pt::Comment>(*nodeAt(tree, path)).text;
+  }
+
+}  // namespace
+
+TEST(EditCommentTransaction, EditsATopLevelCommentAndUndoRestoresIt) {
+  for (const std::string text : {"", "hello, world! (x + y) -- done."}) {
+    fluir::pt::ParseTree tree = makeTreeWithComment();
+    const fluir::pt::ParseTree before = tree;
+
+    EditCommentTransaction uut{FullID{5}, text};
+    ASSERT_TRUE(uut.execute(tree)) << text;
+    EXPECT_EQ(commentText(tree, FullID{5}), text);
+    const fluir::pt::ParseTree afterFirst = tree;
+    ASSERT_TRUE(uut.unexecute(tree)) << text;
+    EXPECT_EQ(tree, before);
+    ASSERT_TRUE(uut.execute(tree)) << text;
+    EXPECT_EQ(tree, afterFirst);
+  }
+}
+
+TEST(EditCommentTransaction, EditsAnInBodyCommentAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1))
+    .body.nodes.emplace(
+      50,
+      fluir::pt::Comment{
+        .id = 50, .location = FlowGraphLocation{.x = 40, .y = 40, .z = 1, .width = 10, .height = 10}, .text = "in"});
+  const fluir::pt::ParseTree before = tree;
+
+  EditCommentTransaction uut{FullID{1, 50}, "inside body"};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(commentText(tree, FullID{1, 50}), "inside body");
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditCommentTransaction, SameTextMissingPathFunctionOrNonCommentChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((EditCommentTransaction{FullID{5}, "hi"}).execute(tree));
+  EXPECT_FALSE((EditCommentTransaction{FullID{999}, "x"}).execute(tree));
+  EXPECT_FALSE((EditCommentTransaction{FullID{1}, "x"}).execute(tree));
+  EXPECT_FALSE((EditCommentTransaction{FullID{1, 30}, "x"}).execute(tree));
+  EXPECT_FALSE((EditCommentTransaction{FullID{1, 999}, "x"}).execute(tree));
   EXPECT_EQ(tree, before);
 }

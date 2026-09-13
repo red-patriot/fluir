@@ -15,14 +15,16 @@
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
+#include "editor/transaction/edit_comment.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/set_constant_value.hpp"
 #include "editor/transaction/transaction.hpp"
 #include "editor/transaction/update_func_param.hpp"
 #include "editor/view/node_view.hpp"
 
-// Editable kinds: a constant's literal, a call's target and argument names, and a function's name and parameter
-// names. A new kind adds a branch to `targetAt`, `labelRect`, `draftText` and `commit` below.
+// Editable kinds: a constant's literal, a call's target and argument names, a function's name and parameter names,
+// and a comment's text (any text, drawn wrapped). A new kind adds a branch to `targetAt`, `labelRect`, `draftText` and
+// `commit` below.
 
 namespace fluir::editor {
   namespace {
@@ -35,6 +37,16 @@ namespace fluir::editor {
     const pt::Call* callAt(const pt::ParseTree& tree, const FullID& path) {
       const pt::Node* node = nodeAt(tree, path);
       return node == nullptr ? nullptr : std::get_if<pt::Call>(node);
+    }
+
+    // A top-level comment (one-segment path) or one in a body.
+    const pt::Comment* commentAt(const pt::ParseTree& tree, const FullID& path) {
+      if (path.size() == 1) {
+        const pt::Declaration* decl = declarationAt(tree, path);
+        return decl == nullptr ? nullptr : std::get_if<pt::Comment>(decl);
+      }
+      const pt::Node* node = nodeAt(tree, path);
+      return node == nullptr ? nullptr : std::get_if<pt::Comment>(node);
     }
 
     const pt::FunctionDecl::Parameter* paramAt(const pt::FunctionDecl& fn, int index) {
@@ -78,6 +90,9 @@ namespace fluir::editor {
       const Box* hit = hitAt(boxes, world);
       if (hit == nullptr || hit->part != Part::Body) {
         return std::nullopt;
+      }
+      if (commentAt(tree, hit->path) != nullptr) {
+        return TextEditTool::Target{hit->path, std::nullopt};
       }
       if (const pt::FunctionDecl* fn = functionAt(tree, hit->path)) {
         if (world.y < hit->world.y + layout.headerH()) {
@@ -136,6 +151,9 @@ namespace fluir::editor {
       if (body == nullptr) {
         return std::nullopt;
       }
+      if (commentAt(tree, target.path) != nullptr) {
+        return Label{body->world, body->clip};
+      }
       const Rect& r = body->world;
       if (functionAt(tree, target.path) != nullptr) {
         return Label{{r.x, r.y, r.w, layout.headerH()}, body->clip};
@@ -158,6 +176,9 @@ namespace fluir::editor {
     }
 
     std::optional<std::string> draftText(const pt::ParseTree& tree, const TextEditTool::Target& target) {
+      if (const pt::Comment* comment = commentAt(tree, target.path)) {
+        return comment->text;
+      }
       if (const pt::FunctionDecl* fn = functionAt(tree, target.path)) {
         if (!target.index) {
           return fn->name;
@@ -184,6 +205,9 @@ namespace fluir::editor {
                                                        const TextEditTool::Target& target,
                                                        const std::string& text) {
       const FullID& path = target.path;
+      if (const pt::Comment* comment = commentAt(tree, path)) {
+        return comment->text == text ? nullptr : std::make_unique<EditCommentTransaction>(path, text);
+      }
       if (functionAt(tree, path) != nullptr || callAt(tree, path) != nullptr) {
         if (!isValidIdentifier(text)) {
           return std::nullopt;
@@ -210,6 +234,9 @@ namespace fluir::editor {
     Color coverColor(const pt::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
       if (functionAt(tree, path) != nullptr) {
         return theme.funcDeclHeader;
+      }
+      if (commentAt(tree, path) != nullptr) {
+        return theme.commentNode;
       }
       const pt::Node* node = nodeAt(tree, path);
       return node == nullptr ? theme.background : nodeColor(*node, theme);
@@ -255,15 +282,29 @@ namespace fluir::editor {
       field_.reset();
       return;
     }
+    const bool wrapped = commentAt(tree, target->path) != nullptr;
     // Glyphs are fixed screen px, so the caret offset is measured on screen.
     const double dx = (world.x - textOrigin(label->rect, state.ctx.layout).x) * state.view.scale;
+    const auto caretAt = [&](const std::string& text) -> std::size_t {
+      if (!wrapped) {
+        return TextField::indexAt(text, dx);
+      }
+      if (state.text == nullptr) {
+        return text.size();
+      }
+      const Rect local = commentTextRect(label->rect, state.ctx.layout);
+      const Vec2 topLeft = state.view.worldToScreen(local.topLeft());
+      const double scale = state.view.scale;
+      return state.text->wrappedIndexAt(
+        Rect{topLeft.x, topLeft.y, local.w * scale, local.h * scale}, text, scale, event.pos);
+    };
     if (field_ && target_ == *target) {
-      field_->setCaretFromOffset(dx);
+      field_->setCaret(caretAt(field_->text()));
       return;
     }
     const std::string text = *draftText(tree, *target);
     target_ = *target;
-    field_.emplace(text, TextField::indexAt(text, dx));
+    field_.emplace(text, caretAt(text));
   }
 
   bool TextEditTool::onKey(InputEvent::Key key, EditorState& state) {
@@ -307,7 +348,11 @@ namespace fluir::editor {
     }
     r.fillRect(view.toScreen(label->rect), coverColor(tree, target_.path, state.ctx.theme));
     r.drawRect(view.toScreen(label->rect), state.ctx.theme.border);
-    field_->draw(view, state.ctx, textOrigin(label->rect, state.ctx.layout));
+    if (commentAt(tree, target_.path) != nullptr) {
+      field_->drawWrapped(view, state.ctx, commentTextRect(label->rect, state.ctx.layout));
+    } else {
+      field_->draw(view, state.ctx, textOrigin(label->rect, state.ctx.layout));
+    }
     if (field_->invalid()) {
       r.drawRect(view.toScreen(label->rect), state.ctx.theme.error);
     }

@@ -140,7 +140,7 @@ TEST(GraphDraw, InBodyCommentWrapsInsideItsBox) {
   EXPECT_TRUE(hasFill(r.calls, Rect{25, 50, 125, 125}));
   EXPECT_TRUE(hasWrappedText(r.calls, "note", Rect{29, 54, 117, 117}, 1.0));
   EXPECT_EQ(clipsCovering(r.calls, Rect{29, 54, 117, 117}).size(), 1u);
-  EXPECT_FALSE(clipsCovering(r.calls, Rect{0, 25, 500, 500}).empty());  // function body clip
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{0, 25, 500, 475}).empty());  // function body clip
 }
 
 TEST(GraphDraw, SelectedTopLevelCommentIsOutlined) {
@@ -171,7 +171,7 @@ TEST(GraphDraw, SingleEmptyFunctionFrameAndHeader) {
 
   // An empty function has no body children, so no body clip is opened at all;
   // every push that does happen is balanced by a pop.
-  EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 75, 500, 500}).empty());
+  EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 75, 500, 475}).empty());
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::PushClip), countOf(r.calls, DrawCall::Op::PopClip));
 }
 
@@ -405,7 +405,7 @@ TEST(GraphDraw, ClipWrapsBodyForFunctionWithNodes) {
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
   // Body content (nodes, rails, conduits) is clipped to the body rect.
-  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 75, 500, 500}).empty());
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 75, 500, 475}).empty());
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::PushClip), countOf(r.calls, DrawCall::Op::PopClip));
   EXPECT_TRUE(hasRect(r.calls, Rect{125, 85, 25, 25}));  // binary node body rect
 }

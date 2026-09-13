@@ -97,7 +97,7 @@ namespace fluir::editor {
       const double unit = layout.unitPx;
       const Rect frame = localRect(fn.location, unit);
       const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
-      const Rect clip{frame.x, origin.y, frame.w, frame.h};
+      const Rect clip{frame.x, origin.y, frame.w, frame.h - layout.headerH()};
       out.push_back({path, Part::Body, frame, std::nullopt});
 
       Ports ports;

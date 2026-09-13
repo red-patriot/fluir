@@ -132,6 +132,18 @@ TEST(GraphLayout, HitRespectsTheBodyClip) {
   EXPECT_EQ(*pathAt(boxes, Vec2{12, 40}), (FullID{1, 10}));
 }
 
+// A node dragged past the frame's bottom edge is clipped there, not a header-height lower.
+TEST(GraphLayout, BodyClipEndsAtTheFrameBottom) {
+  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fn.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = 94, .z = 1, .width = 10, .height = 10}));  // world y 495
+
+  const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
+
+  ASSERT_NE(pathAt(boxes, Vec2{12, 497}), nullptr);
+  EXPECT_EQ(*pathAt(boxes, Vec2{12, 497}), (FullID{1, 10}));
+  EXPECT_EQ(pathAt(boxes, Vec2{12, 510}), nullptr);
+}
+
 TEST(GraphLayout, NodeGripsAreHittable) {
   const std::vector<Box> boxes = layoutGraph(overlappingNodes(1, 2), kCtx.layout);
 

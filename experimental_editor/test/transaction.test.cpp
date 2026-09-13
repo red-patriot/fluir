@@ -14,6 +14,7 @@
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
 #include "editor/transaction/edit_comment.hpp"
+#include "editor/transaction/edit_operator.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/resize.hpp"
@@ -32,6 +33,7 @@ namespace {
   using fluir::editor::EditCallArgumentTransaction;
   using fluir::editor::EditCallNodeTransaction;
   using fluir::editor::EditCommentTransaction;
+  using fluir::editor::EditOperatorTransaction;
   using fluir::editor::functionAt;
   using fluir::editor::locationAt;
   using fluir::editor::MoveTransaction;
@@ -506,5 +508,50 @@ TEST(EditCommentTransaction, SameTextMissingPathFunctionOrNonCommentChangeNothin
   EXPECT_FALSE((EditCommentTransaction{FullID{1}, "x"}).execute(tree));
   EXPECT_FALSE((EditCommentTransaction{FullID{1, 30}, "x"}).execute(tree));
   EXPECT_FALSE((EditCommentTransaction{FullID{1, 999}, "x"}).execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditOperatorTransaction, ChangesABinaryOperatorAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  EditOperatorTransaction uut{FullID{1, 30}, Operator::STAR};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(std::get<fluir::pt::Binary>(*nodeAt(tree, FullID{1, 30})).op, Operator::STAR);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditOperatorTransaction, ChangesAUnaryOperatorAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  EditOperatorTransaction uut{FullID{1, 31}, Operator::BANG};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(std::get<fluir::pt::Unary>(*nodeAt(tree, FullID{1, 31})).op, Operator::BANG);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(EditOperatorTransaction, LeavesOperandsUntouched) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::Binary before = std::get<fluir::pt::Binary>(*nodeAt(tree, FullID{1, 30}));
+
+  ASSERT_TRUE((EditOperatorTransaction{FullID{1, 30}, Operator::SLASH}).execute(tree));
+  const auto& after = std::get<fluir::pt::Binary>(*nodeAt(tree, FullID{1, 30}));
+  EXPECT_EQ(after.lhs, before.lhs);
+  EXPECT_EQ(after.rhs, before.rhs);
+  EXPECT_EQ(after.location, before.location);
+}
+
+TEST(EditOperatorTransaction, SameOpMissingNodeNonOperatorOrUnknownChangeNothing) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((EditOperatorTransaction{FullID{1, 30}, Operator::PLUS}).execute(tree));
+  EXPECT_FALSE((EditOperatorTransaction{FullID{1, 999}, Operator::STAR}).execute(tree));
+  EXPECT_FALSE((EditOperatorTransaction{FullID{1, 32}, Operator::STAR}).execute(tree));
+  EXPECT_FALSE((EditOperatorTransaction{FullID{1}, Operator::STAR}).execute(tree));
+  EXPECT_FALSE((EditOperatorTransaction{FullID{1, 30}, Operator::UNKNOWN}).execute(tree));
   EXPECT_EQ(tree, before);
 }

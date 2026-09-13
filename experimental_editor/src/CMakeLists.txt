@@ -131,6 +131,7 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/edit_call_argument.cpp"
     "transaction/edit_call_node.cpp"
     "transaction/edit_comment.cpp"
+    "transaction/edit_operator.cpp"
     "transaction/move.cpp"
     "transaction/rename.cpp"
     "transaction/resize.cpp"

@@ -27,7 +27,8 @@ namespace fluir::editor {
     virtual void drawRect(Rect screen, const Color& color) = 0;
     virtual void fillRect(Rect screen, const Color& color) = 0;
     virtual void drawLine(Vec2 a, Vec2 b, const Color& color) = 0;
-    virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color) = 0;
+    /** Glyphs are UI size x `scale`. */
+    virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color, double scale = 1.0) = 0;
     /** Text from `screen`'s top-left, wrapped at `screen.w`; glyphs are UI size x `scale`. Caller clips. */
     virtual void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) = 0;
     /** Caret byte index nearest `point` in `text` laid out as `drawTextWrapped` would. */

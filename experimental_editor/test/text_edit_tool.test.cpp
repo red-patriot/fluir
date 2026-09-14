@@ -1,6 +1,7 @@
 #include "editor/tools/text_edit_tool.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <memory>
 #include <string>
 #include <variant>
@@ -58,9 +59,12 @@ namespace {
   constexpr Vec2 kCallLabel{154, 129};
   constexpr Vec2 kCallArgRow{154, 154};
   constexpr Vec2 kCallArgRow1{154, 179};
-  constexpr Vec2 kParamRail1{4, 54};
+  // Param y's name region, clear of constant 10; type "i32" spans textPad + 3 glyphs at 0.8x.
+  constexpr Vec2 kParamRail1{72, 54};
+  constexpr Vec2 kParamRail1Text{27.2, 54};
+  constexpr Vec2 kParamRail1Type{4, 54};
   constexpr Vec2 kReturnRail{479, 29};
-  const Rect kParamRail1Rect{0, 50, 75, 25};
+  const Rect kParamRail1Rect{23.2, 50, 51.8, 25};
   const Rect kCallArgRow1Rect{150, 175, 50, 25};
   const Rect kHeaderRect{0, 0, 500, 25};
   const Rect kCallLabelRect{150, 125, 50, 25};
@@ -160,7 +164,8 @@ namespace {
   // Index of the first Text call drawing `s` at `at`, or -1.
   long textIndex(const std::vector<testutil::DrawCall>& calls, std::string_view s, Vec2 at) {
     for (std::size_t i = 0; i < calls.size(); ++i) {
-      if (calls[i].op == testutil::DrawCall::Op::Text && calls[i].text == s && calls[i].a == at) {
+      if (calls[i].op == testutil::DrawCall::Op::Text && calls[i].text == s && std::abs(calls[i].a.x - at.x) <= 1e-6 &&
+          std::abs(calls[i].a.y - at.y) <= 1e-6) {
         return static_cast<long>(i);
       }
     }
@@ -513,6 +518,7 @@ TEST(TextEditTool, ReturnRenamesTheParameterUndoably) {
 TEST(TextEditTool, AnInvalidParameterNameStaysOpenAndInvalid) {
   Harness h;
   h.send(down(kParamRail1));
+  h.send(key(InputEvent::Key::Home));
   h.send(text("1"));  // 1y
 
   h.send(key(InputEvent::Key::Return));
@@ -521,6 +527,14 @@ TEST(TextEditTool, AnInvalidParameterNameStaysOpenAndInvalid) {
   EXPECT_TRUE(h.tool.field()->invalid());
   EXPECT_EQ(h.paramName(1), "y");
   EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(TextEditTool, APressOnAParameterTypeOpensNothing) {
+  Harness h;
+
+  h.send(down(kParamRail1Type));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
 }
 
 TEST(TextEditTool, APressOnTheReturnRailOpensNothing) {
@@ -581,26 +595,27 @@ TEST(TextEditTool, TheNameDraftClosesWhenItsFunctionVanishes) {
 TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
   struct Case {
     Vec2 at;
+    Vec2 textAt;
     std::string_view committed;
     std::string_view draft;
     Rect cover;
   };
-  for (const Case& c : {Case{kFnName, "f", "xf", kHeaderRect},
-                        Case{kCallLabel, "g", "xg", kCallLabelRect},
-                        Case{kParamRail1, "i32 y", "xy", kParamRail1Rect},
-                        Case{kCallArgRow1, "b", "xb", kCallArgRow1Rect}}) {
+  for (const Case& c : {Case{kFnName, kFnName, "f", "xf", kHeaderRect},
+                        Case{kCallLabel, kCallLabel, "g", "xg", kCallLabelRect},
+                        Case{kParamRail1, kParamRail1Text, "y", "yx", kParamRail1Rect},
+                        Case{kCallArgRow1, kCallArgRow1, "b", "xb", kCallArgRow1Rect}}) {
     Harness h;
     h.send(down(c.at));
     h.send(text("x"));
 
     const auto calls = h.draw();
 
-    const long value = textIndex(calls, c.committed, c.at);
-    const long draft = textIndex(calls, c.draft, c.at);
+    const long value = textIndex(calls, c.committed, c.textAt);
+    const long draft = textIndex(calls, c.draft, c.textAt);
     ASSERT_GE(value, 0) << c.committed;
     ASSERT_GT(draft, value) << c.committed;
     const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [&](const testutil::DrawCall& d) {
-      return d.op == testutil::DrawCall::Op::Fill && d.rect == c.cover;
+      return d.op == testutil::DrawCall::Op::Fill && testutil::detail::rectNear(d.rect, c.cover, 1e-6);
     });
     EXPECT_NE(cover, calls.begin() + draft) << c.committed;
   }

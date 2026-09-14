@@ -1,6 +1,6 @@
 #include "editor/view/graph_draw.hpp"
 
-#include <string>
+#include <string_view>
 #include <variant>
 
 #include "editor/core/graph_geometry.hpp"
@@ -22,22 +22,24 @@ namespace fluir::editor {
     // A parameter's port is on its right edge, the return's on its left.
     void drawRail(
       const Subview& view, const pt::FunctionDecl& fn, fluir::ID id, const Rect& r, const EditorContext& ctx) {
-      std::string label;
+      std::string_view typeName;
+      std::string_view name;
       Vec2 anchor{r.x + r.w, r.y + r.h * 0.5};
       if (fn.output && fn.output->ret && fn.output->ret->id == id) {
-        label = fn.output->ret->typeName;
+        typeName = fn.output->ret->typeName;
         anchor = Vec2{r.x, r.y + r.h * 0.5};
       } else if (fn.input) {
         for (const auto& param : fn.input->parameters) {
           if (param.id == id) {
-            label = param.typeName + " " + param.name;
+            typeName = param.typeName;
+            name = param.name;
           }
         }
       }
       Renderer& renderer = view.renderer();
       renderer.fillRect(view.toScreen(r), ctx.theme.funcDeclHeader);
       renderer.drawRect(view.toScreen(r), ctx.theme.border);
-      renderer.drawText(view.toScreen(Vec2{r.x + ctx.layout.textPad, r.y + ctx.layout.textPad}), label, ctx.theme.text);
+      drawRailLabels(view, r, typeName, name, ctx);
       renderer.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
     }
 

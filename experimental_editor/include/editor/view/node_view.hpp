@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -26,6 +27,18 @@ namespace fluir::editor {
 
   /** Where a comment at `world` wraps its text. */
   Rect commentTextRect(Rect world, const EditorContext::Layout& layout);
+
+  /** A rail's type and name regions in world space; glyphs are fixed screen px, so the split depends on `viewScale`. */
+  struct RailLabels {
+    Rect type;
+    Rect name;
+  };
+
+  RailLabels railLabels(Rect rail, std::string_view label, double viewScale, const EditorContext::Layout& layout);
+
+  /** Draws a rail's small bottom-aligned `type` and, when non-empty, its `name` after it. */
+  void drawRailLabels(
+    const Subview& view, Rect rail, std::string_view type, std::string_view name, const EditorContext& ctx);
 
   /** `node`'s fill color. */
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme);

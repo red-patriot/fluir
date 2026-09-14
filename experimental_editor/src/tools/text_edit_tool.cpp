@@ -139,13 +139,17 @@ namespace fluir::editor {
     std::optional<Label> labelRect(const pt::ParseTree& tree,
                                    std::span<const Box> boxes,
                                    const TextEditTool::Target& target,
+                                   double viewScale,
                                    const EditorContext::Layout& layout) {
       if (const pt::FunctionDecl* fn = functionAt(tree, target.path); fn && target.index) {
         const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
         FullID railPath = target.path;
         railPath.push_back(param == nullptr ? INVALID_ID : param->id);
         const Box* rail = param == nullptr ? nullptr : findBox(boxes, Part::Rail, railPath);
-        return rail == nullptr ? std::nullopt : std::optional<Label>{Label{rail->world, rail->clip}};
+        if (rail == nullptr) {
+          return std::nullopt;
+        }
+        return Label{railLabels(rail->world, param->typeName, viewScale, layout).name, rail->clip};
       }
       const Box* body = findBox(boxes, Part::Body, target.path);
       if (body == nullptr) {
@@ -277,7 +281,7 @@ namespace fluir::editor {
     const Vec2 world = state.view.screenToWorld(event.pos);
     const std::optional<Target> target = targetAt(tree, boxes, world, state.ctx.layout);
     const std::optional<Label> label =
-      target ? labelRect(tree, boxes, *target, state.ctx.layout) : std::optional<Label>{};
+      target ? labelRect(tree, boxes, *target, state.view.scale, state.ctx.layout) : std::optional<Label>{};
     if (!label || !label->rect.contains(world)) {
       field_.reset();
       return;
@@ -338,7 +342,7 @@ namespace fluir::editor {
       return;
     }
     const pt::ParseTree& tree = state.editor.tree();
-    const std::optional<Label> label = labelRect(tree, boxes, target_, state.ctx.layout);
+    const std::optional<Label> label = labelRect(tree, boxes, target_, view.composed().scale, state.ctx.layout);
     if (!label) {
       return;
     }

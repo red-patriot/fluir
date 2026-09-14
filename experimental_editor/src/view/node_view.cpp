@@ -16,6 +16,9 @@ namespace fluir::editor {
   namespace {
     using namespace ::fluir::literals_types;
 
+    // Rail type labels draw smaller than names.
+    constexpr double kTypeScale = 0.8;
+
     // A lone port sits at the centre; more spread top-to-bottom down the edge.
     double portFraction(int count, int index) {
       return count <= 1 ? 0.5 : static_cast<double>(index) / (static_cast<double>(count) - 1.0);
@@ -138,6 +141,25 @@ namespace fluir::editor {
   Rect commentTextRect(Rect world, const EditorContext::Layout& layout) {
     const double pad = layout.textPad;
     return {world.x + pad, world.y + pad, world.w - 2 * pad, world.h - 2 * pad};
+  }
+
+  RailLabels railLabels(Rect rail, std::string_view typeName, double viewScale, const EditorContext::Layout& layout) {
+    const double typeW = layout.textPad + static_cast<double>(typeName.size()) * GLYPH_PX * kTypeScale / viewScale;
+    const Rect type{rail.x, rail.y, typeW, rail.h};
+    return {type, Rect{type.x + type.w, rail.y, std::max(0.0, rail.w - typeW), rail.h}};
+  }
+
+  void drawRailLabels(
+    const Subview& view, Rect rail, std::string_view type, std::string_view name, const EditorContext& ctx) {
+    Renderer& r = view.renderer();
+    const double pad = ctx.layout.textPad;
+    const Vec2 typeBottom = view.toScreen(Vec2{rail.x + pad, rail.y + rail.h - pad});
+    const double typeH = r.measureText(type).y * kTypeScale;
+    r.drawText(Vec2{typeBottom.x, typeBottom.y - typeH}, type, ctx.theme.text, kTypeScale);
+    if (!name.empty()) {
+      const Rect nameRect = railLabels(rail, type, view.composed().scale, ctx.layout).name;
+      r.drawText(view.toScreen(Vec2{nameRect.x + pad, rail.y + pad}), name, ctx.theme.text);
+    }
   }
 
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme) {

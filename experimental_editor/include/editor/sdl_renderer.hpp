@@ -29,7 +29,7 @@ namespace fluir::editor {
     void drawRect(Rect screen, const Color& color) override;
     void fillRect(Rect screen, const Color& color) override;
     void drawLine(Vec2 a, Vec2 b, const Color& color) override;
-    void drawText(Vec2 topLeft, std::string_view text, const Color& color) override;
+    void drawText(Vec2 topLeft, std::string_view text, const Color& color, double scale = 1.0) override;
     void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) override;
     std::size_t wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) override;
     Rect wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) override;

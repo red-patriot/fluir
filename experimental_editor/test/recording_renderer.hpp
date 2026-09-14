@@ -20,7 +20,7 @@ namespace testutil {
     fluir::editor::Vec2 a;     // Line a / Text pos
     fluir::editor::Vec2 b;     // Line b
     std::string text;          // Text / TextWrapped
-    double scale = 1.0;        // TextWrapped
+    double scale = 1.0;        // Text / TextWrapped
     friend bool operator==(const DrawCall&, const DrawCall&) = default;
   };
 
@@ -43,8 +43,11 @@ namespace testutil {
     void drawLine(fluir::editor::Vec2 p, fluir::editor::Vec2 q, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Line, {}, p, q, {}});
     }
-    void drawText(fluir::editor::Vec2 pos, std::string_view t, const fluir::editor::Color&) override {
-      calls.push_back({DrawCall::Op::Text, {}, pos, {}, std::string{t}});
+    void drawText(fluir::editor::Vec2 pos,
+                  std::string_view t,
+                  const fluir::editor::Color&,
+                  double scale = 1.0) override {
+      calls.push_back({DrawCall::Op::Text, {}, pos, {}, std::string{t}, scale});
     }
     void drawTextWrapped(fluir::editor::Rect r,
                          std::string_view t,
@@ -166,6 +169,16 @@ namespace testutil {
                         double tol = 1e-6) {
     for (const auto& c : opsOf(calls, DrawCall::Op::Text)) {
       if (c.text == s && detail::vecNear(c.a, at, tol)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  inline bool hasScaledTextAt(
+    const std::vector<DrawCall>& calls, std::string_view s, fluir::editor::Vec2 at, double scale, double tol = 1e-6) {
+    for (const auto& c : opsOf(calls, DrawCall::Op::Text)) {
+      if (c.text == s && detail::vecNear(c.a, at, tol) && std::abs(c.scale - scale) <= tol) {
         return true;
       }
     }

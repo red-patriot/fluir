@@ -43,6 +43,7 @@ namespace {
   using testutil::hasFill;
   using testutil::hasLine;
   using testutil::hasRect;
+  using testutil::hasScaledTextAt;
   using testutil::hasTextAt;
   using testutil::hasWrappedText;
   using testutil::RecordingRenderer;
@@ -192,9 +193,13 @@ TEST(GraphDraw, ParamRailFromInputOnly) {
   EXPECT_TRUE(containsRect(dots, Rect{122, 84.5, 6, 6}));
   EXPECT_TRUE(containsRect(dots, Rect{122, 109.5, 6, 6}));
 
-  EXPECT_TRUE(hasTextAt(r.calls, "I32 a", Vec2{54, 79}));
-  EXPECT_TRUE(hasTextAt(r.calls, "I32 b", Vec2{54, 104}));
+  // Type at 0.8x, bottom inset by textPad; name full size after it.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "I32", Vec2{54, 89.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "a", Vec2{77.2, 79}, 1.0));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "I32", Vec2{54, 114.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "b", Vec2{77.2, 104}, 1.0));
   const auto texts = textStrings(r.calls);
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), "I32 a"), texts.end());
   EXPECT_NE(std::find(texts.begin(), texts.end(), "add"), texts.end());
 }
 
@@ -229,9 +234,25 @@ TEST(GraphDraw, ReturnRailFromOutputOnly) {
   EXPECT_EQ(dots.size(), 1u);  // 1 return port dot, no others
   EXPECT_TRUE(containsRect(dots, Rect{522, 84.5, 6, 6}));
 
-  EXPECT_TRUE(hasTextAt(r.calls, "F64", Vec2{529, 79}));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "F64", Vec2{529, 89.6}, 0.8));
   const auto texts = textStrings(r.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "getVal"), texts.end());
+}
+
+TEST(GraphDraw, RailNameGapIsScreenFixedUnderZoom) {
+  const Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{.pan = {}, .scale = 2.0}, r);
+
+  const auto xOf = [&](std::string_view s) {
+    const auto texts = testutil::opsOf(r.calls, DrawCall::Op::Text);
+    const auto it = std::ranges::find(texts, s, &DrawCall::text);
+    return it == texts.end() ? -1.0 : it->a.x;
+  };
+  // Glyph width is screen-fixed; only the two textPad insets zoom.
+  EXPECT_NEAR(xOf("a") - xOf("I32"), 3 * 8 * 0.8 + kCtx.layout.textPad * 2, 1e-6);
 }
 
 TEST(GraphDraw, DeterministicAcrossRuns) {

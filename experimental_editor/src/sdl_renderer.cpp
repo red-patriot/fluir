@@ -137,9 +137,9 @@ namespace fluir::editor {
       renderer_, static_cast<float>(a.x), static_cast<float>(a.y), static_cast<float>(b.x), static_cast<float>(b.y));
   }
 
-  void SdlRenderer::drawText(Vec2 topLeft, std::string_view text, const Color& color) {
-    if (!text.empty()) {
-      drawTtf(fontAt(uiPx_), topLeft, text, 0, color);
+  void SdlRenderer::drawText(Vec2 topLeft, std::string_view text, const Color& color, double scale) {
+    if (!text.empty() && scale > 0.0) {
+      drawTtf(fontAt(uiPx_ * scale), topLeft, text, 0, color);
     }
   }
 

@@ -2,9 +2,14 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <utility>
+#include <variant>
 
 #include "editor/core/renderer.hpp"
+#include "editor/tools/tool.hpp"
+#include "editor/transaction/add_comment.hpp"
+#include "editor/transaction/add_decl.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -14,10 +19,26 @@ namespace fluir::editor {
     constexpr double ROW_GAP_PX = 4.0;
     constexpr double ROW_PAD_PX = 6.0;
 
+    // Legacy editor defaults, in world units.
+    constexpr int FUNCTION_W = 40;
+    constexpr int FUNCTION_H = 30;
+    constexpr int COMMENT_W = 10;
+    constexpr int COMMENT_H = 10;
+
+    template <typename... Fs>
+    struct Overloaded : Fs... {
+      using Fs::operator()...;
+    };
+
+    FlowGraphLocation placed(Coordinate where, int w, int h) {
+      return FlowGraphLocation{.x = where.x, .y = where.y, .z = where.z + 1, .width = w, .height = h};
+    }
+
   }  // namespace
 
-  CompletionModal::CompletionModal(std::vector<Completion> completions, Rect bounds, Renderer* text) :
-    completions_(std::move(completions)) {
+  CompletionModal::CompletionModal(
+    std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where, FullID body) :
+    completions_(std::move(completions)), where_(where), body_(std::move(body)) {
     for (const Completion& completion : completions_) {
       labels_.emplace_back(completion.label);
     }
@@ -42,10 +63,29 @@ namespace fluir::editor {
     }
   }
 
-  bool CompletionModal::onEvent(const InputEvent& event, EditorState&) {
+  bool CompletionModal::onEvent(const InputEvent& event, EditorState& state) {
     switch (event.type) {
+      case InputEvent::Type::MouseMove:
+        hovered_ = menuItemAt(layout_, event.pos);
+        return true;
       case InputEvent::Type::MouseDown:
-        return layout_.frame.contains(event.pos);
+        {
+          const std::optional<std::size_t> row = menuItemAt(layout_, event.pos);
+          if (!row || event.button != InputEvent::Button::Left) {
+            return layout_.frame.contains(event.pos);
+          }
+          const fluir::ID id = state.editor.generateID(body_);
+          std::unique_ptr<Transaction> edit = std::visit(
+            Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
+                         return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
+                       },
+                       [&](const CommentOption&) -> std::unique_ptr<Transaction> {
+                         return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
+                       }},
+            completions_[*row].option);
+          state.editor.apply(std::move(edit));
+          return false;
+        }
       case InputEvent::Type::KeyDown:
         return event.key != InputEvent::Key::Escape;
       default:
@@ -57,7 +97,9 @@ namespace fluir::editor {
     renderer.fillRect(layout_.frame, ctx.theme.headerBackground);
     for (std::size_t i = 0; i < labels_.size(); ++i) {
       const Rect& row = layout_.items[i];
-      renderer.fillRect(row, ctx.theme.headerBackground);
+      if (hovered_ == i) {
+        renderer.fillRect(row, ctx.theme.buttonEnabled);
+      }
       renderer.drawRect(row, ctx.theme.border);
       renderer.drawText(Vec2{row.x + ROW_PAD_PX, row.y + ROW_PAD_PX}, labels_[i], ctx.theme.text, TEXT_SCALE);
     }

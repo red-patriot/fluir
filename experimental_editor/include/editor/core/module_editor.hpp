@@ -29,6 +29,10 @@ namespace fluir::editor {
     pt::ParseTree& tree() { return tree_; }
     const pt::ParseTree& tree() const { return tree_; }
 
+    /** Generates a full ID that is unique, for inclusion in `body`. `body` may be empty, which generates a new
+     * top-level ID.*/
+    fluir::ID generateID(const fluir::FullID& body) const;
+
    private:
     pt::ParseTree tree_;
     std::deque<std::unique_ptr<Transaction>> undone_;

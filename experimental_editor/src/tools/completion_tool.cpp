@@ -1,5 +1,6 @@
 #include "editor/tools/completion_tool.hpp"
 
+#include <cmath>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -18,7 +19,11 @@ namespace fluir::editor {
     if (completions.empty()) {
       return false;
     }
-    state.popup = std::make_unique<CompletionModal>(std::move(completions), popupBounds(state), state.text);
+    // Top-level parent sits at z 0; the modal places picks one above it.
+    const Vec2 world = state.view.screenToWorld(event.pos) / state.ctx.layout.unitPx;
+    const Coordinate where{static_cast<int>(std::lround(world.x)), static_cast<int>(std::lround(world.y)), 0};
+    state.popup =
+      std::make_unique<CompletionModal>(std::move(completions), popupBounds(state), state.text, where, FullID{});
     return false;  // tracked, never consumed
   }
 

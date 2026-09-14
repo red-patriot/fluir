@@ -1,8 +1,11 @@
 #include "editor/core/module_editor.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <memory>
 #include <utility>
+
+#include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -66,6 +69,39 @@ namespace fluir::editor {
     }
     push(undone_, std::move(edit));
     return true;
+  }
+
+  fluir::ID ModuleEditor::generateID(const fluir::FullID& body) const {
+    // Max ID in scope + 1, over the same scope the parser checks for duplicates.
+    // TODO: This can be made more efficient
+    fluir::ID top = 0;
+    if (body.empty()) {
+      for (const auto& [id, decl] : tree_.declarations) {
+        top = std::max(top, id);
+      }
+      return top + 1;
+    }
+    const pt::Block* block = blockOf(tree_, body);
+    if (block == nullptr) {
+      return INVALID_ID;
+    }
+    for (const auto& [id, node] : block->nodes) {
+      top = std::max(top, id);
+    }
+    for (const auto& [id, conduit] : block->conduits) {
+      top = std::max(top, id);
+    }
+    if (const pt::FunctionDecl* fn = functionAt(tree_, body)) {
+      if (fn->input) {
+        for (const pt::FunctionDecl::Parameter& param : fn->input->parameters) {
+          top = std::max(top, param.id);
+        }
+      }
+      if (fn->output && fn->output->ret) {
+        top = std::max(top, fn->output->ret->id);
+      }
+    }
+    return top + 1;
   }
 
 }  // namespace fluir::editor

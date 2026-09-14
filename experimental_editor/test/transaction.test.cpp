@@ -10,6 +10,8 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/transaction/add_comment.hpp"
+#include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
@@ -29,6 +31,8 @@ namespace {
   using fluir::FullID;
   using fluir::ID;
   using fluir::Operator;
+  using fluir::editor::AddComment;
+  using fluir::editor::AddDecl;
   using fluir::editor::DeleteTransaction;
   using fluir::editor::EditCallArgumentTransaction;
   using fluir::editor::EditCallNodeTransaction;
@@ -592,5 +596,91 @@ TEST(UpdateFuncParamTransaction, SameTypeMissingFunctionMissingRailOrEmptyTypeCh
   EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{5}, 3, "F64")->execute(tree));
   EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{1}, 99, "F64")->execute(tree));
   EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{1}, 3, "")->execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  constexpr FlowGraphLocation kNewLocation{.x = 7, .y = 8, .z = 1, .width = 40, .height = 30};
+
+}  // namespace
+
+TEST(AddDecl, AddsAnEmptyFunctionAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  AddDecl uut{FullID{}, 50, kNewLocation};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* fn = functionAt(tree, FullID{50});
+  ASSERT_NE(fn, nullptr);
+  EXPECT_EQ(fn->id, 50u);
+  EXPECT_EQ(fn->location, kNewLocation);
+  EXPECT_EQ(fn->name, "new_function");
+  EXPECT_EQ(fn->body, fluir::pt::Block{});
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(AddDecl, NonTopLevelParentTakenOrInvalidIdChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((AddDecl{FullID{1}, 50, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddDecl{FullID{}, 1, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddDecl{FullID{}, 5, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddDecl{FullID{}, fluir::INVALID_ID, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddDecl{FullID{}, 50, kNewLocation}).unexecute(tree)) << "never added";
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddComment, AddsATopLevelCommentAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  AddComment uut{FullID{}, 50, kNewLocation};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* decl = fluir::editor::declarationAt(tree, FullID{50});
+  ASSERT_NE(decl, nullptr);
+  EXPECT_EQ(*decl, (fluir::pt::Declaration{fluir::pt::Comment{.id = 50, .location = kNewLocation, .text = ""}}));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(AddComment, AddsAnInBodyCommentAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  AddComment uut{FullID{1}, 50, kNewLocation};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* node = nodeAt(tree, FullID{1, 50});
+  ASSERT_NE(node, nullptr);
+  EXPECT_EQ(*node, (fluir::pt::Node{fluir::pt::Comment{.id = 50, .location = kNewLocation, .text = ""}}));
+  EXPECT_FALSE(tree.declarations.contains(50));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(AddComment, TakenOrInvalidIdOrUnresolvedParentChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((AddComment{FullID{}, 5, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddComment{FullID{1}, 30, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddComment{FullID{}, fluir::INVALID_ID, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddComment{FullID{999}, 50, kNewLocation}).execute(tree));
+  EXPECT_FALSE((AddComment{FullID{5}, 50, kNewLocation}).execute(tree)) << "a comment has no body";
+  EXPECT_FALSE((AddComment{FullID{1}, 50, kNewLocation}).unexecute(tree)) << "never added";
   EXPECT_EQ(tree, before);
 }

@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
+#include "compiler/models/id.hpp"
+#include "compiler/models/location.hpp"
 #include "editor/components/menu.hpp"
 #include "editor/core/intelligence.hpp"
 #include "editor/core/renderer.hpp"
@@ -10,12 +14,14 @@
 
 namespace fluir::editor {
 
-  /** A centered modal listing completions; Escape or a press outside closes. Picking is not wired yet. */
+  /** A centered modal listing completions; Escape or a press outside closes. A left press on a row adds it. */
   class CompletionModal : public Popup {
    public:
     /** `bounds` in screen px; the modal is half its width, as tall as its rows, centered. Rows fit `text`'s
-     * measured line height (null falls back to GLYPH_PX). */
-    CompletionModal(std::vector<Completion> completions, Rect bounds, Renderer* text);
+     * measured line height (null falls back to GLYPH_PX). Picks land at world units `where` (z is the parent's)
+     * inside `body`. */
+    CompletionModal(
+      std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where = {}, FullID body = {});
 
     bool onEvent(const InputEvent& event, EditorState& state) override;
     void draw(Renderer& renderer, const EditorContext& ctx) const override;
@@ -27,6 +33,9 @@ namespace fluir::editor {
     std::vector<Completion> completions_;
     std::vector<std::string> labels_;
     MenuLayout layout_;
+    Coordinate where_;
+    FullID body_;
+    std::optional<std::size_t> hovered_;
   };
 
 }  // namespace fluir::editor

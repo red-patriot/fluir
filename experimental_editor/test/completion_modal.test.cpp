@@ -4,10 +4,13 @@
 #include <array>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/location.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/tools/tool.hpp"
@@ -33,6 +36,7 @@ namespace {
 
   const EditorContext kCtx;
   const Rect kBounds{0, 0, 800, 600};
+  constexpr fluir::Coordinate kWhere{.x = 12, .y = 34, .z = 0};
 
   // Labels are views, so they must outlive the modal.
   std::vector<Completion> completions(std::size_t n) {
@@ -46,7 +50,8 @@ namespace {
 
   struct Fixture {
     EditorState state{kCtx};
-    CompletionModal uut{{{"Function", FunctionDefOption{}}, {"Comment", CommentOption{}}}, kBounds, nullptr};
+    CompletionModal uut{
+      {{"Function", FunctionDefOption{}}, {"Comment", CommentOption{}}}, kBounds, nullptr, kWhere, fluir::FullID{}};
   };
 
   // Reports text much taller than GLYPH_PX, like a real font's line height.
@@ -120,14 +125,14 @@ TEST(CompletionModal, EscapeCloses) {
   EXPECT_FALSE(f.uut.onEvent(key(InputEvent::Key::Escape), f.state));
 }
 
-TEST(CompletionModal, PressesInsideMovesAndOtherKeysKeepItOpen) {
+TEST(CompletionModal, NonPickingPressesInsideMovesAndOtherKeysKeepItOpen) {
   Fixture f;
 
   const auto rows = drawnRows(f.uut);
   ASSERT_EQ(rows.size(), 2u);
   const double gapY = (rows[0].y + rows[0].h + rows[1].y) / 2;
 
-  EXPECT_TRUE(f.uut.onEvent(down(rows[0].center()), f.state)) << "on the first row";
+  EXPECT_TRUE(f.uut.onEvent(down(rows[0].center(), InputEvent::Button::Right), f.state)) << "right on the first row";
   EXPECT_TRUE(f.uut.onEvent(down(Vec2{rows[0].x + 10, gapY}), f.state)) << "in the gap between rows";
   EXPECT_TRUE(f.uut.onEvent(move(Vec2{10, 10}), f.state));
   EXPECT_TRUE(f.uut.onEvent(testutil::up(Vec2{10, 10}), f.state));
@@ -171,4 +176,74 @@ TEST(CompletionModal, RowsGrowToFitTheMeasuredTextHeight) {
     EXPECT_GE(texts[i].a.y, rows[i].y) << texts[i].text;
     EXPECT_LE(textBottom, rows[i].y + rows[i].h) << texts[i].text << " overflows its row";
   }
+}
+
+TEST(CompletionModal, ALeftPressOnFunctionAddsAFunctionAtThePointAndCloses) {
+  Fixture f;
+  const auto rows = drawnRows(f.uut);
+  ASSERT_EQ(rows.size(), 2u);
+
+  EXPECT_FALSE(f.uut.onEvent(down(rows[0].center()), f.state));
+
+  const auto& decls = f.state.editor.tree().declarations;
+  ASSERT_EQ(decls.size(), 1u);
+  const auto* fn = std::get_if<fluir::pt::FunctionDecl>(&decls.begin()->second);
+  ASSERT_NE(fn, nullptr);
+  EXPECT_EQ(fn->location.x, kWhere.x);
+  EXPECT_EQ(fn->location.y, kWhere.y);
+  EXPECT_TRUE(f.state.editor.undo());
+  EXPECT_TRUE(f.state.editor.tree().declarations.empty());
+}
+
+TEST(CompletionModal, ALeftPressOnCommentAddsACommentAtThePointAndCloses) {
+  Fixture f;
+  const auto rows = drawnRows(f.uut);
+  ASSERT_EQ(rows.size(), 2u);
+
+  EXPECT_FALSE(f.uut.onEvent(down(rows[1].center()), f.state));
+
+  const auto& decls = f.state.editor.tree().declarations;
+  ASSERT_EQ(decls.size(), 1u);
+  const auto* comment = std::get_if<fluir::pt::Comment>(&decls.begin()->second);
+  ASSERT_NE(comment, nullptr);
+  EXPECT_EQ(comment->location.x, kWhere.x);
+  EXPECT_EQ(comment->location.y, kWhere.y);
+  EXPECT_TRUE(f.state.editor.undo());
+  EXPECT_TRUE(f.state.editor.tree().declarations.empty());
+}
+
+TEST(CompletionModal, OtherButtonsOnARowAndPressesInAGapAddNothing) {
+  Fixture f;
+  const auto rows = drawnRows(f.uut);
+  ASSERT_EQ(rows.size(), 2u);
+  const double gapY = (rows[0].y + rows[0].h + rows[1].y) / 2;
+
+  EXPECT_TRUE(f.uut.onEvent(down(rows[0].center(), InputEvent::Button::Right), f.state));
+  EXPECT_TRUE(f.uut.onEvent(down(rows[1].center(), InputEvent::Button::Middle), f.state));
+  EXPECT_TRUE(f.uut.onEvent(down(Vec2{rows[0].x + 10, gapY}), f.state));
+
+  EXPECT_TRUE(f.state.editor.tree().declarations.empty());
+  EXPECT_FALSE(f.state.editor.canUndo());
+}
+
+TEST(CompletionModal, HoveringARowFillsIt) {
+  Fixture f;
+  const auto rows = drawnRows(f.uut);
+  ASSERT_EQ(rows.size(), 2u);
+
+  testutil::RecordingRenderer idle;
+  f.uut.draw(idle, kCtx);
+  EXPECT_FALSE(testutil::hasFill(idle.calls, rows[0]));
+  EXPECT_FALSE(testutil::hasFill(idle.calls, rows[1]));
+
+  EXPECT_TRUE(f.uut.onEvent(move(rows[1].center()), f.state));
+  testutil::RecordingRenderer hovered;
+  f.uut.draw(hovered, kCtx);
+  EXPECT_FALSE(testutil::hasFill(hovered.calls, rows[0]));
+  EXPECT_TRUE(testutil::hasFill(hovered.calls, rows[1]));
+
+  EXPECT_TRUE(f.uut.onEvent(move(Vec2{1, 1}), f.state));
+  testutil::RecordingRenderer left;
+  f.uut.draw(left, kCtx);
+  EXPECT_FALSE(testutil::hasFill(left.calls, rows[1]));
 }

@@ -1,10 +1,16 @@
 #include "editor/tools/completion_tool.hpp"
 
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/tools/completion_modal.hpp"
 #include "recording_renderer.hpp"
@@ -76,4 +82,36 @@ TEST(CompletionTool, PressesHonourTheViewport) {
 
   send(f.uut, f.state, down(kBody, InputEvent::Button::Right));
   EXPECT_NE(f.state.popup, nullptr) << "now background";
+}
+
+TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
+  Fixture f;
+  f.state.view.pan = Vec2{20, 10};
+  const Vec2 world = f.state.view.screenToWorld(kBackground) / kCtx.layout.unitPx;
+  send(f.uut, f.state, down(kBackground, InputEvent::Button::Right));
+  ASSERT_NE(f.state.popup, nullptr);
+
+  // The first outlined rect under the frame's top is the Function row.
+  testutil::RecordingRenderer r;
+  f.state.popup->draw(r, kCtx);
+  const auto* modal = dynamic_cast<const CompletionModal*>(f.state.popup.get());
+  ASSERT_NE(modal, nullptr);
+  std::optional<fluir::editor::Rect> functionRow;
+  for (const fluir::editor::Rect& rect : testutil::rectsOf(r.calls)) {
+    if (!(rect == modal->frame()) && (!functionRow || rect.y < functionRow->y)) {
+      functionRow = rect;
+    }
+  }
+  ASSERT_TRUE(functionRow.has_value());
+  const std::size_t before = f.state.editor.tree().declarations.size();
+
+  EXPECT_FALSE(f.state.popup->onEvent(down(functionRow->center()), f.state));
+
+  const auto& decls = f.state.editor.tree().declarations;
+  ASSERT_EQ(decls.size(), before + 1);
+  const auto newest = std::ranges::max_element(decls, {}, [](const auto& kv) { return kv.first; });
+  const auto* fn = std::get_if<fluir::pt::FunctionDecl>(&newest->second);
+  ASSERT_NE(fn, nullptr);
+  EXPECT_EQ(fn->location.x, std::lround(world.x));
+  EXPECT_EQ(fn->location.y, std::lround(world.y));
 }

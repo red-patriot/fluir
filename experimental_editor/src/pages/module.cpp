@@ -14,7 +14,9 @@
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/drag_tool.hpp"
+#include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
+#include "editor/tools/popup_tool.hpp"
 #include "editor/tools/select_tool.hpp"
 #include "editor/tools/text_edit_tool.hpp"
 #include "editor/transaction/delete.hpp"
@@ -25,10 +27,12 @@ namespace fluir::editor {
 
   ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : Page(ctx, renderer), state_{ctx} {
     state_.text = &renderer_;
-    // An open draft takes keys first; selection sees a press before a grip claims it.
+    // An open popup takes everything, then an open draft takes keys; selection sees a press before a grip claims it.
+    tools_.add(std::make_unique<PopupTool>());
     tools_.add(std::make_unique<TextEditTool>());
     tools_.add(std::make_unique<PanZoomTool>());
     tools_.add(std::make_unique<SelectTool>());
+    tools_.add(std::make_unique<OperatorTool>());
     tools_.add(std::make_unique<DragTool>());
 
     header_.buttons = {

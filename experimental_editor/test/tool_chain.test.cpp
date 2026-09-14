@@ -1,9 +1,14 @@
+#include <algorithm>
+#include <cstddef>
 #include <memory>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/core/viewport.hpp"
 #include "editor/tools/tool.hpp"
+#include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
 // The chain's routing contract: who consumes, who captures the gesture that
@@ -15,6 +20,7 @@ namespace {
   using fluir::editor::EditorContext;
   using fluir::editor::EditorState;
   using fluir::editor::InputEvent;
+  using fluir::editor::Rect;
   using fluir::editor::Tool;
   using fluir::editor::ToolChain;
   using fluir::editor::Vec2;
@@ -113,4 +119,42 @@ TEST(ToolChain, CancelDropsCaptureAndCancelsEveryTool) {
   EXPECT_EQ(c.second->cancels, 1);
   c.send(move(Vec2{2, 2}));
   EXPECT_EQ(c.first->events, 2) << "the move reaches the whole chain again";
+}
+
+namespace {
+
+  class Painter : public Tool {
+   public:
+    explicit Painter(Rect mark) : mark_(mark) { }
+
+    bool onEvent(const InputEvent&, EditorState&, std::span<const Box>) override { return false; }
+    void draw(const fluir::editor::Subview& view, const EditorState& state, std::span<const Box>) const override {
+      view.renderer().fillRect(mark_, state.ctx.theme.text);
+    }
+
+   private:
+    Rect mark_;
+  };
+
+}  // namespace
+
+TEST(ToolChain, AnEarlierToolPaintsOverALaterOne) {
+  const Rect first{1, 1, 1, 1};
+  const Rect second{2, 2, 2, 2};
+  EditorState state{kCtx};
+  ToolChain chain;
+  chain.add(std::make_unique<Painter>(first));
+  chain.add(std::make_unique<Painter>(second));
+  testutil::RecordingRenderer r;
+
+  {
+    const fluir::editor::Subview view{fluir::editor::Viewport{}, Rect{0, 0, 800, 600}, r};
+    chain.draw(view, state, {});
+  }
+
+  const std::vector<Rect> fills = testutil::fillsOf(r.calls);
+  const auto at = [&](const Rect& want) { return std::ranges::find(fills, want) - fills.begin(); };
+  ASSERT_LT(at(first), static_cast<std::ptrdiff_t>(fills.size()));
+  ASSERT_LT(at(second), static_cast<std::ptrdiff_t>(fills.size()));
+  EXPECT_GT(at(first), at(second)) << "the higher-priority tool paints last";
 }

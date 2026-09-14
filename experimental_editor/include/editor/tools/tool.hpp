@@ -8,9 +8,11 @@
 
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/intelligence.hpp"
 #include "editor/core/module_editor.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "editor/tools/popup.hpp"
 #include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor {
@@ -25,6 +27,9 @@ namespace fluir::editor {
     Viewport view;
     /** Wrapped-text layout queries; null puts the caret at the end. */
     Renderer* text = nullptr;
+    Intelligence intelligence;
+    /** The open popup, drawn over the graph; PopupTool routes input to it. */
+    std::unique_ptr<Popup> popup;
   };
 
   /** One way of handling graph input. */
@@ -44,7 +49,7 @@ namespace fluir::editor {
     virtual void draw(const Subview&, const EditorState&, std::span<const Box>) const { }
   };
 
-  /** Tools in priority order: the first to consume wins; a capturing tool gets everything. */
+  /** Tools in priority order: the first to consume wins and paints on top; a capturing tool gets everything. */
   class ToolChain {
    public:
     void add(std::unique_ptr<Tool> tool) { tools_.push_back(std::move(tool)); }

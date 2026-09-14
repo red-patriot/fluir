@@ -3,9 +3,12 @@ find_package(GTest REQUIRED)
 add_executable(
     fluir.editor.test
     identifier.test.cpp
+    intelligence.test.cpp
     input.test.cpp
     literal_text.test.cpp
     loader.test.cpp
+    menu.test.cpp
+    menu_popup.test.cpp
     parse_tree_writer.test.cpp
     viewport.test.cpp
     graph_geometry.test.cpp
@@ -15,6 +18,8 @@ add_executable(
     toolbar.test.cpp
     tool_chain.test.cpp
     pan_zoom_tool.test.cpp
+    popup_tool.test.cpp
+    operator_tool.test.cpp
     select_tool.test.cpp
     drag_tool.test.cpp
     text_edit_tool.test.cpp

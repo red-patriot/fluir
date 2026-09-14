@@ -29,8 +29,9 @@ namespace fluir::editor {
   }
 
   void ToolChain::draw(const Subview& view, const EditorState& state, std::span<const Box> boxes) const {
-    for (const auto& tool : tools_) {
-      tool->draw(view, state, boxes);
+    // Reverse priority, so the first tool paints on top.
+    for (auto it = tools_.rbegin(); it != tools_.rend(); ++it) {
+      (*it)->draw(view, state, boxes);
     }
   }
 

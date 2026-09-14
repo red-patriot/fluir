@@ -13,11 +13,14 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
+#include "editor/components/menu.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "editor/tools/menu_popup.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
@@ -379,4 +382,87 @@ TEST(ModulePage, DrawShowsTheGraphUnderTheHeaderBar) {
   EXPECT_TRUE(testutil::hasFill(h.renderer.calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}));
   const auto texts = testutil::textStrings(h.renderer.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "int_constants.fl"), texts.end());
+}
+
+namespace {
+
+  // Binary 1's body clear of its grip, and where the page anchors its operator menu.
+  constexpr Vec2 kBinaryBody{127, 107};
+  const FullID kBinary{1, 1};
+
+  fluir::Operator op(const Harness& h) { return std::get<fluir::pt::Binary>(*nodeAt(h.tree(), kBinary)).op; }
+
+  // The screen rect of the operator menu's row labeled `label`.
+  Rect menuRow(const Harness& h, const std::string& label) {
+    const auto* menu = dynamic_cast<const fluir::editor::MenuPopup*>(h.page->state().popup.get());
+    EXPECT_NE(menu, nullptr);
+    if (menu == nullptr) {
+      return {};
+    }
+    const Vec2 tl = h.screen(Vec2{125, 85});
+    const double scale = h.page->state().view.scale;
+    const Rect anchor{tl.x, tl.y, 25 * scale, 25 * scale};
+    const Rect bounds{0, 0, h.renderer.outputSize_.x, h.renderer.outputSize_.y};
+    const auto layout = fluir::editor::layoutMenu(menu->labels(), anchor, bounds, h.ctx.layout);
+    const auto it = std::ranges::find(menu->labels(), label);
+    EXPECT_NE(it, menu->labels().end()) << label;
+    return layout.items.at(static_cast<std::size_t>(it - menu->labels().begin()));
+  }
+
+}  // namespace
+
+TEST(ModulePage, PickingFromTheOperatorMenuIsOneUndoableEdit) {
+  Harness h{kSimpleBinary};
+  h.press(kBinaryBody);
+
+  const Vec2 star = menuRow(h, "*").center();
+  h.send({move(star), down(star), up(star)});
+
+  EXPECT_EQ(op(h), fluir::Operator::STAR);
+  EXPECT_EQ(h.page->state().popup, nullptr);
+  h.click("Undo");
+  EXPECT_EQ(op(h), fluir::Operator::PLUS);
+}
+
+TEST(ModulePage, APressOutsideTheOperatorMenuOnlyClosesIt) {
+  Harness h{kSimpleBinary};
+  h.press(kBinaryBody);
+  ASSERT_NE(h.page->state().popup, nullptr);
+
+  h.press(kConstant2Body);
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+  EXPECT_EQ(op(h), fluir::Operator::PLUS);
+  EXPECT_EQ(h.page->state().selection, kBinary) << "the closing press is swallowed";
+}
+
+TEST(ModulePage, DeleteWhileTheOperatorMenuIsOpenDeletesNothing) {
+  Harness h{kSimpleBinary};
+  h.press(kBinaryBody);
+
+  h.send({key(InputEvent::Key::Delete)});
+
+  EXPECT_NE(nodeAt(h.tree(), kBinary), nullptr);
+  EXPECT_NE(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, APressOnTheHeaderBarClosesTheOperatorMenu) {
+  Harness h{kSimpleBinary};
+  h.press(kBinaryBody);
+  ASSERT_NE(h.page->state().popup, nullptr);
+
+  const Vec2 emptyBar{h.renderer.outputSize_.x / 2, h.ctx.layout.chromeHeaderPx / 2};
+  h.send({down(emptyBar), up(emptyBar)});
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, DrawShowsTheOpenOperatorMenu) {
+  Harness h{kSimpleBinary};
+  h.press(kBinaryBody);
+
+  ASSERT_EQ(h.page->draw(), 0);
+
+  const auto texts = testutil::textStrings(h.renderer.calls);
+  EXPECT_NE(std::find(texts.begin(), texts.end(), "&&"), texts.end());
 }

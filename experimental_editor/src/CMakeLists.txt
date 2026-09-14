@@ -117,6 +117,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
     "core/graph_geometry.cpp"
     "core/identifier.cpp"
+    "core/intelligence.cpp"
     "core/literal_text.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
@@ -145,7 +146,9 @@ set(FLUIR_EDITOR_PAGE_SOURCES
     "pages/splash.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES "components/text_field.cpp")
+set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
+                                   "components/text_field.cpp"
+)
 
 set(FLUIR_EDITOR_VIEW_SOURCES
     "view/graph_draw.cpp"
@@ -156,7 +159,10 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 
 set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/drag_tool.cpp"
+    "tools/menu_popup.cpp"
+    "tools/operator_tool.cpp"
     "tools/pan_zoom_tool.cpp"
+    "tools/popup_tool.cpp"
     "tools/select_tool.cpp"
     "tools/text_edit_tool.cpp"
     "tools/tool.cpp"

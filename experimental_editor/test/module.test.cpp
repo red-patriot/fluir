@@ -544,7 +544,6 @@ namespace {
   constexpr Vec2 kFnBackground{700, 700};
   constexpr Vec2 kFnBody{60, 60};
   constexpr Vec2 kFnBodyOutsideModal{60, 400};  // screen {112,420}, left of the modal
-  const Rect kModalFrame{200, 150, 400, 300};
 
   void rightPress(Harness& h, Vec2 world) {
     h.send({down(h.screen(world), InputEvent::Button::Right), up(h.screen(world), InputEvent::Button::Right)});
@@ -580,7 +579,7 @@ TEST(ModulePage, APressOutsideTheCompletionModalOnlyClosesIt) {
   Harness h{kEmptyFunction};
   rightPress(h, kFnBackground);
   ASSERT_NE(modal(h), nullptr);
-  ASSERT_FALSE(kModalFrame.contains(h.screen(kFnBodyOutsideModal)));
+  ASSERT_FALSE(modal(h)->frame().contains(h.screen(kFnBodyOutsideModal)));
 
   h.press(kFnBodyOutsideModal);
 
@@ -608,16 +607,20 @@ TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
   rightPress(h, kFnBackground);
   ASSERT_NE(modal(h), nullptr);
 
+  const Rect frame = modal(h)->frame();
+  EXPECT_NEAR(frame.w, 400, 1e-6);
+  testutil::expectVecNear(frame.center(), Vec2{400, 300});
+
   ASSERT_EQ(h.page->draw(), 0);
 
   const auto& calls = h.renderer.calls;
-  const std::size_t modalAt = fillIndex(calls, kModalFrame);
+  const std::size_t modalAt = fillIndex(calls, frame);
   ASSERT_LT(modalAt, calls.size());
   EXPECT_EQ(openClipsBefore(calls, modalAt), 0);
   EXPECT_LT(fillIndex(calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}), modalAt);
   for (std::size_t i = modalAt; i < calls.size(); ++i) {
-    const bool inFrame = calls[i].op == testutil::DrawCall::Op::Text ? kModalFrame.contains(calls[i].a) :
-                                                                       kModalFrame.contains(calls[i].rect.topLeft());
+    const bool inFrame = calls[i].op == testutil::DrawCall::Op::Text ? frame.contains(calls[i].a) :
+                                                                       frame.contains(calls[i].rect.topLeft());
     EXPECT_TRUE(inFrame) << "call " << i << " after the modal is not the modal's";
   }
 }

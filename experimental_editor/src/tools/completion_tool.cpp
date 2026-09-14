@@ -18,7 +18,7 @@ namespace fluir::editor {
     if (completions.empty()) {
       return false;
     }
-    state.popup = std::make_unique<CompletionModal>(std::move(completions), popupBounds(state), state.ctx.layout);
+    state.popup = std::make_unique<CompletionModal>(std::move(completions), popupBounds(state), state.text);
     return false;  // tracked, never consumed
   }
 

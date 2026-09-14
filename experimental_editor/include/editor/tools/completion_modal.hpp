@@ -5,6 +5,7 @@
 
 #include "editor/components/menu.hpp"
 #include "editor/core/intelligence.hpp"
+#include "editor/core/renderer.hpp"
 #include "editor/tools/popup.hpp"
 
 namespace fluir::editor {
@@ -12,8 +13,9 @@ namespace fluir::editor {
   /** A centered modal listing completions; Escape or a press outside closes. Picking is not wired yet. */
   class CompletionModal : public Popup {
    public:
-    /** `bounds` in screen px; the modal takes the middle half of it. */
-    CompletionModal(std::vector<Completion> completions, Rect bounds, const EditorContext::Layout& layout);
+    /** `bounds` in screen px; the modal is half its width, as tall as its rows, centered. Rows fit `text`'s
+     * measured line height (null falls back to GLYPH_PX). */
+    CompletionModal(std::vector<Completion> completions, Rect bounds, Renderer* text);
 
     bool onEvent(const InputEvent& event, EditorState& state) override;
     void draw(Renderer& renderer, const EditorContext& ctx) const override;

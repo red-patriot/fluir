@@ -1,6 +1,7 @@
 #include "editor/pages/module.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -20,6 +21,7 @@
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
+#include "editor/tools/completion_modal.hpp"
 #include "editor/tools/menu_popup.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "fixture_loader.hpp"
@@ -457,6 +459,30 @@ TEST(ModulePage, APressOnTheHeaderBarClosesTheOperatorMenu) {
   EXPECT_EQ(h.page->state().popup, nullptr);
 }
 
+namespace {
+
+  // Index of the first fill of `frame`, or calls.size().
+  std::size_t fillIndex(const std::vector<testutil::DrawCall>& calls, Rect frame) {
+    const auto it = std::ranges::find_if(calls, [frame](const testutil::DrawCall& c) {
+      return c.op == testutil::DrawCall::Op::Fill && std::abs(c.rect.x - frame.x) < 1e-6 &&
+             std::abs(c.rect.y - frame.y) < 1e-6 && std::abs(c.rect.w - frame.w) < 1e-6 &&
+             std::abs(c.rect.h - frame.h) < 1e-6;
+    });
+    return static_cast<std::size_t>(it - calls.begin());
+  }
+
+  // Clips still open just before `calls[index]`.
+  int openClipsBefore(const std::vector<testutil::DrawCall>& calls, std::size_t index) {
+    int open = 0;
+    for (std::size_t i = 0; i < index && i < calls.size(); ++i) {
+      open += calls[i].op == testutil::DrawCall::Op::PushClip ? 1 : 0;
+      open -= calls[i].op == testutil::DrawCall::Op::PopClip ? 1 : 0;
+    }
+    return open;
+  }
+
+}  // namespace
+
 TEST(ModulePage, DrawShowsTheOpenOperatorMenu) {
   Harness h{kSimpleBinary};
   h.press(kBinaryBody);
@@ -465,6 +491,14 @@ TEST(ModulePage, DrawShowsTheOpenOperatorMenu) {
 
   const auto texts = testutil::textStrings(h.renderer.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "&&"), texts.end());
+  const auto* menu = dynamic_cast<const fluir::editor::MenuPopup*>(h.page->state().popup.get());
+  ASSERT_NE(menu, nullptr);
+  const Rect first = menuRow(h, menu->labels().front());
+  const Rect menuFrame{first.x, first.y, first.w, first.h * static_cast<double>(menu->labels().size())};
+  const std::size_t menuAt = fillIndex(h.renderer.calls, menuFrame);
+  ASSERT_LT(menuAt, h.renderer.calls.size());
+  EXPECT_LT(fillIndex(h.renderer.calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}), menuAt);
+  EXPECT_EQ(openClipsBefore(h.renderer.calls, menuAt), 0);
 }
 
 namespace {
@@ -501,4 +535,89 @@ TEST(ModulePage, APressOnATypeTagOpensNoNameDraft) {
 
   EXPECT_NE(h.page->state().popup, nullptr);
   EXPECT_EQ(paramA(h).name, "a");
+}
+
+namespace {
+
+  // single_empty_function.fl: function 1 at world {50,50,500,500}; fit scale 1.2, pan {40,-60}.
+  const fs::path kEmptyFunction = fs::path(TEST_FOLDER) / "read/single_empty_function.fl";
+  constexpr Vec2 kFnBackground{700, 700};
+  constexpr Vec2 kFnBody{60, 60};
+  constexpr Vec2 kFnBodyOutsideModal{60, 400};  // screen {112,420}, left of the modal
+  const Rect kModalFrame{200, 150, 400, 300};
+
+  void rightPress(Harness& h, Vec2 world) {
+    h.send({down(h.screen(world), InputEvent::Button::Right), up(h.screen(world), InputEvent::Button::Right)});
+  }
+
+  const fluir::editor::CompletionModal* modal(const Harness& h) {
+    return dynamic_cast<const fluir::editor::CompletionModal*>(h.page->state().popup.get());
+  }
+
+}  // namespace
+
+TEST(ModulePage, ARightPressOnTheBackgroundOpensTheCompletionModal) {
+  Harness h{kEmptyFunction};
+
+  rightPress(h, kFnBackground);
+
+  ASSERT_NE(modal(h), nullptr);
+  ASSERT_EQ(h.page->draw(), 0);
+  const auto texts = testutil::textStrings(h.renderer.calls);
+  EXPECT_NE(std::ranges::find(texts, "Function"), texts.end());
+  EXPECT_NE(std::ranges::find(texts, "Comment"), texts.end());
+}
+
+TEST(ModulePage, ARightPressOnAFunctionBodyOpensNoModal) {
+  Harness h{kEmptyFunction};
+
+  rightPress(h, kFnBody);
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, APressOutsideTheCompletionModalOnlyClosesIt) {
+  Harness h{kEmptyFunction};
+  rightPress(h, kFnBackground);
+  ASSERT_NE(modal(h), nullptr);
+  ASSERT_FALSE(kModalFrame.contains(h.screen(kFnBodyOutsideModal)));
+
+  h.press(kFnBodyOutsideModal);
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+  EXPECT_FALSE(h.page->state().selection.has_value()) << "the closing press is swallowed";
+}
+
+TEST(ModulePage, DeleteWhileTheCompletionModalIsOpenDeletesNothing) {
+  Harness h{kEmptyFunction};
+  h.press(kFnBody);
+  rightPress(h, kFnBackground);
+  ASSERT_NE(modal(h), nullptr);
+
+  h.send({key(InputEvent::Key::Delete)});
+
+  EXPECT_FALSE(h.tree().declarations.empty());
+  EXPECT_NE(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
+  Harness h{kEmptyFunction};
+  const Vec2 at{400, 300};
+  h.send({down(at, InputEvent::Button::Middle), move(at + Vec2{50, 30}), up(at, InputEvent::Button::Middle)});
+  h.send({wheel(at, 1)});
+  rightPress(h, kFnBackground);
+  ASSERT_NE(modal(h), nullptr);
+
+  ASSERT_EQ(h.page->draw(), 0);
+
+  const auto& calls = h.renderer.calls;
+  const std::size_t modalAt = fillIndex(calls, kModalFrame);
+  ASSERT_LT(modalAt, calls.size());
+  EXPECT_EQ(openClipsBefore(calls, modalAt), 0);
+  EXPECT_LT(fillIndex(calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}), modalAt);
+  for (std::size_t i = modalAt; i < calls.size(); ++i) {
+    const bool inFrame = calls[i].op == testutil::DrawCall::Op::Text ? kModalFrame.contains(calls[i].a) :
+                                                                       kModalFrame.contains(calls[i].rect.topLeft());
+    EXPECT_TRUE(inFrame) << "call " << i << " after the modal is not the modal's";
+  }
 }

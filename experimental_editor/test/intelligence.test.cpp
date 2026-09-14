@@ -1,6 +1,7 @@
 #include "editor/core/intelligence.hpp"
 
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -96,4 +97,24 @@ TEST(Intelligence, NonRailsAndMissingPathsOfferNoTypes) {
   EXPECT_TRUE(uut.types(state.editor.tree(), FullID{1, 1}).empty()) << "node";
   EXPECT_TRUE(uut.types(state.editor.tree(), FullID{1, 99}).empty()) << "missing";
   EXPECT_TRUE(uut.types(state.editor.tree(), FullID{}).empty()) << "empty path";
+}
+
+TEST(Intelligence, TheTopLevelOffersAFunctionThenAComment) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/single_empty_function.fl");
+
+  const std::vector<fluir::editor::Completion> got = Intelligence{}.completions(state.editor.tree(), FullID{});
+
+  ASSERT_EQ(got.size(), 2u);
+  EXPECT_EQ(got[0].label, "Function");
+  EXPECT_TRUE(std::holds_alternative<fluir::editor::FunctionDefOption>(got[0].option));
+  EXPECT_EQ(got[1].label, "Comment");
+  EXPECT_TRUE(std::holds_alternative<fluir::editor::CommentOption>(got[1].option));
+}
+
+TEST(Intelligence, AFunctionBodyOffersNoCompletionsYet) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/single_empty_function.fl");
+
+  EXPECT_TRUE(Intelligence{}.completions(state.editor.tree(), FullID{1}).empty());
 }

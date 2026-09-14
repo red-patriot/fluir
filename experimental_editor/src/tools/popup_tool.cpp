@@ -12,10 +12,4 @@ namespace fluir::editor {
     return true;
   }
 
-  void PopupTool::draw(const Subview& view, const EditorState& state, std::span<const Box>) const {
-    if (state.popup) {
-      state.popup->draw(view.renderer(), state.ctx);
-    }
-  }
-
 }  // namespace fluir::editor

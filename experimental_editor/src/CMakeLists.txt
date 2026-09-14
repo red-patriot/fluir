@@ -158,6 +158,8 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 )
 
 set(FLUIR_EDITOR_TOOL_SOURCES
+    "tools/completion_modal.cpp"
+    "tools/completion_tool.cpp"
     "tools/drag_tool.cpp"
     "tools/menu_popup.cpp"
     "tools/operator_tool.cpp"

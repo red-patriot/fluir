@@ -28,7 +28,7 @@ namespace fluir::editor {
     /** Wrapped-text layout queries; null puts the caret at the end. */
     Renderer* text = nullptr;
     Intelligence intelligence;
-    /** The open popup, drawn over the graph; PopupTool routes input to it. */
+    /** The open popup; the page draws it last, over everything. PopupTool routes input to it. */
     std::unique_ptr<Popup> popup;
   };
 

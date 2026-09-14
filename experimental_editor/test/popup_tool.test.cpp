@@ -5,9 +5,8 @@
 #include <gtest/gtest.h>
 
 #include "editor/core/editor_context.hpp"
-#include "editor/core/viewport.hpp"
+#include "editor/core/renderer.hpp"
 #include "editor/tools/popup.hpp"
-#include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
 // The host routes every event to an open popup, consumes it, and drops the popup once it asks to close.
@@ -21,9 +20,7 @@ namespace {
   using fluir::editor::PopupTool;
   using fluir::editor::Rect;
   using fluir::editor::Renderer;
-  using fluir::editor::Subview;
   using fluir::editor::Vec2;
-  using fluir::editor::Viewport;
   using testutil::down;
   using testutil::move;
 
@@ -87,23 +84,4 @@ TEST(PopupTool, CancelDropsThePopup) {
   uut.cancel(state);
 
   EXPECT_EQ(state.popup, nullptr);
-}
-
-TEST(PopupTool, DrawForwardsToTheOpenPopup) {
-  EditorState state{kCtx};
-  int events = 0;
-  testutil::RecordingRenderer r;
-  PopupTool uut;
-  {
-    const Subview view{Viewport{}, Rect{0, 0, 800, 600}, r};
-    uut.draw(view, state, {});
-  }
-  EXPECT_FALSE(testutil::hasFill(r.calls, kMarker)) << "nothing open, nothing drawn";
-
-  state.popup = std::make_unique<Probe>(events);
-  {
-    const Subview view{Viewport{}, Rect{0, 0, 800, 600}, r};
-    uut.draw(view, state, {});
-  }
-  EXPECT_TRUE(testutil::hasFill(r.calls, kMarker));
 }

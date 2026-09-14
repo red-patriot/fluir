@@ -13,6 +13,7 @@
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
+#include "editor/tools/completion_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
 #include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
@@ -35,6 +36,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<SelectTool>());
     tools_.add(std::make_unique<OperatorTool>());
     tools_.add(std::make_unique<TypeTool>());
+    tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
 
     header_.buttons = {
@@ -103,6 +105,9 @@ namespace fluir::editor {
       tools_.draw(graph, state_, boxes);
     }
     drawToolbar(renderer_, header_, headerLayout_, ctx_);
+    if (state_.popup) {
+      state_.popup->draw(renderer_, ctx_);
+    }
   }
 
   std::unique_ptr<Page> ModulePage::next() {

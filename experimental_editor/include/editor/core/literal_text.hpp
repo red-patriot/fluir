@@ -11,6 +11,9 @@ namespace fluir::editor {
   /** Formats `value` as text, matching how it is drawn as a node label. */
   std::string renderLiteral(const pt::Literal& value);
 
+  /** `value`'s source type tag. */
+  std::string_view literalTypeName(const pt::Literal& value);
+
   /** True for the 8 integral alternatives (I8..U64) and F64; bool is not editable. */
   bool isEditableLiteral(const pt::Literal& value);
 

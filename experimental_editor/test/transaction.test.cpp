@@ -403,13 +403,13 @@ TEST(UpdateFuncParamTransaction, RenamesTheParameterAndUndoRestoresIt) {
   fluir::pt::ParseTree tree = makeTree();
   const fluir::pt::ParseTree before = tree;
 
-  UpdateFuncParamTransaction uut{FullID{1}, 1, "z"};
-  ASSERT_TRUE(uut.execute(tree));
+  const auto uut = UpdateFuncParamTransaction::rename(FullID{1}, 1, "z");
+  ASSERT_TRUE(uut->execute(tree));
   const auto& params = functionAt(tree, FullID{1})->input->parameters;
   EXPECT_EQ(params[1].name, "z");
   EXPECT_EQ(params[1].typeName, "i32");
   EXPECT_EQ(params[0], functionAt(before, FullID{1})->input->parameters[0]);
-  ASSERT_TRUE(uut.unexecute(tree));
+  ASSERT_TRUE(uut->unexecute(tree));
   EXPECT_EQ(tree, before);
 }
 
@@ -417,13 +417,13 @@ TEST(UpdateFuncParamTransaction, SameNameUnresolvedTargetsOrInvalidNamesChangeNo
   fluir::pt::ParseTree tree = makeTreeWithComment();
   const fluir::pt::ParseTree before = tree;
 
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, "y"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{999}, 1, "z"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1, 30}, 1, "z"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{5}, 1, "z"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 7, "z"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, "1x"}).execute(tree));
-  EXPECT_FALSE((UpdateFuncParamTransaction{FullID{1}, 1, ""}).execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{1}, 1, "y")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{999}, 1, "z")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{1, 30}, 1, "z")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{5}, 1, "z")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{1}, 7, "z")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{1}, 1, "1x")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::rename(FullID{1}, 1, "")->execute(tree));
   EXPECT_EQ(tree, before);
 }
 
@@ -553,5 +553,44 @@ TEST(EditOperatorTransaction, SameOpMissingNodeNonOperatorOrUnknownChangeNothing
   EXPECT_FALSE((EditOperatorTransaction{FullID{1, 32}, Operator::STAR}).execute(tree));
   EXPECT_FALSE((EditOperatorTransaction{FullID{1}, Operator::STAR}).execute(tree));
   EXPECT_FALSE((EditOperatorTransaction{FullID{1, 30}, Operator::UNKNOWN}).execute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(UpdateFuncParamTransaction, SetsAParamTypeAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  const auto uut = UpdateFuncParamTransaction::setType(FullID{1}, 3, "F64");
+  ASSERT_TRUE(uut->execute(tree));
+  const auto& params = functionAt(tree, FullID{1})->input->parameters;
+  EXPECT_EQ(params[1].typeName, "F64");
+  EXPECT_EQ(params[1].name, "y");
+  EXPECT_EQ(params[0], functionAt(before, FullID{1})->input->parameters[0]);
+  ASSERT_TRUE(uut->unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(UpdateFuncParamTransaction, SetsAReturnTypeAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  functionAt(tree, FullID{1})->output =
+    fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "F64"}};
+  const fluir::pt::ParseTree before = tree;
+
+  const auto uut = UpdateFuncParamTransaction::setType(FullID{1}, 4, "BOOL");
+  ASSERT_TRUE(uut->execute(tree));
+  EXPECT_EQ(functionAt(tree, FullID{1})->output->ret->typeName, "BOOL");
+  ASSERT_TRUE(uut->unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(UpdateFuncParamTransaction, SameTypeMissingFunctionMissingRailOrEmptyTypeChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{1}, 3, "i32")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{999}, 3, "F64")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{5}, 3, "F64")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{1}, 99, "F64")->execute(tree));
+  EXPECT_FALSE(UpdateFuncParamTransaction::setType(FullID{1}, 3, "")->execute(tree));
   EXPECT_EQ(tree, before);
 }

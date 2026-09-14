@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -28,6 +29,9 @@
 
 namespace fluir::editor {
   namespace {
+
+    // Matches the header tag graph_draw draws.
+    constexpr std::string_view kFnTag = "fn";
 
     const pt::Constant* constantAt(const pt::ParseTree& tree, const FullID& path) {
       const pt::Node* node = nodeAt(tree, path);
@@ -149,7 +153,7 @@ namespace fluir::editor {
         if (rail == nullptr) {
           return std::nullopt;
         }
-        return Label{railLabels(rail->world, param->typeName, viewScale, layout).name, rail->clip};
+        return Label{splitLabel(rail->world, param->typeName, viewScale, layout).text, rail->clip};
       }
       const Box* body = findBox(boxes, Part::Body, target.path);
       if (body == nullptr) {
@@ -160,7 +164,7 @@ namespace fluir::editor {
       }
       const Rect& r = body->world;
       if (functionAt(tree, target.path) != nullptr) {
-        return Label{{r.x, r.y, r.w, layout.headerH()}, body->clip};
+        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, kFnTag, viewScale, layout).text, body->clip};
       }
       if (const pt::Call* call = callAt(tree, target.path)) {
         if (!target.index) {
@@ -174,7 +178,7 @@ namespace fluir::editor {
       }
       if (const pt::Constant* constant = constantAt(tree, target.path);
           constant && isEditableLiteral(constant->value)) {
-        return Label{r, body->clip};
+        return Label{splitLabel(r, literalTypeName(constant->value), viewScale, layout).text, body->clip};
       }
       return std::nullopt;
     }
@@ -220,7 +224,7 @@ namespace fluir::editor {
           return nullptr;
         }
         if (functionAt(tree, path) != nullptr) {
-          return target.index ? std::make_unique<UpdateFuncParamTransaction>(path, *target.index, text) :
+          return target.index ? UpdateFuncParamTransaction::rename(path, *target.index, text) :
                                 std::unique_ptr<Transaction>{std::make_unique<RenameTransaction>(path, text)};
         }
         return target.index ? std::make_unique<EditCallArgumentTransaction>(path, *target.index, text) :

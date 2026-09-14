@@ -47,15 +47,18 @@ namespace {
 
   const EditorContext kCtx;
   const FullID kInt{1, 10};
-  constexpr Vec2 kTextOrigin{24, 49};
+  // Value text origins sit after each constant's small type label (textPad + glyphs at 0.8x).
+  constexpr Vec2 kTextOrigin{47.2, 49};
+  constexpr Vec2 kIntType{24, 49};
   constexpr Vec2 kGrip{57, 57};
-  constexpr Vec2 kFloatBody{24, 129};
+  constexpr Vec2 kFloatBody{50, 129};
   constexpr Vec2 kBinaryBody{154, 49};
-  constexpr Vec2 kI8Body{24, 229};
-  const Rect kIntRect{20, 45, 50, 25};
+  constexpr Vec2 kI8Body{40, 229};
+  const Rect kIntRect{43.2, 45, 26.8, 25};
   const FullID kFn{1};
   const FullID kCall{1, 14};
-  constexpr Vec2 kFnName{4, 4};
+  constexpr Vec2 kFnName{20.8, 4};
+  constexpr Vec2 kFnKeyword{4, 4};
   constexpr Vec2 kCallLabel{154, 129};
   constexpr Vec2 kCallArgRow{154, 154};
   constexpr Vec2 kCallArgRow1{154, 179};
@@ -66,7 +69,7 @@ namespace {
   constexpr Vec2 kReturnRail{479, 29};
   const Rect kParamRail1Rect{23.2, 50, 51.8, 25};
   const Rect kCallArgRow1Rect{150, 175, 50, 25};
-  const Rect kHeaderRect{0, 0, 500, 25};
+  const Rect kHeaderRect{16.8, 0, 483.2, 25};
   const Rect kCallLabelRect{150, 125, 50, 25};
   const FullID kComment{20};
   const FullID kInnerComment{1, 16};
@@ -182,6 +185,14 @@ TEST(TextEditTool, APressOnAnEditableConstantOpensThePrefilledFieldWithoutConsum
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_EQ(h.tool.field()->text(), "42");
   EXPECT_EQ(h.tool.field()->caret(), 0u);
+}
+
+TEST(TextEditTool, APressOnAConstantsTypeOpensNothing) {
+  Harness h;
+
+  h.send(down(kIntType));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
 }
 
 TEST(TextEditTool, APressPastTheTextOriginPlacesTheCaret) {
@@ -372,7 +383,7 @@ TEST(TextEditTool, TheDraftIsDrawnOverTheCommittedValue) {
   EXPECT_GT(draft, value);
   // A fill of the node's rect between the two hides the committed value.
   const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [](const testutil::DrawCall& c) {
-    return c.op == testutil::DrawCall::Op::Fill && c.rect == kIntRect;
+    return c.op == testutil::DrawCall::Op::Fill && testutil::detail::rectNear(c.rect, kIntRect, 1e-6);
   });
   EXPECT_NE(cover, calls.begin() + draft);
 }
@@ -388,7 +399,7 @@ TEST(TextEditTool, AnInvalidDraftDrawsAnExtraErrorOutline) {
 
   const auto outlines = [](const std::vector<testutil::DrawCall>& calls) {
     return std::count_if(calls.begin(), calls.end(), [](const testutil::DrawCall& c) {
-      return c.op == testutil::DrawCall::Op::Rect && c.rect == kIntRect;
+      return c.op == testutil::DrawCall::Op::Rect && testutil::detail::rectNear(c.rect, kIntRect, 1e-6);
     });
   };
   EXPECT_GT(outlines(invalid.draw()), outlines(valid.draw()));
@@ -401,6 +412,14 @@ TEST(TextEditTool, APressOnAFunctionHeaderOpensItsName) {
 
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_EQ(h.tool.field()->text(), "f");
+}
+
+TEST(TextEditTool, APressOnTheFnKeywordOpensNothing) {
+  Harness h;
+
+  h.send(down(kFnKeyword));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
 }
 
 TEST(TextEditTool, ReturnRenamesTheFunctionUndoably) {

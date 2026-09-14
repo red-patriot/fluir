@@ -1,14 +1,12 @@
 #include "editor/tools/operator_tool.hpp"
 
 #include <cstddef>
-#include <limits>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "compiler/models/operator.hpp"
-#include "editor/core/renderer.hpp"
 #include "editor/tools/menu_popup.hpp"
 #include "editor/transaction/edit_operator.hpp"
 
@@ -32,13 +30,9 @@ namespace fluir::editor {
     }
     const Vec2 topLeft = state.view.worldToScreen(hit->world.topLeft());
     const Rect anchor{topLeft.x, topLeft.y, hit->world.w * state.view.scale, hit->world.h * state.view.scale};
-    // Without a renderer there is no screen to keep the menu inside.
-    const double unbounded = std::numeric_limits<double>::max() / 4;
-    const Rect bounds = state.text == nullptr ? Rect{-unbounded, -unbounded, 2 * unbounded, 2 * unbounded} :
-                                                Rect{0, 0, state.text->outputSize().x, state.text->outputSize().y};
     state.popup = std::make_unique<MenuPopup>(std::move(labels),
                                               anchor,
-                                              bounds,
+                                              popupBounds(state),
                                               state.ctx.layout,
                                               [path = hit->path, ops = std::move(ops)](std::size_t i, EditorState& s) {
                                                 s.editor.apply(std::make_unique<EditOperatorTransaction>(path, ops[i]));

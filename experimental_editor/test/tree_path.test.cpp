@@ -1,5 +1,6 @@
 #include "editor/core/tree_path.hpp"
 
+#include <string>
 #include <utility>
 #include <variant>
 
@@ -22,6 +23,7 @@ namespace {
   using fluir::editor::locationAt;
   using fluir::editor::nodeAt;
   using fluir::editor::parentOf;
+  using fluir::editor::railTypeAt;
 
   constexpr FlowGraphLocation kFnLoc{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
   constexpr FlowGraphLocation kNodeLoc{.x = 3, .y = 4, .z = 1, .width = 5, .height = 6};
@@ -44,6 +46,17 @@ namespace {
     tree.declarations.emplace(2, fluir::pt::Declaration{empty});
     tree.declarations.emplace(3, fluir::pt::Declaration{fluir::pt::Comment{.id = 3, .location = kCommentLoc}});
     return tree;
+  }
+
+  // Param 2 (I32) and return 4 (F64).
+  fluir::pt::FunctionDecl makeRailedFunction() {
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.input =
+      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 2, .index = 0, .name = "a", .typeName = "I32"}}};
+    fn.output =
+      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "F64"}};
+    return fn;
   }
 
 }  // namespace
@@ -168,4 +181,27 @@ TEST(TreePath, ParentOfDropsTheLastSegment) {
   EXPECT_EQ(parentOf(FullID{1, 10}), FullID{1});
   EXPECT_EQ(parentOf(FullID{1}), FullID{});
   EXPECT_EQ(parentOf(FullID{}), FullID{});
+}
+
+TEST(TreePath, RailTypeAtFindsAParamType) {
+  fluir::pt::FunctionDecl fn = makeRailedFunction();
+
+  const std::string* type = railTypeAt(fn, 2);
+
+  ASSERT_NE(type, nullptr);
+  EXPECT_EQ(*type, "I32");
+}
+
+TEST(TreePath, RailTypeAtFindsAReturnType) {
+  fluir::pt::FunctionDecl fn = makeRailedFunction();
+
+  const std::string* type = railTypeAt(fn, 4);
+
+  ASSERT_NE(type, nullptr);
+  EXPECT_EQ(*type, "F64");
+}
+
+TEST(TreePath, RailTypeAtMissesUnknownIds) {
+  EXPECT_EQ(railTypeAt(makeRailedFunction(), 99), nullptr);
+  EXPECT_EQ(railTypeAt(fluir::pt::FunctionDecl{}, 2), nullptr);
 }

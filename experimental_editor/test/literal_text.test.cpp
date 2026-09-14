@@ -13,6 +13,7 @@ namespace {
 
   using namespace fluir::literals_types;
   using fluir::editor::isEditableLiteral;
+  using fluir::editor::literalTypeName;
   using fluir::editor::renderLiteral;
   using fluir::editor::tryParseLiteral;
   using fluir::pt::Literal;
@@ -26,6 +27,19 @@ namespace {
     EXPECT_EQ(renderLiteral(Literal(std::in_place_type<U16>, 1200)), "1200");
     EXPECT_EQ(renderLiteral(Literal(std::in_place_type<U32>, 120000)), "120000");
     EXPECT_EQ(renderLiteral(Literal(std::in_place_type<U64>, 1200000000)), "1200000000");
+  }
+
+  TEST(LiteralText, NamesEachAlternativeByItsSourceTag) {
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<F64>, 1.5)), "f64");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<I8>, 1)), "i8");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<I16>, 1)), "i16");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<I32>, 1)), "i32");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<I64>, 1)), "i64");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<U8>, 1)), "u8");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<U16>, 1)), "u16");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<U32>, 1)), "u32");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<U64>, 1)), "u64");
+    EXPECT_EQ(literalTypeName(Literal(std::in_place_type<BOOL>, true)), "bool");
   }
 
   TEST(LiteralText, ParsesTextBackIntoTheSameAlternative) {

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
@@ -25,6 +27,10 @@ namespace fluir::editor {
   /** The location of whatever the path names or nullptr. */
   FlowGraphLocation* locationAt(pt::ParseTree& tree, const FullID& path);
   const FlowGraphLocation* locationAt(const pt::ParseTree& tree, const FullID& path);
+
+  /** The type name of `fn`'s param or return with id `railId`, or nullptr. */
+  std::string* railTypeAt(pt::FunctionDecl& fn, fluir::ID railId);
+  const std::string* railTypeAt(const pt::FunctionDecl& fn, fluir::ID railId);
 
   /** `path` without its last segment; empty for an empty path. */
   FullID parentOf(const FullID& path);

@@ -11,6 +11,8 @@
 namespace fluir::editor {
   namespace {
 
+    constexpr std::string_view kFnTag = "fn";
+
     // Renderer::drawRect has no thickness, so two concentric rects stand in for a 2px outline.
     void drawOutline(const Subview& view, const EditorContext& ctx, const Rect& r) {
       for (const double pad : {ctx.layout.selectionPad, ctx.layout.selectionPad + 1.0}) {
@@ -22,16 +24,14 @@ namespace fluir::editor {
     // A parameter's port is on its right edge, the return's on its left.
     void drawRail(
       const Subview& view, const pt::FunctionDecl& fn, fluir::ID id, const Rect& r, const EditorContext& ctx) {
-      std::string_view typeName;
+      const std::string* typeName = railTypeAt(fn, id);
       std::string_view name;
       Vec2 anchor{r.x + r.w, r.y + r.h * 0.5};
       if (fn.output && fn.output->ret && fn.output->ret->id == id) {
-        typeName = fn.output->ret->typeName;
         anchor = Vec2{r.x, r.y + r.h * 0.5};
       } else if (fn.input) {
         for (const auto& param : fn.input->parameters) {
           if (param.id == id) {
-            typeName = param.typeName;
             name = param.name;
           }
         }
@@ -39,7 +39,7 @@ namespace fluir::editor {
       Renderer& renderer = view.renderer();
       renderer.fillRect(view.toScreen(r), ctx.theme.funcDeclHeader);
       renderer.drawRect(view.toScreen(r), ctx.theme.border);
-      drawRailLabels(view, r, typeName, name, ctx);
+      drawSplitLabel(view, r, typeName == nullptr ? std::string_view{} : *typeName, name, ctx);
       renderer.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
     }
 
@@ -67,8 +67,7 @@ namespace fluir::editor {
             const Rect& f = box.world;
             r.fillRect(view.toScreen(Rect{f.x, f.y, f.w, ctx.layout.headerH()}), ctx.theme.funcDeclHeader);
             r.drawRect(view.toScreen(f), ctx.theme.border);
-            r.drawText(
-              view.toScreen(Vec2{f.x + ctx.layout.textPad, f.y + ctx.layout.textPad}), fn->name, ctx.theme.text);
+            drawSplitLabel(view, Rect{f.x, f.y, f.w, ctx.layout.headerH()}, kFnTag, fn->name, ctx);
             if (selected) {
               drawOutline(view, ctx, f);
             }

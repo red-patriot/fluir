@@ -1,5 +1,6 @@
 #include "editor/core/tree_path.hpp"
 
+#include <algorithm>
 #include <variant>
 
 namespace fluir::editor {
@@ -42,6 +43,17 @@ namespace fluir::editor {
     return node == nullptr ? nullptr : std::visit([](auto& n) { return &n.location; }, *node);
   }
 
+  std::string* railTypeAt(pt::FunctionDecl& fn, fluir::ID railId) {
+    if (fn.output && fn.output->ret && fn.output->ret->id == railId) {
+      return &fn.output->ret->typeName;
+    }
+    if (!fn.input) {
+      return nullptr;
+    }
+    const auto it = std::ranges::find(fn.input->parameters, railId, &pt::FunctionDecl::Parameter::id);
+    return it == fn.input->parameters.end() ? nullptr : &it->typeName;
+  }
+
   FullID parentOf(const FullID& path) { return path.empty() ? FullID{} : FullID(path.begin(), path.end() - 1); }
 
   // Const overloads share the mutable lookups; none of them writes.
@@ -63,6 +75,10 @@ namespace fluir::editor {
 
   const FlowGraphLocation* locationAt(const pt::ParseTree& tree, const FullID& path) {
     return locationAt(const_cast<pt::ParseTree&>(tree), path);
+  }
+
+  const std::string* railTypeAt(const pt::FunctionDecl& fn, fluir::ID railId) {
+    return railTypeAt(const_cast<pt::FunctionDecl&>(fn), railId);
   }
 
 }  // namespace fluir::editor

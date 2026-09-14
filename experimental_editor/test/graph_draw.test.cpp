@@ -166,8 +166,10 @@ TEST(GraphDraw, SingleEmptyFunctionFrameAndHeader) {
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 500, 500}));
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));
-  EXPECT_TRUE(hasTextAt(r.calls, "foo", Vec2{54, 54}));
-  EXPECT_EQ(textStrings(r.calls), (std::vector<std::string>{"foo"}));
+  // "fn" at 0.8x, bottom inset by textPad; name full size after it.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "fn", Vec2{54, 64.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "foo", Vec2{70.8, 54}, 1.0));
+  EXPECT_EQ(textStrings(r.calls), (std::vector<std::string>{"fn", "foo"}));
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
 
   // An empty function has no body children, so no body clip is opened at all;
@@ -287,8 +289,10 @@ TEST(GraphDraw, ViewportIsApplied) {
   EXPECT_TRUE(hasRect(r.calls, Rect{200, 150, 1000, 1000}));
   // world header (50,50,500,25) -> screen (200,150,1000,50).
   EXPECT_TRUE(hasFill(r.calls, Rect{200, 150, 1000, 50}));
-  // world text pos (54,54) -> screen (54*2+100, 54*2+50).
-  EXPECT_TRUE(hasTextAt(r.calls, "foo", Vec2{208, 158}));
+  // world "fn" pos (54,71) -> screen (208,192), raised by its 6.4 px scaled height.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "fn", Vec2{208, 185.6}, 0.8));
+  // Name follows "fn"'s screen-fixed 12.8 px: world x 50+4+6.4+4 -> screen 64.4*2+100.
+  EXPECT_TRUE(hasTextAt(r.calls, "foo", Vec2{228.8, 158}));
 }
 
 TEST(GraphDraw, UnitPxScalesFrameAndHeader) {
@@ -319,10 +323,15 @@ TEST(GraphDraw, ConstantNode) {
   EXPECT_TRUE(hasRect(r.calls, Rect{160, 185, 25, 25}));  // constant 324
   EXPECT_TRUE(hasRect(r.calls, Rect{210, 190, 25, 25}));  // constant -12
 
-  EXPECT_TRUE(hasTextAt(r.calls, "-5", Vec2{64, 179}));
-  EXPECT_TRUE(hasTextAt(r.calls, "318", Vec2{114, 184}));
-  EXPECT_TRUE(hasTextAt(r.calls, "324", Vec2{164, 189}));
-  EXPECT_TRUE(hasTextAt(r.calls, "-12", Vec2{214, 194}));
+  // Each literal's type at 0.8x along the bottom, its value full size after it.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "i8", Vec2{64, 189.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "-5", Vec2{80.8, 179}, 1.0));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "i16", Vec2{114, 194.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "318", Vec2{137.2, 184}, 1.0));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "i32", Vec2{164, 199.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "324", Vec2{187.2, 189}, 1.0));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "i64", Vec2{214, 204.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "-12", Vec2{237.2, 194}, 1.0));
   const auto texts = textStrings(r.calls);
   for (const std::string& want : {std::string{"-5"}, std::string{"318"}, std::string{"324"}, std::string{"-12"}}) {
     EXPECT_NE(std::find(texts.begin(), texts.end(), want), texts.end());

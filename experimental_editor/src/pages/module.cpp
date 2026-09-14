@@ -19,6 +19,7 @@
 #include "editor/tools/popup_tool.hpp"
 #include "editor/tools/select_tool.hpp"
 #include "editor/tools/text_edit_tool.hpp"
+#include "editor/tools/type_tool.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/view/graph_draw.hpp"
 #include "editor/view/graph_layout.hpp"
@@ -33,6 +34,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<PanZoomTool>());
     tools_.add(std::make_unique<SelectTool>());
     tools_.add(std::make_unique<OperatorTool>());
+    tools_.add(std::make_unique<TypeTool>());
     tools_.add(std::make_unique<DragTool>());
 
     header_.buttons = {

@@ -10,14 +10,15 @@
 #include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
 
-// Each node kind is one overload of `anchors`, `color` and `label`. A new kind adds its overloads here.
+// Each node kind is one overload of `anchors`, `color` and `label` (`drawLabel` too for a split label). A new kind adds
+// its overloads here.
 
 namespace fluir::editor {
   namespace {
     using namespace ::fluir::literals_types;
 
-    // Rail type labels draw smaller than names.
-    constexpr double kTypeScale = 0.8;
+    // Split-label tags draw smaller than their text.
+    constexpr double kTagScale = 0.8;
 
     // A lone port sits at the centre; more spread top-to-bottom down the edge.
     double portFraction(int count, int index) {
@@ -115,14 +116,21 @@ namespace fluir::editor {
         clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);
     }
 
+    void drawLabel(const auto& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
+      const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
+      if (const std::string text = label(n); !text.empty()) {
+        view.renderer().drawText(view.toScreen(textPos), text, ctx.theme.text);
+      }
+    }
+    void drawLabel(const pt::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
+      drawSplitLabel(view, world, literalTypeName(n.value), label(n), ctx);
+    }
+
     void drawKind(const auto& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
       Renderer& r = view.renderer();
       r.fillRect(view.toScreen(world), color(n, ctx.theme));
       r.drawRect(view.toScreen(world), ctx.theme.border);
-      const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
-      if (const std::string text = label(n); !text.empty()) {
-        r.drawText(view.toScreen(textPos), text, ctx.theme.text);
-      }
+      drawLabel(n, world, view, ctx);
       drawExtras(n, world, view, ctx);
       const PortSet anchorsOf = anchors(n, world, ctx.layout);
       for (const auto* side : {&anchorsOf.inputs, &anchorsOf.outputs}) {
@@ -143,22 +151,20 @@ namespace fluir::editor {
     return {world.x + pad, world.y + pad, world.w - 2 * pad, world.h - 2 * pad};
   }
 
-  RailLabels railLabels(Rect rail, std::string_view typeName, double viewScale, const EditorContext::Layout& layout) {
-    const double typeW = layout.textPad + static_cast<double>(typeName.size()) * GLYPH_PX * kTypeScale / viewScale;
-    const Rect type{rail.x, rail.y, typeW, rail.h};
-    return {type, Rect{type.x + type.w, rail.y, std::max(0.0, rail.w - typeW), rail.h}};
+  SplitLabel splitLabel(Rect box, std::string_view tag, double viewScale, const EditorContext::Layout& layout) {
+    const double tagW = layout.textPad + static_cast<double>(tag.size()) * GLYPH_PX * kTagScale / viewScale;
+    return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
   }
 
-  void drawRailLabels(
-    const Subview& view, Rect rail, std::string_view type, std::string_view name, const EditorContext& ctx) {
+  void drawSplitLabel(
+    const Subview& view, Rect box, std::string_view tag, std::string_view text, const EditorContext& ctx) {
     Renderer& r = view.renderer();
     const double pad = ctx.layout.textPad;
-    const Vec2 typeBottom = view.toScreen(Vec2{rail.x + pad, rail.y + rail.h - pad});
-    const double typeH = r.measureText(type).y * kTypeScale;
-    r.drawText(Vec2{typeBottom.x, typeBottom.y - typeH}, type, ctx.theme.text, kTypeScale);
-    if (!name.empty()) {
-      const Rect nameRect = railLabels(rail, type, view.composed().scale, ctx.layout).name;
-      r.drawText(view.toScreen(Vec2{nameRect.x + pad, rail.y + pad}), name, ctx.theme.text);
+    const Vec2 tagBottom = view.toScreen(Vec2{box.x + pad, box.y + box.h - pad});
+    r.drawText(Vec2{tagBottom.x, tagBottom.y - r.measureText(tag).y * kTagScale}, tag, ctx.theme.text, kTagScale);
+    if (!text.empty()) {
+      const Rect textRect = splitLabel(box, tag, view.composed().scale, ctx.layout).text;
+      r.drawText(view.toScreen(Vec2{textRect.x + pad, box.y + pad}), text, ctx.theme.text);
     }
   }
 

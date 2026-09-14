@@ -20,6 +20,7 @@ add_executable(
     pan_zoom_tool.test.cpp
     popup_tool.test.cpp
     operator_tool.test.cpp
+    type_tool.test.cpp
     select_tool.test.cpp
     drag_tool.test.cpp
     text_edit_tool.test.cpp

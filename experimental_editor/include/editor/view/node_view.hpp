@@ -28,17 +28,18 @@ namespace fluir::editor {
   /** Where a comment at `world` wraps its text. */
   Rect commentTextRect(Rect world, const EditorContext::Layout& layout);
 
-  /** A rail's type and name regions in world space; glyphs are fixed screen px, so the split depends on `viewScale`. */
-  struct RailLabels {
-    Rect type;
-    Rect name;
+  /** A label's small tag and main text regions in world space; glyphs are fixed screen px, so the split depends on
+   *  `viewScale`. */
+  struct SplitLabel {
+    Rect tag;
+    Rect text;
   };
 
-  RailLabels railLabels(Rect rail, std::string_view label, double viewScale, const EditorContext::Layout& layout);
+  SplitLabel splitLabel(Rect box, std::string_view tag, double viewScale, const EditorContext::Layout& layout);
 
-  /** Draws a rail's small bottom-aligned `type` and, when non-empty, its `name` after it. */
-  void drawRailLabels(
-    const Subview& view, Rect rail, std::string_view type, std::string_view name, const EditorContext& ctx);
+  /** Draws `tag` small along `box`'s bottom and, when non-empty, `text` full size after it. */
+  void drawSplitLabel(
+    const Subview& view, Rect box, std::string_view tag, std::string_view text, const EditorContext& ctx);
 
   /** `node`'s fill color. */
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme);

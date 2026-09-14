@@ -1,5 +1,6 @@
 #include "editor/core/literal_text.hpp"
 
+#include <array>
 #include <charconv>
 #include <cmath>
 #include <concepts>
@@ -30,6 +31,13 @@ namespace fluir::editor {
         }
       },
       value);
+  }
+
+  std::string_view literalTypeName(const pt::Literal& value) {
+    // Indexed in `pt::Literal` alternative order.
+    static constexpr std::array<std::string_view, std::variant_size_v<pt::Literal>> kNames{
+      "f64", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "bool"};
+    return kNames[value.index()];
   }
 
   bool isEditableLiteral(const pt::Literal& value) {

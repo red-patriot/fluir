@@ -165,6 +165,7 @@ set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/popup_tool.cpp"
     "tools/select_tool.cpp"
     "tools/text_edit_tool.cpp"
+    "tools/type_tool.cpp"
     "tools/tool.cpp"
 )
 

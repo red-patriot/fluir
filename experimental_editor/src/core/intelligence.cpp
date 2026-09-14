@@ -23,6 +23,10 @@ namespace fluir::editor {
                                                         Operator::AND_AND,
                                                         Operator::BAR_BAR};
 
+    // TODO: Dynamically populate these
+    const std::vector<std::string_view> kBuiltinTypes{
+      "F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
+
   }  // namespace
 
   std::vector<fluir::Operator> Intelligence::operators(const pt::ParseTree& tree, const FullID& path) const {
@@ -37,6 +41,14 @@ namespace fluir::editor {
       return kBinaryOperators;
     }
     return {};
+  }
+
+  std::vector<std::string_view> Intelligence::types(const pt::ParseTree& tree, const FullID& path) const {
+    if (path.empty()) {
+      return {};
+    }
+    const pt::FunctionDecl* fn = functionAt(tree, parentOf(path));
+    return fn != nullptr && railTypeAt(*fn, path.back()) != nullptr ? kBuiltinTypes : std::vector<std::string_view>{};
   }
 
 }  // namespace fluir::editor

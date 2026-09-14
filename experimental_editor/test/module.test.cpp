@@ -58,7 +58,7 @@ namespace {
   const FullID kConstant1{1, 1};
   constexpr Vec2 kConstant1Body{62, 197};
   constexpr Vec2 kConstant1Grip{72.5, 187.5};
-  constexpr Vec2 kConstant1Text{64, 179};
+  constexpr Vec2 kConstant1Text{76, 177};  // value region after "i8", above the grip
   constexpr Vec2 kEmptyFrame{400, 400};
   constexpr Vec2 kBackground{-1000, -1000};
   constexpr Vec2 kHeaderGrip{537.5, 62.5};
@@ -392,16 +392,16 @@ namespace {
 
   fluir::Operator op(const Harness& h) { return std::get<fluir::pt::Binary>(*nodeAt(h.tree(), kBinary)).op; }
 
-  // The screen rect of the operator menu's row labeled `label`.
-  Rect menuRow(const Harness& h, const std::string& label) {
+  // The screen rect of the open menu's row labeled `label`.
+  Rect menuRow(const Harness& h, const std::string& label, Rect worldAnchor = Rect{125, 85, 25, 25}) {
     const auto* menu = dynamic_cast<const fluir::editor::MenuPopup*>(h.page->state().popup.get());
     EXPECT_NE(menu, nullptr);
     if (menu == nullptr) {
       return {};
     }
-    const Vec2 tl = h.screen(Vec2{125, 85});
+    const Vec2 tl = h.screen(worldAnchor.topLeft());
     const double scale = h.page->state().view.scale;
-    const Rect anchor{tl.x, tl.y, 25 * scale, 25 * scale};
+    const Rect anchor{tl.x, tl.y, worldAnchor.w * scale, worldAnchor.h * scale};
     const Rect bounds{0, 0, h.renderer.outputSize_.x, h.renderer.outputSize_.y};
     const auto layout = fluir::editor::layoutMenu(menu->labels(), anchor, bounds, h.ctx.layout);
     const auto it = std::ranges::find(menu->labels(), label);
@@ -465,4 +465,40 @@ TEST(ModulePage, DrawShowsTheOpenOperatorMenu) {
 
   const auto texts = testutil::textStrings(h.renderer.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "&&"), texts.end());
+}
+
+namespace {
+
+  // function_with_input_only.fl: param a (id 2, I32) rail {50,75,75,25}; its tag, then its name.
+  const fs::path kInputOnly = fs::path(TEST_FOLDER) / "read/function_with_input_only.fl";
+  const Rect kParamARail{50, 75, 75, 25};
+  constexpr Vec2 kParamATag{55, 90};
+
+  const fluir::pt::FunctionDecl::Parameter& paramA(const Harness& h) {
+    return fluir::editor::functionAt(h.tree(), FullID{1})->input->parameters.at(0);
+  }
+
+}  // namespace
+
+TEST(ModulePage, PickingFromTheTypeMenuIsOneUndoableEdit) {
+  Harness h{kInputOnly};
+  h.press(kParamATag);
+
+  const Vec2 f64 = menuRow(h, "F64", kParamARail).center();
+  h.send({move(f64), down(f64), up(f64)});
+
+  EXPECT_EQ(paramA(h).typeName, "F64");
+  EXPECT_EQ(h.page->state().popup, nullptr);
+  h.click("Undo");
+  EXPECT_EQ(paramA(h).typeName, "I32");
+}
+
+TEST(ModulePage, APressOnATypeTagOpensNoNameDraft) {
+  Harness h{kInputOnly};
+
+  h.press(kParamATag);
+  h.send({text("x"), key(InputEvent::Key::Return)});
+
+  EXPECT_NE(h.page->state().popup, nullptr);
+  EXPECT_EQ(paramA(h).name, "a");
 }

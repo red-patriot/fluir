@@ -11,6 +11,9 @@
 
 namespace fluir::editor {
 
+  /** The screen px a popup must stay inside; unbounded without a renderer. */
+  Rect popupBounds(const EditorState& state);
+
   /** A menu under an anchor: a left press on a row picks it; Escape or a press outside closes. */
   class MenuPopup : public Popup {
    public:

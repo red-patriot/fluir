@@ -33,13 +33,13 @@ namespace {
   using fluir::editor::OperatorOption;
   using Literal = fluir::literals_types::Literal;
 
-  const EditorContext kCtx;
+  const EditorContext ctx;
   const std::vector<std::string_view> kBuiltins{"F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
 
 }  // namespace
 
 TEST(Intelligence, ABinaryNodeOffersTheBinaryOperators) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/simple_binary_expr.fl");
 
   const std::vector<Operator> expected{Operator::PLUS,
@@ -58,7 +58,7 @@ TEST(Intelligence, ABinaryNodeOffersTheBinaryOperators) {
 }
 
 TEST(Intelligence, AUnaryNodeOffersTheUnaryOperators) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/simple_unary_expr.fl");
 
   const std::vector<Operator> expected{
@@ -67,7 +67,7 @@ TEST(Intelligence, AUnaryNodeOffersTheUnaryOperators) {
 }
 
 TEST(Intelligence, NonOperatorsAndMissingPathsOfferNothing) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/simple_binary_expr.fl");
   const Intelligence uut;
 
@@ -78,7 +78,7 @@ TEST(Intelligence, NonOperatorsAndMissingPathsOfferNothing) {
 }
 
 TEST(Intelligence, ACallOffersNothing) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/function_call.fl");
   const Intelligence uut;
 
@@ -86,21 +86,21 @@ TEST(Intelligence, ACallOffersNothing) {
 }
 
 TEST(Intelligence, AParamRailOffersTheBuiltinTypes) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_input_only.fl");
 
   EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 2}), kBuiltins);
 }
 
 TEST(Intelligence, AReturnRailOffersTheBuiltinTypes) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_output_only.fl");
 
   EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 4}), kBuiltins);
 }
 
 TEST(Intelligence, NonRailsAndMissingPathsOfferNoTypes) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/simple_binary_expr.fl");
   const Intelligence uut;
 
@@ -111,7 +111,7 @@ TEST(Intelligence, NonRailsAndMissingPathsOfferNoTypes) {
 }
 
 TEST(Intelligence, TheTopLevelOffersAFunctionThenAComment) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/single_empty_function.fl");
 
   const std::vector<fluir::editor::Completion> got = Intelligence{}.completions(state.editor.tree(), FullID{});
@@ -124,7 +124,7 @@ TEST(Intelligence, TheTopLevelOffersAFunctionThenAComment) {
 }
 
 TEST(Intelligence, AFunctionBodyOffersBinaryThenUnaryOperatorsThenConstantsThenAComment) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/single_empty_function.fl");
   const std::vector<Operator> binary{Operator::PLUS,
                                      Operator::MINUS,
@@ -172,7 +172,7 @@ TEST(Intelligence, AFunctionBodyOffersBinaryThenUnaryOperatorsThenConstantsThenA
 }
 
 TEST(Intelligence, ConstantCompletionsDefaultToZeroOrFalse) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/single_empty_function.fl");
 
   const std::vector<Completion> got = Intelligence{}.completions(state.editor.tree(), FullID{1});
@@ -193,7 +193,7 @@ TEST(Intelligence, ConstantCompletionsDefaultToZeroOrFalse) {
 }
 
 TEST(Intelligence, UnknownBodiesAndCommentsOfferNoCompletions) {
-  EditorState state{kCtx};
+  EditorState state{ctx};
   testutil::loadInto(state, "read/single_empty_function.fl");
   state.editor.apply(std::make_unique<fluir::editor::AddComment>(
     FullID{}, 50, fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 1, .width = 10, .height = 10}));

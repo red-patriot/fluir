@@ -73,6 +73,7 @@ namespace fluir::editor {
       return 1;
     }
     state_.editor.load(*result.tree);
+    state_.intelligence.load(ctx_.program, *result.tree);
     fitView();
     return 0;  // Page::start() lays the header out via onResize().
   }
@@ -117,7 +118,11 @@ namespace fluir::editor {
   }
 
   std::unique_ptr<Page> ModulePage::next() {
-    return shouldClose_ ? std::make_unique<SplashPage>(ctx_, renderer_) : nullptr;
+    if (shouldClose_) {
+      state_.intelligence.unload(ctx_.program);
+      return std::make_unique<SplashPage>(ctx_, renderer_);
+    }
+    return nullptr;
   }
 
   void ModulePage::fitView() {

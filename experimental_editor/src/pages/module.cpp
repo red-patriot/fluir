@@ -14,6 +14,7 @@
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/completion_tool.hpp"
+#include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
 #include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
@@ -34,6 +35,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<TextEditTool>());
     tools_.add(std::make_unique<PanZoomTool>());
     tools_.add(std::make_unique<SelectTool>());
+    tools_.add(std::make_unique<ConduitTool>());
     tools_.add(std::make_unique<OperatorTool>());
     tools_.add(std::make_unique<TypeTool>());
     tools_.add(std::make_unique<CompletionTool>());

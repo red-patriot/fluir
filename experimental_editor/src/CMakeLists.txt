@@ -129,6 +129,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
 
 set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/add_comment.cpp"
+    "transaction/add_conduit.cpp"
     "transaction/add_decl.cpp"
     "transaction/add_node.cpp"
     "transaction/delete.cpp"
@@ -163,6 +164,7 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/completion_modal.cpp"
     "tools/completion_tool.cpp"
+    "tools/conduit_tool.cpp"
     "tools/drag_tool.cpp"
     "tools/menu_popup.cpp"
     "tools/operator_tool.cpp"

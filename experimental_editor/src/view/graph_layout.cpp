@@ -6,6 +6,7 @@
 #include <variant>
 
 #include "editor/core/graph_geometry.hpp"
+#include "editor/core/tree_path.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
@@ -15,6 +16,8 @@ namespace fluir::editor {
     constexpr double DRAG_INSET = 1;
     constexpr double RESIZE_BAR_WIDTH = 1;
     constexpr double RESIZE_CORNER_SIZE = 3;
+    // A port's hit square side, in grid units.
+    constexpr double PORT_HIT_UNITS = 1;
 
     using Ports = std::unordered_map<fluir::ID, PortSet>;
 
@@ -111,7 +114,7 @@ namespace fluir::editor {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
           out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
-          ports[params[row]->id] = PortSet{{}, {Vec2{rail.x + rail.w, rail.y + rail.h * 0.5}}};
+          ports[params[row]->id] = PortSet{{}, {railAnchor(fn, params[row]->id, rail)}};
         }
       }
       if (fn.output && fn.output->ret) {
@@ -120,7 +123,7 @@ namespace fluir::editor {
                         layout.railStep(),
                         layout.railStep()};
         out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
-        ports[fn.output->ret->id] = PortSet{{Vec2{rail.x, rail.y + rail.h * 0.5}}, {}};
+        ports[fn.output->ret->id] = PortSet{{railAnchor(fn, fn.output->ret->id, rail)}, {}};
       }
 
       layoutBlock(fn.body, path, origin, clip, layout, ports, out);
@@ -133,6 +136,24 @@ namespace fluir::editor {
     }
 
     bool hittable(Part part) { return part != Part::Frame && part != Part::Rail && part != Part::Wire; }
+
+    // A node's or rail's port anchors, given its box.
+    PortSet portsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
+      if (box.path.size() < 2) {
+        return {};
+      }
+      if (box.part == Part::Body) {
+        const pt::Node* node = nodeAt(tree, box.path);
+        return node == nullptr ? PortSet{} : ports(*node, box.world, layout);
+      }
+      const pt::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
+      if (fn == nullptr) {
+        return {};
+      }
+      const Vec2 anchor = railAnchor(*fn, box.path.back(), box.world);
+      const bool isReturn = fn->output && fn->output->ret && fn->output->ret->id == box.path.back();
+      return isReturn ? PortSet{{anchor}, {}} : PortSet{{}, {anchor}};
+    }
 
   }  // namespace
 
@@ -156,6 +177,33 @@ namespace fluir::editor {
       }
     }
     return nullptr;
+  }
+
+  std::optional<PortHit> portAt(const pt::ParseTree& tree,
+                                std::span<const Box> boxes,
+                                Vec2 world,
+                                const EditorContext::Layout& layout) {
+    const double side = PORT_HIT_UNITS * layout.unitPx;
+    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
+      if (it->clip && !it->clip->contains(world)) {
+        continue;
+      }
+      const PortSet set = portsOf(tree, *it, layout);
+      for (const bool output : {false, true}) {
+        const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
+        for (std::size_t i = 0; i < anchors.size(); ++i) {
+          if (dotRect(anchors[i], side).contains(world)) {
+            return PortHit{it->path, output, static_cast<int>(i), anchors[i]};
+          }
+        }
+      }
+    }
+    return std::nullopt;
+  }
+
+  Vec2 railAnchor(const pt::FunctionDecl& fn, fluir::ID id, const Rect& rect) {
+    const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == id;
+    return Vec2{isReturn ? rect.x : rect.x + rect.w, rect.y + rect.h * 0.5};
   }
 
   Rect graphBounds(std::span<const Box> boxes) {

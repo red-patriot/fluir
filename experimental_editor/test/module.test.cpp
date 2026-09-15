@@ -636,3 +636,45 @@ TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
     EXPECT_TRUE(inFrame) << "call " << i << " after the modal is not the modal's";
   }
 }
+
+namespace {
+
+  // simple_binary_expr.fl: constant 2's output port, binary 1's input ports.
+  constexpr Vec2 kConstant2Out{85, 97.5};
+  constexpr Vec2 kBinaryIn0{125, 86};
+  constexpr Vec2 kBinaryIn1{125, 110};
+  // function_with_input_only.fl: param a's port, inside its name label.
+  constexpr Vec2 kParamAPort{124, 87.5};
+
+}  // namespace
+
+TEST(ModulePage, APortToPortDragAddsAConduitAsOneUndoableEdit) {
+  Harness h{kSimpleBinary};
+  const fluir::pt::ParseTree before = h.tree();
+
+  h.drag(kConstant2Out, kBinaryIn1 - kConstant2Out);
+
+  const auto& conduits = fluir::editor::blockOf(h.tree(), FullID{1})->conduits;
+  const std::vector<fluir::pt::Conduit::Output> toIn1{{.target = 1, .index = 1}};
+  EXPECT_TRUE(std::ranges::any_of(
+    conduits, [&](const auto& entry) { return entry.second.input == 2 && entry.second.children == toIn1; }));
+  h.click("Undo");
+  EXPECT_EQ(h.tree(), before);
+}
+
+TEST(ModulePage, APressOnAPortOpensNoOperatorMenu) {
+  Harness h{kSimpleBinary};
+
+  h.press(kBinaryIn0);
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, APressOnAParameterPortOpensNoNameDraft) {
+  Harness h{kInputOnly};
+
+  h.press(kParamAPort);
+  h.send({text("x"), key(InputEvent::Key::Return)});
+
+  EXPECT_EQ(paramA(h).name, "a");
+}

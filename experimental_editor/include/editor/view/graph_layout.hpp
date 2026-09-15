@@ -29,6 +29,23 @@ namespace fluir::editor {
   /** The last-painted hittable box containing `world`, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
 
+  /** A port: its node or rail `path`, side, and index on that side. */
+  struct PortHit {
+    FullID path;
+    bool output = false;
+    int index = 0;
+    Vec2 anchor;
+  };
+
+  /** The top-painted port whose hit square contains `world`, honouring clips. */
+  std::optional<PortHit> portAt(const pt::ParseTree& tree,
+                                std::span<const Box> boxes,
+                                Vec2 world,
+                                const EditorContext::Layout& layout);
+
+  /** Where `fn`'s rail `id` laid out at `rect` connects: a parameter's right-mid, the return's left-mid. */
+  Vec2 railAnchor(const pt::FunctionDecl& fn, fluir::ID id, const Rect& rect);
+
   /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);
 

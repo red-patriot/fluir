@@ -283,6 +283,11 @@ namespace fluir::editor {
   void TextEditTool::onPress(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
     const pt::ParseTree& tree = state.editor.tree();
     const Vec2 world = state.view.screenToWorld(event.pos);
+    // A port press starts a conduit, so it only closes the draft.
+    if (portAt(tree, boxes, world, state.ctx.layout)) {
+      field_.reset();
+      return;
+    }
     const std::optional<Target> target = targetAt(tree, boxes, world, state.ctx.layout);
     const std::optional<Label> label =
       target ? labelRect(tree, boxes, *target, state.view.scale, state.ctx.layout) : std::optional<Label>{};

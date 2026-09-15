@@ -26,10 +26,8 @@ namespace fluir::editor {
       const Subview& view, const pt::FunctionDecl& fn, fluir::ID id, const Rect& r, const EditorContext& ctx) {
       const std::string* typeName = railTypeAt(fn, id);
       std::string_view name;
-      Vec2 anchor{r.x + r.w, r.y + r.h * 0.5};
-      if (fn.output && fn.output->ret && fn.output->ret->id == id) {
-        anchor = Vec2{r.x, r.y + r.h * 0.5};
-      } else if (fn.input) {
+      const Vec2 anchor = railAnchor(fn, id, r);
+      if (fn.input) {
         for (const auto& param : fn.input->parameters) {
           if (param.id == id) {
             name = param.name;

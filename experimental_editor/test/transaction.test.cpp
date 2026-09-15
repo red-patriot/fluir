@@ -11,6 +11,7 @@
 #include "compiler/models/operator.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/add_comment.hpp"
+#include "editor/transaction/add_conduit.hpp"
 #include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/add_node.hpp"
 #include "editor/transaction/delete.hpp"
@@ -33,8 +34,10 @@ namespace {
   using fluir::ID;
   using fluir::Operator;
   using fluir::editor::AddComment;
+  using fluir::editor::AddConduit;
   using fluir::editor::AddDecl;
   using fluir::editor::AddNode;
+  using fluir::editor::blockOf;
   using fluir::editor::ConstantOption;
   using fluir::editor::DeleteTransaction;
   using fluir::editor::EditCallArgumentTransaction;
@@ -745,5 +748,92 @@ TEST(AddNode, TakenOrInvalidIdOrUnresolvedParentOrUnknownOperatorChangeNothing) 
     (AddNode{FullID{1}, 50, kNodeLocation, OperatorOption{Operator::UNKNOWN, OperatorOption::UNARY}}).execute(tree))
     << "unknown operator";
   EXPECT_FALSE((AddNode{FullID{1}, 50, kNodeLocation, plus}).unexecute(tree)) << "never added";
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  // Executes on `tree`, checks the new conduit equals `want`, then reverses and redoes.
+  void expectAddConduitRoundTrip(AddConduit& uut, fluir::pt::ParseTree tree, const fluir::pt::Conduit& want) {
+    const fluir::pt::ParseTree before = tree;
+
+    ASSERT_TRUE(uut.execute(tree));
+    const fluir::pt::Block* body = blockOf(tree, FullID{1});
+    ASSERT_NE(body, nullptr);
+    ASSERT_TRUE(body->conduits.contains(want.id));
+    EXPECT_EQ(body->conduits.at(want.id), want);
+    const fluir::pt::ParseTree afterFirst = tree;
+
+    ASSERT_TRUE(uut.unexecute(tree));
+    EXPECT_EQ(tree, before);
+    ASSERT_TRUE(uut.execute(tree));
+    EXPECT_EQ(tree, afterFirst);
+  }
+
+}  // namespace
+
+TEST(AddConduit, ConnectsAnOutputToAnInputAndUndoRestoresTheTree) {
+  AddConduit uut{FullID{1}, 50, {.node = 10, .index = 0}, {.node = 32, .index = 0}};
+
+  expectAddConduitRoundTrip(uut, makeTree(), makeConduit(50, 10, {{.target = 32, .index = 0}}));
+}
+
+TEST(AddConduit, ConnectsFunctionRails) {
+  fluir::pt::ParseTree tree = makeTree();
+  functionAt(tree, FullID{1})->output =
+    fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "i32"}};
+  AddConduit fromParam{FullID{1}, 50, {.node = 3, .index = 0}, {.node = 32, .index = 1}};
+  AddConduit toReturn{FullID{1}, 50, {.node = 31, .index = 0}, {.node = 4, .index = 0}};
+
+  expectAddConduitRoundTrip(fromParam, tree, makeConduit(50, 3, {{.target = 32, .index = 1}}));
+  expectAddConduitRoundTrip(toReturn, tree, makeConduit(50, 31, {{.target = 4, .index = 0}}));
+}
+
+// Conduit 40 alone feeds binary 30's input 0.
+TEST(AddConduit, ReplacingAFedInputDropsItsOldConduitAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+  AddConduit uut{FullID{1}, 50, {.node = 32, .index = 0}, {.node = 30, .index = 0}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  const fluir::pt::Block& body = *blockOf(tree, FullID{1});
+  EXPECT_FALSE(body.conduits.contains(40));
+  EXPECT_EQ(body.conduits.at(50), makeConduit(50, 32, {{.target = 30, .index = 0}}));
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+// Conduit 44 carries constant 11 to binary 30 input 1 and unary 31.
+TEST(AddConduit, ReplacingOneBranchKeepsTheRestAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+  AddConduit uut{FullID{1}, 50, {.node = 10, .index = 0}, {.node = 30, .index = 1}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  const fluir::pt::Block& body = *blockOf(tree, FullID{1});
+  EXPECT_EQ(body.conduits.at(44), makeConduit(44, 11, {{.target = 31, .index = 0}}));
+  EXPECT_EQ(body.conduits.at(50), makeConduit(50, 10, {{.target = 30, .index = 1}}));
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddConduit, InvalidOrTakenIdBadParentSameNodeOrDuplicateChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+  const AddConduit::Endpoint from{.node = 10, .index = 0};
+  const AddConduit::Endpoint to{.node = 32, .index = 0};
+
+  EXPECT_FALSE((AddConduit{FullID{1}, fluir::INVALID_ID, from, to}).execute(tree)) << "invalid";
+  EXPECT_FALSE((AddConduit{FullID{1}, 30, from, to}).execute(tree)) << "taken by a node";
+  EXPECT_FALSE((AddConduit{FullID{1}, 40, from, to}).execute(tree)) << "taken by a conduit";
+  EXPECT_FALSE((AddConduit{FullID{}, 50, from, to}).execute(tree)) << "top level";
+  EXPECT_FALSE((AddConduit{FullID{999}, 50, from, to}).execute(tree)) << "unresolved";
+  EXPECT_FALSE((AddConduit{FullID{5}, 50, from, to}).execute(tree)) << "a comment has no body";
+  EXPECT_FALSE((AddConduit{FullID{1}, 50, {.node = 30, .index = 0}, {.node = 30, .index = 1}}).execute(tree))
+    << "same node";
+  EXPECT_FALSE((AddConduit{FullID{1}, 50, from, {.node = 30, .index = 0}}).execute(tree)) << "duplicate";
+  EXPECT_FALSE((AddConduit{FullID{1}, 50, from, to}).unexecute(tree)) << "never added";
   EXPECT_EQ(tree, before);
 }

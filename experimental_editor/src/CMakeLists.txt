@@ -174,6 +174,7 @@ set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/operator_tool.cpp"
     "tools/pan_zoom_tool.cpp"
     "tools/popup_tool.cpp"
+    "tools/rail_menu.cpp"
     "tools/select_tool.cpp"
     "tools/text_edit_tool.cpp"
     "tools/type_tool.cpp"

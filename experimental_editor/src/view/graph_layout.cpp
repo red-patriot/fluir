@@ -179,6 +179,16 @@ namespace fluir::editor {
     return nullptr;
   }
 
+  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world) {
+    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
+      if (it->part == Part::Rail && parentOf(it->path) == fnPath && (!it->clip || it->clip->contains(world)) &&
+          it->world.contains(world)) {
+        return &*it;
+      }
+    }
+    return nullptr;
+  }
+
   std::optional<PortHit> portAt(const pt::ParseTree& tree,
                                 std::span<const Box> boxes,
                                 Vec2 world,

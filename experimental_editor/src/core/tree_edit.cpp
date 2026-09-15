@@ -44,10 +44,7 @@ namespace fluir::editor {
     if (block.nodes.erase(nodeId) == 0) {
       return false;
     }
-    std::erase_if(block.conduits, [nodeId](const auto& entry) { return entry.second.input == nodeId; });
-    for (const fluir::ID conduitId : stripTargets(block, nodeId)) {
-      block.conduits.erase(conduitId);
-    }
+    detachConduits(block, nodeId);
     for (auto& [id, node] : block.nodes) {
       forOperands(node, [nodeId](fluir::ID& operand) {
         if (operand == nodeId) {
@@ -56,6 +53,13 @@ namespace fluir::editor {
       });
     }
     return true;
+  }
+
+  void detachConduits(pt::Block& block, fluir::ID id) {
+    std::erase_if(block.conduits, [id](const auto& entry) { return entry.second.input == id; });
+    for (const fluir::ID conduitId : stripTargets(block, id)) {
+      block.conduits.erase(conduitId);
+    }
   }
 
   bool touches(const pt::Conduit& conduit, fluir::ID nodeId) {

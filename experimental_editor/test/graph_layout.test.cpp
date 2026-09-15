@@ -25,6 +25,7 @@ namespace {
   using fluir::editor::hitAt;
   using fluir::editor::layoutGraph;
   using fluir::editor::Part;
+  using fluir::editor::railAt;
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
   using testutil::expectRectNear;
@@ -194,6 +195,19 @@ TEST(GraphLayout, RailsAndWiresAreNotHittable) {
   ASSERT_NE(onWire, nullptr);
   EXPECT_EQ(onRail->path.size(), 1u);
   EXPECT_EQ(onWire->path.size(), 1u);
+}
+
+TEST(GraphLayout, RailAtFindsAFunctionsRailUnderAPoint) {
+  const testutil::Loaded rails = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(rails.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*rails.result.tree, kCtx.layout);
+
+  const Box* onRail = railAt(boxes, FullID{1}, Vec2{60, 90});  // param a rail {50,75,75,25}
+
+  ASSERT_NE(onRail, nullptr);
+  EXPECT_EQ(onRail->path, (FullID{1, 2}));
+  EXPECT_EQ(railAt(boxes, FullID{1}, Vec2{300, 300}), nullptr);
+  EXPECT_EQ(railAt(boxes, FullID{2}, Vec2{60, 90}), nullptr);
 }
 
 // top_level_comment_only.fl: comment 1 at units (10,10) 25x25, no header offset.

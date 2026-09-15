@@ -29,6 +29,9 @@ namespace fluir::editor {
   /** The last-painted hittable box containing `world`, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
 
+  /** The rail box of function `fnPath` containing `world`, honouring its clip, or nullptr. */
+  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world);
+
   /** A port: its node or rail `path`, side, and index on that side. */
   struct PortHit {
     FullID path;

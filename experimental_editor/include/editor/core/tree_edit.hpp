@@ -8,6 +8,9 @@ namespace fluir::editor {
   /** Erases `nodeId` from `block` and every reference to it. False if it was not there. */
   bool deleteNode(pt::Block& block, fluir::ID nodeId);
 
+  /** Erases every conduit sourced from `id` and strips `id` from targets, dropping emptied conduits. */
+  void detachConduits(pt::Block& block, fluir::ID id);
+
   /** Whether `conduit` is sourced from or lands on `nodeId`. */
   bool touches(const pt::Conduit& conduit, fluir::ID nodeId);
 

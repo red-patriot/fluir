@@ -1,6 +1,7 @@
 #include "editor/transaction/add_parameter.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <optional>
 #include <string>
 #include <vector>
@@ -23,8 +24,12 @@ namespace fluir::editor {
     for (const pt::FunctionDecl::Parameter& param : params) {
       index = std::max(index, param.index + 1);
     }
-    params.push_back(
-      {.id = id_, .index = index, .name = "param" + std::to_string(params.size() + 1), .typeName = "I32"});
+    // A deleted parameter can leave param{size + 1} taken; bump past it.
+    std::size_t n = params.size() + 1;
+    while (std::ranges::any_of(params, [n](const auto& param) { return param.name == "param" + std::to_string(n); })) {
+      ++n;
+    }
+    params.push_back({.id = id_, .index = index, .name = "param" + std::to_string(n), .typeName = "I32"});
     return true;
   }
 

@@ -9,7 +9,7 @@
 
 namespace fluir::editor {
 
-  /** Appends I32 parameter `newId` to function `path`, named `param{n}` after the last. */
+  /** Appends I32 parameter `newId` to function `path`, named `param{n}` after the last (skipping taken names). */
   class AddParameter : public Transaction {
    public:
     AddParameter(fluir::FullID path, fluir::ID newId) : path_(std::move(path)), id_(newId) { }

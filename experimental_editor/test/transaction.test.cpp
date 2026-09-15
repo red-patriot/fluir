@@ -306,6 +306,67 @@ TEST(DeleteTransaction, UnresolvedPathsChangeNothingAndReturnFalse) {
   EXPECT_EQ(tree, before);
 }
 
+TEST(DeleteTransaction, DeletingAParameterDropsItsConduitsAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1))
+    .body.conduits.emplace(45, makeConduit(45, 2, {{.target = 30, .index = 0}}));
+  const fluir::pt::ParseTree before = tree;
+
+  DeleteTransaction uut{FullID{1, 2}};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto& params = functionAt(tree, FullID{1})->input->parameters;
+  ASSERT_EQ(params.size(), 1u);
+  EXPECT_EQ(params[0], (fluir::pt::FunctionDecl::Parameter{.id = 3, .index = 1, .name = "y", .typeName = "i32"}));
+  EXPECT_FALSE(bodyOf(tree).conduits.contains(45));
+  EXPECT_EQ(bodyOf(tree).conduits.size(), 4u);
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(DeleteTransaction, DeletingTheReturnStripsConduitsLandingOnItAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  auto& fn = std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1));
+  fn.output = fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "I32"}};
+  fn.body.conduits.emplace(46, makeConduit(46, 31, {{.target = 4, .index = 0}}));
+  fn.body.conduits.emplace(47, makeConduit(47, 30, {{.target = 4, .index = 0}, {.target = 32, .index = 0}}));
+  const fluir::pt::ParseTree before = tree;
+
+  DeleteTransaction uut{FullID{1, 4}};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* after = functionAt(tree, FullID{1});
+  ASSERT_TRUE(after->output.has_value());
+  EXPECT_FALSE(after->output->ret.has_value());
+  EXPECT_FALSE(after->body.conduits.contains(46));
+  ASSERT_TRUE(after->body.conduits.contains(47));
+  EXPECT_EQ(after->body.conduits.at(47).children,
+            (std::vector<fluir::pt::Conduit::Output>{{.target = 32, .index = 0}}));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(DeleteTransaction, DeletingTheOnlyParameterLeavesAnEmptyInputBlock) {
+  fluir::pt::ParseTree tree = makeTree();
+  functionAt(tree, FullID{1})->input->parameters.pop_back();
+  const fluir::pt::ParseTree before = tree;
+
+  DeleteTransaction uut{FullID{1, 2}};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* fn = functionAt(tree, FullID{1});
+  ASSERT_TRUE(fn->input.has_value());
+  EXPECT_TRUE(fn->input->parameters.empty());
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
 TEST(DeleteTransaction, UnexecuteWithoutExecuteReturnsFalse) {
   fluir::pt::ParseTree tree = makeTree();
 
@@ -891,6 +952,20 @@ TEST(AddParameter, AppendsAfterTheLastParameterAndUndoRestoresTheTree) {
 
   ASSERT_TRUE(uut.unexecute(tree));
   EXPECT_EQ(tree, before);
+}
+
+TEST(AddParameter, SkipsANameAParameterAlreadyHas) {
+  fluir::pt::ParseTree tree = makeTreeWithEmptyFunction();
+  ASSERT_TRUE((AddParameter{FullID{6}, 1}).execute(tree));
+  ASSERT_TRUE((AddParameter{FullID{6}, 2}).execute(tree));
+  ASSERT_TRUE((DeleteTransaction{FullID{6, 1}}).execute(tree));
+
+  ASSERT_TRUE((AddParameter{FullID{6}, 3}).execute(tree));
+
+  const auto& params = functionAt(tree, FullID{6})->input->parameters;
+  ASSERT_EQ(params.size(), 2u);
+  EXPECT_EQ(params[0].name, "param2");
+  EXPECT_EQ(params[1].name, "param3");
 }
 
 TEST(AddParameter, MissingFunctionInvalidOrTakenIdChangeNothing) {

@@ -594,6 +594,27 @@ TEST(ModulePage, AddParameterFromTheHeaderMenuAddsARailAsOneUndoableEdit) {
   EXPECT_EQ(rails(), 0);
 }
 
+TEST(ModulePage, DeleteFromTheRailMenuRemovesTheParameterAsOneUndoableEdit) {
+  Harness h{kInputOnly};
+
+  rightPress(h, kParamARail.center());
+
+  const auto* menu = dynamic_cast<const fluir::editor::MenuPopup*>(h.page->state().popup.get());
+  ASSERT_NE(menu, nullptr);
+  EXPECT_EQ(menu->labels(), (std::vector<std::string>{"Delete"}));
+  const Vec2 at = h.screen(kParamARail.center());
+  const Vec2 row =
+    fluir::editor::layoutMenu(menu->labels(), Rect{at.x, at.y, 0, 0}, Rect{0, 0, 800, 600}, h.ctx.layout, &h.renderer)
+      .items[0]
+      .center();
+  h.send({move(row), down(row), up(row)});
+
+  EXPECT_EQ(h.page->state().popup, nullptr);
+  EXPECT_EQ(fluir::editor::functionAt(h.tree(), FullID{1})->input->parameters.size(), 1u);
+  h.click("Undo");
+  EXPECT_EQ(paramA(h).name, "a");
+}
+
 TEST(ModulePage, ARightPressInsideAFunctionBodyOpensTheBodyCompletions) {
   Harness h{kEmptyFunction};
 

@@ -38,8 +38,8 @@ namespace {
   struct Fixture {
     EditorState state{kCtx};
     std::optional<std::size_t> picked;
-    MenuPopup uut{kLabels, kAnchor, kBounds, kCtx.layout, [this](std::size_t i, EditorState&) { picked = i; }};
-    MenuLayout layout = layoutMenu(kLabels, kAnchor, kBounds, kCtx.layout);
+    MenuPopup uut{kLabels, kAnchor, kBounds, kCtx.layout, nullptr, [this](std::size_t i, EditorState&) { picked = i; }};
+    MenuLayout layout = layoutMenu(kLabels, kAnchor, kBounds, kCtx.layout, nullptr);
   };
 
 }  // namespace

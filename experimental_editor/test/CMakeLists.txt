@@ -21,6 +21,7 @@ add_executable(
     popup_tool.test.cpp
     completion_modal.test.cpp
     completion_tool.test.cpp
+    context_menu_tool.test.cpp
     operator_tool.test.cpp
     type_tool.test.cpp
     select_tool.test.cpp

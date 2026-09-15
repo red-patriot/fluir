@@ -58,6 +58,7 @@ namespace fluir::editor {
       anchor,
       popupBounds(state),
       state.ctx.layout,
+      state.text,
       [fnPath = parentOf(rail->path), id = rail->path.back(), labels](std::size_t i, EditorState& s) {
         s.editor.apply(UpdateFuncParamTransaction::setType(fnPath, id, labels[i]));
       });

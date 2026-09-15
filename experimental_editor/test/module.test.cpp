@@ -405,7 +405,7 @@ namespace {
     const double scale = h.page->state().view.scale;
     const Rect anchor{tl.x, tl.y, worldAnchor.w * scale, worldAnchor.h * scale};
     const Rect bounds{0, 0, h.renderer.outputSize_.x, h.renderer.outputSize_.y};
-    const auto layout = fluir::editor::layoutMenu(menu->labels(), anchor, bounds, h.ctx.layout);
+    const auto layout = fluir::editor::layoutMenu(menu->labels(), anchor, bounds, h.ctx.layout, h.page->state().text);
     const auto it = std::ranges::find(menu->labels(), label);
     EXPECT_NE(it, menu->labels().end()) << label;
     return layout.items.at(static_cast<std::size_t>(it - menu->labels().begin()));

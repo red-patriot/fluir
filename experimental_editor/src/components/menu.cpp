@@ -12,24 +12,29 @@ namespace fluir::editor {
   MenuLayout layoutMenu(std::span<const std::string> labels,
                         Rect anchor,
                         Rect bounds,
-                        const EditorContext::Layout& layout) {
-    std::size_t longest = 0;
+                        const EditorContext::Layout& layout,
+                        Renderer* text) {
+    Vec2 largest;
     for (const std::string& label : labels) {
-      longest = std::max(longest, label.size());
+      const Vec2 size =
+        text != nullptr ? text->measureText(label) : Vec2{static_cast<double>(label.size()) * GLYPH_PX, GLYPH_PX};
+      largest = Vec2{std::max(largest.x, size.x), std::max(largest.y, size.y)};
     }
-    const double w = std::max(anchor.w, static_cast<double>(longest) * GLYPH_PX + 2 * layout.textPad);
-    const double h = static_cast<double>(labels.size()) * kRowPx;
+    const double w = std::max(anchor.w, largest.x + 2 * layout.textPad);
+    const double rowH = std::max(kRowPx, largest.y + 2 * layout.textPad);
+    const double h = static_cast<double>(labels.size()) * rowH;
 
     double y = anchor.y + anchor.h;
     if (y + h > bounds.y + bounds.h) {
       y = anchor.y - h;
     }
-    // Left edge wins when the menu is wider than the bounds.
+    // Left and top edges win when the menu is larger than the bounds.
     const double x = std::max(bounds.x, std::min(anchor.x, bounds.x + bounds.w - w));
+    y = std::max(bounds.y, std::min(y, bounds.y + bounds.h - h));
 
     MenuLayout out{.frame = Rect{x, y, w, h}, .items = {}};
     for (std::size_t i = 0; i < labels.size(); ++i) {
-      out.items.push_back(Rect{x, y + static_cast<double>(i) * kRowPx, w, kRowPx});
+      out.items.push_back(Rect{x, y + static_cast<double>(i) * rowH, w, rowH});
     }
     return out;
   }
@@ -45,7 +50,8 @@ namespace fluir::editor {
       if (hovered == i) {
         renderer.fillRect(row, ctx.theme.buttonEnabled);
       }
-      renderer.drawText(Vec2{row.x + ctx.layout.textPad, row.y + ctx.layout.textPad}, labels[i], ctx.theme.text);
+      const double textH = renderer.measureText(labels[i]).y;
+      renderer.drawText(Vec2{row.x + ctx.layout.textPad, row.y + (row.h - textH) / 2}, labels[i], ctx.theme.text);
     }
     renderer.drawRect(layout.frame, ctx.theme.border);
   }

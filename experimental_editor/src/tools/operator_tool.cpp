@@ -34,6 +34,7 @@ namespace fluir::editor {
                                               anchor,
                                               popupBounds(state),
                                               state.ctx.layout,
+                                              state.text,
                                               [path = hit->path, ops = std::move(ops)](std::size_t i, EditorState& s) {
                                                 s.editor.apply(std::make_unique<EditOperatorTransaction>(path, ops[i]));
                                               });

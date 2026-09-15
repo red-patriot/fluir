@@ -15,6 +15,7 @@
 #include "editor/pages/splash.hpp"
 #include "editor/tools/completion_tool.hpp"
 #include "editor/tools/conduit_tool.hpp"
+#include "editor/tools/context_menu_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
 #include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
@@ -38,6 +39,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<ConduitTool>());
     tools_.add(std::make_unique<OperatorTool>());
     tools_.add(std::make_unique<TypeTool>());
+    tools_.add(std::make_unique<ContextMenuTool>());
     tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
 

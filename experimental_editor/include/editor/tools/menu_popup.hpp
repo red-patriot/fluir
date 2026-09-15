@@ -19,9 +19,13 @@ namespace fluir::editor {
    public:
     using OnPick = std::function<void(std::size_t, EditorState&)>;
 
-    /** `anchor` and `bounds` in screen px. `onPick` must not touch `EditorState::popup`. */
-    MenuPopup(
-      std::vector<std::string> labels, Rect anchor, Rect bounds, const EditorContext::Layout& layout, OnPick onPick);
+    /** `anchor` and `bounds` in screen px; `text` measures labels. `onPick` must not touch `EditorState::popup`. */
+    MenuPopup(std::vector<std::string> labels,
+              Rect anchor,
+              Rect bounds,
+              const EditorContext::Layout& layout,
+              Renderer* text,
+              OnPick onPick);
 
     bool onEvent(const InputEvent& event, EditorState& state) override;
     void draw(Renderer& renderer, const EditorContext& ctx) const override;

@@ -16,9 +16,15 @@ namespace fluir::editor {
     return Rect{0, 0, state.text->outputSize().x, state.text->outputSize().y};
   }
 
-  MenuPopup::MenuPopup(
-    std::vector<std::string> labels, Rect anchor, Rect bounds, const EditorContext::Layout& layout, OnPick onPick) :
-    labels_(std::move(labels)), layout_(layoutMenu(labels_, anchor, bounds, layout)), onPick_(std::move(onPick)) { }
+  MenuPopup::MenuPopup(std::vector<std::string> labels,
+                       Rect anchor,
+                       Rect bounds,
+                       const EditorContext::Layout& layout,
+                       Renderer* text,
+                       OnPick onPick) :
+    labels_(std::move(labels)),
+    layout_(layoutMenu(labels_, anchor, bounds, layout, text)),
+    onPick_(std::move(onPick)) { }
 
   bool MenuPopup::onEvent(const InputEvent& event, EditorState& state) {
     switch (event.type) {

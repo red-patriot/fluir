@@ -18,11 +18,11 @@ namespace fluir::editor {
     std::vector<Rect> items;
   };
 
-  /** Rows `labels` under `anchor`, flipping above it when they would pass `bounds`' bottom. */
-  MenuLayout layoutMenu(std::span<const std::string> labels,
-                        Rect anchor,
-                        Rect bounds,
-                        const EditorContext::Layout& layout);
+  /** Rows `labels` under `anchor`, flipping above past `bounds`' bottom.
+   * Measures with `text`; null estimates GLYPH_PX.
+   */
+  MenuLayout layoutMenu(
+    std::span<const std::string> labels, Rect anchor, Rect bounds, const EditorContext::Layout& layout, Renderer* text);
 
   void drawMenu(Renderer& renderer,
                 std::span<const std::string> labels,

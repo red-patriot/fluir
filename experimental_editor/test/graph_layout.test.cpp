@@ -230,16 +230,32 @@ TEST(GraphLayout, TopLevelCommentGripsAreHittable) {
   ASSERT_TRUE(l.result.tree.has_value());
 
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
-  // Move grip {155,55,15,15}; resize bar {170,50,5,125}.
+  // Move grip {155,55,15,15}; resize corner {160,160,15,15}.
   const Box* move = hitAt(boxes, Vec2{160, 60});
-  const Box* resize = hitAt(boxes, Vec2{172, 150});
+  const Box* resize = hitAt(boxes, Vec2{167, 167});
+  const Box* aboveCorner = hitAt(boxes, Vec2{172, 100});
 
   ASSERT_NE(move, nullptr);
   ASSERT_NE(resize, nullptr);
+  ASSERT_NE(aboveCorner, nullptr);
   EXPECT_EQ(move->part, Part::MoveGrip);
   EXPECT_EQ(move->path, (FullID{1}));
-  EXPECT_EQ(resize->part, Part::ResizeX);
+  EXPECT_EQ(resize->part, Part::ResizeXY);
   EXPECT_EQ(resize->path, (FullID{1}));
+  EXPECT_EQ(aboveCorner->part, Part::Body);
+}
+
+TEST(GraphLayout, InBodyCommentHasACornerResizeGrip) {
+  const testutil::Loaded l = loadFixture("read/in_body_comment_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  // Comment {25,50,125,125}; resize corner {135,160,15,15}.
+  const Box* resize = hitAt(boxes, Vec2{142, 167});
+
+  ASSERT_NE(resize, nullptr);
+  EXPECT_EQ(resize->part, Part::ResizeXY);
+  EXPECT_EQ(resize->path, (FullID{1, 2}));
 }
 
 TEST(GraphLayout, TopLevelDeclarationsInterleaveByZ) {

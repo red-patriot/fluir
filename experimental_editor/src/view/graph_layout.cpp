@@ -51,11 +51,16 @@ namespace fluir::editor {
       return std::visit([](const auto& n) { return n.id; }, node);
     }
 
-    // A node's body, then its grips over it.
-    void pushNodeBoxes(
-      const FullID& path, const Rect& rect, const std::optional<Rect>& clip, double unit, std::vector<Box>& out) {
+    // A node's body, then its grips over it. `resize` is ResizeX (right bar) or ResizeXY (corner).
+    void pushNodeBoxes(const FullID& path,
+                       const Rect& rect,
+                       const std::optional<Rect>& clip,
+                       Part resize,
+                       double unit,
+                       std::vector<Box>& out) {
+      const Rect grip = resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeBar(rect, unit);
       out.push_back({path, Part::Body, rect, clip});
-      out.push_back({path, Part::ResizeX, resizeBar(rect, unit), clip});
+      out.push_back({path, resize, grip, clip});
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
@@ -71,7 +76,8 @@ namespace fluir::editor {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        pushNodeBoxes(path, rect, clip, layout.unitPx, out);
+        const Part resize = std::holds_alternative<pt::Comment>(*node) ? Part::ResizeXY : Part::ResizeX;
+        pushNodeBoxes(path, rect, clip, resize, layout.unitPx, out);
         ports[idOf(*node)] = editor::ports(*node, rect, layout);
       }
 
@@ -163,8 +169,12 @@ namespace fluir::editor {
       if (const auto* fn = std::get_if<pt::FunctionDecl>(decl)) {
         layoutFunction(*fn, layout, out);
       } else if (const auto* comment = std::get_if<pt::Comment>(decl)) {
-        pushNodeBoxes(
-          FullID{comment->id}, localRect(comment->location, layout.unitPx), std::nullopt, layout.unitPx, out);
+        pushNodeBoxes(FullID{comment->id},
+                      localRect(comment->location, layout.unitPx),
+                      std::nullopt,
+                      Part::ResizeXY,
+                      layout.unitPx,
+                      out);
       }
     }
     return out;

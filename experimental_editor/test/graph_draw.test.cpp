@@ -90,10 +90,10 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
   EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 54, 117, 117}, 1.0));
   EXPECT_EQ(clipsCovering(r.calls, Rect{54, 54, 117, 117}).size(), 1u);
-  EXPECT_TRUE(textStrings(r.calls).empty());             // no "//" label
-  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));  // move grip
-  EXPECT_TRUE(hasFill(r.calls, Rect{170, 50, 5, 125}));  // resize bar
-  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());       // no ports
+  EXPECT_TRUE(textStrings(r.calls).empty());              // no "//" label
+  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));   // move grip
+  EXPECT_TRUE(hasFill(r.calls, Rect{160, 160, 15, 15}));  // resize corner
+  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());        // no ports
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
 }
 

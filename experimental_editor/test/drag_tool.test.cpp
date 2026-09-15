@@ -234,6 +234,40 @@ TEST(DragTool, AMoveGripDragMovesATopLevelComment) {
   EXPECT_FALSE(state.editor.canUndo());
 }
 
+// Comment corner {160,160,15,15}.
+TEST(DragTool, TheCornerGripResizesACommentInBothAxes) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/top_level_comment_only.fl");
+  const auto before = state.editor.tree();
+  DragTool tool;
+  const Vec2 corner{167.5, 167.5};
+
+  ASSERT_TRUE(send(tool, state, down(corner)));
+  send(tool, state, move(corner + Vec2{15, 10}));
+  EXPECT_TRUE(send(tool, state, up(corner + Vec2{15, 10})));
+
+  const FlowGraphLocation loc = *locationAt(state.editor.tree(), FullID{1});
+  EXPECT_EQ(loc.width, 28);
+  EXPECT_EQ(loc.height, 27);
+  EXPECT_EQ(loc.x, 10);
+  EXPECT_EQ(loc.y, 10);
+  ASSERT_TRUE(state.editor.undo());
+  EXPECT_EQ(state.editor.tree(), before);
+}
+
+TEST(DragTool, ACommentResizeClampsToItsMinimum) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/top_level_comment_only.fl");
+  DragTool tool;
+  const Vec2 corner{167.5, 167.5};
+
+  ASSERT_TRUE(send(tool, state, down(corner)));
+  send(tool, state, move(corner + Vec2{-1000, -1000}));
+
+  EXPECT_EQ(locationAt(state.editor.tree(), FullID{1})->width, 8);
+  EXPECT_EQ(locationAt(state.editor.tree(), FullID{1})->height, 8);
+}
+
 // Undo or delete under a live gesture must not crash or record a stale edit.
 TEST(DragTool, ReleaseAfterThePathVanishedRecordsNothing) {
   Harness h;

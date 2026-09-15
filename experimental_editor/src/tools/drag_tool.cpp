@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <memory>
+#include <variant>
 
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/move.hpp"
@@ -12,6 +13,15 @@ namespace fluir::editor {
     // Size limits in grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> NODE_SIZE{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
     constexpr Limits<Vec2i> FUNCTION_SIZE{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
+    // Tall enough that the corner grip never overlaps the move grip.
+    constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
+
+    bool isComment(const pt::ParseTree& tree, const FullID& path) {
+      const pt::Declaration* decl = declarationAt(tree, path);
+      const pt::Node* node = nodeAt(tree, path);
+      return (decl != nullptr && std::holds_alternative<pt::Comment>(*decl)) ||
+             (node != nullptr && std::holds_alternative<pt::Comment>(*node));
+    }
 
     bool isGrip(Part part) { return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeXY; }
 
@@ -95,7 +105,9 @@ namespace fluir::editor {
       edit_->unexecute(tree);
       edit_.reset();
     }
-    const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE : NODE_SIZE;
+    const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE :
+                                isComment(tree, path_)             ? COMMENT_SIZE :
+                                                                     NODE_SIZE;
     const int width = std::clamp(start_.width + delta_.x, size.lower.x, size.upper.x);
     const int height = std::clamp(start_.height + delta_.y, size.lower.y, size.upper.y);
 

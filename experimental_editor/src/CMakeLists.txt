@@ -159,6 +159,12 @@ set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
 set(FLUIR_EDITOR_VIEW_SOURCES
     "view/graph_draw.cpp"
     "view/graph_layout.cpp"
+    "view/draw/binary.cpp"
+    "view/draw/call.cpp"
+    "view/draw/comment.cpp"
+    "view/draw/constant.cpp"
+    "view/draw/draw_utils.cpp"
+    "view/draw/unary.cpp"
     "view/node_view.cpp"
     "view/toolbar.cpp"
 )

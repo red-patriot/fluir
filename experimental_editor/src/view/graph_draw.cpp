@@ -6,6 +6,7 @@
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
@@ -41,33 +42,39 @@ namespace fluir::editor {
       renderer.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
     }
 
+    void drawFrame(const Subview& view, const pt::FunctionDecl& fn, const Rect& f, const EditorContext& ctx) {
+      const Rect header{f.x, f.y, f.w, ctx.layout.headerH()};
+      view.renderer().fillRect(view.toScreen(header), ctx.theme.funcDeclHeader);
+      view.renderer().drawRect(view.toScreen(f), ctx.theme.border);
+      drawSplitLabel(view, header, kFnTag, fn.name, ctx);
+    }
+
+    // A function's body is its background; otherwise a top-level comment or a node.
+    void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
+      if (functionAt(tree, box.path) != nullptr) {
+        view.renderer().fillRect(view.toScreen(box.world), ctx.theme.background);
+      } else if (const auto* comment = std::get_if<pt::Comment>(declarationAt(tree, box.path))) {
+        drawComment(*comment, box.world, view, ctx);
+      } else if (const pt::Node* node = nodeAt(tree, box.path)) {
+        drawNode(*node, box.world, view, ctx);
+      }
+    }
+
     void drawBox(
       const Subview& view, const pt::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
       Renderer& r = view.renderer();
       switch (box.part) {
         case Part::Body:
-          if (functionAt(tree, box.path) != nullptr) {
-            r.fillRect(view.toScreen(box.world), ctx.theme.background);
-          } else if (const auto* comment = std::get_if<pt::Comment>(declarationAt(tree, box.path))) {
-            drawComment(*comment, box.world, view, ctx);
-            if (selected) {
-              drawOutline(view, ctx, box.world);
-            }
-          } else if (const pt::Node* node = nodeAt(tree, box.path)) {
-            drawNode(*node, box.world, view, ctx);
-            if (selected) {
-              drawOutline(view, ctx, box.world);
-            }
+          drawBody(view, tree, box, ctx);
+          if (selected && functionAt(tree, box.path) == nullptr) {
+            drawOutline(view, ctx, box.world);
           }
           return;
         case Part::Frame:
           if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
-            const Rect& f = box.world;
-            r.fillRect(view.toScreen(Rect{f.x, f.y, f.w, ctx.layout.headerH()}), ctx.theme.funcDeclHeader);
-            r.drawRect(view.toScreen(f), ctx.theme.border);
-            drawSplitLabel(view, Rect{f.x, f.y, f.w, ctx.layout.headerH()}, kFnTag, fn->name, ctx);
+            drawFrame(view, *fn, box.world, ctx);
             if (selected) {
-              drawOutline(view, ctx, f);
+              drawOutline(view, ctx, box.world);
             }
           }
           return;

@@ -21,6 +21,7 @@
 #include "editor/transaction/set_constant_value.hpp"
 #include "editor/transaction/transaction.hpp"
 #include "editor/transaction/update_func_param.hpp"
+#include "editor/view/draw/comment.hpp"
 #include "editor/view/node_view.hpp"
 
 // Editable kinds: a constant's literal, a call's target and argument names, a function's name and parameter names,

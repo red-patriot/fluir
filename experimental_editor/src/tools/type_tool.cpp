@@ -10,7 +10,7 @@
 #include "editor/core/tree_path.hpp"
 #include "editor/tools/menu_popup.hpp"
 #include "editor/transaction/update_func_param.hpp"
-#include "editor/view/node_view.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor {
   namespace {

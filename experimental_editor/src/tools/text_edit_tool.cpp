@@ -5,7 +5,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -22,6 +21,7 @@
 #include "editor/transaction/transaction.hpp"
 #include "editor/transaction/update_func_param.hpp"
 #include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/function.hpp"
 #include "editor/view/node_view.hpp"
 
 // Editable kinds: a constant's literal, a call's target and argument names, a function's name and parameter names,
@@ -30,9 +30,6 @@
 
 namespace fluir::editor {
   namespace {
-
-    // Matches the header tag graph_draw draws.
-    constexpr std::string_view kFnTag = "fn";
 
     const pt::Constant* constantAt(const pt::ParseTree& tree, const FullID& path) {
       const pt::Node* node = nodeAt(tree, path);
@@ -165,7 +162,7 @@ namespace fluir::editor {
       }
       const Rect& r = body->world;
       if (functionAt(tree, target.path) != nullptr) {
-        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, kFnTag, viewScale, layout).text, body->clip};
+        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, draw::FN_TAG, viewScale, layout).text, body->clip};
       }
       if (const pt::Call* call = callAt(tree, target.path)) {
         if (!target.index) {
@@ -241,8 +238,8 @@ namespace fluir::editor {
 
     // A function's name or parameter sits on header chrome; everything else on its node.
     Color coverColor(const pt::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
-      if (functionAt(tree, path) != nullptr) {
-        return theme.funcDeclHeader;
+      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
+        return draw::color(*fn, theme);
       }
       if (commentAt(tree, path) != nullptr) {
         return theme.commentNode;

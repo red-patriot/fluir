@@ -7,6 +7,7 @@
 
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/function.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
@@ -120,7 +121,7 @@ namespace fluir::editor {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
           out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
-          ports[params[row]->id] = PortSet{{}, {railAnchor(fn, params[row]->id, rail)}};
+          ports[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
         }
       }
       if (fn.output && fn.output->ret) {
@@ -129,7 +130,7 @@ namespace fluir::editor {
                         layout.railStep(),
                         layout.railStep()};
         out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
-        ports[fn.output->ret->id] = PortSet{{railAnchor(fn, fn.output->ret->id, rail)}, {}};
+        ports[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
       }
 
       layoutBlock(fn.body, path, origin, clip, layout, ports, out);
@@ -153,12 +154,7 @@ namespace fluir::editor {
         return node == nullptr ? PortSet{} : ports(*node, box.world, layout);
       }
       const pt::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
-      if (fn == nullptr) {
-        return {};
-      }
-      const Vec2 anchor = railAnchor(*fn, box.path.back(), box.world);
-      const bool isReturn = fn->output && fn->output->ret && fn->output->ret->id == box.path.back();
-      return isReturn ? PortSet{{anchor}, {}} : PortSet{{}, {anchor}};
+      return fn == nullptr ? PortSet{} : draw::anchors(*fn, box.path.back(), box.world);
     }
 
   }  // namespace
@@ -219,11 +215,6 @@ namespace fluir::editor {
       }
     }
     return std::nullopt;
-  }
-
-  Vec2 railAnchor(const pt::FunctionDecl& fn, fluir::ID id, const Rect& rect) {
-    const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == id;
-    return Vec2{isReturn ? rect.x : rect.x + rect.w, rect.y + rect.h * 0.5};
   }
 
   Rect graphBounds(std::span<const Box> boxes) {

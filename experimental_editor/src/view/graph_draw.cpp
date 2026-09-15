@@ -1,18 +1,21 @@
 #include "editor/view/graph_draw.hpp"
 
-#include <string_view>
 #include <variant>
 
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
-#include "editor/view/draw/draw_utils.hpp"
+#include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/function.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
   namespace {
 
-    constexpr std::string_view kFnTag = "fn";
+    template <typename... Fs>
+    struct Overloaded : Fs... {
+      using Fs::operator()...;
+    };
 
     // Renderer::drawRect has no thickness, so two concentric rects stand in for a 2px outline.
     void drawOutline(const Subview& view, const EditorContext& ctx, const Rect& r) {
@@ -22,39 +25,14 @@ namespace fluir::editor {
       }
     }
 
-    // A parameter's port is on its right edge, the return's on its left.
-    void drawRail(
-      const Subview& view, const pt::FunctionDecl& fn, fluir::ID id, const Rect& r, const EditorContext& ctx) {
-      const std::string* typeName = railTypeAt(fn, id);
-      std::string_view name;
-      const Vec2 anchor = railAnchor(fn, id, r);
-      if (fn.input) {
-        for (const auto& param : fn.input->parameters) {
-          if (param.id == id) {
-            name = param.name;
-          }
-        }
-      }
-      Renderer& renderer = view.renderer();
-      renderer.fillRect(view.toScreen(r), ctx.theme.funcDeclHeader);
-      renderer.drawRect(view.toScreen(r), ctx.theme.border);
-      drawSplitLabel(view, r, typeName == nullptr ? std::string_view{} : *typeName, name, ctx);
-      renderer.fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
-    }
-
-    void drawFrame(const Subview& view, const pt::FunctionDecl& fn, const Rect& f, const EditorContext& ctx) {
-      const Rect header{f.x, f.y, f.w, ctx.layout.headerH()};
-      view.renderer().fillRect(view.toScreen(header), ctx.theme.funcDeclHeader);
-      view.renderer().drawRect(view.toScreen(f), ctx.theme.border);
-      drawSplitLabel(view, header, kFnTag, fn.name, ctx);
-    }
-
-    // A function's body is its background; otherwise a top-level comment or a node.
+    // A top-level declaration draws its own body; a deeper path is a node.
     void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
-      if (functionAt(tree, box.path) != nullptr) {
-        view.renderer().fillRect(view.toScreen(box.world), ctx.theme.background);
-      } else if (const auto* comment = std::get_if<pt::Comment>(declarationAt(tree, box.path))) {
-        drawComment(*comment, box.world, view, ctx);
+      if (box.path.size() == 1) {
+        if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
+          std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                                [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+                     *decl);
+        }
       } else if (const pt::Node* node = nodeAt(tree, box.path)) {
         drawNode(*node, box.world, view, ctx);
       }
@@ -72,7 +50,7 @@ namespace fluir::editor {
           return;
         case Part::Frame:
           if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
-            drawFrame(view, *fn, box.world, ctx);
+            draw::drawFrame(*fn, box.world, view, ctx);
             if (selected) {
               drawOutline(view, ctx, box.world);
             }
@@ -80,7 +58,7 @@ namespace fluir::editor {
           return;
         case Part::Rail:
           if (const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
-            drawRail(view, *fn, box.path.back(), box.world, ctx);
+            draw::drawRail(*fn, box.path.back(), box.world, view, ctx);
           }
           return;
         case Part::Wire:

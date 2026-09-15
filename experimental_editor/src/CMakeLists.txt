@@ -164,6 +164,7 @@ set(FLUIR_EDITOR_VIEW_SOURCES
     "view/draw/comment.cpp"
     "view/draw/constant.cpp"
     "view/draw/draw_utils.cpp"
+    "view/draw/function.cpp"
     "view/draw/unary.cpp"
     "view/node_view.cpp"
     "view/toolbar.cpp"

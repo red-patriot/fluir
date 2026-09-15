@@ -22,8 +22,4 @@ namespace fluir::editor {
     std::visit([&](const auto& n) { draw::draw(n, world, view, ctx); }, node);
   }
 
-  void drawComment(const pt::Comment& comment, Rect world, const Subview& view, const EditorContext& ctx) {
-    draw::draw(comment, world, view, ctx);
-  }
-
 }  // namespace fluir::editor

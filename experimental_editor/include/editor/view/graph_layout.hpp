@@ -46,9 +46,6 @@ namespace fluir::editor {
                                 Vec2 world,
                                 const EditorContext::Layout& layout);
 
-  /** Where `fn`'s rail `id` laid out at `rect` connects: a parameter's right-mid, the return's left-mid. */
-  Vec2 railAnchor(const pt::FunctionDecl& fn, fluir::ID id, const Rect& rect);
-
   /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);
 

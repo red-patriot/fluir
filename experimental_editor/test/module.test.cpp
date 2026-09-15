@@ -619,6 +619,9 @@ TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
   EXPECT_EQ(openClipsBefore(calls, modalAt), 0);
   EXPECT_LT(fillIndex(calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}), modalAt);
   for (std::size_t i = modalAt; i < calls.size(); ++i) {
+    if (calls[i].op == testutil::DrawCall::Op::PopClip) {
+      continue;  // closes the modal's own row clip
+    }
     const bool inFrame = calls[i].op == testutil::DrawCall::Op::Text ? frame.contains(calls[i].a) :
                                                                        frame.contains(calls[i].rect.topLeft());
     EXPECT_TRUE(inFrame) << "call " << i << " after the modal is not the modal's";

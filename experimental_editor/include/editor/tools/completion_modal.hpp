@@ -17,9 +17,9 @@ namespace fluir::editor {
   /** A centered modal listing completions; Escape or a press outside closes. A left press on a row adds it. */
   class CompletionModal : public Popup {
    public:
-    /** `bounds` in screen px; the modal is half its width, as tall as its rows, centered. Rows fit `text`'s
-     * measured line height (null falls back to GLYPH_PX). Picks land at world units `where` (z is the parent's)
-     * inside `body`. */
+    /** `bounds` in screen px; the modal is half its width, as tall as its rows (capped at bounds, then wheel-scrolled),
+     * centered. Rows fit `text`'s measured line height (null falls back to GLYPH_PX). Picks land at world units `where`
+     * (z is the parent's) inside `body`. */
     CompletionModal(
       std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where = {}, FullID body = {});
 
@@ -32,10 +32,15 @@ namespace fluir::editor {
    private:
     std::vector<Completion> completions_;
     std::vector<std::string> labels_;
-    MenuLayout layout_;
+    MenuLayout layout_;  // rows unscrolled
+    double contentH_ = 0;
+    double rowStep_ = 0;
+    double scroll_ = 0;  // px the rows are shifted up
     Coordinate where_;
     FullID body_;
     std::optional<std::size_t> hovered_;
+
+    std::optional<std::size_t> rowAt(Vec2 screen) const;
   };
 
 }  // namespace fluir::editor

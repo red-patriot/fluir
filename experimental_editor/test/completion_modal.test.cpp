@@ -1,7 +1,6 @@
 #include "editor/tools/completion_modal.hpp"
 
 #include <algorithm>
-#include <array>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -34,13 +33,21 @@ namespace {
   using testutil::key;
   using testutil::move;
 
+  InputEvent wheel(double y) { return {.type = InputEvent::Type::Wheel, .pos = {400, 300}, .wheel = {0, y}}; }
+
   const EditorContext kCtx;
   const Rect kBounds{0, 0, 800, 600};
   constexpr fluir::Coordinate kWhere{.x = 12, .y = 34, .z = 0};
 
   // Labels are views, so they must outlive the modal.
   std::vector<Completion> completions(std::size_t n) {
-    static constexpr std::array<std::string_view, 3> kLabels{"One", "Two", "Three"};
+    static const std::vector<std::string> kLabels = [] {
+      std::vector<std::string> labels;
+      for (int i = 0; i < 40; ++i) {
+        labels.push_back("Item " + std::to_string(i));
+      }
+      return labels;
+    }();
     std::vector<Completion> out;
     for (std::size_t i = 0; i < n; ++i) {
       out.push_back({kLabels.at(i), CommentOption{}});
@@ -246,4 +253,82 @@ TEST(CompletionModal, HoveringARowFillsIt) {
   testutil::RecordingRenderer left;
   f.uut.draw(left, kCtx);
   EXPECT_FALSE(testutil::hasFill(left.calls, rows[1]));
+}
+
+TEST(CompletionModal, ATallListIsCappedAtTheBoundsAndClipsItsRows) {
+  const CompletionModal uut{completions(40), kBounds, nullptr};
+  testutil::RecordingRenderer r;
+
+  uut.draw(r, kCtx);
+
+  EXPECT_LE(uut.frame().h, kBounds.h);
+  EXPECT_GE(uut.frame().y, kBounds.y);
+  EXPECT_EQ(testutil::countOf(r.calls, testutil::DrawCall::Op::PushClip),
+            testutil::countOf(r.calls, testutil::DrawCall::Op::PopClip));
+  const auto rows = drawnRows(uut);
+  ASSERT_EQ(rows.size(), 40u);
+  EXPECT_GT(rows.back().y, uut.frame().y + uut.frame().h) << "last row starts clipped below the frame";
+}
+
+TEST(CompletionModal, WheelingDownScrollsAClippedRowIntoReach) {
+  EditorState state{kCtx};
+  CompletionModal uut{completions(40), kBounds, nullptr, kWhere};
+  const auto before = drawnRows(uut);
+  ASSERT_EQ(before.size(), 40u);
+
+  EXPECT_TRUE(uut.onEvent(move(before.back().center()), state));
+  testutil::RecordingRenderer idle;
+  uut.draw(idle, kCtx);
+  EXPECT_TRUE(testutil::fillsOf(idle.calls).size() == 1u) << "only the frame fills while the pointer is outside it";
+
+  EXPECT_TRUE(uut.onEvent(wheel(-1000), state));
+  const auto after = drawnRows(uut);
+  ASSERT_EQ(after.size(), 40u);
+  EXPECT_TRUE(uut.frame().contains(after.back().center()));
+  EXPECT_FALSE(uut.frame().contains(after.front().center())) << "first row scrolled out";
+
+  EXPECT_TRUE(uut.onEvent(move(after.back().center()), state));
+  testutil::RecordingRenderer hovered;
+  uut.draw(hovered, kCtx);
+  EXPECT_TRUE(testutil::hasFill(hovered.calls, after.back()));
+
+  EXPECT_TRUE(uut.onEvent(move(before.front().center()), state));
+  testutil::RecordingRenderer overFirst;
+  uut.draw(overFirst, kCtx);
+  EXPECT_FALSE(testutil::hasFill(overFirst.calls, after.front())) << "first row no longer under its old spot";
+
+  EXPECT_FALSE(uut.onEvent(down(after.back().center()), state));
+  EXPECT_EQ(state.editor.tree().declarations.size(), 1u);
+}
+
+TEST(CompletionModal, TheWheelClampsAtBothEnds) {
+  EditorState state{kCtx};
+  CompletionModal uut{completions(40), kBounds, nullptr};
+  const auto top = drawnRows(uut);
+
+  EXPECT_TRUE(uut.onEvent(wheel(-1000), state));
+  const auto bottom = drawnRows(uut);
+  EXPECT_NEAR(bottom.back().y + bottom.back().h, uut.frame().y + uut.frame().h - 4.0, 1e-6)
+    << "last row rests on the bottom gap";
+  EXPECT_TRUE(uut.onEvent(wheel(-5), state));
+  EXPECT_EQ(drawnRows(uut), bottom);
+
+  EXPECT_TRUE(uut.onEvent(wheel(1000), state));
+  EXPECT_EQ(drawnRows(uut), top);
+  EXPECT_TRUE(uut.onEvent(wheel(5), state));
+  EXPECT_EQ(drawnRows(uut), top);
+}
+
+TEST(CompletionModal, AShortListIgnoresTheWheel) {
+  EditorState state{kCtx};
+  CompletionModal uut{completions(2), kBounds, nullptr};
+  const auto rows = drawnRows(uut);
+
+  EXPECT_TRUE(uut.onEvent(wheel(-3), state));
+  EXPECT_EQ(drawnRows(uut), rows);
+  EXPECT_TRUE(uut.onEvent(wheel(3), state));
+  EXPECT_EQ(drawnRows(uut), rows);
+
+  EXPECT_FALSE(uut.onEvent(down(rows[0].center()), state));
+  EXPECT_EQ(state.editor.tree().declarations.size(), 1u);
 }

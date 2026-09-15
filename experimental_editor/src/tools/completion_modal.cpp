@@ -52,7 +52,9 @@ namespace fluir::editor {
     const double rowHeightPx = lineHeightPx * TEXT_SCALE + 2 * ROW_PAD_PX;
     const auto n = static_cast<double>(labels_.size());
     const double w = bounds.w * MODAL_WIDTH_FRACTION;
-    const double h = n * rowHeightPx + (n + 1) * ROW_GAP_PX;
+    contentH_ = n * rowHeightPx + (n + 1) * ROW_GAP_PX;
+    rowStep_ = rowHeightPx + ROW_GAP_PX;
+    const double h = std::min(contentH_, bounds.h);
     layout_.frame = Rect{bounds.x + (bounds.w - w) / 2, bounds.y + (bounds.h - h) / 2, w, h};
     // Rows stack from the frame's top, inset by a gap on every side.
     for (std::size_t i = 0; i < labels_.size(); ++i) {
@@ -63,14 +65,24 @@ namespace fluir::editor {
     }
   }
 
+  std::optional<std::size_t> CompletionModal::rowAt(Vec2 screen) const {
+    if (!layout_.frame.contains(screen)) {
+      return std::nullopt;
+    }
+    return menuItemAt(layout_, screen + Vec2{0, scroll_});
+  }
+
   bool CompletionModal::onEvent(const InputEvent& event, EditorState& state) {
     switch (event.type) {
       case InputEvent::Type::MouseMove:
-        hovered_ = menuItemAt(layout_, event.pos);
+        hovered_ = rowAt(event.pos);
+        return true;
+      case InputEvent::Type::Wheel:
+        scroll_ = std::clamp(scroll_ - event.wheel.y * rowStep_, 0.0, contentH_ - layout_.frame.h);
         return true;
       case InputEvent::Type::MouseDown:
         {
-          const std::optional<std::size_t> row = menuItemAt(layout_, event.pos);
+          const std::optional<std::size_t> row = rowAt(event.pos);
           if (!row || event.button != InputEvent::Button::Left) {
             return layout_.frame.contains(event.pos);
           }
@@ -81,8 +93,13 @@ namespace fluir::editor {
                        },
                        [&](const CommentOption&) -> std::unique_ptr<Transaction> {
                          return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
-                       }},
+                       },
+                       // Operators and constants arrive with AddNode.
+                       [](const auto&) -> std::unique_ptr<Transaction> { return nullptr; }},
             completions_[*row].option);
+          if (edit == nullptr) {
+            return true;
+          }
           state.editor.apply(std::move(edit));
           return false;
         }
@@ -95,14 +112,17 @@ namespace fluir::editor {
 
   void CompletionModal::draw(Renderer& renderer, const EditorContext& ctx) const {
     renderer.fillRect(layout_.frame, ctx.theme.headerBackground);
+    renderer.pushClip(layout_.frame);
     for (std::size_t i = 0; i < labels_.size(); ++i) {
-      const Rect& row = layout_.items[i];
+      Rect row = layout_.items[i];
+      row.y -= scroll_;
       if (hovered_ == i) {
         renderer.fillRect(row, ctx.theme.buttonEnabled);
       }
       renderer.drawRect(row, ctx.theme.border);
       renderer.drawText(Vec2{row.x + ROW_PAD_PX, row.y + ROW_PAD_PX}, labels_[i], ctx.theme.text, TEXT_SCALE);
     }
+    renderer.popClip();
     renderer.drawRect(layout_.frame, ctx.theme.border);
   }
 

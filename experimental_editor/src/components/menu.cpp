@@ -43,18 +43,24 @@ namespace fluir::editor {
                 std::span<const std::string> labels,
                 const MenuLayout& layout,
                 std::optional<std::size_t> hovered,
-                const EditorContext& ctx) {
+                const EditorContext& ctx,
+                const std::vector<bool>& enabled) {
     renderer.fillRect(layout.frame, ctx.theme.headerBackground);
     for (std::size_t i = 0; i < labels.size() && i < layout.items.size(); ++i) {
       const Rect& row = layout.items[i];
-      if (hovered == i) {
+      const bool on = menuRowEnabled(enabled, i);
+      if (on && hovered == i) {
         renderer.fillRect(row, ctx.theme.buttonEnabled);
       }
       const double textH = renderer.measureText(labels[i]).y;
-      renderer.drawText(Vec2{row.x + ctx.layout.textPad, row.y + (row.h - textH) / 2}, labels[i], ctx.theme.text);
+      renderer.drawText(Vec2{row.x + ctx.layout.textPad, row.y + (row.h - textH) / 2},
+                        labels[i],
+                        on ? ctx.theme.text : ctx.theme.buttonDisabled);
     }
     renderer.drawRect(layout.frame, ctx.theme.border);
   }
+
+  bool menuRowEnabled(const std::vector<bool>& enabled, std::size_t i) { return i >= enabled.size() || enabled[i]; }
 
   std::optional<std::size_t> menuItemAt(const MenuLayout& layout, Vec2 screen) {
     for (std::size_t i = 0; i < layout.items.size(); ++i) {

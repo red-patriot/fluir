@@ -22,6 +22,7 @@ add_executable(
     completion_modal.test.cpp
     completion_tool.test.cpp
     context_menu_tool.test.cpp
+    function_header_menu.test.cpp
     operator_tool.test.cpp
     type_tool.test.cpp
     select_tool.test.cpp

@@ -25,16 +25,19 @@ namespace fluir::editor {
         continue;
       }
       std::vector<std::string> labels;
+      std::vector<bool> enabled;
       for (const MenuItem& item : items) {
         labels.push_back(item.label);
+        enabled.push_back(item.enabled);
       }
-      state.popup =
-        std::make_unique<MenuPopup>(std::move(labels),
-                                    Rect{event.pos.x, event.pos.y, 0, 0},
-                                    popupBounds(state),
-                                    state.ctx.layout,
-                                    state.text,
-                                    [items = std::move(items)](std::size_t i, EditorState& s) { items[i].onClick(s); });
+      state.popup = std::make_unique<MenuPopup>(
+        std::move(labels),
+        Rect{event.pos.x, event.pos.y, 0, 0},
+        popupBounds(state),
+        state.ctx.layout,
+        state.text,
+        [items = std::move(items)](std::size_t i, EditorState& s) { items[i].onClick(s); },
+        std::move(enabled));
       return true;  // consumed so no later tool replaces the menu
     }
     return false;

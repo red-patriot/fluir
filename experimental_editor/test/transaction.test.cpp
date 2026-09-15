@@ -14,6 +14,8 @@
 #include "editor/transaction/add_conduit.hpp"
 #include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/add_node.hpp"
+#include "editor/transaction/add_parameter.hpp"
+#include "editor/transaction/add_return.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
@@ -37,6 +39,8 @@ namespace {
   using fluir::editor::AddConduit;
   using fluir::editor::AddDecl;
   using fluir::editor::AddNode;
+  using fluir::editor::AddParameter;
+  using fluir::editor::AddReturn;
   using fluir::editor::blockOf;
   using fluir::editor::ConstantOption;
   using fluir::editor::DeleteTransaction;
@@ -836,4 +840,117 @@ TEST(AddConduit, InvalidOrTakenIdBadParentSameNodeOrDuplicateChangeNothing) {
   EXPECT_FALSE((AddConduit{FullID{1}, 50, from, {.node = 30, .index = 0}}).execute(tree)) << "duplicate";
   EXPECT_FALSE((AddConduit{FullID{1}, 50, from, to}).unexecute(tree)) << "never added";
   EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  // makeTree plus empty function 6.
+  fluir::pt::ParseTree makeTreeWithEmptyFunction() {
+    fluir::pt::ParseTree tree = makeTreeWithComment();
+    tree.declarations.emplace(6,
+                              fluir::pt::Declaration{fluir::pt::FunctionDecl{
+                                6,
+                                FlowGraphLocation{.x = 200, .y = 0, .z = 0, .width = 50, .height = 50},
+                                "g",
+                                {},
+                                std::nullopt,
+                                std::nullopt}});
+    return tree;
+  }
+
+}  // namespace
+
+TEST(AddParameter, AddsAnI32ParameterToAnEmptyFunctionAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTreeWithEmptyFunction();
+  const fluir::pt::ParseTree before = tree;
+
+  AddParameter uut{FullID{6}, 1};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* fn = functionAt(tree, FullID{6});
+  ASSERT_TRUE(fn->input.has_value());
+  ASSERT_EQ(fn->input->parameters.size(), 1u);
+  EXPECT_EQ(fn->input->parameters[0],
+            (fluir::pt::FunctionDecl::Parameter{.id = 1, .index = 0, .name = "param1", .typeName = "I32"}));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(AddParameter, AppendsAfterTheLastParameterAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  AddParameter uut{FullID{1}, 50};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto& params = functionAt(tree, FullID{1})->input->parameters;
+  ASSERT_EQ(params.size(), 3u);
+  EXPECT_EQ(params[2], (fluir::pt::FunctionDecl::Parameter{.id = 50, .index = 2, .name = "param3", .typeName = "I32"}));
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddParameter, MissingFunctionInvalidOrTakenIdChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  functionAt(tree, FullID{1})->output =
+    fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "F64"}};
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((AddParameter{FullID{999}, 50}).execute(tree));
+  EXPECT_FALSE((AddParameter{FullID{5}, 50}).execute(tree));
+  EXPECT_FALSE((AddParameter{FullID{1}, fluir::INVALID_ID}).execute(tree));
+  EXPECT_FALSE((AddParameter{FullID{1}, 3}).execute(tree));
+  EXPECT_FALSE((AddParameter{FullID{1}, 4}).execute(tree));
+  EXPECT_FALSE((AddParameter{FullID{1}, 50}).unexecute(tree)) << "never added";
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddReturn, AddsAnI32ReturnAndUndoRestoresTheTree) {
+  fluir::pt::ParseTree tree = makeTree();
+  const fluir::pt::ParseTree before = tree;
+
+  AddReturn uut{FullID{1}, 50};
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* fn = functionAt(tree, FullID{1});
+  ASSERT_TRUE(fn->output.has_value());
+  EXPECT_EQ(fn->output->ret, (fluir::pt::FunctionDecl::Return{.id = 50, .typeName = "I32"}));
+  const fluir::pt::ParseTree afterFirst = tree;
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(tree, afterFirst);
+}
+
+TEST(AddReturn, FillsAnEmptyOutputBlockAndUndoRestoresIt) {
+  fluir::pt::ParseTree tree = makeTree();
+  functionAt(tree, FullID{1})->output = fluir::pt::FunctionDecl::OutputBlock{};
+  const fluir::pt::ParseTree before = tree;
+
+  AddReturn uut{FullID{1}, 50};
+  ASSERT_TRUE(uut.execute(tree));
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddReturn, ExistingReturnMissingFunctionOrInvalidIdChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  functionAt(tree, FullID{1})->output =
+    fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "F64"}};
+  const fluir::pt::ParseTree before = tree;
+
+  EXPECT_FALSE((AddReturn{FullID{1}, 50}).execute(tree));
+  EXPECT_FALSE((AddReturn{FullID{999}, 50}).execute(tree));
+  EXPECT_FALSE((AddReturn{FullID{5}, 50}).execute(tree));
+  EXPECT_FALSE((AddReturn{FullID{1}, 50}).unexecute(tree)) << "the return is not 50";
+  EXPECT_EQ(tree, before);
+
+  fluir::pt::ParseTree bare = makeTree();
+  const fluir::pt::ParseTree bareBefore = bare;
+  EXPECT_FALSE((AddReturn{FullID{1}, fluir::INVALID_ID}).execute(bare));
+  EXPECT_FALSE((AddReturn{FullID{1}, 3}).execute(bare)) << "a parameter already has id 3";
+  EXPECT_EQ(bare, bareBefore);
 }

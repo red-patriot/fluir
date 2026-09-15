@@ -175,3 +175,22 @@ TEST(ContextMenuTool, ProvidersGetTheHitPathAndWorldPointThroughTheViewport) {
   ASSERT_TRUE(p.world.has_value());
   testutil::expectVecNear(*p.world, kNodeBody);
 }
+
+TEST(ContextMenuTool, PickingADisabledRowRunsNothingAndKeepsTheMenu) {
+  Fixture f;
+  std::vector<int> ran;
+  MenuProvider provider = [&ran](const Box&, Vec2, const EditorState&) {
+    return std::vector<MenuItem>{
+      MenuItem{.label = "Off", .onClick = [&ran](EditorState&) { ran.push_back(0); }, .enabled = false},
+      MenuItem{.label = "On", .onClick = [&ran](EditorState&) { ran.push_back(1); }}};
+  };
+  ContextMenuTool uut{{provider}};
+  PopupTool host;
+  send(uut, f.state, down(kNodeBody, InputEvent::Button::Right));
+  const MenuLayout menu = layoutAt(kNodeBody, {"Off", "On"}, f.state);
+
+  send(host, f.state, down(menu.items[0].center()));
+
+  EXPECT_TRUE(ran.empty());
+  EXPECT_NE(f.state.popup, nullptr);
+}

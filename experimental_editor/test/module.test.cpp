@@ -567,12 +567,31 @@ TEST(ModulePage, ARightPressOnTheBackgroundOpensTheCompletionModal) {
   EXPECT_NE(std::ranges::find(texts, "Comment"), texts.end());
 }
 
-TEST(ModulePage, ARightPressOnAFunctionHeaderOpensNoModal) {
+TEST(ModulePage, AddParameterFromTheHeaderMenuAddsARailAsOneUndoableEdit) {
   Harness h{kEmptyFunction};
+  const auto rails = [&h] {
+    return std::ranges::count(
+      fluir::editor::layoutGraph(h.tree(), h.ctx.layout), fluir::editor::Part::Rail, &fluir::editor::Box::part);
+  };
 
+  const Vec2 pan{400, 300};  // the fitted header sits under the chrome bar
+  h.send({down(pan, InputEvent::Button::Middle), move(pan + Vec2{0, 60}), up(pan, InputEvent::Button::Middle)});
   rightPress(h, kFnBody);
 
+  const auto* menu = dynamic_cast<const fluir::editor::MenuPopup*>(h.page->state().popup.get());
+  ASSERT_NE(menu, nullptr);
+  EXPECT_EQ(menu->labels(), (std::vector<std::string>{"Add parameter", "Add return"}));
+  const Vec2 at = h.screen(kFnBody);
+  const Vec2 row =
+    fluir::editor::layoutMenu(menu->labels(), Rect{at.x, at.y, 0, 0}, Rect{0, 0, 800, 600}, h.ctx.layout, &h.renderer)
+      .items[0]
+      .center();
+  h.send({move(row), down(row), up(row)});
+
   EXPECT_EQ(h.page->state().popup, nullptr);
+  EXPECT_EQ(rails(), 1);
+  h.click("Undo");
+  EXPECT_EQ(rails(), 0);
 }
 
 TEST(ModulePage, ARightPressInsideAFunctionBodyOpensTheBodyCompletions) {

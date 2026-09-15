@@ -104,6 +104,17 @@ TEST(Menu, DrawShowsEveryLabelAndHighlightsTheHoveredRow) {
   EXPECT_FALSE(testutil::hasFill(r.calls, uut.items[2])) << "only the hovered row is highlighted";
 }
 
+TEST(Menu, ADisabledRowIsDrawnButNeverHighlighted) {
+  RecordingRenderer r;
+  const MenuLayout uut = layoutMenu(kLabels, kAnchor, kBounds, kCtx.layout, nullptr);
+
+  drawMenu(r, kLabels, uut, 1u, kCtx, {true, false});
+
+  const std::vector<std::string> texts = testutil::textStrings(r.calls);
+  EXPECT_NE(std::ranges::find(texts, kLabels[1]), texts.end());
+  EXPECT_FALSE(testutil::hasFill(r.calls, uut.items[1]));
+}
+
 namespace {
 
   // Real fonts run wider and taller than the GLYPH_PX estimate.

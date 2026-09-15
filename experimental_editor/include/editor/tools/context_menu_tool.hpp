@@ -8,10 +8,12 @@
 
 namespace fluir::editor {
 
-  /** One context-menu row: `onClick` runs on pick, after which the menu closes. Must not touch `EditorState::popup`. */
+  /** One context-menu row: `onClick` runs on pick, after which the menu closes. Must not touch `EditorState::popup`.
+   *  A disabled row is greyed and cannot be picked. */
   struct MenuItem {
     std::string label;
     std::function<void(EditorState&)> onClick;
+    bool enabled = true;
   };
 
   /** Items for a right-press on `hit` at `world`; empty when this provider has nothing for it. */

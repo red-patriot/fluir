@@ -17,6 +17,7 @@
 #include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/context_menu_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
+#include "editor/tools/function_header_menu.hpp"
 #include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
 #include "editor/tools/popup_tool.hpp"
@@ -39,7 +40,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<ConduitTool>());
     tools_.add(std::make_unique<OperatorTool>());
     tools_.add(std::make_unique<TypeTool>());
-    tools_.add(std::make_unique<ContextMenuTool>());
+    tools_.add(std::make_unique<ContextMenuTool>(std::vector<MenuProvider>{functionHeaderItems}));
     tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
 

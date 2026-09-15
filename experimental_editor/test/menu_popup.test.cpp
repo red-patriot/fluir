@@ -95,3 +95,48 @@ TEST(MenuPopup, HoveringARowHighlightsIt) {
   EXPECT_TRUE(testutil::hasFill(r.calls, f.layout.items[1]));
   EXPECT_EQ(f.uut.labels(), kLabels);
 }
+
+namespace {
+
+  struct DisabledFixture {
+    EditorState state{kCtx};
+    std::optional<std::size_t> picked;
+    MenuPopup uut{kLabels,
+                  kAnchor,
+                  kBounds,
+                  kCtx.layout,
+                  nullptr,
+                  [this](std::size_t i, EditorState&) { picked = i; },
+                  {true, false}};
+    MenuLayout layout = layoutMenu(kLabels, kAnchor, kBounds, kCtx.layout, nullptr);
+  };
+
+}  // namespace
+
+TEST(MenuPopup, PressingADisabledRowIsConsumedWithoutPicking) {
+  DisabledFixture f;
+
+  EXPECT_TRUE(f.uut.onEvent(down(f.layout.items[1].center()), f.state));
+
+  EXPECT_FALSE(f.picked.has_value());
+}
+
+TEST(MenuPopup, RowsPastTheEnabledListStayEnabled) {
+  DisabledFixture f;
+
+  EXPECT_FALSE(f.uut.onEvent(down(f.layout.items[2].center()), f.state));
+
+  EXPECT_EQ(f.picked, 2u);
+}
+
+TEST(MenuPopup, HoveringADisabledRowHighlightsNothing) {
+  DisabledFixture f;
+  testutil::RecordingRenderer r;
+
+  f.uut.onEvent(move(f.layout.items[1].center()), f.state);
+  f.uut.draw(r, kCtx);
+
+  for (const Rect& row : f.layout.items) {
+    EXPECT_FALSE(testutil::hasFill(r.calls, row));
+  }
+}

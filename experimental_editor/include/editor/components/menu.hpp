@@ -18,17 +18,21 @@ namespace fluir::editor {
     std::vector<Rect> items;
   };
 
-  /** Rows `labels` under `anchor`, flipping above past `bounds`' bottom.
-   * Measures with `text`; null estimates GLYPH_PX.
+  /** Rows `labels` under `anchor`, flipping above past `bounds`' bottom. Measures with `text`; null estimates GLYPH_PX.
    */
   MenuLayout layoutMenu(
     std::span<const std::string> labels, Rect anchor, Rect bounds, const EditorContext::Layout& layout, Renderer* text);
 
+  /** Rows past `enabled`'s end are enabled; a disabled row is greyed and never highlighted. */
   void drawMenu(Renderer& renderer,
                 std::span<const std::string> labels,
                 const MenuLayout& layout,
                 std::optional<std::size_t> hovered,
-                const EditorContext& ctx);
+                const EditorContext& ctx,
+                const std::vector<bool>& enabled = {});
+
+  /** Whether row `i` is enabled; rows past `enabled`'s end are. */
+  bool menuRowEnabled(const std::vector<bool>& enabled, std::size_t i);
 
   /** Index of the row under `screen`, or nullopt. */
   std::optional<std::size_t> menuItemAt(const MenuLayout& layout, Vec2 screen);

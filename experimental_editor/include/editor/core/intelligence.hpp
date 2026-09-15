@@ -10,8 +10,15 @@
 namespace fluir::editor {
   struct FunctionDefOption { };
   struct CommentOption { };
+  struct OperatorOption {
+    Operator op;
+    enum Arity { UNARY, BINARY } arity;  // TODO: Generalize this?
+  };
+  struct ConstantOption {
+    literals_types::Literal value;
+  };
 
-  using CompletionOption = std::variant<FunctionDefOption, CommentOption>;
+  using CompletionOption = std::variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption>;
 
   struct Completion {
     std::string_view label;

@@ -12,6 +12,7 @@
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/add_comment.hpp"
 #include "editor/transaction/add_decl.hpp"
+#include "editor/transaction/add_node.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
@@ -33,6 +34,8 @@ namespace {
   using fluir::Operator;
   using fluir::editor::AddComment;
   using fluir::editor::AddDecl;
+  using fluir::editor::AddNode;
+  using fluir::editor::ConstantOption;
   using fluir::editor::DeleteTransaction;
   using fluir::editor::EditCallArgumentTransaction;
   using fluir::editor::EditCallNodeTransaction;
@@ -42,6 +45,7 @@ namespace {
   using fluir::editor::locationAt;
   using fluir::editor::MoveTransaction;
   using fluir::editor::nodeAt;
+  using fluir::editor::OperatorOption;
   using fluir::editor::RenameTransaction;
   using fluir::editor::ResizeTransaction;
   using fluir::editor::SetConstantValueTransaction;
@@ -682,5 +686,64 @@ TEST(AddComment, TakenOrInvalidIdOrUnresolvedParentChangeNothing) {
   EXPECT_FALSE((AddComment{FullID{999}, 50, kNewLocation}).execute(tree));
   EXPECT_FALSE((AddComment{FullID{5}, 50, kNewLocation}).execute(tree)) << "a comment has no body";
   EXPECT_FALSE((AddComment{FullID{1}, 50, kNewLocation}).unexecute(tree)) << "never added";
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  constexpr FlowGraphLocation kNodeLocation{.x = 7, .y = 8, .z = 1, .width = 8, .height = 5};
+
+  // Executes, checks node 50 equals `want`, then reverses and redoes.
+  void expectAddNodeRoundTrip(AddNode& uut, const fluir::pt::Node& want) {
+    fluir::pt::ParseTree tree = makeTree();
+    const fluir::pt::ParseTree before = tree;
+
+    ASSERT_TRUE(uut.execute(tree));
+    const auto* node = nodeAt(tree, FullID{1, 50});
+    ASSERT_NE(node, nullptr);
+    EXPECT_EQ(*node, want);
+    const fluir::pt::ParseTree afterFirst = tree;
+
+    ASSERT_TRUE(uut.unexecute(tree));
+    EXPECT_EQ(tree, before);
+    ASSERT_TRUE(uut.execute(tree));
+    EXPECT_EQ(tree, afterFirst);
+  }
+
+}  // namespace
+
+TEST(AddNode, AddsABinaryOperatorAndUndoRestoresTheTree) {
+  AddNode uut{FullID{1}, 50, kNodeLocation, OperatorOption{Operator::STAR, OperatorOption::BINARY}};
+
+  expectAddNodeRoundTrip(uut, fluir::pt::Binary{.id = 50, .location = kNodeLocation, .op = Operator::STAR});
+}
+
+TEST(AddNode, AddsAUnaryOperatorAndUndoRestoresTheTree) {
+  AddNode uut{FullID{1}, 50, kNodeLocation, OperatorOption{Operator::BANG, OperatorOption::UNARY}};
+
+  expectAddNodeRoundTrip(uut, fluir::pt::Unary{.id = 50, .location = kNodeLocation, .op = Operator::BANG});
+}
+
+TEST(AddNode, AddsAConstantAndUndoRestoresTheTree) {
+  AddNode uut{FullID{1}, 50, kNodeLocation, ConstantOption{fluir::literals_types::U16{0}}};
+
+  expectAddNodeRoundTrip(
+    uut, fluir::pt::Constant{.id = 50, .location = kNodeLocation, .value = fluir::literals_types::U16{0}});
+}
+
+TEST(AddNode, TakenOrInvalidIdOrUnresolvedParentOrUnknownOperatorChangeNothing) {
+  fluir::pt::ParseTree tree = makeTreeWithComment();
+  const fluir::pt::ParseTree before = tree;
+  const OperatorOption plus{Operator::PLUS, OperatorOption::BINARY};
+
+  EXPECT_FALSE((AddNode{FullID{1}, 30, kNodeLocation, plus}).execute(tree)) << "taken";
+  EXPECT_FALSE((AddNode{FullID{1}, fluir::INVALID_ID, kNodeLocation, plus}).execute(tree)) << "invalid";
+  EXPECT_FALSE((AddNode{FullID{}, 50, kNodeLocation, plus}).execute(tree)) << "top level";
+  EXPECT_FALSE((AddNode{FullID{999}, 50, kNodeLocation, plus}).execute(tree)) << "unresolved";
+  EXPECT_FALSE((AddNode{FullID{5}, 50, kNodeLocation, plus}).execute(tree)) << "a comment has no body";
+  EXPECT_FALSE(
+    (AddNode{FullID{1}, 50, kNodeLocation, OperatorOption{Operator::UNKNOWN, OperatorOption::UNARY}}).execute(tree))
+    << "unknown operator";
+  EXPECT_FALSE((AddNode{FullID{1}, 50, kNodeLocation, plus}).unexecute(tree)) << "never added";
   EXPECT_EQ(tree, before);
 }

@@ -1,6 +1,8 @@
 #include "editor/tools/completion_modal.hpp"
 
 #include <algorithm>
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -9,7 +11,9 @@
 #include <gtest/gtest.h>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
+#include "compiler/models/operator.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/tools/tool.hpp"
@@ -80,6 +84,62 @@ namespace {
     std::ranges::sort(rows, {}, &Rect::y);
     return rows;
   }
+
+  // Wheels `uut` until row `label` is fully inside the frame, then returns its drawn rect.
+  std::optional<Rect> scrollTo(CompletionModal& uut, EditorState& state, std::string_view label) {
+    const auto it = std::ranges::find(uut.labels(), label);
+    if (it == uut.labels().end()) {
+      return std::nullopt;
+    }
+    const auto index = static_cast<std::size_t>(it - uut.labels().begin());
+    for (int step = 0; step < 100; ++step) {
+      const Rect row = drawnRows(uut).at(index);
+      const Rect frame = uut.frame();
+      if (row.y >= frame.y && row.y + row.h <= frame.y + frame.h) {
+        return row;
+      }
+      uut.onEvent(wheel(row.y < frame.y ? 1 : -1), state);
+    }
+    return std::nullopt;
+  }
+
+  // simple_binary_expr.fl: function 1 (z 3) holds binary 1 and constants 2, 3.
+  struct BodyFixture {
+    EditorState state{kCtx};
+    std::optional<CompletionModal> uut;
+
+    BodyFixture() {
+      testutil::loadInto(state, "read/simple_binary_expr.fl");
+      const fluir::Coordinate where{.x = kWhere.x, .y = kWhere.y, .z = 3};
+      uut.emplace(state.intelligence.completions(state.editor.tree(), fluir::FullID{1}),
+                  kBounds,
+                  nullptr,
+                  where,
+                  fluir::FullID{1});
+    }
+
+    const fluir::pt::Block& body() const {
+      return std::get<fluir::pt::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
+    }
+
+    // Picks `label` and returns the single node it added.
+    const fluir::pt::Node* pick(std::string_view label) {
+      const auto row = scrollTo(*uut, state, label);
+      if (!row) {
+        return nullptr;
+      }
+      const auto before = body().nodes;
+      if (uut->onEvent(down(row->center()), state)) {
+        return nullptr;
+      }
+      for (const auto& [id, node] : body().nodes) {
+        if (!before.contains(id)) {
+          return &node;
+        }
+      }
+      return nullptr;
+    }
+  };
 
 }  // namespace
 
@@ -331,4 +391,78 @@ TEST(CompletionModal, AShortListIgnoresTheWheel) {
 
   EXPECT_FALSE(uut.onEvent(down(rows[0].center()), state));
   EXPECT_EQ(state.editor.tree().declarations.size(), 1u);
+}
+
+TEST(CompletionModal, PickingABinaryOperatorAddsItInTheBodyAtThePoint) {
+  BodyFixture f;
+
+  const auto* node = f.pick("* (binary)");
+
+  ASSERT_NE(node, nullptr);
+  const auto* binary = std::get_if<fluir::pt::Binary>(node);
+  ASSERT_NE(binary, nullptr);
+  EXPECT_EQ(binary->op, fluir::Operator::STAR);
+  EXPECT_EQ(binary->location, (fluir::FlowGraphLocation{.x = 12, .y = 34, .z = 4, .width = 8, .height = 5}));
+  EXPECT_TRUE(f.state.editor.undo());
+  EXPECT_EQ(f.body().nodes.size(), 3u);
+}
+
+TEST(CompletionModal, PickingAUnaryOperatorAddsItInTheBody) {
+  BodyFixture f;
+
+  const auto* node = f.pick("! (unary)");
+
+  ASSERT_NE(node, nullptr);
+  const auto* unary = std::get_if<fluir::pt::Unary>(node);
+  ASSERT_NE(unary, nullptr);
+  EXPECT_EQ(unary->op, fluir::Operator::BANG);
+  EXPECT_EQ(unary->location.x, kWhere.x);
+  EXPECT_EQ(unary->location.y, kWhere.y);
+}
+
+TEST(CompletionModal, PickingAConstantAddsADefaultValueSizedForItsType) {
+  BodyFixture f;
+
+  const auto* i32 = f.pick("I32");
+  ASSERT_NE(i32, nullptr);
+  const auto* constant = std::get_if<fluir::pt::Constant>(i32);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->value, (fluir::literals_types::Literal{fluir::literals_types::I32{0}}));
+  EXPECT_EQ(constant->location, (fluir::FlowGraphLocation{.x = 12, .y = 34, .z = 4, .width = 12, .height = 5}));
+  EXPECT_TRUE(f.state.editor.undo());
+  EXPECT_EQ(f.body().nodes.size(), 3u);
+}
+
+TEST(CompletionModal, ABoolConstantIsNarrower) {
+  BodyFixture f;
+
+  const auto* node = f.pick("BOOL");
+
+  ASSERT_NE(node, nullptr);
+  const auto* constant = std::get_if<fluir::pt::Constant>(node);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->value, (fluir::literals_types::Literal{false}));
+  EXPECT_EQ(constant->location.width, 8);
+  EXPECT_EQ(constant->location.height, 5);
+}
+
+TEST(CompletionModal, PickingCommentInABodyAddsABodyComment) {
+  BodyFixture f;
+
+  const auto* node = f.pick("Comment");
+
+  ASSERT_NE(node, nullptr);
+  EXPECT_TRUE(std::holds_alternative<fluir::pt::Comment>(*node));
+}
+
+TEST(CompletionModal, ALongListShowsAtMostTenRows) {
+  const CompletionModal ten{completions(10), kBounds, nullptr};
+  const CompletionModal eleven{completions(11), kBounds, nullptr};
+  const CompletionModal forty{completions(40), kBounds, nullptr};
+  const Rect tallBounds{0, 0, 800, 4000};
+  const CompletionModal fortyInTallBounds{completions(40), tallBounds, nullptr};
+
+  EXPECT_NEAR(eleven.frame().h, ten.frame().h, 1e-6);
+  EXPECT_NEAR(forty.frame().h, ten.frame().h, 1e-6);
+  EXPECT_NEAR(fortyInTallBounds.frame().h, ten.frame().h, 1e-6) << "not as many as the bounds fit";
 }

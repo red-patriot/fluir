@@ -130,6 +130,7 @@ set(FLUIR_EDITOR_CORE_SOURCES
 set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/add_comment.cpp"
     "transaction/add_decl.cpp"
+    "transaction/add_node.cpp"
     "transaction/delete.cpp"
     "transaction/edit_call_argument.cpp"
     "transaction/edit_call_node.cpp"

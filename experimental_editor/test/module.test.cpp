@@ -542,7 +542,7 @@ namespace {
   // single_empty_function.fl: function 1 at world {50,50,500,500}; fit scale 1.2, pan {40,-60}.
   const fs::path kEmptyFunction = fs::path(TEST_FOLDER) / "read/single_empty_function.fl";
   constexpr Vec2 kFnBackground{700, 700};
-  constexpr Vec2 kFnBody{60, 60};
+  constexpr Vec2 kFnBody{60, 60};               // in the header
   constexpr Vec2 kFnBodyOutsideModal{60, 400};  // screen {112,420}, left of the modal
 
   void rightPress(Harness& h, Vec2 world) {
@@ -567,12 +567,21 @@ TEST(ModulePage, ARightPressOnTheBackgroundOpensTheCompletionModal) {
   EXPECT_NE(std::ranges::find(texts, "Comment"), texts.end());
 }
 
-TEST(ModulePage, ARightPressOnAFunctionBodyOpensNoModal) {
+TEST(ModulePage, ARightPressOnAFunctionHeaderOpensNoModal) {
   Harness h{kEmptyFunction};
 
   rightPress(h, kFnBody);
 
   EXPECT_EQ(h.page->state().popup, nullptr);
+}
+
+TEST(ModulePage, ARightPressInsideAFunctionBodyOpensTheBodyCompletions) {
+  Harness h{kEmptyFunction};
+
+  rightPress(h, kFnBodyOutsideModal);
+
+  ASSERT_NE(modal(h), nullptr);
+  EXPECT_NE(std::ranges::find(modal(h)->labels(), "+ (binary)"), modal(h)->labels().end());
 }
 
 TEST(ModulePage, APressOutsideTheCompletionModalOnlyClosesIt) {

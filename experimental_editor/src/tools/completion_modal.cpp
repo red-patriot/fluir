@@ -10,6 +10,7 @@
 #include "editor/tools/tool.hpp"
 #include "editor/transaction/add_comment.hpp"
 #include "editor/transaction/add_decl.hpp"
+#include "editor/transaction/add_node.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -18,12 +19,17 @@ namespace fluir::editor {
     constexpr double TEXT_SCALE = 1.25;
     constexpr double ROW_GAP_PX = 4.0;
     constexpr double ROW_PAD_PX = 6.0;
+    constexpr std::size_t MAX_VISIBLE_ROWS = 10;
 
     // Legacy editor defaults, in world units.
     constexpr int FUNCTION_W = 40;
     constexpr int FUNCTION_H = 30;
     constexpr int COMMENT_W = 10;
     constexpr int COMMENT_H = 10;
+    constexpr int OPERATOR_W = 8;
+    constexpr int CONSTANT_W = 12;
+    constexpr int BOOL_CONSTANT_W = 8;
+    constexpr int NODE_H = 5;
 
     template <typename... Fs>
     struct Overloaded : Fs... {
@@ -54,7 +60,8 @@ namespace fluir::editor {
     const double w = bounds.w * MODAL_WIDTH_FRACTION;
     contentH_ = n * rowHeightPx + (n + 1) * ROW_GAP_PX;
     rowStep_ = rowHeightPx + ROW_GAP_PX;
-    const double h = std::min(contentH_, bounds.h);
+    const auto visible = static_cast<double>(std::min(labels_.size(), MAX_VISIBLE_ROWS));
+    const double h = std::min(visible * rowHeightPx + (visible + 1) * ROW_GAP_PX, bounds.h);
     layout_.frame = Rect{bounds.x + (bounds.w - w) / 2, bounds.y + (bounds.h - h) / 2, w, h};
     // Rows stack from the frame's top, inset by a gap on every side.
     for (std::size_t i = 0; i < labels_.size(); ++i) {
@@ -94,12 +101,15 @@ namespace fluir::editor {
                        [&](const CommentOption&) -> std::unique_ptr<Transaction> {
                          return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
                        },
-                       // Operators and constants arrive with AddNode.
-                       [](const auto&) -> std::unique_ptr<Transaction> { return nullptr; }},
+                       [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
+                         return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
+                       },
+                       [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
+                         const int w =
+                           std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
+                         return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
+                       }},
             completions_[*row].option);
-          if (edit == nullptr) {
-            return true;
-          }
           state.editor.apply(std::move(edit));
           return false;
         }

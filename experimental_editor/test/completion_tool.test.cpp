@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -16,7 +17,8 @@
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
-// single_empty_function.fl: function 1 at world {50,50,500,500}.
+// single_empty_function.fl: function 1 at world {50,50,500,500}, header 25px so its body starts at y 75.
+// simple_binary_expr.fl: same function; binary 1 at world {125,85,25,25}.
 
 namespace {
 
@@ -31,18 +33,55 @@ namespace {
 
   const EditorContext kCtx;
   constexpr Vec2 kBackground{700, 700};
-  constexpr Vec2 kBody{60, 60};
+  constexpr Vec2 kHeader{60, 60};
+  constexpr Vec2 kBody{100, 200};
 
   struct Fixture {
     testutil::RecordingRenderer renderer;
     EditorState state{kCtx};
     CompletionTool uut;
 
-    Fixture() {
+    explicit Fixture(const std::string& file = "read/single_empty_function.fl") {
       state.text = &renderer;
-      testutil::loadInto(state, "read/single_empty_function.fl");
+      testutil::loadInto(state, file);
     }
   };
+
+  const CompletionModal* modalOf(const EditorState& state) {
+    return dynamic_cast<const CompletionModal*>(state.popup.get());
+  }
+
+  // Wheels the open modal until `label`'s row is fully inside its frame, then presses it.
+  bool pick(EditorState& state, std::string_view label) {
+    auto* modal = dynamic_cast<CompletionModal*>(state.popup.get());
+    if (modal == nullptr) {
+      return false;
+    }
+    const auto it = std::ranges::find(modal->labels(), label);
+    if (it == modal->labels().end()) {
+      return false;
+    }
+    const auto index = static_cast<std::size_t>(it - modal->labels().begin());
+    for (int step = 0; step < 100; ++step) {
+      testutil::RecordingRenderer r;
+      modal->draw(r, kCtx);
+      std::vector<fluir::editor::Rect> rows;
+      for (const fluir::editor::Rect& rect : testutil::rectsOf(r.calls)) {
+        if (!(rect == modal->frame())) {
+          rows.push_back(rect);
+        }
+      }
+      std::ranges::sort(rows, {}, &fluir::editor::Rect::y);
+      const fluir::editor::Rect row = rows.at(index);
+      const fluir::editor::Rect frame = modal->frame();
+      if (row.y >= frame.y && row.y + row.h <= frame.y + frame.h) {
+        return !modal->onEvent(down(row.center()), state);
+      }
+      const double dir = row.y < frame.y ? 1 : -1;
+      modal->onEvent({.type = InputEvent::Type::Wheel, .pos = frame.center(), .wheel = {0, dir}}, state);
+    }
+    return false;
+  }
 
 }  // namespace
 
@@ -56,12 +95,51 @@ TEST(CompletionTool, ARightPressOnTheBackgroundOpensTheTopLevelModalWithoutConsu
   EXPECT_EQ(modal->labels(), (std::vector<std::string>{"Function", "Comment"}));
 }
 
-TEST(CompletionTool, ARightPressOnAFunctionBodyOpensNothing) {
+TEST(CompletionTool, ARightPressOnAFunctionHeaderOpensNothing) {
+  Fixture f;
+
+  EXPECT_FALSE(send(f.uut, f.state, down(kHeader, InputEvent::Button::Right)));
+
+  EXPECT_EQ(f.state.popup, nullptr);
+}
+
+TEST(CompletionTool, ARightPressInAFunctionBodyOpensTheBodyModalWithoutConsuming) {
   Fixture f;
 
   EXPECT_FALSE(send(f.uut, f.state, down(kBody, InputEvent::Button::Right)));
 
+  const auto* modal = modalOf(f.state);
+  ASSERT_NE(modal, nullptr);
+  const auto& labels = modal->labels();
+  EXPECT_NE(std::ranges::find(labels, "+ (binary)"), labels.end());
+  EXPECT_NE(std::ranges::find(labels, "Comment"), labels.end());
+  EXPECT_EQ(std::ranges::find(labels, "Function"), labels.end());
+}
+
+TEST(CompletionTool, ARightPressOnANodeOpensNothing) {
+  Fixture f{"read/simple_binary_expr.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(Vec2{130, 90}, InputEvent::Button::Right)));
+
   EXPECT_EQ(f.state.popup, nullptr);
+}
+
+TEST(CompletionTool, PickingAConstantPlacesItAtBodyLocalUnits) {
+  Fixture f;
+  f.state.view.pan = Vec2{20, 10};
+  const Vec2 screen = kBody + Vec2{20, 10};
+  const Vec2 local = (f.state.view.screenToWorld(screen) - Vec2{50, 75}) / kCtx.layout.unitPx;
+  send(f.uut, f.state, down(screen, InputEvent::Button::Right));
+
+  ASSERT_TRUE(pick(f.state, "F64"));
+
+  const auto& body = std::get<fluir::pt::FunctionDecl>(f.state.editor.tree().declarations.at(1)).body;
+  ASSERT_EQ(body.nodes.size(), 1u);
+  const auto* constant = std::get_if<fluir::pt::Constant>(&body.nodes.begin()->second);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->location.x, std::lround(local.x));
+  EXPECT_EQ(constant->location.y, std::lround(local.y));
+  EXPECT_EQ(constant->location.z, 4) << "one above the function's z 3";
 }
 
 TEST(CompletionTool, LeftAndMiddlePressesOpenNothing) {
@@ -77,11 +155,12 @@ TEST(CompletionTool, PressesHonourTheViewport) {
   Fixture f;
   f.state.view.pan = Vec2{300, 300};
 
-  send(f.uut, f.state, down(kBody + Vec2{300, 300}, InputEvent::Button::Right));
-  EXPECT_EQ(f.state.popup, nullptr) << "panned body";
+  send(f.uut, f.state, down(kHeader + Vec2{300, 300}, InputEvent::Button::Right));
+  EXPECT_EQ(f.state.popup, nullptr) << "panned header";
 
-  send(f.uut, f.state, down(kBody, InputEvent::Button::Right));
-  EXPECT_NE(f.state.popup, nullptr) << "now background";
+  send(f.uut, f.state, down(kHeader, InputEvent::Button::Right));
+  ASSERT_NE(modalOf(f.state), nullptr) << "now background";
+  EXPECT_NE(std::ranges::find(modalOf(f.state)->labels(), "Function"), modalOf(f.state)->labels().end());
 }
 
 TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {

@@ -88,12 +88,12 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
 
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 50, 125, 125}));
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
-  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 54, 117, 117}, 1.0));
-  EXPECT_EQ(clipsCovering(r.calls, Rect{54, 54, 117, 117}).size(), 1u);
-  EXPECT_TRUE(textStrings(r.calls).empty());              // no "//" label
-  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));   // move grip
-  EXPECT_TRUE(hasFill(r.calls, Rect{160, 160, 15, 15}));  // resize corner
-  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());        // no ports
+  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 79, 117, 92}, 1.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{54, 79, 117, 92}).size(), 1u);
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "//", Vec2{54, 64.6}, 0.8));  // header tag
+  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));              // move grip
+  EXPECT_TRUE(hasFill(r.calls, Rect{160, 160, 15, 15}));             // resize corner
+  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no ports
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
 }
 
@@ -104,8 +104,8 @@ TEST(GraphDraw, CommentTextScalesWithZoom) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{.scale = 2}, r);
 
-  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{108, 108, 234, 234}, 2.0));
-  EXPECT_EQ(clipsCovering(r.calls, Rect{108, 108, 234, 234}).size(), 1u);
+  EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{108, 158, 234, 184}, 2.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{108, 158, 234, 184}).size(), 1u);
 }
 
 TEST(GraphDraw, CommentTextPassesThroughVerbatim) {
@@ -115,7 +115,7 @@ TEST(GraphDraw, CommentTextPassesThroughVerbatim) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  EXPECT_TRUE(hasWrappedText(r.calls, "Hello there! This is a simple comment!", Rect{54, 54, 117, 117}, 1.0));
+  EXPECT_TRUE(hasWrappedText(r.calls, "Hello there! This is a simple comment!", Rect{54, 79, 117, 92}, 1.0));
 }
 
 TEST(GraphDraw, EmptyCommentDrawsNoText) {
@@ -127,7 +127,7 @@ TEST(GraphDraw, EmptyCommentDrawsNoText) {
 
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 125, 125}));
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::TextWrapped), 0u);
-  EXPECT_TRUE(textStrings(r.calls).empty());
+  EXPECT_EQ(textStrings(r.calls), std::vector<std::string>{"//"});
 }
 
 // in_body_comment_only.fl: main at (0,0) 100x100; comment 2 at body units (5,5) 25x25 -> {25,50,125,125}.
@@ -139,8 +139,9 @@ TEST(GraphDraw, InBodyCommentWrapsInsideItsBox) {
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasFill(r.calls, Rect{25, 50, 125, 125}));
-  EXPECT_TRUE(hasWrappedText(r.calls, "note", Rect{29, 54, 117, 117}, 1.0));
-  EXPECT_EQ(clipsCovering(r.calls, Rect{29, 54, 117, 117}).size(), 1u);
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "//", Vec2{29, 64.6}, 0.8));
+  EXPECT_TRUE(hasWrappedText(r.calls, "note", Rect{29, 79, 117, 92}, 1.0));
+  EXPECT_EQ(clipsCovering(r.calls, Rect{29, 79, 117, 92}).size(), 1u);
   EXPECT_FALSE(clipsCovering(r.calls, Rect{0, 25, 500, 475}).empty());  // function body clip
 }
 

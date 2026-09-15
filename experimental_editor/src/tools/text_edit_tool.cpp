@@ -158,7 +158,7 @@ namespace fluir::editor {
         return std::nullopt;
       }
       if (commentAt(tree, target.path) != nullptr) {
-        return Label{body->world, body->clip};
+        return Label{commentBodyRect(body->world, layout), body->clip};
       }
       const Rect& r = body->world;
       if (functionAt(tree, target.path) != nullptr) {

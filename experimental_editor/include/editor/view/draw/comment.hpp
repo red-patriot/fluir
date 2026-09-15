@@ -5,8 +5,11 @@
 
 namespace fluir::editor {
 
-  /** Where a comment at `world` wraps its text. */
-  Rect commentTextRect(Rect world, const EditorContext::Layout& layout);
+  /** A comment's region below its header band. */
+  Rect commentBodyRect(Rect world, const EditorContext::Layout& layout);
+
+  /** Where a comment wraps its text, given the comment's body rect. */
+  Rect commentTextRect(Rect body, const EditorContext::Layout& layout);
 
   namespace draw {
 

@@ -24,9 +24,9 @@
 // Function "f" header {0,0,500,25}, text origin {4,4}. Params x, y: rails {0,25,75,25}, {0,50,75,25}; return rail
 // {475,25,25,25}. Call 14 ("g", arguments a, b) at units (30,20) 10x15 -> {150,125,50,75}, label row
 // {150,125,50,25}, text origin {154,129}, argument rows from y 150 and 175.
-// Top-level comment 20 ("hi there") at units (40,40) 20x10 -> {200,200,100,50}, text rect {204,204,92,42}. In-body
-// comment 16 ("inner") at units (60,4) 20x10 -> {300,45,100,50}, text rect {304,49,92,42}. The recorder lays wrapped
-// text out in 8 px cells.
+// Top-level comment 20 ("hi there") at units (40,40) 20x10 -> {200,200,100,50}, body {200,225,100,25}, text rect
+// {204,229,92,17}. In-body comment 16 ("inner") at units (60,4) 20x10 -> {300,45,100,50}, text rect {304,74,92,17}. The
+// recorder lays wrapped text out in 8 px cells.
 
 namespace {
 
@@ -73,10 +73,10 @@ namespace {
   const Rect kCallLabelRect{150, 125, 50, 25};
   const FullID kComment{20};
   const FullID kInnerComment{1, 16};
-  const Rect kCommentRect{200, 200, 100, 50};
-  const Rect kCommentTextRect{204, 204, 92, 42};
-  constexpr Vec2 kCommentText{220, 205};  // cell column 2 of row 0
-  constexpr Vec2 kInnerCommentText{304, 49};
+  const Rect kCommentRect{200, 225, 100, 25};  // body below the header
+  const Rect kCommentTextRect{204, 229, 92, 17};
+  constexpr Vec2 kCommentText{220, 230};  // cell column 2 of row 0
+  constexpr Vec2 kInnerCommentText{304, 74};
 
   fluir::pt::Constant constant(ID id, int y, fluir::pt::Literal value) {
     return {.id = id, .location = FlowGraphLocation{.x = 4, .y = y, .z = 1, .width = 10, .height = 5}, .value = value};
@@ -648,6 +648,14 @@ TEST(TextEditTool, APressOnACommentOpensItsTextWithTheCaretAtThePress) {
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_EQ(h.tool.field()->text(), "hi there");
   EXPECT_EQ(h.tool.field()->caret(), 2u);
+}
+
+TEST(TextEditTool, APressOnACommentHeaderDoesNotOpenIt) {
+  Harness h;
+
+  h.send(down({210, 210}));
+
+  EXPECT_EQ(h.tool.field(), nullptr);
 }
 
 TEST(TextEditTool, WithoutTextLayoutACommentOpensWithTheCaretAtTheEnd) {

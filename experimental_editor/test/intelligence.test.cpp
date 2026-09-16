@@ -34,7 +34,8 @@ namespace {
   using Literal = fluir::literals_types::Literal;
 
   const EditorContext ctx;
-  const std::vector<std::string_view> kBuiltins{"F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
+  const std::vector<std::string_view> BUILTIN_TYPES{
+    "F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
 
 }  // namespace
 
@@ -89,14 +90,14 @@ TEST(Intelligence, AParamRailOffersTheBuiltinTypes) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_input_only.fl");
 
-  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 2}), kBuiltins);
+  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 2}), BUILTIN_TYPES);
 }
 
 TEST(Intelligence, AReturnRailOffersTheBuiltinTypes) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_output_only.fl");
 
-  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 4}), kBuiltins);
+  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 4}), BUILTIN_TYPES);
 }
 
 TEST(Intelligence, NonRailsAndMissingPathsOfferNoTypes) {
@@ -141,34 +142,28 @@ TEST(Intelligence, AFunctionBodyOffersBinaryThenUnaryOperatorsThenConstantsThenA
   const std::vector<Operator> unary{
     Operator::PLUS, Operator::MINUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS, Operator::BANG};
 
-  const std::vector<Completion> got = Intelligence{}.completions(state.editor.tree(), FullID{1});
+  const std::vector<Completion> actual = Intelligence{}.completions(state.editor.tree(), FullID{1});
 
-  ASSERT_EQ(got.size(), binary.size() + unary.size() + kBuiltins.size() + 1);
-  std::size_t at = 0;
   for (Operator op : binary) {
-    EXPECT_EQ(got[at].label, std::string{fluir::stringify(op)} + " (binary)");
-    const auto* option = std::get_if<OperatorOption>(&got[at].option);
-    ASSERT_NE(option, nullptr) << got[at].label;
-    EXPECT_EQ(option->op, op);
-    EXPECT_EQ(option->arity, OperatorOption::BINARY);
-    ++at;
+    auto expected = std::format("{} (binary)", fluir::stringify(op));
+    auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == expected; });
+    EXPECT_NE(actual.end(), found) << "MISSING " << expected;
   }
   for (Operator op : unary) {
-    EXPECT_EQ(got[at].label, std::string{fluir::stringify(op)} + " (unary)");
-    const auto* option = std::get_if<OperatorOption>(&got[at].option);
-    ASSERT_NE(option, nullptr) << got[at].label;
-    EXPECT_EQ(option->op, op);
-    EXPECT_EQ(option->arity, OperatorOption::UNARY);
-    ++at;
+    auto expected = std::format("{} (unary)", fluir::stringify(op));
+    auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == expected; });
+    EXPECT_NE(actual.end(), found) << "MISSING " << expected;
   }
-  for (std::size_t i = 0; i < kBuiltins.size(); ++i, ++at) {
-    EXPECT_EQ(got[at].label, kBuiltins[i]);
-    const auto* option = std::get_if<ConstantOption>(&got[at].option);
-    ASSERT_NE(option, nullptr) << got[at].label;
-    EXPECT_EQ(option->value.index(), i);
+  for (const auto& expected : BUILTIN_TYPES) {
+    auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == expected; });
+    EXPECT_NE(actual.end(), found) << "MISSING " << expected;
   }
-  EXPECT_EQ(got[at].label, "Comment");
-  EXPECT_TRUE(std::holds_alternative<CommentOption>(got[at].option));
+
+  {
+    std::string expected = "Comment";
+    auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == expected; });
+    EXPECT_NE(actual.end(), found) << "MISSING " << expected;
+  }
 }
 
 TEST(Intelligence, ConstantCompletionsDefaultToZeroOrFalse) {

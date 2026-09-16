@@ -1,6 +1,7 @@
 #include "editor/core/intelligence.hpp"
 
 #include <cstddef>
+#include <format>
 #include <ranges>
 #include <string>
 #include <variant>
@@ -58,9 +59,8 @@ namespace fluir::editor {
             functionInfo.parameters.push_back({param.name, param.typeName});
           }
         }
+        module_.functions.emplace(id, std::move(functionInfo));
       }
-
-      return true;
     }
 
     return true;
@@ -91,7 +91,7 @@ namespace fluir::editor {
       return {};
     }
     const pt::FunctionDecl* fn = functionAt(tree, parentOf(path));
-    return fn != nullptr && railTypeAt(*fn, path.back()) != nullptr ? BUILTIN_TYPES : std::vector<std::string_view>{};
+    return fn && railTypeAt(*fn, path.back()) ? BUILTIN_TYPES : std::vector<std::string_view>{};
   }
 
   std::vector<Completion> Intelligence::completions(const pt::ParseTree& tree, const FullID& body) const {
@@ -102,12 +102,17 @@ namespace fluir::editor {
     return block ? completionsAt(*block) : std::vector<Completion>{};
   }
 
-  std::vector<Completion> Intelligence::completionsAt(const pt::Block& body) const {
+  std::vector<Completion> Intelligence::completionsAt(const pt::Block&) const {
     auto options = bodyBuiltins();
 
     options.reserve(options.size() + module_.functions.size());
     for (const auto& func : module_.functions | std::ranges::views::values) {
-      options.push_back({.label = func.name, .option = FunctionDefOption{}});
+      options.push_back({.label = std::format("{} (fn)", func.name),
+                         .option = CallFunctionOption{
+                           .target = func.name,
+                           .parameters = func.parameters,
+                           .returnType = func.returnTypeName,
+                         }});
     }
 
     return options;
@@ -125,7 +130,7 @@ namespace fluir::editor {
       }
       return labels;
     }();
-    static const std::vector<Completion> kCompletions = [] {
+    static const std::vector<Completion> COMPLETIONS = [] {
       std::vector<Completion> out;
       std::size_t label = 0;
       for (Operator op : BINARY_OPERATORS) {
@@ -137,12 +142,16 @@ namespace fluir::editor {
       // Builtin names follow Literal's alternative order.
       const auto defaults = defaultsOf(static_cast<const literals_types::Literal*>(nullptr));
       for (std::size_t i = 0; i < BUILTIN_TYPES.size(); ++i) {
-        out.push_back({BUILTIN_TYPES[i], ConstantOption{defaults.at(i)}});
+        out.push_back({std::string{BUILTIN_TYPES[i]}, ConstantOption{defaults.at(i)}});
       }
       out.push_back({"Comment", CommentOption{}});
+      out.push_back({"print",
+                     CallFunctionOption{.target = "print",
+                                        .parameters = {intelligence::ParamInfo{.name = "object", .typeName = "ANY"}},
+                                        .returnType = std::nullopt}});
       return out;
     }();
-    return kCompletions;
+    return COMPLETIONS;
   }
 
 }  // namespace fluir::editor

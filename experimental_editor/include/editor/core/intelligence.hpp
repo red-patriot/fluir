@@ -10,23 +10,6 @@
 #include "compiler/models/operator.hpp"
 
 namespace fluir::editor {
-  struct FunctionDefOption { };
-  struct CommentOption { };
-  struct OperatorOption {
-    Operator op;
-    enum Arity { UNARY, BINARY } arity;  // TODO: Generalize this?
-  };
-  struct ConstantOption {
-    literals_types::Literal value;
-  };
-
-  using CompletionOption = std::variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption>;
-
-  struct Completion {
-    std::string_view label;
-    CompletionOption option;
-  };
-
   namespace intelligence {
     struct ParamInfo {
       std::string name;
@@ -43,6 +26,29 @@ namespace fluir::editor {
       std::unordered_map<ID, FunctionDecl> functions;
     };
   }  // namespace intelligence
+
+  struct FunctionDefOption { };
+  struct CommentOption { };
+  struct OperatorOption {
+    Operator op;
+    enum Arity { UNARY, BINARY } arity;  // TODO: Generalize this?
+  };
+  struct ConstantOption {
+    literals_types::Literal value;
+  };
+  struct CallFunctionOption {
+    std::string_view target;
+    std::vector<intelligence::ParamInfo> parameters;
+    std::optional<std::string_view> returnType;
+  };
+
+  using CompletionOption =
+    std::variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption, CallFunctionOption>;
+
+  struct Completion {
+    std::string label;
+    CompletionOption option;
+  };
 
   /** Answers what may go where in a tree. Type- and module-aware answers slot in behind the same calls. */
   class Intelligence {

@@ -28,6 +28,7 @@ namespace fluir::editor {
     constexpr int COMMENT_H = 10;
     constexpr int OPERATOR_W = 8;
     constexpr int CONSTANT_W = 12;
+    constexpr int CALL_W = 14;
     constexpr int BOOL_CONSTANT_W = 8;
     constexpr int NODE_H = 5;
 
@@ -38,6 +39,12 @@ namespace fluir::editor {
 
     FlowGraphLocation placed(Coordinate where, int w, int h) {
       return FlowGraphLocation{.x = where.x, .y = where.y, .z = where.z + 1, .width = w, .height = h};
+    }
+
+    std::pair<int, int> callSize(const CallFunctionOption& call) {
+      int height = NODE_H * (call.parameters.size() + 1);
+      int width = CALL_W;
+      return {width, height};
     }
 
   }  // namespace
@@ -108,6 +115,10 @@ namespace fluir::editor {
                          const int w =
                            std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
                          return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
+                       },
+                       [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
+                         auto [w, h] = callSize(call);
+                         return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
                        }},
             completions_[*row].option);
           state.editor.apply(std::move(edit));

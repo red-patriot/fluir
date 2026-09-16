@@ -65,10 +65,11 @@ namespace {
     for (int step = 0; step < 100; ++step) {
       testutil::RecordingRenderer r;
       modal->draw(r, kCtx);
+      const std::vector<fluir::editor::Rect> rects = testutil::rectsOf(r.calls);
       std::vector<fluir::editor::Rect> rows;
-      for (const fluir::editor::Rect& rect : testutil::rectsOf(r.calls)) {
-        if (!(rect == modal->frame())) {
-          rows.push_back(rect);
+      for (std::size_t i = 1; i < rects.size(); ++i) {  // rects[0] is the search bar
+        if (!(rects[i] == modal->frame())) {
+          rows.push_back(rects[i]);
         }
       }
       std::ranges::sort(rows, {}, &fluir::editor::Rect::y);
@@ -170,15 +171,16 @@ TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
   send(f.uut, f.state, down(kBackground, InputEvent::Button::Right));
   ASSERT_NE(f.state.popup, nullptr);
 
-  // The first outlined rect under the frame's top is the Function row.
+  // The first outlined rect under the search bar is the Function row.
   testutil::RecordingRenderer r;
   f.state.popup->draw(r, kCtx);
   const auto* modal = dynamic_cast<const CompletionModal*>(f.state.popup.get());
   ASSERT_NE(modal, nullptr);
   std::optional<fluir::editor::Rect> functionRow;
-  for (const fluir::editor::Rect& rect : testutil::rectsOf(r.calls)) {
-    if (!(rect == modal->frame()) && (!functionRow || rect.y < functionRow->y)) {
-      functionRow = rect;
+  const std::vector<fluir::editor::Rect> rects = testutil::rectsOf(r.calls);
+  for (std::size_t i = 1; i < rects.size(); ++i) {  // rects[0] is the search bar
+    if (!(rects[i] == modal->frame()) && (!functionRow || rects[i].y < functionRow->y)) {
+      functionRow = rects[i];
     }
   }
   ASSERT_TRUE(functionRow.has_value());

@@ -1,8 +1,11 @@
 #include "editor/tools/completion_modal.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <utility>
 #include <variant>
 
@@ -19,6 +22,7 @@ namespace fluir::editor {
     constexpr double TEXT_SCALE = 1.25;
     constexpr double ROW_GAP_PX = 4.0;
     constexpr double ROW_PAD_PX = 6.0;
+    constexpr double CARET_W_PX = 1.0;
     constexpr std::size_t MAX_VISIBLE_ROWS = 10;
 
     // Legacy editor defaults, in world units.
@@ -47,11 +51,20 @@ namespace fluir::editor {
       return {width, height};
     }
 
+    std::string lowered(std::string_view text) {
+      std::string out;
+      out.reserve(text.size());
+      for (char c : text) {
+        out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+      }
+      return out;
+    }
+
   }  // namespace
 
   CompletionModal::CompletionModal(
     std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where, FullID body) :
-    completions_(std::move(completions)), where_(where), body_(std::move(body)) {
+    completions_(std::move(completions)), bounds_(bounds), where_(where), body_(std::move(body)) {
     for (const Completion& completion : completions_) {
       labels_.emplace_back(completion.label);
     }
@@ -62,25 +75,45 @@ namespace fluir::editor {
         lineHeightPx = std::max(lineHeightPx, text->measureText(label).y);
       }
     }
-    const double rowHeightPx = lineHeightPx * TEXT_SCALE + 2 * ROW_PAD_PX;
-    const auto n = static_cast<double>(labels_.size());
-    const double w = bounds.w * MODAL_WIDTH_FRACTION;
-    contentH_ = n * rowHeightPx + (n + 1) * ROW_GAP_PX;
-    rowStep_ = rowHeightPx + ROW_GAP_PX;
-    const auto visible = static_cast<double>(std::min(labels_.size(), MAX_VISIBLE_ROWS));
-    const double h = std::min(visible * rowHeightPx + (visible + 1) * ROW_GAP_PX, bounds.h);
-    layout_.frame = Rect{bounds.x + (bounds.w - w) / 2, bounds.y + (bounds.h - h) / 2, w, h};
-    // Rows stack from the frame's top, inset by a gap on every side.
-    for (std::size_t i = 0; i < labels_.size(); ++i) {
+    rowH_ = lineHeightPx * TEXT_SCALE + 2 * ROW_PAD_PX;
+    applyFilter();
+  }
+
+  void CompletionModal::relayout() {
+    rowStep_ = rowH_ + ROW_GAP_PX;
+    const auto shown = static_cast<double>(std::min(visible_.size(), MAX_VISIBLE_ROWS));
+    const double w = bounds_.w * MODAL_WIDTH_FRACTION;
+    const double h = std::min(2 * ROW_GAP_PX + rowH_ + shown * rowStep_, bounds_.h);
+    layout_.frame = Rect{bounds_.x + (bounds_.w - w) / 2, bounds_.y + (bounds_.h - h) / 2, w, h};
+    // The search bar is the first row-sized box under the frame's top gap; rows stack below it.
+    search_ = Rect{layout_.frame.x + ROW_GAP_PX, layout_.frame.y + ROW_GAP_PX, layout_.frame.w - 2 * ROW_GAP_PX, rowH_};
+    const double rowsTop = search_.y + rowH_;
+    rows_ = Rect{layout_.frame.x, rowsTop, layout_.frame.w, layout_.frame.y + layout_.frame.h - rowsTop};
+    layout_.items.clear();
+    for (std::size_t i = 0; i < visible_.size(); ++i) {
       layout_.items.push_back(Rect{layout_.frame.x + ROW_GAP_PX,
-                                   layout_.frame.y + ROW_GAP_PX + static_cast<double>(i) * (rowHeightPx + ROW_GAP_PX),
+                                   rowsTop + ROW_GAP_PX + static_cast<double>(i) * rowStep_,
                                    layout_.frame.w - 2 * ROW_GAP_PX,
-                                   rowHeightPx});
+                                   rowH_});
     }
+    maxScroll_ = std::max(0.0, (static_cast<double>(visible_.size()) - shown) * rowStep_);
+  }
+
+  void CompletionModal::applyFilter() {
+    const std::string needle = lowered(query_.text());
+    visible_.clear();
+    for (std::size_t i = 0; i < labels_.size(); ++i) {
+      if (needle.empty() || lowered(labels_[i]).find(needle) != std::string::npos) {
+        visible_.push_back(i);
+      }
+    }
+    scroll_ = 0;
+    hovered_.reset();
+    relayout();
   }
 
   std::optional<std::size_t> CompletionModal::rowAt(Vec2 screen) const {
-    if (!layout_.frame.contains(screen)) {
+    if (!layout_.frame.contains(screen) || !rows_.contains(screen)) {
       return std::nullopt;
     }
     return menuItemAt(layout_, screen + Vec2{0, scroll_});
@@ -92,7 +125,7 @@ namespace fluir::editor {
         hovered_ = rowAt(event.pos);
         return true;
       case InputEvent::Type::Wheel:
-        scroll_ = std::clamp(scroll_ - event.wheel.y * rowStep_, 0.0, contentH_ - layout_.frame.h);
+        scroll_ = std::clamp(scroll_ - event.wheel.y * rowStep_, 0.0, maxScroll_);
         return true;
       case InputEvent::Type::MouseDown:
         {
@@ -120,12 +153,24 @@ namespace fluir::editor {
                          auto [w, h] = callSize(call);
                          return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
                        }},
-            completions_[*row].option);
+            completions_[visible_[*row]].option);
           state.editor.apply(std::move(edit));
           return false;
         }
+      case InputEvent::Type::TextInput:
+        query_.insert(event.text);
+        applyFilter();
+        return true;
       case InputEvent::Type::KeyDown:
-        return event.key != InputEvent::Key::Escape;
+        if (event.key == InputEvent::Key::Escape) {
+          return false;
+        }
+        // The query owns every other key but Return: unhandled ones still arrive as its TextInput.
+        if (event.key && *event.key != InputEvent::Key::Return) {
+          query_.onKey(*event.key);
+          applyFilter();
+        }
+        return true;
       default:
         return true;
     }
@@ -133,15 +178,23 @@ namespace fluir::editor {
 
   void CompletionModal::draw(Renderer& renderer, const EditorContext& ctx) const {
     renderer.fillRect(layout_.frame, ctx.theme.headerBackground);
-    renderer.pushClip(layout_.frame);
-    for (std::size_t i = 0; i < labels_.size(); ++i) {
+    renderer.drawRect(search_, ctx.theme.border);
+    const std::string& query = query_.text();
+    const Vec2 queryOrigin{search_.x + ROW_PAD_PX, search_.y + ROW_PAD_PX};
+    if (!query.empty()) {
+      renderer.drawText(queryOrigin, query, ctx.theme.text, TEXT_SCALE);
+    }
+    const double caretX = queryOrigin.x + renderer.measureText(query.substr(0, query_.caret())).x * TEXT_SCALE;
+    renderer.fillRect(Rect{caretX, queryOrigin.y, CARET_W_PX, rowH_ - 2 * ROW_PAD_PX}, ctx.theme.text);
+    renderer.pushClip(rows_);
+    for (std::size_t i = 0; i < visible_.size(); ++i) {
       Rect row = layout_.items[i];
       row.y -= scroll_;
       if (hovered_ == i) {
         renderer.fillRect(row, ctx.theme.buttonEnabled);
       }
       renderer.drawRect(row, ctx.theme.border);
-      renderer.drawText(Vec2{row.x + ROW_PAD_PX, row.y + ROW_PAD_PX}, labels_[i], ctx.theme.text, TEXT_SCALE);
+      renderer.drawText(Vec2{row.x + ROW_PAD_PX, row.y + ROW_PAD_PX}, labels_[visible_[i]], ctx.theme.text, TEXT_SCALE);
     }
     renderer.popClip();
     renderer.drawRect(layout_.frame, ctx.theme.border);

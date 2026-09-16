@@ -71,18 +71,32 @@ namespace {
     Vec2 measureText(std::string_view t) override { return {static_cast<double>(t.size()) * 8.0, kLinePx}; }
   };
 
-  // Outlined rects other than the frame, top to bottom.
+  // Outlined rects other than the frame and the search bar (drawn first), top to bottom.
   std::vector<Rect> drawnRows(const CompletionModal& uut) {
     testutil::RecordingRenderer r;
     uut.draw(r, kCtx);
+    const std::vector<Rect> rects = testutil::rectsOf(r.calls);
     std::vector<Rect> rows;
-    for (const Rect& rect : testutil::rectsOf(r.calls)) {
-      if (!(rect == uut.frame())) {
-        rows.push_back(rect);
+    for (std::size_t i = 1; i < rects.size(); ++i) {
+      if (!(rects[i] == uut.frame())) {
+        rows.push_back(rects[i]);
       }
     }
     std::ranges::sort(rows, {}, &Rect::y);
     return rows;
+  }
+
+  // Row labels drawn, excluding the search bar's query text.
+  std::vector<std::string> drawnLabels(const CompletionModal& uut) {
+    testutil::RecordingRenderer r;
+    uut.draw(r, kCtx);
+    std::vector<std::string> out;
+    for (const auto& call : testutil::opsOf(r.calls, testutil::DrawCall::Op::Text)) {
+      if (!uut.searchBar().contains(call.a)) {
+        out.push_back(call.text);
+      }
+    }
+    return out;
   }
 
   // Wheels `uut` until row `label` is fully inside the frame, then returns its drawn rect.
@@ -339,7 +353,9 @@ TEST(CompletionModal, WheelingDownScrollsAClippedRowIntoReach) {
   EXPECT_TRUE(uut.onEvent(move(before.back().center()), state));
   testutil::RecordingRenderer idle;
   uut.draw(idle, kCtx);
-  EXPECT_TRUE(testutil::fillsOf(idle.calls).size() == 1u) << "only the frame fills while the pointer is outside it";
+  for (const Rect& row : before) {
+    EXPECT_FALSE(testutil::hasFill(idle.calls, row)) << "no row fills while the pointer is outside the frame";
+  }
 
   EXPECT_TRUE(uut.onEvent(wheel(-1000), state));
   const auto after = drawnRows(uut);
@@ -465,4 +481,139 @@ TEST(CompletionModal, ALongListShowsAtMostTenRows) {
   EXPECT_NEAR(eleven.frame().h, ten.frame().h, 1e-6);
   EXPECT_NEAR(forty.frame().h, ten.frame().h, 1e-6);
   EXPECT_NEAR(fortyInTallBounds.frame().h, ten.frame().h, 1e-6) << "not as many as the bounds fit";
+}
+
+TEST(CompletionModal, ASearchBarSitsAboveTheRowsInsideTheFrame) {
+  Fixture f;
+  const Rect frame = f.uut.frame();
+  const Rect bar = f.uut.searchBar();
+
+  const auto rows = drawnRows(f.uut);
+
+  ASSERT_EQ(rows.size(), 2u);
+  EXPECT_GT(bar.y, frame.y);
+  EXPECT_GT(bar.x, frame.x);
+  EXPECT_LT(bar.x + bar.w, frame.x + frame.w);
+  EXPECT_NEAR(bar.h, rows[0].h, 1e-6);
+  for (const Rect& row : rows) {
+    EXPECT_GE(row.y, bar.y + bar.h) << "rows sit below the bar";
+  }
+}
+
+TEST(CompletionModal, TypingDrawsTheQueryInTheSearchBar) {
+  Fixture f;
+
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("bi"), f.state));
+
+  testutil::RecordingRenderer r;
+  f.uut.draw(r, kCtx);
+  const auto texts = testutil::opsOf(r.calls, testutil::DrawCall::Op::Text);
+  ASSERT_FALSE(texts.empty());
+  EXPECT_EQ(texts.front().text, "bi");
+  EXPECT_TRUE(f.uut.searchBar().contains(texts.front().a));
+  const auto carets = testutil::fillsOfSize(r.calls, 1.0, f.uut.searchBar().h - 12.0);
+  ASSERT_EQ(carets.size(), 1u);
+  EXPECT_GT(carets[0].x, texts.front().a.x) << "the caret follows the query";
+  EXPECT_TRUE(f.uut.searchBar().contains(carets[0].topLeft()));
+}
+
+TEST(CompletionModal, TypingFiltersRowsToLabelsThatContainIt) {
+  BodyFixture f;
+  std::vector<std::string> expected;
+  for (const std::string& label : f.uut->labels()) {
+    if (label.find("bin") != std::string::npos) {
+      expected.push_back(label);
+    }
+  }
+  ASSERT_FALSE(expected.empty());
+
+  EXPECT_TRUE(f.uut->onEvent(testutil::text("bin"), f.state));
+
+  EXPECT_EQ(drawnLabels(*f.uut), expected);
+}
+
+TEST(CompletionModal, TheFilterIgnoresCase) {
+  BodyFixture f;
+
+  EXPECT_TRUE(f.uut->onEvent(testutil::text("i32"), f.state));
+
+  const auto labels = drawnLabels(*f.uut);
+  EXPECT_NE(std::ranges::find(labels, "I32"), labels.end());
+}
+
+TEST(CompletionModal, BackspaceWidensTheFilter) {
+  Fixture f;
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("c"), f.state));
+  const auto wide = drawnLabels(f.uut);
+  ASSERT_EQ(wide, (std::vector<std::string>{"Function", "Comment"}));
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("o"), f.state));
+  EXPECT_EQ(drawnLabels(f.uut), (std::vector<std::string>{"Comment"}));
+
+  EXPECT_TRUE(f.uut.onEvent(key(InputEvent::Key::Backspace), f.state));
+
+  EXPECT_EQ(drawnLabels(f.uut), wide);
+}
+
+TEST(CompletionModal, AQueryThatMatchesNothingLeavesJustTheSearchBar) {
+  Fixture f;
+
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("zzz"), f.state));
+
+  EXPECT_TRUE(drawnRows(f.uut).empty());
+  EXPECT_TRUE(f.uut.frame().contains(f.uut.searchBar().center()));
+  EXPECT_TRUE(f.uut.onEvent(down(f.uut.frame().center()), f.state));
+  EXPECT_TRUE(f.state.editor.tree().declarations.empty());
+}
+
+TEST(CompletionModal, TheFrameShrinksAsTheFilterNarrows) {
+  Fixture f;
+  const double wide = f.uut.frame().h;
+
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("Comm"), f.state));
+
+  EXPECT_LT(f.uut.frame().h, wide);
+  testutil::expectVecNear(f.uut.frame().center(), kBounds.center());
+  EXPECT_TRUE(f.uut.onEvent(testutil::text("zzz"), f.state));
+  EXPECT_LT(f.uut.frame().h, wide);
+  testutil::expectVecNear(f.uut.frame().center(), kBounds.center());
+}
+
+TEST(CompletionModal, PickingAFilteredRowAddsThatOption) {
+  BodyFixture f;
+  EXPECT_TRUE(f.uut->onEvent(testutil::text("* (binary)"), f.state));
+  const auto rows = drawnRows(*f.uut);
+  ASSERT_EQ(rows.size(), 1u);
+  const auto before = f.body().nodes;
+
+  EXPECT_FALSE(f.uut->onEvent(down(rows[0].center()), f.state));
+
+  const fluir::pt::Binary* binary = nullptr;
+  for (const auto& [id, node] : f.body().nodes) {
+    if (!before.contains(id)) {
+      binary = std::get_if<fluir::pt::Binary>(&node);
+    }
+  }
+  ASSERT_NE(binary, nullptr);
+  EXPECT_EQ(binary->op, fluir::Operator::STAR);
+}
+
+TEST(CompletionModal, EnterKeepsTheModalOpenAndAddsNothing) {
+  Fixture f;
+
+  EXPECT_TRUE(f.uut.onEvent(key(InputEvent::Key::Return), f.state));
+
+  EXPECT_TRUE(f.state.editor.tree().declarations.empty());
+  EXPECT_EQ(drawnRows(f.uut).size(), 2u);
+}
+
+TEST(CompletionModal, FilteringResetsTheScroll) {
+  EditorState state{kCtx};
+  CompletionModal uut{completions(40), kBounds, nullptr};
+  EXPECT_TRUE(uut.onEvent(wheel(-1000), state));
+
+  EXPECT_TRUE(uut.onEvent(testutil::text("Item 1"), state));
+
+  const auto rows = drawnRows(uut);
+  ASSERT_EQ(rows.size(), 11u) << "Item 1 and Item 10..19";
+  EXPECT_NEAR(rows.front().y, uut.searchBar().y + uut.searchBar().h + 4.0, 1e-6);
 }

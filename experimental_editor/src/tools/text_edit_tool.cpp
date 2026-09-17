@@ -141,7 +141,6 @@ namespace fluir::editor {
     std::optional<Label> labelRect(const pt::ParseTree& tree,
                                    std::span<const Box> boxes,
                                    const TextEditTool::Target& target,
-                                   double viewScale,
                                    const EditorContext::Layout& layout) {
       if (const pt::FunctionDecl* fn = functionAt(tree, target.path); fn && target.index) {
         const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
@@ -151,7 +150,7 @@ namespace fluir::editor {
         if (rail == nullptr) {
           return std::nullopt;
         }
-        return Label{splitLabel(rail->world, param->typeName, viewScale, layout).text, rail->clip};
+        return Label{splitLabel(rail->world, param->typeName, layout).text, rail->clip};
       }
       const Box* body = findBox(boxes, Part::Body, target.path);
       if (body == nullptr) {
@@ -162,7 +161,7 @@ namespace fluir::editor {
       }
       const Rect& r = body->world;
       if (functionAt(tree, target.path) != nullptr) {
-        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, draw::FN_TAG, viewScale, layout).text, body->clip};
+        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, draw::FN_TAG, layout).text, body->clip};
       }
       if (const pt::Call* call = callAt(tree, target.path)) {
         if (!target.index) {
@@ -176,7 +175,7 @@ namespace fluir::editor {
       }
       if (const pt::Constant* constant = constantAt(tree, target.path);
           constant && isEditableLiteral(constant->value)) {
-        return Label{splitLabel(r, literalTypeName(constant->value), viewScale, layout).text, body->clip};
+        return Label{splitLabel(r, literalTypeName(constant->value), layout).text, body->clip};
       }
       return std::nullopt;
     }
@@ -288,14 +287,13 @@ namespace fluir::editor {
     }
     const std::optional<Target> target = targetAt(tree, boxes, world, state.ctx.layout);
     const std::optional<Label> label =
-      target ? labelRect(tree, boxes, *target, state.view.scale, state.ctx.layout) : std::optional<Label>{};
+      target ? labelRect(tree, boxes, *target, state.ctx.layout) : std::optional<Label>{};
     if (!label || !label->rect.contains(world)) {
       field_.reset();
       return;
     }
     const bool wrapped = commentAt(tree, target->path) != nullptr;
-    // Glyphs are fixed screen px, so the caret offset is measured on screen.
-    const double dx = (world.x - textOrigin(label->rect, state.ctx.layout).x) * state.view.scale;
+    const double dx = world.x - textOrigin(label->rect, state.ctx.layout).x;
     const auto caretAt = [&](const std::string& text) -> std::size_t {
       if (!wrapped) {
         return TextField::indexAt(text, dx);
@@ -349,7 +347,7 @@ namespace fluir::editor {
       return;
     }
     const pt::ParseTree& tree = state.editor.tree();
-    const std::optional<Label> label = labelRect(tree, boxes, target_, view.composed().scale, state.ctx.layout);
+    const std::optional<Label> label = labelRect(tree, boxes, target_, state.ctx.layout);
     if (!label) {
       return;
     }

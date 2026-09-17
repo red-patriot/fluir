@@ -242,7 +242,7 @@ TEST(GraphDraw, ReturnRailFromOutputOnly) {
   EXPECT_NE(std::find(texts.begin(), texts.end(), "getVal"), texts.end());
 }
 
-TEST(GraphDraw, RailNameGapIsScreenFixedUnderZoom) {
+TEST(GraphDraw, RailNameGapIsWorldFixedUnderZoom) {
   const Loaded l = loadFixture("read/function_with_input_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
@@ -254,8 +254,24 @@ TEST(GraphDraw, RailNameGapIsScreenFixedUnderZoom) {
     const auto it = std::ranges::find(texts, s, &DrawCall::text);
     return it == texts.end() ? -1.0 : it->a.x;
   };
-  // Glyph width is screen-fixed; only the two textPad insets zoom.
-  EXPECT_NEAR(xOf("a") - xOf("I32"), 3 * 8 * 0.8 + kCtx.layout.textPad * 2, 1e-6);
+  // Glyph cells are world px, so the whole tag-to-name gap zooms with the view.
+  EXPECT_NEAR(xOf("a") - xOf("I32"), (kCtx.layout.textPad + 3 * 8 * 0.8) * 2, 1e-6);
+}
+
+// Every graph label keeps its proportion to the boxes around it at any zoom.
+TEST(GraphDraw, GraphTextScalesUniformlyWithTheView) {
+  const Loaded l = loadFixture("read/function_call.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  for (const double s : {2.0, 0.5}) {
+    RecordingRenderer r;
+    drawTree(kCtx, *l.result.tree, Viewport{.pan = {}, .scale = s}, r);
+
+    EXPECT_TRUE(hasScaledTextAt(r.calls, "add", Vec2{154 * s, 79 * s}, s));              // call title
+    EXPECT_TRUE(hasScaledTextAt(r.calls, "i32", Vec2{4 * s, (46 - 6.4) * s}, 0.8 * s));  // constant tag
+    EXPECT_TRUE(hasScaledTextAt(r.calls, "10", Vec2{27.2 * s, 29 * s}, s));              // constant value
+    EXPECT_TRUE(hasScaledTextAt(r.calls, "a", Vec2{154 * s, 104 * s}, s));               // call argument name
+  }
 }
 
 TEST(GraphDraw, DeterministicAcrossRuns) {
@@ -290,10 +306,10 @@ TEST(GraphDraw, ViewportIsApplied) {
   EXPECT_TRUE(hasRect(r.calls, Rect{200, 150, 1000, 1000}));
   // world header (50,50,500,25) -> screen (200,150,1000,50).
   EXPECT_TRUE(hasFill(r.calls, Rect{200, 150, 1000, 50}));
-  // world "fn" pos (54,71) -> screen (208,192), raised by its 6.4 px scaled height.
-  EXPECT_TRUE(hasScaledTextAt(r.calls, "fn", Vec2{208, 185.6}, 0.8));
-  // Name follows "fn"'s screen-fixed 12.8 px: world x 50+4+6.4+4 -> screen 64.4*2+100.
-  EXPECT_TRUE(hasTextAt(r.calls, "foo", Vec2{228.8, 158}));
+  // world "fn" pos (54,71) -> screen (208,192), raised by its 12.8 px scaled height.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "fn", Vec2{208, 179.2}, 0.8 * 2));
+  // Name follows "fn"'s world-fixed 12.8 px: world x 50+4+12.8+4 -> screen 70.8*2+100.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "foo", Vec2{241.6, 158}, 2.0));
 }
 
 TEST(GraphDraw, UnitPxScalesFrameAndHeader) {

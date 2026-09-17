@@ -45,7 +45,7 @@ namespace fluir::editor::draw {
     const std::vector<const pt::Call::Argument*> args = sortedArgs(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
       const Vec2 pos{world.x + ctx.layout.textPad, argRowTop(world, row, ctx.layout) + ctx.layout.textPad};
-      view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text);
+      view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text, view.composed().scale);
     }
     drawPortDots(anchors(call, world, ctx.layout), view, ctx);
   }

@@ -15,14 +15,14 @@ namespace fluir::editor {
     std::vector<Vec2> outputs;
   };
 
-  /** A label's small tag and main text regions in world space; glyphs are fixed screen px, so the split depends on
-   *  `viewScale`. */
+  /** A label's small tag and main text regions in world space; glyph cells are world px, so the split does not depend
+   *  on the view. */
   struct SplitLabel {
     Rect tag;
     Rect text;
   };
 
-  SplitLabel splitLabel(Rect box, std::string_view tag, double viewScale, const EditorContext::Layout& layout);
+  SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout);
 
   /** Draws `tag` small along `box`'s bottom and, when non-empty, `text` full size after it. */
   void drawSplitLabel(

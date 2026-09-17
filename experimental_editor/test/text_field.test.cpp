@@ -162,8 +162,8 @@ TEST(TextField, TheCaretTracksTheTextOriginAtAnyZoom) {
 
   // origin = localTextPos * scale + pan = (10*2+100, 20*2+50)
   const Vec2 origin{120, 90};
-  EXPECT_TRUE(hasTextAt(renderer.calls, "abc", origin));
-  // Caret geometry stays anchored at `origin` and in unscaled glyph px, not
-  // multiplied by the viewport's scale.
-  EXPECT_TRUE(hasFill(renderer.calls, Rect{origin.x + GLYPH_PX, origin.y, 1.0, GLYPH_PX}));
+  EXPECT_TRUE(testutil::hasScaledTextAt(renderer.calls, "abc", origin, 2.0));
+  // Glyph cells are world px, so the caret advances and grows with the zoom; its
+  // width stays a 1 px hairline.
+  EXPECT_TRUE(hasFill(renderer.calls, Rect{origin.x + GLYPH_PX * 2, origin.y, 1.0, GLYPH_PX * 2}));
 }

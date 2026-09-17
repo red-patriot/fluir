@@ -29,7 +29,7 @@ namespace fluir::editor {
           continue;
         }
         const std::string* type = railTypeAt(*fn, rail.path.back());
-        if (type != nullptr && splitLabel(rail.world, *type, state.view.scale, state.ctx.layout).tag.contains(world)) {
+        if (type != nullptr && splitLabel(rail.world, *type, state.ctx.layout).tag.contains(world)) {
           return &rail;
         }
       }

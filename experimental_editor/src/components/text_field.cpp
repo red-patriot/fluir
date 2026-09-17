@@ -50,14 +50,16 @@ namespace fluir::editor {
     }
   }
 
-  void TextField::setCaretFromOffset(double dxScreenPx) { caret_ = indexAt(text_, dxScreenPx); }
+  void TextField::setCaretFromOffset(double dxWorldPx) { caret_ = indexAt(text_, dxWorldPx); }
 
   void TextField::setCaret(std::size_t index) { caret_ = std::min(index, text_.size()); }
 
   void TextField::draw(const Subview& view, const EditorContext& ctx, Vec2 localTextPos) const {
     const Vec2 origin = view.toScreen(localTextPos);
-    view.renderer().drawText(origin, text_, ctx.theme.text);
-    view.renderer().fillRect(Rect{origin.x + GLYPH_PX * static_cast<double>(caret_), origin.y, 1.0, GLYPH_PX},
+    const double s = view.composed().scale;
+    view.renderer().drawText(origin, text_, ctx.theme.text, s);
+    // The caret rides the glyph cells but stays a 1 px hairline at any zoom.
+    view.renderer().fillRect(Rect{origin.x + GLYPH_PX * static_cast<double>(caret_) * s, origin.y, 1.0, GLYPH_PX * s},
                              ctx.theme.text);
   }
 
@@ -72,8 +74,8 @@ namespace fluir::editor {
     r.fillRect(r.wrappedCaretRect(screen, text_, scale, caret_), ctx.theme.text);
   }
 
-  std::size_t TextField::indexAt(const std::string& text, double dxScreenPx) {
-    const long long idx = std::llround(dxScreenPx / GLYPH_PX);
+  std::size_t TextField::indexAt(const std::string& text, double dxWorldPx) {
+    const long long idx = std::llround(dxWorldPx / GLYPH_PX);
     return static_cast<std::size_t>(std::clamp<long long>(idx, 0, static_cast<long long>(text.size())));
   }
 

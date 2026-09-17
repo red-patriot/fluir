@@ -61,7 +61,7 @@ namespace {
   const FullID kConstant1{1, 1};
   constexpr Vec2 kConstant1Body{62, 197};
   constexpr Vec2 kConstant1Grip{72.5, 187.5};
-  constexpr Vec2 kConstant1Text{76, 177};  // value region after "i8", above the grip
+  constexpr Vec2 kConstant1Text{79, 177};  // value region after "i8"'s world-px tag, clear of the grip and port
   constexpr Vec2 kEmptyFrame{400, 400};
   constexpr Vec2 kBackground{-1000, -1000};
   constexpr Vec2 kHeaderGrip{537.5, 62.5};

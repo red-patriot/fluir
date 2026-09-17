@@ -8,7 +8,8 @@
 
 namespace fluir::editor {
 
-  /** Monospace cell width of the UI font, in screen px. Tools map clicks with it, having no renderer. */
+  /** Monospace cell width of the UI font, in renderer px. Graph callers pass the view scale, so for them it is a
+   *  world-px cell. Tools map clicks with it, having no renderer. */
   inline constexpr double GLYPH_PX = 8.0;
 
   /** Sink for drawing primitives, in screen-space pixels. */

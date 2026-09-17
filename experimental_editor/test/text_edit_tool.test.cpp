@@ -775,3 +775,28 @@ TEST(TextEditTool, TheCommentDraftIsDrawnWrappedOverTheCommittedText) {
   EXPECT_NE(cover, calls.begin() + draft);
   EXPECT_TRUE(testutil::hasFill(calls, h.recorder.wrappedCaretRect(kCommentTextRect, "hix there", 1.0, 3)));
 }
+
+TEST(TextEditTool, CaretHitTestingIsZoomInvariant) {
+  Harness at1;
+  at1.send(down(kTextOrigin + Vec2{8, 0}));
+  ASSERT_NE(at1.tool.field(), nullptr);
+
+  Harness at2;
+  at2.state.view.scale = 2.0;
+  at2.send(down((kTextOrigin + Vec2{8, 0}) * 2.0));
+
+  ASSERT_NE(at2.tool.field(), nullptr);
+  EXPECT_EQ(at2.tool.field()->caret(), at1.tool.field()->caret());
+}
+
+TEST(TextEditTool, TheDraftDrawsAtTheViewScale) {
+  Harness h;
+  h.state.view.scale = 2.0;
+  h.send(down(kTextOrigin * 2.0));
+  h.send(text("7"));
+  ASSERT_NE(h.tool.field(), nullptr);
+
+  const auto calls = h.draw();
+
+  EXPECT_TRUE(testutil::hasScaledTextAt(calls, "742", kTextOrigin * 2.0, 2.0));
+}

@@ -89,3 +89,15 @@ TEST(TypeTool, PressesHonourTheViewport) {
 
   EXPECT_NE(state.popup, nullptr);
 }
+
+TEST(TypeTool, TheTagRegionIsWorldFixedUnderZoom) {
+  EditorState state{kCtx};
+  testutil::loadInto(state, "read/function_with_input_only.fl");
+  state.view.scale = 2.0;
+  TypeTool uut;
+
+  // World x 68 sits inside the tag's world-px width (textPad + 3 glyphs at 0.8x).
+  send(uut, state, down(Vec2{68, 90} * 2.0));
+
+  EXPECT_EQ(menuLabels(state), kBuiltins);
+}

@@ -30,7 +30,7 @@ namespace fluir::editor {
     /** Handles Left/Right/Home/End/Backspace/Delete. Returns whether it handled `key`. */
     bool onKey(InputEvent::Key key);
 
-    void setCaretFromOffset(double dxScreenPx);
+    void setCaretFromOffset(double dxWorldPx);
 
     /** Moves the caret to byte `index`, clamped to the text. */
     void setCaret(std::size_t index);
@@ -43,8 +43,8 @@ namespace fluir::editor {
     /** Draws wrapped in `localTextRect`, clipped to it, as a comment draws its text. */
     void drawWrapped(const Subview& view, const EditorContext& ctx, Rect localTextRect) const;
 
-    /** Nearest caret byte index to `dxScreenPx` from the text's screen origin. */
-    static std::size_t indexAt(const std::string& text, double dxScreenPx);
+    /** Nearest caret byte index to `dxWorldPx` from the text's origin, in world px. */
+    static std::size_t indexAt(const std::string& text, double dxWorldPx);
 
    private:
     std::string text_;

@@ -19,6 +19,7 @@ namespace fluir::editor::draw {
       Color operator()(const U16&) const { return theme.uIntNode; }
       Color operator()(const U32&) const { return theme.uIntNode; }
       Color operator()(const U64&) const { return theme.uIntNode; }
+      Color operator()(const BOOL&) const { return theme.boolNode; }
     };
 
   }  // namespace
@@ -33,7 +34,9 @@ namespace fluir::editor::draw {
 
   void draw(const pt::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
-    drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
+    // A bool has no editable value: the type tag alone labels it.
+    const bool showsValue = !std::holds_alternative<BOOL>(n.value);
+    drawSplitLabel(view, world, literalTypeName(n.value), showsValue ? renderLiteral(n.value) : "", ctx);
     drawPortDots(anchors(n, world, ctx.layout), view, ctx);
   }
 

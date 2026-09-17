@@ -351,6 +351,30 @@ TEST(GraphDraw, ConstantNode) {
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
 }
 
+TEST(GraphDraw, BoolConstantDrawsTagOnlyAndNoResizeGrip) {
+  const Loaded l = loadFixture("read/read_boolean.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{60, 175, 25, 25}));   // constant false
+  EXPECT_TRUE(hasRect(r.calls, Rect{110, 180, 25, 25}));  // constant true
+
+  // The type tag alone labels a bool: no value text either side of it.
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "bool", Vec2{64, 189.6}, 0.8));
+  EXPECT_TRUE(hasScaledTextAt(r.calls, "bool", Vec2{114, 194.6}, 0.8));
+  const auto texts = textStrings(r.calls);
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"true"}), texts.end());
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"false"}), texts.end());
+
+  // Bools still move, but have no resize bar to grab.
+  EXPECT_TRUE(hasFill(r.calls, Rect{65, 180, 15, 15}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{115, 185, 15, 15}));
+  EXPECT_FALSE(hasFill(r.calls, Rect{80, 175, 5, 25}));
+  EXPECT_FALSE(hasFill(r.calls, Rect{130, 180, 5, 25}));
+}
+
 TEST(GraphDraw, BinaryNodeHasTwoInputsOneOutput) {
   const Loaded l = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(l.result.tree.has_value());

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <optional>
 #include <unordered_map>
 #include <variant>
 
@@ -52,16 +53,30 @@ namespace fluir::editor {
       return std::visit([](const auto& n) { return n.id; }, node);
     }
 
-    // A node's body, then its grips over it. `resize` is ResizeX (right bar) or ResizeXY (corner).
+    // A bool constant shows no value, so there is nothing to widen: no grip, no resize.
+    std::optional<Part> resizePart(const pt::Node& node) {
+      if (std::holds_alternative<pt::Comment>(node)) {
+        return Part::ResizeXY;
+      }
+      const auto* c = std::get_if<pt::Constant>(&node);
+      if (c != nullptr && std::holds_alternative<literals_types::BOOL>(c->value)) {
+        return std::nullopt;
+      }
+      return Part::ResizeX;
+    }
+
+    // A node's body, then its grips over it. `resize` is ResizeX (right bar), ResizeXY (corner) or none.
     void pushNodeBoxes(const FullID& path,
                        const Rect& rect,
                        const std::optional<Rect>& clip,
-                       Part resize,
+                       std::optional<Part> resize,
                        double unit,
                        std::vector<Box>& out) {
-      const Rect grip = resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeBar(rect, unit);
       out.push_back({path, Part::Body, rect, clip});
-      out.push_back({path, resize, grip, clip});
+      if (resize) {
+        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeBar(rect, unit);
+        out.push_back({path, *resize, grip, clip});
+      }
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
@@ -77,8 +92,7 @@ namespace fluir::editor {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        const Part resize = std::holds_alternative<pt::Comment>(*node) ? Part::ResizeXY : Part::ResizeX;
-        pushNodeBoxes(path, rect, clip, resize, layout.unitPx, out);
+        pushNodeBoxes(path, rect, clip, resizePart(*node), layout.unitPx, out);
         ports[idOf(*node)] = editor::ports(*node, rect, layout);
       }
 

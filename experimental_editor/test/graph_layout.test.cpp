@@ -33,8 +33,10 @@ namespace {
 
   const EditorContext kCtx;
 
-  fluir::pt::Constant makeConstant(ID id, FlowGraphLocation loc) {
-    return fluir::pt::Constant{.id = id, .location = loc, .value = fluir::literals_types::I32{0}};
+  fluir::pt::Constant makeConstant(ID id,
+                                   FlowGraphLocation loc,
+                                   fluir::literals_types::Literal value = fluir::literals_types::I32{0}) {
+    return fluir::pt::Constant{.id = id, .location = loc, .value = value};
   }
 
   // A 100x100-unit function at the origin: frame {0,0,500,500}, body from y 25.
@@ -158,6 +160,25 @@ TEST(GraphLayout, NodeGripsAreHittable) {
   EXPECT_EQ(move->path, (FullID{1, 11}));
   EXPECT_EQ(resize->part, Part::ResizeX);
   EXPECT_EQ(resize->path, (FullID{1, 11}));
+}
+
+TEST(GraphLayout, BoolConstantHasNoResizeGrip) {
+  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fn.body.nodes.emplace(
+    10, makeConstant(10, {.x = 2, .y = 2, .z = 1, .width = 10, .height = 10}, fluir::literals_types::BOOL{true}));
+
+  const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
+
+  // Node {10,35,50,50}: the right-edge bar {55,35,5,50} is body, the move grip {40,40,15,15} still grips.
+  const Box* edge = hitAt(boxes, Vec2{57, 70});
+  const Box* move = hitAt(boxes, Vec2{45, 45});
+
+  ASSERT_NE(edge, nullptr);
+  ASSERT_NE(move, nullptr);
+  EXPECT_EQ(edge->part, Part::Body);
+  EXPECT_EQ(edge->path, (FullID{1, 10}));
+  EXPECT_EQ(move->part, Part::MoveGrip);
+  EXPECT_EQ(move->path, (FullID{1, 10}));
 }
 
 TEST(GraphLayout, FunctionGripsAreHittableAndDrawnOverTheBody) {

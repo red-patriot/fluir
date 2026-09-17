@@ -104,6 +104,32 @@ if (TARGET SDL3_ttf-static)
     set_target_properties(SDL3_ttf-static PROPERTIES SYSTEM TRUE)
 endif ()
 
+set(PLUTOSVG_ENABLE_FREETYPE
+    OFF
+    CACHE BOOL
+          ""
+          FORCE
+)
+set(PLUTOSVG_BUILD_EXAMPLES
+    OFF
+    CACHE BOOL
+          ""
+          FORCE
+)
+FetchContent_Declare(
+    plutosvg
+    GIT_REPOSITORY https://github.com/sammycage/plutosvg.git
+    GIT_TAG v0.0.7
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(plutosvg)
+
+# plutosvg's headers are third-party: consume them as system includes so our own
+# -Werror -pedantic warnings don't fire on them.
+if (TARGET plutosvg)
+    set_target_properties(plutosvg PROPERTIES SYSTEM TRUE)
+endif ()
+
 include(strict-warnings)
 include(embed-file)
 
@@ -214,6 +240,7 @@ target_link_libraries(
            SDL3::SDL3
            SDL3_ttf::SDL3_ttf
            nfd
+           plutosvg
            fluir::compiler
 )
 

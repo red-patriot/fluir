@@ -13,7 +13,10 @@ namespace fluir::editor {
   namespace {
 
     // Size the UI font is probed at to find the px size whose advance is GLYPH_PX.
-    constexpr double kProbePx = 16.0;
+    constexpr double PROBE_PX = 16.0;
+
+    // Rasterized icons kept across frames; past this the cache is dropped, so a zoom sweep plateaus.
+    constexpr std::size_t ICON_CACHE_CAP = 64;
 
     SDL_FRect toFRect(Rect r) {
       return SDL_FRect{
@@ -42,10 +45,10 @@ namespace fluir::editor {
     }
     try {
       int advance = 0;
-      if (!TTF_GetStringSize(fontAt(kProbePx), "0", 1, &advance, nullptr) || advance <= 0) {
+      if (!TTF_GetStringSize(fontAt(PROBE_PX), "0", 1, &advance, nullptr) || advance <= 0) {
         throw std::runtime_error(SDL_GetError());
       }
-      uiPx_ = kProbePx * GLYPH_PX / advance;
+      uiPx_ = PROBE_PX * GLYPH_PX / advance;
       fontAt(uiPx_);
     } catch (...) {
       releaseText();
@@ -53,7 +56,11 @@ namespace fluir::editor {
     }
   }
 
-  SdlRenderer::~SdlRenderer() { releaseText(); }
+  SdlRenderer::~SdlRenderer() {
+    releaseIcons();
+    releaseDocuments();
+    releaseText();
+  }
 
   void SdlRenderer::releaseText() {
     for (const auto& [key, font] : fonts_) {
@@ -79,6 +86,82 @@ namespace fluir::editor {
     }
     fonts_.emplace(key, font);
     return font;
+  }
+
+  void SdlRenderer::releaseIcons() {
+    for (const auto& [key, texture] : icons_) {
+      SDL_DestroyTexture(texture);
+    }
+    icons_.clear();
+  }
+
+  void SdlRenderer::releaseDocuments() {
+    for (const auto& [bytes, document] : documents_) {
+      plutosvg_document_destroy(document);
+    }
+    documents_.clear();
+  }
+
+  plutosvg_document_t* SdlRenderer::documentFor(SvgView svg) {
+    if (const auto it = documents_.find(svg.data()); it != documents_.end()) {
+      return it->second;
+    }
+    // -1 container size: the viewport resolves from the document's own width/height.
+    plutosvg_document_t* document = plutosvg_document_load_from_data(
+      reinterpret_cast<const char*>(svg.data()), static_cast<int>(svg.size()), -1.0f, -1.0f, nullptr, nullptr);
+    if (document == nullptr) {
+      throw std::runtime_error("icon SVG failed to parse");
+    }
+    documents_.emplace(svg.data(), document);
+    return document;
+  }
+
+  Vec2 SdlRenderer::imageSize(SvgView svg) {
+    plutosvg_document_t* document = documentFor(svg);
+    return {plutosvg_document_get_width(document), plutosvg_document_get_height(document)};
+  }
+
+  SDL_Texture* SdlRenderer::textureFor(SvgView svg, int w, int h) {
+    const IconKey key{svg.data(), w, h};
+    if (const auto it = icons_.find(key); it != icons_.end()) {
+      return it->second;
+    }
+    if (icons_.size() >= ICON_CACHE_CAP) {
+      releaseIcons();
+    }
+    plutovg_surface_t* raster =
+      plutosvg_document_render_to_surface(documentFor(svg), nullptr, w, h, nullptr, nullptr, nullptr);
+    if (raster == nullptr) {
+      throw std::runtime_error("icon SVG failed to rasterize");
+    }
+    // plutovg hands back premultiplied ARGB32; SDL blends it with the matching mode below.
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(plutovg_surface_get_width(raster),
+                                                 plutovg_surface_get_height(raster),
+                                                 SDL_PIXELFORMAT_ARGB8888,
+                                                 plutovg_surface_get_data(raster),
+                                                 plutovg_surface_get_stride(raster));
+    SDL_Texture* texture = surface == nullptr ? nullptr : SDL_CreateTextureFromSurface(renderer_, surface);
+    SDL_DestroySurface(surface);
+    plutovg_surface_destroy(raster);
+    if (texture == nullptr) {
+      throw std::runtime_error(SDL_GetError());
+    }
+    SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND_PREMULTIPLIED);
+    icons_.emplace(key, texture);
+    return texture;
+  }
+
+  void SdlRenderer::drawIcon(Rect screen, SvgView svg, const Color& tint) {
+    const auto w = static_cast<int>(std::lround(screen.w));
+    const auto h = static_cast<int>(std::lround(screen.h));
+    if (w <= 0 || h <= 0) {
+      return;
+    }
+    SDL_Texture* texture = textureFor(svg, w, h);
+    SDL_SetTextureColorMod(texture, tint.r, tint.g, tint.b);
+    SDL_SetTextureAlphaMod(texture, tint.a);
+    const SDL_FRect dst = toFRect(screen);
+    SDL_RenderTexture(renderer_, texture, nullptr, &dst);
   }
 
   void SdlRenderer::drawTtf(TTF_Font* font, Vec2 topLeft, std::string_view text, int wrapWidth, const Color& color) {

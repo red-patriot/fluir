@@ -14,6 +14,7 @@ add_executable(
     graph_geometry.test.cpp
     graph_layout.test.cpp
     graph_draw.test.cpp
+    draw_utils.test.cpp
     text_field.test.cpp
     toolbar.test.cpp
     tool_chain.test.cpp

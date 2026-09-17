@@ -18,6 +18,15 @@ namespace fluir::editor {
 
   }  // namespace
 
+  Rect fitInto(Rect target, Vec2 intrinsic) {
+    if (intrinsic.x <= 0.0 || intrinsic.y <= 0.0 || target.w <= 0.0 || target.h <= 0.0) {
+      return {target.center().x, target.center().y, 0.0, 0.0};
+    }
+    const double scale = std::min(target.w / intrinsic.x, target.h / intrinsic.y);
+    const Vec2 size = intrinsic * scale;
+    return {target.x + (target.w - size.x) / 2, target.y + (target.h - size.y) / 2, size.x, size.y};
+  }
+
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout) {
     const double tagW = layout.textPad + static_cast<double>(tag.size()) * GLYPH_PX * kTagScale;
     return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
@@ -59,6 +68,13 @@ namespace fluir::editor {
           view.renderer().fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
         }
       }
+    }
+
+    // Fitting happens after the map to screen space, so a non-uniform view can never squash the icon.
+    void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint) {
+      Renderer& r = view.renderer();
+      const Rect screen = view.toScreen(world);
+      r.drawIcon(fitInto(screen, r.imageSize(svg)), svg, tint);
     }
 
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {

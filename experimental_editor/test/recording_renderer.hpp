@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -14,13 +15,14 @@
 namespace testutil {
 
   struct DrawCall {
-    enum class Op { Rect, Fill, Line, Text, TextWrapped, PushClip, PopClip };
+    enum class Op { Rect, Fill, Line, Text, TextWrapped, Icon, PushClip, PopClip };
     Op op;
-    fluir::editor::Rect rect;  // Rect / Fill / PushClip / TextWrapped
-    fluir::editor::Vec2 a;     // Line a / Text pos
-    fluir::editor::Vec2 b;     // Line b
-    std::string text;          // Text / TextWrapped
-    double scale = 1.0;        // Text / TextWrapped
+    fluir::editor::Rect rect;            // Rect / Fill / PushClip / TextWrapped
+    fluir::editor::Vec2 a;               // Line a / Text pos
+    fluir::editor::Vec2 b;               // Line b
+    std::string text;                    // Text / TextWrapped
+    double scale = 1.0;                  // Text / TextWrapped
+    const unsigned char* svg = nullptr;  // Icon: the embedded bytes' address, which identifies the icon
     friend bool operator==(const DrawCall&, const DrawCall&) = default;
   };
 
@@ -77,6 +79,11 @@ namespace testutil {
     }
     static double wrapColumns(fluir::editor::Rect r, double cell) { return std::max(1.0, std::floor(r.w / cell)); }
     fluir::editor::Vec2 measureText(std::string_view t) override { return {static_cast<double>(t.size()) * 8.0, 8.0}; }
+    void drawIcon(fluir::editor::Rect r, std::span<const unsigned char> svg, const fluir::editor::Color&) override {
+      calls.push_back({DrawCall::Op::Icon, r, {}, {}, {}, 1.0, svg.data()});
+    }
+    // Square by default, so `fitInto` centres predictably in tests.
+    fluir::editor::Vec2 imageSize(std::span<const unsigned char>) override { return {16.0, 16.0}; }
     void pushClip(fluir::editor::Rect r) override { calls.push_back({DrawCall::Op::PushClip, r, {}, {}, {}}); }
     void popClip() override { calls.push_back({DrawCall::Op::PopClip, {}, {}, {}, {}}); }
   };
@@ -148,6 +155,19 @@ namespace testutil {
   inline bool hasRect(const std::vector<DrawCall>& calls, fluir::editor::Rect want, double tol = 1e-6) {
     for (const auto& r : rectsOf(calls)) {
       if (detail::rectNear(r, want, tol)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // Icons are matched by their bytes' address: the embedded array is the icon's identity.
+  inline bool hasIcon(const std::vector<DrawCall>& calls,
+                      std::span<const unsigned char> svg,
+                      fluir::editor::Rect want,
+                      double tol = 1e-6) {
+    for (const auto& c : opsOf(calls, DrawCall::Op::Icon)) {
+      if (c.svg == svg.data() && detail::rectNear(c.rect, want, tol)) {
         return true;
       }
     }

@@ -5,6 +5,7 @@
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor {
 
@@ -39,6 +40,14 @@ namespace fluir::editor {
 
     /** Screen-px size `text` would occupy if drawn. */
     virtual Vec2 measureText(std::string_view text) = 0;
+
+    /** Fills `screen` exactly with the SVG in `svg`, stretched to it and recolored to `tint`. Callers fit;
+     *  this does not. */
+    virtual void drawIcon(Rect screen, SvgView svg, const Color& tint) = 0;
+
+    /** The SVG's intrinsic size, for aspect. */
+    virtual Vec2 imageSize(SvgView svg) = 0;
+
     virtual void pushClip(Rect screen) = 0;
     virtual void popClip() = 0;
   };

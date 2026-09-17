@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <string_view>
 #include <vector>
 
@@ -22,7 +23,14 @@ namespace fluir::editor {
     Rect text;
   };
 
+  /** A non-owning view to an SVG image. */
+  using SvgView = std::span<const unsigned char>;
+
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout);
+
+  /** `intrinsic`'s aspect scaled to fit inside `target`, centred. Degenerate input returns an empty rect at
+   *  `target`'s centre. */
+  Rect fitInto(Rect target, Vec2 intrinsic);
 
   /** Draws `tag` small along `box`'s bottom and, when non-empty, `text` full size after it. */
   void drawSplitLabel(
@@ -41,6 +49,9 @@ namespace fluir::editor {
 
     /** Draws `text` at `world`'s padded top-left; skipped when empty. */
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx);
+
+    /** `svg` fitted into `world` mapped through `view`, aspect preserved, recolored to `tint`. */
+    void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint);
 
   }  // namespace draw
 

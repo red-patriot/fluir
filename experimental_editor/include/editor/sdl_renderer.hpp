@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 
+#include <plutosvg.h>
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
@@ -34,6 +35,8 @@ namespace fluir::editor {
     std::size_t wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) override;
     Rect wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) override;
     Vec2 measureText(std::string_view text) override;
+    void drawIcon(Rect screen, SvgView svg, const Color& tint) override;
+    Vec2 imageSize(SvgView svg) override;
     void pushClip(Rect screen) override;
     void popClip() override;
 
@@ -57,6 +60,26 @@ namespace fluir::editor {
     /** Draw `text` at `topLeft` with `font`, wrapping at `wrapWidth` px (0 = no wrap). */
     void drawTtf(TTF_Font* font, Vec2 topLeft, std::string_view text, int wrapWidth, const Color& color);
 
+    /** `svg` parsed once, keyed by its embedded address. Throws if it cannot be parsed. */
+    plutosvg_document_t* documentFor(SvgView svg);
+
+    /** `svg` rasterized at `w` x `h` px, cached. Throws if rasterizing fails. */
+    SDL_Texture* textureFor(SvgView svg, int w, int h);
+
+    /** Destroy every cached icon texture, keeping the parsed documents. */
+    void releaseIcons();
+
+    /** Destroy every parsed icon document. */
+    void releaseDocuments();
+
+    /** An icon at one rasterized size. The SVG's embedded bytes have a stable address, so they identify it. */
+    struct IconKey {
+      const unsigned char* svg = nullptr;
+      int w = 0;
+      int h = 0;
+      friend auto operator<=>(const IconKey&, const IconKey&) = default;
+    };
+
     SDL_Renderer* renderer_;
     EditorContext::Theme theme_;
     float dpi_ = 1.0f;
@@ -64,6 +87,8 @@ namespace fluir::editor {
     TTF_TextEngine* engine_ = nullptr;
     std::map<int, TTF_Font*> fonts_;  ///< keyed by px x 2
     double uiPx_ = 16.0;
+    std::map<const unsigned char*, plutosvg_document_t*> documents_;
+    std::map<IconKey, SDL_Texture*> icons_;
   };
 
 }  // namespace fluir::editor

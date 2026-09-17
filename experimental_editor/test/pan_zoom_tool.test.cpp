@@ -57,11 +57,22 @@ TEST(PanZoomTool, WheelZoomsAndClampsToTheContextRange) {
   for (int i = 0; i < 100; ++i) {
     send(uut, state, wheel(1));
   }
-  EXPECT_LE(state.view.scale, kCtx.zoom.max);
+  EXPECT_NEAR(state.view.scale, kCtx.zoom.max, 1e-9) << "a step past the limit lands on it";
   for (int i = 0; i < 200; ++i) {
     send(uut, state, wheel(-1));
   }
-  EXPECT_GE(state.view.scale, kCtx.zoom.min);
+  EXPECT_NEAR(state.view.scale, kCtx.zoom.min, 1e-9);
+}
+
+// A view left outside the range must still be steerable back into it.
+TEST(PanZoomTool, WheelPullsAnOutOfRangeScaleBackToTheLimit) {
+  EditorState state{kCtx};
+  state.view.scale = 5.0;
+  PanZoomTool uut;
+
+  ASSERT_TRUE(send(uut, state, wheel(-1)));
+
+  EXPECT_NEAR(state.view.scale, kCtx.zoom.max, 1e-9);
 }
 
 TEST(PanZoomTool, CancelEndsAPan) {

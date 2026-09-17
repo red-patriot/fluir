@@ -18,6 +18,9 @@ namespace {
   using testutil::opsOf;
   using testutil::RecordingRenderer;
 
+  // Scale limits wide enough not to bite: these cases are about the ratio, not the clamp.
+  constexpr Vec2 kAnyScale{0.001, 1000.0};
+
   TEST(Viewport, WorldToScreenAppliesScaleThenPan) {
     const Viewport vp{.pan = {10.0, 20.0}, .scale = 2.0};
     const Vec2 s = vp.worldToScreen({3.0, 4.0});
@@ -54,7 +57,7 @@ namespace {
   TEST(Viewport, FitRectScalesToMinRatioAndCentres) {
     Viewport vp;
     const Rect rect{0.0, 0.0, 100.0, 50.0};
-    vp.fitRect(rect, {200.0, 200.0});
+    vp.fitRect(rect, {200.0, 200.0}, kAnyScale.x, kAnyScale.y);
     EXPECT_NEAR(vp.scale, 2.0, 1e-4);
     const Vec2 c = vp.worldToScreen(rect.center());
     EXPECT_NEAR(c.x, 100.0, 1e-4);
@@ -64,16 +67,38 @@ namespace {
   TEST(Viewport, FitRectHandlesNonOriginRect) {
     Viewport vp;
     const Rect rect{40.0, -20.0, 20.0, 20.0};
-    vp.fitRect(rect, {100.0, 100.0});
+    vp.fitRect(rect, {100.0, 100.0}, kAnyScale.x, kAnyScale.y);
     EXPECT_NEAR(vp.scale, 5.0, 1e-4);
     const Vec2 c = vp.worldToScreen(rect.center());
     EXPECT_NEAR(c.x, 50.0, 1e-4);
     EXPECT_NEAR(c.y, 50.0, 1e-4);
   }
 
+  // A small graph fits at a scale no wheel step could reach: fitRect must clamp
+  // into the same range the zoom does, or zooming is dead on arrival.
+  TEST(Viewport, FitRectClampsScaleToTheMaxAndStillCentres) {
+    Viewport vp;
+    const Rect rect{-60.0, -115.0, 200.0, 150.0};
+    vp.fitRect(rect, {1280.0, 800.0}, 0.25, 2.5);
+    EXPECT_NEAR(vp.scale, 2.5, 1e-6);
+    const Vec2 c = vp.worldToScreen(rect.center());
+    EXPECT_NEAR(c.x, 640.0, 1e-6);
+    EXPECT_NEAR(c.y, 400.0, 1e-6);
+  }
+
+  TEST(Viewport, FitRectClampsScaleToTheMinAndStillCentres) {
+    Viewport vp;
+    const Rect rect{0.0, 0.0, 100000.0, 100000.0};
+    vp.fitRect(rect, {1280.0, 800.0}, 0.25, 2.5);
+    EXPECT_NEAR(vp.scale, 0.25, 1e-6);
+    const Vec2 c = vp.worldToScreen(rect.center());
+    EXPECT_NEAR(c.x, 640.0, 1e-6);
+    EXPECT_NEAR(c.y, 400.0, 1e-6);
+  }
+
   TEST(Viewport, FitRectGuardsZeroSize) {
     Viewport vp;
-    vp.fitRect({0.0, 0.0, 0.0, 0.0}, {100.0, 100.0});
+    vp.fitRect({0.0, 0.0, 0.0, 0.0}, {100.0, 100.0}, kAnyScale.x, kAnyScale.y);
     EXPECT_TRUE(std::isfinite(vp.scale));
     const Vec2 s = vp.worldToScreen({0.0, 0.0});
     EXPECT_TRUE(std::isfinite(s.x));

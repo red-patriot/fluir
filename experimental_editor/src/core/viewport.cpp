@@ -16,12 +16,13 @@ namespace fluir::editor {
     pan = screenPivot - worldAtPivot * scale;
   }
 
-  void Viewport::fitRect(Rect world, Vec2 viewportSize) {
+  void Viewport::fitRect(Rect world, Vec2 viewportSize, double minScale, double maxScale) {
     if (world.w > 0.0 && world.h > 0.0) {
       scale = std::min(viewportSize.x / world.w, viewportSize.y / world.h);
     } else {
       scale = 1.0;
     }
+    scale = std::clamp(scale, minScale, maxScale);
     pan = viewportSize * 0.5 - world.center() * scale;
   }
 

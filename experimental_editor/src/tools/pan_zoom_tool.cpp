@@ -1,5 +1,6 @@
 #include "editor/tools/pan_zoom_tool.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 namespace fluir::editor {
@@ -31,11 +32,9 @@ namespace fluir::editor {
 
       case InputEvent::Type::Wheel:
         {
-          const Viewport old = state.view;
-          state.view.zoomAbout(event.pos, std::pow(state.ctx.zoom.wheelStep, event.wheel.y));
-          if (state.view.scale < state.ctx.zoom.min || state.view.scale > state.ctx.zoom.max) {
-            state.view = old;
-          }
+          const double wanted = state.view.scale * std::pow(state.ctx.zoom.wheelStep, event.wheel.y);
+          const double target = std::clamp(wanted, state.ctx.zoom.min, state.ctx.zoom.max);
+          state.view.zoomAbout(event.pos, target / state.view.scale);
           return true;
         }
 

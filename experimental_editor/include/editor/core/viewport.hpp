@@ -19,9 +19,10 @@ namespace fluir::editor {
     void zoomAbout(Vec2 screenPivot, double factor);
 
     /** Set `pan`+`scale` so `world` fits centred in a `viewportSize`-pixel
-     *  viewport: uniform `scale = min(vp.x/world.w, vp.y/world.h)`, then centre.
-     *  Zero-width or zero-height `world`: leave `scale = 1`, still centre. */
-    void fitRect(Rect world, Vec2 viewportSize);
+     *  viewport: uniform `scale = min(vp.x/world.w, vp.y/world.h)` clamped to
+     *  `[minScale, maxScale]`, then centre. Zero-width or zero-height `world`:
+     *  `scale = 1`, still centre. */
+    void fitRect(Rect world, Vec2 viewportSize, double minScale, double maxScale);
   };
 
   /** A composable rendering region. Combines a transform with a local origin

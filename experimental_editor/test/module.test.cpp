@@ -393,6 +393,19 @@ TEST(ModulePage, DrawShowsTheGraphUnderTheHeaderBar) {
   EXPECT_NE(std::find(texts.begin(), texts.end(), "int_constants.fl"), texts.end());
 }
 
+// top_level_comment_only.fl is 125x125 world px: an unclamped fit scales it past
+// the zoom max, which freezes the wheel.
+TEST(ModulePage, FittingASmallGraphStaysInsideTheZoomRange) {
+  Harness h{fs::path(TEST_FOLDER) / "read/top_level_comment_only.fl"};
+
+  EXPECT_LE(h.page->state().view.scale, h.ctx.zoom.max);
+  EXPECT_GE(h.page->state().view.scale, h.ctx.zoom.min);
+
+  const double fitted = h.page->state().view.scale;
+  h.send({wheel(Vec2{400, 300}, -1)});
+  EXPECT_LT(h.page->state().view.scale, fitted) << "the wheel still zooms out";
+}
+
 TEST(ModulePage, ANewProgramDrawsOverTheWholeWindow) {
   Harness h;
 

@@ -127,7 +127,10 @@ namespace fluir::editor {
 
   void ModulePage::fitView() {
     state_.view = Viewport{};
-    state_.view.fitRect(graphBounds(layoutGraph(state_.editor.tree(), ctx_.layout)), renderer_.outputSize());
+    state_.view.fitRect(graphBounds(layoutGraph(state_.editor.tree(), ctx_.layout)),
+                        renderer_.outputSize(),
+                        ctx_.zoom.min,
+                        ctx_.zoom.max);
   }
 
   void ModulePage::deleteSelection() {

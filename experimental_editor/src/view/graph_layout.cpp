@@ -23,13 +23,6 @@ namespace fluir::editor {
 
     using Ports = std::unordered_map<fluir::ID, PortSet>;
 
-    Rect moveGrip(const Rect& frame, double unit) {
-      return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
-              frame.y + DRAG_INSET * unit,
-              DRAG_SIZE * unit,
-              DRAG_SIZE * unit};
-    }
-
     Rect resizeBar(const Rect& r, double unit) {
       return {r.x + r.w - RESIZE_BAR_WIDTH * unit, r.y, RESIZE_BAR_WIDTH * unit, r.h};
     }
@@ -53,7 +46,7 @@ namespace fluir::editor {
       return std::visit([](const auto& n) { return n.id; }, node);
     }
 
-    // A bool constant shows no value, so there is nothing to widen: no grip, no resize.
+    // A bool constant draws a fixed-size toggle square, so there is nothing to widen: no resize grip.
     std::optional<Part> resizePart(const pt::Node& node) {
       if (std::holds_alternative<pt::Comment>(node)) {
         return Part::ResizeXY;
@@ -172,6 +165,13 @@ namespace fluir::editor {
     }
 
   }  // namespace
+
+  Rect moveGrip(const Rect& frame, double unit) {
+    return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
+            frame.y + DRAG_INSET * unit,
+            DRAG_SIZE * unit,
+            DRAG_SIZE * unit};
+  }
 
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
     std::vector<Box> out;

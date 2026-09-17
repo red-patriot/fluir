@@ -351,28 +351,37 @@ TEST(GraphDraw, ConstantNode) {
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
 }
 
-TEST(GraphDraw, BoolConstantDrawsTagOnlyAndNoResizeGrip) {
+// read_boolean.fl: false node {60,175,40,25}, true node {110,180,40,25}; each toggle square 12x12,
+// inset 4 from the left edge and vertically centred.
+TEST(GraphDraw, BoolConstantDrawsAToggleSquareAndNoResizeGrip) {
   const Loaded l = loadFixture("read/read_boolean.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  EXPECT_TRUE(hasRect(r.calls, Rect{60, 175, 25, 25}));   // constant false
-  EXPECT_TRUE(hasRect(r.calls, Rect{110, 180, 25, 25}));  // constant true
+  EXPECT_TRUE(hasRect(r.calls, Rect{60, 175, 40, 25}));   // constant false
+  EXPECT_TRUE(hasRect(r.calls, Rect{110, 180, 40, 25}));  // constant true
 
-  // The type tag alone labels a bool: no value text either side of it.
-  EXPECT_TRUE(hasScaledTextAt(r.calls, "bool", Vec2{64, 189.6}, 0.8));
-  EXPECT_TRUE(hasScaledTextAt(r.calls, "bool", Vec2{114, 194.6}, 0.8));
+  // The square replaces the label outright: no type tag, no value text.
   const auto texts = textStrings(r.calls);
-  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"true"}), texts.end());
-  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"false"}), texts.end());
+  for (const std::string& gone : {"bool", "true", "false"}) {
+    EXPECT_EQ(std::find(texts.begin(), texts.end(), gone), texts.end()) << gone;
+  }
+
+  // Outline on both; only the true node's square is filled.
+  const Rect falseSquare{64, 181.5, 12, 12};
+  const Rect trueSquare{114, 186.5, 12, 12};
+  EXPECT_TRUE(hasRect(r.calls, falseSquare));
+  EXPECT_TRUE(hasRect(r.calls, trueSquare));
+  EXPECT_FALSE(hasFill(r.calls, falseSquare));
+  EXPECT_TRUE(hasFill(r.calls, trueSquare));
 
   // Bools still move, but have no resize bar to grab.
-  EXPECT_TRUE(hasFill(r.calls, Rect{65, 180, 15, 15}));
-  EXPECT_TRUE(hasFill(r.calls, Rect{115, 185, 15, 15}));
-  EXPECT_FALSE(hasFill(r.calls, Rect{80, 175, 5, 25}));
-  EXPECT_FALSE(hasFill(r.calls, Rect{130, 180, 5, 25}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{80, 180, 15, 15}));
+  EXPECT_TRUE(hasFill(r.calls, Rect{130, 185, 15, 15}));
+  EXPECT_FALSE(hasFill(r.calls, Rect{95, 175, 5, 25}));
+  EXPECT_FALSE(hasFill(r.calls, Rect{145, 180, 5, 25}));
 }
 
 TEST(GraphDraw, BinaryNodeHasTwoInputsOneOutput) {

@@ -1,12 +1,18 @@
 #include "editor/view/draw/constant.hpp"
 
+#include <algorithm>
 #include <variant>
 
 #include "editor/core/literal_text.hpp"
+#include "editor/core/renderer.hpp"
+#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
   namespace {
     using namespace ::fluir::literals_types;
+
+    // Gap between the bool square and the node's edges, in world px.
+    constexpr double TOGGLE_PAD = 4.0;
 
     struct LiteralColor {
       const EditorContext::Theme& theme;
@@ -24,6 +30,12 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
+  Rect boolToggleRect(const Rect& world, const EditorContext::Layout& layout) {
+    const double side =
+      std::max(0.0, std::min(world.h - 2 * TOGGLE_PAD, moveGrip(world, layout.unitPx).x - world.x - 2 * TOGGLE_PAD));
+    return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
+  }
+
   PortSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
@@ -34,9 +46,16 @@ namespace fluir::editor::draw {
 
   void draw(const pt::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
-    // A bool has no editable value: the type tag alone labels it.
-    const bool showsValue = !std::holds_alternative<BOOL>(n.value);
-    drawSplitLabel(view, world, literalTypeName(n.value), showsValue ? renderLiteral(n.value) : "", ctx);
+    // A bool shows its value as a checkbox instead of a label: outlined when false, filled when true.
+    if (const auto* flag = std::get_if<BOOL>(&n.value)) {
+      const Rect square = boolToggleRect(world, ctx.layout);
+      if (*flag) {
+        view.renderer().fillRect(view.toScreen(square), ctx.theme.text);
+      }
+      view.renderer().drawRect(view.toScreen(square), ctx.theme.text);
+    } else {
+      drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
+    }
     drawPortDots(anchors(n, world, ctx.layout), view, ctx);
   }
 

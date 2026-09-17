@@ -9,10 +9,10 @@
   </header>
   <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
     <body>
-      <constant id="1" x="2" y="20" z="1" w="5" h="5">
+      <constant id="1" x="2" y="20" z="1" w="8" h="5">
         <bool>false</bool>
       </constant>
-      <constant id="2" x="12" y="21" z="1" w="5" h="5">
+      <constant id="2" x="12" y="21" z="1" w="8" h="5">
         <bool>true</bool>
       </constant>
     </body>

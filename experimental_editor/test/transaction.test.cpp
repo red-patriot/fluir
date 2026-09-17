@@ -385,6 +385,20 @@ TEST(SetConstantValueTransaction, ReplacesTheLiteralAndUndoRestoresIt) {
   EXPECT_EQ(tree, before);
 }
 
+TEST(SetConstantValueTransaction, TogglesABool) {
+  fluir::pt::ParseTree tree = makeTree();
+  std::get<fluir::pt::Constant>(std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body.nodes.at(10)).value =
+    fluir::literals_types::BOOL{false};
+  const fluir::pt::ParseTree before = tree;
+
+  SetConstantValueTransaction uut{FullID{1, 10}, fluir::literals_types::BOOL{true}};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(std::get<fluir::pt::Constant>(bodyOf(tree).nodes.at(10)).value,
+            fluir::pt::Literal{fluir::literals_types::BOOL{true}});
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
 TEST(SetConstantValueTransaction, KeepsTheConstantsType) {
   fluir::pt::ParseTree tree = makeTree();
   const fluir::pt::ParseTree before = tree;

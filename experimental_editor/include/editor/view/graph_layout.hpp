@@ -23,6 +23,9 @@ namespace fluir::editor {
     std::optional<Rect> clip;
   };
 
+  /** The move grip over `frame`'s top-right corner, in the same space. */
+  Rect moveGrip(const Rect& frame, double unit);
+
   /** Every box `tree` draws as, in paint order. */
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout);
 

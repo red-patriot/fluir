@@ -29,6 +29,7 @@ add_executable(
     select_tool.test.cpp
     drag_tool.test.cpp
     conduit_tool.test.cpp
+    bool_toggle_tool.test.cpp
     text_edit_tool.test.cpp
     module.test.cpp
     splash.test.cpp

@@ -171,6 +171,7 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 )
 
 set(FLUIR_EDITOR_TOOL_SOURCES
+    "tools/bool_toggle_tool.cpp"
     "tools/completion_modal.cpp"
     "tools/completion_tool.cpp"
     "tools/context_menu_tool.cpp"

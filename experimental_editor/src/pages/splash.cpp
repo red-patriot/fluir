@@ -15,21 +15,38 @@ namespace fluir::editor {
   }  // namespace
 
   SplashPage::SplashPage(EditorContext& ctx, Renderer& renderer) :
-    Page(ctx, renderer), open_{.label = "Open", .onClick = [this] { openFileDialog(); }} { }
+    Page(ctx, renderer),
+    new_{.label = "New", .onClick = [this] { newFile(); }},
+    open_{.label = "Open", .onClick = [this] { openFileDialog(); }} { }
 
   void SplashPage::onEvent(const InputEvent& event) {
-    if (event.type == InputEvent::Type::MouseDown && event.button == InputEvent::Button::Left &&
-        openRect_.contains(event.pos)) {
-      open_.onClick();
+    if (event.type == InputEvent::Type::MouseDown && event.button == InputEvent::Button::Left) {
+      if (openRect_.contains(event.pos)) {
+        open_.onClick();
+      }
+      if (newRect_.contains(event.pos)) {
+        new_.onClick();
+      }
     }
   }
 
   void SplashPage::onResize() {
     const Vec2 size = renderer_.outputSize();
-    openRect_ = Rect{size.x / 2 - BUTTON_WIDTH / 2, size.y / 2 - BUTTON_HEIGHT / 2, BUTTON_WIDTH, BUTTON_HEIGHT};
+    newRect_ = Rect{
+      .x = size.x / 2 - BUTTON_WIDTH / 2, .y = size.y * 0.4 - BUTTON_HEIGHT / 2, .w = BUTTON_WIDTH, .h = BUTTON_HEIGHT};
+    openRect_ = Rect{
+      .x = size.x / 2 - BUTTON_WIDTH / 2, .y = size.y * 0.6 - BUTTON_HEIGHT / 2, .w = BUTTON_WIDTH, .h = BUTTON_HEIGHT};
   }
 
-  void SplashPage::onDraw() { drawButton(renderer_, open_, openRect_, ctx_); }
+  void SplashPage::onDraw() {
+    drawButton(renderer_, new_, newRect_, ctx_);
+    drawButton(renderer_, open_, openRect_, ctx_);
+  }
+
+  void SplashPage::newFile() {
+    ctx_.program = std::nullopt;
+    next_ = std::make_unique<ModulePage>(ctx_, renderer_);
+  }
 
   void SplashPage::openFileDialog() {
     nfdu8filteritem_t filter{"Fluir Program", "fl"};

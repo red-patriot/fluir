@@ -25,10 +25,13 @@ namespace fluir::editor {
     void onDraw() override;
 
    private:
-    Button open_;
+    Button new_;  /**< Opens a new blank module */
+    Button open_; /**< Opens an existing module */
+    Rect newRect_;
     Rect openRect_;
     std::unique_ptr<Page> next_;
 
+    void newFile();
     void openFileDialog();
   };
 }  // namespace fluir::editor

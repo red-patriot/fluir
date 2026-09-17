@@ -9,6 +9,7 @@
 #include <fmt/format.h>
 #include <nfd.h>
 
+#include "bytecode/version.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
@@ -59,21 +60,20 @@ namespace fluir::editor {
   }
 
   int ModulePage::onStart() {
-    if (!ctx_.program) {
-      fmt::print(stderr, "no program to open\n");
-      return 1;
+    fluir::Context cctx{.ignoreVersionChecks = true};
+    pt::ParseTree tree;
+    tree.header.version = fluir::CURRENT_VERSION;  // a loaded file overwrites this
+    if (ctx_.program) {
+      cctx.currentFile = *ctx_.program;
+      const auto result = loadFile(cctx, *ctx_.program);
+      if (!result.tree) {
+        fmt::print(stderr, "parse failed: {}\n", ctx_.program->string());
+        return 1;
+      }
+      tree = *result.tree;
     }
-    fluir::Context cctx{
-      .currentFile = *ctx_.program,
-      .ignoreVersionChecks = true,
-    };
-    const auto result = loadFile(cctx, *ctx_.program);
-    if (!result.tree) {
-      fmt::print(stderr, "parse failed: {}\n", ctx_.program->string());
-      return 1;
-    }
-    state_.editor.load(*result.tree);
-    state_.intelligence.load(ctx_.program, *result.tree);
+    state_.editor.load(tree);
+    state_.intelligence.load(ctx_.program, tree);
     fitView();
     return 0;  // Page::start() lays the header out via onResize().
   }
@@ -100,7 +100,7 @@ namespace fluir::editor {
   }
 
   void ModulePage::onResize() {
-    header_.label = ctx_.program ? ctx_.program->filename().string() : std::string{};
+    header_.label = ctx_.program ? ctx_.program->filename().string() : std::string{"<new file>"};
     headerLayout_ = layoutToolbar(header_, renderer_.outputSize().x, ctx_.layout, renderer_);
   }
 
@@ -165,6 +165,9 @@ namespace fluir::editor {
 
     if (result == NFD_OKAY) {
       std::filesystem::path chosen(outPath);
+      if (!chosen.has_extension()) {
+        chosen.replace_extension("fl");
+      }
       NFD_FreePathU8(outPath);
       if (saveToPath(chosen)) {
         ctx_.program = chosen;

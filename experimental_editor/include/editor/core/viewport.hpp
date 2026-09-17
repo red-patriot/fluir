@@ -30,9 +30,8 @@ namespace fluir::editor {
    *  nested clips intersect (the renderer's clip stack intersects on push). */
   class Subview {
    public:
-    /** Root: compose `viewport` with `frameWorld`'s top-left origin, clipped to
-     *  `frameWorld`'s size. */
-    Subview(const Viewport& viewport, Rect frameWorld, Renderer& renderer);
+    /** Root: `viewport`'s transform unchanged, clipped to `screenClip`. */
+    Subview(const Viewport& viewport, Rect screenClip, Renderer& renderer);
     /** Nested: compose `parent`'s transform with `frameLocal`'s top-left origin,
      *  expressed in `parent`'s local world-pixel space, clipped to `frameLocal`'s
      *  size. Inherits `parent`'s renderer. */

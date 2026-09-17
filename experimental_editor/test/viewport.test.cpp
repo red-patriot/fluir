@@ -101,22 +101,15 @@ namespace {
   // frame corners at (0,0) so its top-left origin is unchanged by the fold.
   constexpr Rect kAnyFrame{0.0, 0.0, 1000.0, 1000.0};
 
-  TEST(Subview, RootComposesViewportWithOrigin) {
+  TEST(Subview, RootKeepsTheViewportTransformUnchanged) {
     RecordingRenderer out;
-    {
-      const Viewport vp;
+    // The root rect is a screen clip, never a world origin: the transform is the raw viewport.
+    for (const Viewport vp :
+         {Viewport{}, Viewport{.pan = {100.0, 50.0}, .scale = 2.0}, Viewport{.pan = {-13.0, 640.0}, .scale = 0.25}}) {
       const Subview view{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
-      const Vec2 s = view.toScreen(Vec2{5.0, 7.0});
-      EXPECT_NEAR(s.x, 35.0, 1e-6);
-      EXPECT_NEAR(s.y, 47.0, 1e-6);
-    }
-    {
-      const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
-      const Subview view{vp, Rect{30.0, 40.0, 1000.0, 1000.0}, out};
-      // (local + origin) * scale + pan
-      const Vec2 s = view.toScreen(Vec2{5.0, 7.0});
-      EXPECT_NEAR(s.x, (5.0 + 30.0) * 2.0 + 100.0, 1e-6);
-      EXPECT_NEAR(s.y, (7.0 + 40.0) * 2.0 + 50.0, 1e-6);
+      const Vec2 want = vp.worldToScreen(Vec2{5.0, 7.0});
+      EXPECT_NEAR(view.toScreen(Vec2{5.0, 7.0}).x, want.x, 1e-6);
+      EXPECT_NEAR(view.toScreen(Vec2{5.0, 7.0}).y, want.y, 1e-6);
     }
   }
 
@@ -174,12 +167,31 @@ namespace {
     EXPECT_EQ(out.calls, want);
   }
 
-  TEST(Subview, ClipRectIsBoundsInScreenSpace) {
+  TEST(Subview, RootClipIsTheScreenRectAsGiven) {
     RecordingRenderer out;
     const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
     const Subview view{vp, Rect{30.0, 40.0, 10.0, 20.0}, out};
-    // frame top-left (30,40) world -> ((0+30)*2+100, (0+40)*2+50); size scaled by 2.
+    EXPECT_EQ(clipsCovering(out.calls, Rect{30.0, 40.0, 10.0, 20.0}).size(), 1u);
+  }
+
+  TEST(Subview, NestedClipRectIsBoundsInScreenSpace) {
+    RecordingRenderer out;
+    const Viewport vp{.pan = {100.0, 50.0}, .scale = 2.0};
+    const Subview root{vp, kAnyFrame, out};
+    const Subview view = root.child(Rect{30.0, 40.0, 10.0, 20.0});
+    // frame top-left (30,40) world -> (30*2+100, 40*2+50); size scaled by 2.
     EXPECT_EQ(clipsCovering(out.calls, Rect{160.0, 130.0, 20.0, 40.0}).size(), 1u);
+  }
+
+  // The blank-program case: fitRect on empty bounds leaves pan at half the output size.
+  TEST(Subview, RootClipCoversTheWholeOutputWhenPanIsLarge) {
+    RecordingRenderer out;
+    const Viewport vp{.pan = {640.0, 400.0}, .scale = 1.0};
+    const Rect output{0.0, 0.0, 1280.0, 800.0};
+    const Subview view{vp, output, out};
+    ASSERT_EQ(clipsCovering(out.calls, output).size(), 1u);
+    const Vec2 topLeftish = view.toScreen(vp.screenToWorld(Vec2{10.0, 10.0}));
+    EXPECT_TRUE(output.contains(topLeftish));
   }
 
 }  // namespace

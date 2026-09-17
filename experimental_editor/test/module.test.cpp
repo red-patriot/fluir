@@ -11,6 +11,7 @@
 
 #include <gtest/gtest.h>
 
+#include "bytecode/version.hpp"
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
@@ -80,6 +81,12 @@ namespace {
 
     explicit Harness(const fs::path& program) {
       ctx.program = program;
+      page = std::make_unique<ModulePage>(ctx, renderer);
+      EXPECT_EQ(page->start(), 0);
+    }
+
+    // A brand-new program: no file, empty tree.
+    Harness() {
       page = std::make_unique<ModulePage>(ctx, renderer);
       EXPECT_EQ(page->start(), 0);
     }
@@ -384,6 +391,28 @@ TEST(ModulePage, DrawShowsTheGraphUnderTheHeaderBar) {
   EXPECT_TRUE(testutil::hasFill(h.renderer.calls, Rect{0, 0, 800, h.ctx.layout.chromeHeaderPx}));
   const auto texts = testutil::textStrings(h.renderer.calls);
   EXPECT_NE(std::find(texts.begin(), texts.end(), "int_constants.fl"), texts.end());
+}
+
+TEST(ModulePage, ANewProgramDrawsOverTheWholeWindow) {
+  Harness h;
+
+  ASSERT_EQ(h.page->draw(), 0);
+
+  const Rect output{0, 0, h.renderer.outputSize_.x, h.renderer.outputSize_.y};
+  EXPECT_EQ(testutil::clipsCovering(h.renderer.calls, output).size(), 1u);
+}
+
+TEST(ModulePage, ANewProgramCarriesTheCurrentVersionAndNothingElse) {
+  Harness h;
+
+  EXPECT_EQ(h.tree().header.version, fluir::CURRENT_VERSION);
+  EXPECT_TRUE(h.tree().declarations.empty());
+}
+
+TEST(ModulePage, ALoadedProgramKeepsItsOwnVersion) {
+  Harness h{kIntConstants};
+
+  EXPECT_EQ(h.tree().header.version, (fluir::Version{.major = 0, .minor = 1, .patch = 3}));
 }
 
 namespace {

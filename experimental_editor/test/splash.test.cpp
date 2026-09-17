@@ -60,17 +60,3 @@ TEST(SplashPage, EscapeDoesNotStopTheApp) {
   EXPECT_EQ(page.update({InputEvent{.type = InputEvent::Type::KeyDown, .key = InputEvent::Key::Escape}}), 0);
   EXPECT_TRUE(ctx.running);
 }
-
-TEST(SplashPage, TheButtonRecentersOnResize) {
-  EditorContext ctx;
-  RecordingRenderer renderer;
-  SplashPage page{ctx, renderer};
-  ASSERT_EQ(page.start(), 0);
-  const Rect before = page.openButtonRect();
-
-  renderer.outputSize_ = Vec2{1200, 900};
-  ASSERT_EQ(page.update({InputEvent{.type = InputEvent::Type::Resize}}), 0);
-
-  EXPECT_NE(page.openButtonRect(), before);
-  EXPECT_EQ(page.openButtonRect().center(), (Vec2{600, 450}));
-}

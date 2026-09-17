@@ -25,9 +25,9 @@ namespace fluir::editor {
     pan = viewportSize * 0.5 - world.center() * scale;
   }
 
-  Subview::Subview(const Viewport& viewport, Rect frameWorld, Renderer& renderer) :
-    composed_{viewport.worldToScreen(frameWorld.topLeft()), viewport.scale}, renderer_(renderer) {
-    renderer_.pushClip(toScreen(Rect{0, 0, frameWorld.w, frameWorld.h}));
+  Subview::Subview(const Viewport& viewport, Rect screenClip, Renderer& renderer) :
+    composed_{viewport}, renderer_(renderer) {
+    renderer_.pushClip(screenClip);
   }
 
   Subview::Subview(const Subview& parent, Rect frameLocal) :

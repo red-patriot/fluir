@@ -5,3 +5,15 @@ fluir_embed_file(
     "dragHandle.svg"
     fluir::editor::assets::dragHandle
 )
+
+fluir_embed_file(
+    fluir.libeditor
+    "true.svg"
+    fluir::editor::assets::trueIcon
+)
+
+fluir_embed_file(
+    fluir.libeditor
+    "false.svg"
+    fluir::editor::assets::falseIcon
+)

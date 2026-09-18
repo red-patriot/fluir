@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <variant>
 
+#include "editor/assets/images.hpp"
 #include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/view/graph_layout.hpp"
@@ -32,7 +33,7 @@ namespace fluir::editor::draw {
 
   Rect boolToggleRect(const Rect& world, const EditorContext::Layout& layout) {
     const double side =
-      std::max(0.0, std::min(world.h - 2 * TOGGLE_PAD, moveGrip(world, layout.unitPx).x - world.x - 2 * TOGGLE_PAD));
+      std::max(0.0, std::min(world.h - 1 * TOGGLE_PAD, moveGrip(world, layout.unitPx).x - world.x - 1 * TOGGLE_PAD));
     return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
   }
 
@@ -49,10 +50,9 @@ namespace fluir::editor::draw {
     // A bool shows its value as a checkbox instead of a label: outlined when false, filled when true.
     if (const auto* flag = std::get_if<BOOL>(&n.value)) {
       const Rect square = boolToggleRect(world, ctx.layout);
-      if (*flag) {
-        view.renderer().fillRect(view.toScreen(square), ctx.theme.text);
-      }
-      view.renderer().drawRect(view.toScreen(square), ctx.theme.text);
+      view.renderer().drawIcon(
+        view.toScreen(square), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
+
     } else {
       drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
     }

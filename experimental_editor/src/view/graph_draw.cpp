@@ -67,12 +67,8 @@ namespace fluir::editor {
                      ctx.theme.conduit);
           return;
         case Part::MoveGrip:
-          // Only a function's grip is an icon; node and comment grips stay plain chrome.
-          if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
-            draw::drawMoveGrip(*fn, box.world, view, ctx);
-            return;
-          }
-          [[fallthrough]];
+          draw::drawMoveGrip(box.world, view, ctx);
+          return;
         case Part::ResizeX:
         case Part::ResizeXY:
           r.fillRect(view.toScreen(box.world), ctx.theme.border);

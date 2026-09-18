@@ -20,7 +20,6 @@ namespace fluir::editor {
 
     /** Draws the body only; selection outlines belong to the caller. */
     void draw(const pt::Comment& node, const Rect& world, const Subview& view, const EditorContext& ctx);
-
   }  // namespace draw
 
 }  // namespace fluir::editor

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "editor/assets/images.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 
@@ -75,6 +76,10 @@ namespace fluir::editor {
       Renderer& r = view.renderer();
       const Rect screen = view.toScreen(world);
       r.drawIcon(fitInto(screen, r.imageSize(svg)), svg, tint);
+    }
+
+    void drawMoveGrip(const Rect& rect, const Subview& view, const EditorContext& ctx) {
+      drawImage(assets::dragHandle(), rect, view, ctx.theme.border);
     }
 
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {

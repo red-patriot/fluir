@@ -93,7 +93,6 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
   EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 79, 117, 92}, 1.0));
   EXPECT_EQ(clipsCovering(r.calls, Rect{54, 79, 117, 92}).size(), 1u);
   EXPECT_TRUE(hasScaledTextAt(r.calls, "//", Vec2{54, 64.6}, 0.8));  // header tag
-  EXPECT_TRUE(hasFill(r.calls, Rect{155, 55, 15, 15}));              // move grip
   EXPECT_TRUE(hasFill(r.calls, Rect{160, 160, 15, 15}));             // resize corner
   EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no ports
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
@@ -396,8 +395,6 @@ TEST(GraphDraw, BoolConstantDrawsAToggleSquareAndNoResizeGrip) {
   EXPECT_TRUE(hasFill(r.calls, trueSquare));
 
   // Bools still move, but have no resize bar to grab.
-  EXPECT_TRUE(hasFill(r.calls, Rect{80, 180, 15, 15}));
-  EXPECT_TRUE(hasFill(r.calls, Rect{130, 185, 15, 15}));
   EXPECT_FALSE(hasFill(r.calls, Rect{95, 175, 5, 25}));
   EXPECT_FALSE(hasFill(r.calls, Rect{145, 180, 5, 25}));
 }
@@ -513,8 +510,8 @@ TEST(GraphDraw, NodeGripsAreDrawn) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // Binary {125,85,25,25}: move grip {130,90,15,15}; resize bar {145,85,5,25}.
-  EXPECT_TRUE(hasFill(r.calls, Rect{130, 90, 15, 15}));
+  // Binary {125,85,25,25}: move grip {130,90,15,15} holds the drag handle; resize bar {145,85,5,25}.
+  EXPECT_FALSE(hasFill(r.calls, Rect{130, 90, 15, 15}));
   EXPECT_TRUE(hasFill(r.calls, Rect{145, 85, 5, 25}));
 }
 
@@ -531,17 +528,15 @@ TEST(GraphDraw, FunctionGripsAreDrawn) {
   EXPECT_TRUE(hasFill(r.calls, Rect{535, 535, 15, 15}));
 }
 
-TEST(GraphDraw, OnlyTheFunctionGripIsAnIcon) {
+TEST(GraphDraw, AllMoveGripsAreIcons) {
   const Loaded l = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // The node's move grip {130,90,15,15} stays plain chrome; the function's is the only icon in the tree.
-  EXPECT_TRUE(hasFill(r.calls, Rect{130, 90, 15, 15}));
-  EXPECT_FALSE(hasIcon(r.calls, fluir::editor::assets::dragHandle(), Rect{130, 90, 15, 15}));
-  EXPECT_EQ(testutil::opsOf(r.calls, DrawCall::Op::Icon).size(), 1u);
+  // Every move grip draws the handle: one function plus three nodes, and no resize grip leaks in.
+  EXPECT_EQ(testutil::opsOf(r.calls, DrawCall::Op::Icon).size(), 4u);
 }
 
 TEST(GraphDraw, SelectedNodeIsOutlined) {

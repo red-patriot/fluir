@@ -53,6 +53,9 @@ namespace fluir::editor {
     /** `svg` fitted into `world` mapped through `view`, aspect preserved, recolored to `tint`. */
     void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint);
 
+    /** A move grip's drag handle, fit into `world`. */
+    void drawMoveGrip(const Rect& rect, const Subview& view, const EditorContext& ctx);
+
   }  // namespace draw
 
 }  // namespace fluir::editor

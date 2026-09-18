@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 
+#include "editor/assets/images.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
@@ -22,9 +23,6 @@ namespace fluir::editor {
     Rect tag;
     Rect text;
   };
-
-  /** A non-owning view to an SVG image. */
-  using SvgView = std::span<const unsigned char>;
 
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout);
 
@@ -53,9 +51,14 @@ namespace fluir::editor {
     /** `svg` fitted into `world` mapped through `view`, aspect preserved, recolored to `tint`. */
     void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint);
 
-    /** A move grip's drag handle, fit into `world`. */
+    /** A move grip's drag handle, fit into `rect`. */
     void drawMoveGrip(const Rect& rect, const Subview& view, const EditorContext& ctx);
 
+    /** An XY resize handle, fit to `rect` */
+    void drawXyResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx);
+
+    /** A Horizontal resize handle, fit to `rect` */
+    void drawHResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx);
   }  // namespace draw
 
 }  // namespace fluir::editor

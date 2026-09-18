@@ -3,13 +3,22 @@
 
 #include <span>
 
-namespace fluir::editor::assets {
-  /** Embedded SVG for a drag handle */
-  std::span<const unsigned char> dragHandle();
-  /** Embedded SVG for a TRUE bool */
-  std::span<const unsigned char> trueIcon();
-  /** Embedded SVG for a FALSE bool */
-  std::span<const unsigned char> falseIcon();
-}  // namespace fluir::editor::assets
+namespace fluir::editor {
+  /** A non-owning view to an SVG image. */
+  using SvgView = std::span<const unsigned char>;
+
+  namespace assets {
+    /** Embedded SVG for a drag handle */
+    SvgView dragHandle();
+    /** Embedded SVG for a TRUE bool */
+    SvgView trueIcon();
+    /** Embedded SVG for a FALSE bool */
+    SvgView falseIcon();
+    /** Embedded SVG for XY Drag Handle */
+    SvgView xyResizeIcon();
+    /** Embedded SVG for a horizontal Drag Handle */
+    SvgView horizontalResizeIcon();
+  }  // namespace assets
+}  // namespace fluir::editor
 
 #endif

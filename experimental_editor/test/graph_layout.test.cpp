@@ -150,9 +150,9 @@ TEST(GraphLayout, BodyClipEndsAtTheFrameBottom) {
 TEST(GraphLayout, NodeGripsAreHittable) {
   const std::vector<Box> boxes = layoutGraph(overlappingNodes(1, 2), kCtx.layout);
 
-  // Node 11 {10,35,50,50}: move grip {40,40,15,15}; resize bar {55,35,5,50}.
+  // Node 11 {10,35,50,50}: move grip {40,40,15,15}; resize bar {55,35,5,25}.
   const Box* move = hitAt(boxes, Vec2{45, 45});
-  const Box* resize = hitAt(boxes, Vec2{57, 70});
+  const Box* resize = hitAt(boxes, Vec2{57, 40});
 
   ASSERT_NE(move, nullptr);
   ASSERT_NE(resize, nullptr);

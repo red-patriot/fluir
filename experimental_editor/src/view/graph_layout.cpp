@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <variant>
 
+#include "editor/constants.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/function.hpp"
@@ -24,7 +25,12 @@ namespace fluir::editor {
     using Ports = std::unordered_map<fluir::ID, PortSet>;
 
     Rect resizeBar(const Rect& r, double unit) {
-      return {r.x + r.w - RESIZE_BAR_WIDTH * unit, r.y, RESIZE_BAR_WIDTH * unit, r.h};
+      return {
+        .x = r.x + r.w - RESIZE_BAR_WIDTH * unit,
+        .y = r.y,
+        .w = RESIZE_BAR_WIDTH * unit,
+        .h = NODE_H * unit,  // Take up 1 row of a node
+      };
     }
 
     Rect resizeCorner(const Rect& r, double unit) {

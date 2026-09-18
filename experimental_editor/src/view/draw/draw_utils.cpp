@@ -82,6 +82,14 @@ namespace fluir::editor {
       drawImage(assets::dragHandle(), rect, view, ctx.theme.border);
     }
 
+    void drawXyResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx) {
+      drawImage(assets::xyResizeIcon(), rect, view, ctx.theme.border);
+    }
+
+    void drawHResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx) {
+      drawImage(assets::horizontalResizeIcon(), rect, view, ctx.theme.border);
+    }
+
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {
       if (!text.empty()) {
         const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};

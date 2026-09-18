@@ -17,3 +17,15 @@ fluir_embed_file(
     "false.svg"
     fluir::editor::assets::falseIcon
 )
+
+fluir_embed_file(
+    fluir.libeditor
+    "XYResizeHandle.svg"
+    fluir::editor::assets::xyResizeIcon
+)
+
+fluir_embed_file(
+    fluir.libeditor
+    "HorizResizeHandle.svg"
+    fluir::editor::assets::horizontalResizeIcon
+)

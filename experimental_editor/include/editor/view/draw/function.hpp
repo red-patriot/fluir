@@ -25,6 +25,9 @@ namespace fluir::editor::draw {
   void drawRail(
     const pt::FunctionDecl& fn, fluir::ID railId, const Rect& rail, const Subview& view, const EditorContext& ctx);
 
+  /** The header's drag handle at `grip`; the frame's resize grips are plain chrome. */
+  void drawMoveGrip(const pt::FunctionDecl& fn, const Rect& grip, const Subview& view, const EditorContext& ctx);
+
   /** Header and frame chrome, over the function's nodes; selection outlines belong to the caller. */
   void drawFrame(const pt::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx);
 

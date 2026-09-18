@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "compiler/utility/context.hpp"
+#include "editor/assets/images.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/viewport.hpp"
@@ -41,6 +42,7 @@ namespace {
   using testutil::expectRectNear;
   using testutil::fillsOfSize;
   using testutil::hasFill;
+  using testutil::hasIcon;
   using testutil::hasLine;
   using testutil::hasRect;
   using testutil::hasScaledTextAt;
@@ -523,9 +525,23 @@ TEST(GraphDraw, FunctionGripsAreDrawn) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  // Frame {50,50,500,500}: header move grip {530,55,15,15}; corner {535,535,15,15}.
-  EXPECT_TRUE(hasFill(r.calls, Rect{530, 55, 15, 15}));
+  // Frame {50,50,500,500}: header move grip {530,55,15,15} holds the drag handle; corner {535,535,15,15}.
+  EXPECT_TRUE(hasIcon(r.calls, fluir::editor::assets::dragHandle(), Rect{530, 55, 15, 15}));
+  EXPECT_FALSE(hasFill(r.calls, Rect{530, 55, 15, 15}));
   EXPECT_TRUE(hasFill(r.calls, Rect{535, 535, 15, 15}));
+}
+
+TEST(GraphDraw, OnlyTheFunctionGripIsAnIcon) {
+  const Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  // The node's move grip {130,90,15,15} stays plain chrome; the function's is the only icon in the tree.
+  EXPECT_TRUE(hasFill(r.calls, Rect{130, 90, 15, 15}));
+  EXPECT_FALSE(hasIcon(r.calls, fluir::editor::assets::dragHandle(), Rect{130, 90, 15, 15}));
+  EXPECT_EQ(testutil::opsOf(r.calls, DrawCall::Op::Icon).size(), 1u);
 }
 
 TEST(GraphDraw, SelectedNodeIsOutlined) {

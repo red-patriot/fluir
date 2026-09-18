@@ -131,7 +131,6 @@ if (TARGET plutosvg)
 endif ()
 
 include(strict-warnings)
-include(embed-file)
 
 add_library(fluir.libeditor)
 
@@ -228,11 +227,8 @@ target_sources(
             "app.cpp"
 )
 
-fluir_embed_file(
-    fluir.libeditor
-    "assets/fonts/DejaVuSansMono.ttf"
-    fluir::editor::assets::dejaVuSansMono
-)
+add_subdirectory(assets/fonts)
+add_subdirectory(assets/images)
 
 target_link_libraries(
     fluir.libeditor

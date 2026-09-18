@@ -2,6 +2,7 @@
 
 #include <string>
 
+#include "editor/assets/images.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 
@@ -40,6 +41,10 @@ namespace fluir::editor::draw {
     drawShell(rail, color(fn, ctx.theme), view, ctx);
     drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, railName(fn, railId), ctx);
     drawPortDots(anchors(fn, railId, rail), view, ctx);
+  }
+
+  void drawMoveGrip(const pt::FunctionDecl&, const Rect& grip, const Subview& view, const EditorContext& ctx) {
+    drawImage(assets::dragHandle(), grip, view, ctx.theme.border);
   }
 
   void drawFrame(const pt::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx) {

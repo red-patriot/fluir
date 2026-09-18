@@ -52,6 +52,8 @@ namespace fluir::editor {
     std::optional<std::size_t> rowAt(Vec2 screen) const;
     void relayout();
     void applyFilter();
+
+    void selectVisible(size_t idx, EditorState& state);
   };
 
 }  // namespace fluir::editor

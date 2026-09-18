@@ -123,28 +123,7 @@ namespace fluir::editor {
           if (!row || event.button != InputEvent::Button::Left) {
             return layout_.frame.contains(event.pos);
           }
-          const fluir::ID id = state.editor.generateID(body_);
-          std::unique_ptr<Transaction> edit = std::visit(
-            Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
-                         return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
-                       },
-                       [&](const CommentOption&) -> std::unique_ptr<Transaction> {
-                         return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
-                       },
-                       [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
-                         return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
-                       },
-                       [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
-                         const int w =
-                           std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
-                         return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
-                       },
-                       [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
-                         auto [w, h] = callSize(call);
-                         return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
-                       }},
-            completions_[visible_[*row]].option);
-          state.editor.apply(std::move(edit));
+          selectVisible(*row, state);
           return false;
         }
       case InputEvent::Type::TextInput:
@@ -154,6 +133,13 @@ namespace fluir::editor {
       case InputEvent::Type::KeyDown:
         if (event.key == InputEvent::Key::Escape) {
           return false;
+        }
+        if (event.key == InputEvent::Key::Return) {
+          // Return will insert the node if there is only one visible
+          if (visible_.size() == 1) {
+            selectVisible(0, state);
+            return false;
+          }
         }
         // The query owns every other key but Return: unhandled ones still arrive as its TextInput.
         if (event.key && *event.key != InputEvent::Key::Return) {
@@ -188,6 +174,31 @@ namespace fluir::editor {
     }
     renderer.popClip();
     renderer.drawRect(layout_.frame, ctx.theme.border);
+  }
+
+  void CompletionModal::selectVisible(size_t idx, EditorState& state) {
+    const fluir::ID id = state.editor.generateID(body_);
+    std::unique_ptr<Transaction> edit = std::visit(
+      Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
+                   return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
+                 },
+                 [&](const CommentOption&) -> std::unique_ptr<Transaction> {
+                   return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
+                 },
+                 [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
+                   return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
+                 },
+                 [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
+                   const int w =
+                     std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
+                   return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
+                 },
+                 [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
+                   auto [w, h] = callSize(call);
+                   return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
+                 }},
+      completions_[visible_[idx]].option);
+    state.editor.apply(std::move(edit));
   }
 
 }  // namespace fluir::editor

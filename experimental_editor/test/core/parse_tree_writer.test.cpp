@@ -14,6 +14,7 @@
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/transaction/edit_comment.hpp"
+#include "file_utility.hpp"
 
 namespace {
 
@@ -25,30 +26,6 @@ namespace {
     ss << in.rdbuf();
     return ss.str();
   }
-
-  // Byte-exact against the legacy write goldens. Excluded, with reason:
-  //   multiple_functions, conduits, unary_negate -- legacy emits list order;
-  //     ParseTreeWriter emits ascending-id order.
-  //   conduits            -- also <f64>6.7890</f64> (trailing zero cannot come
-  //                          back from a double) and <segment> (parser rejects).
-  //   inputs_and_outputs  -- two <return>; pt::FunctionDecl allows one.
-  //   nested_comments     -- body lists constant 2 before comment 1; ascending ids.
-  const std::vector<std::string> kGoldenSubset{
-    "single_function",
-    "binary_add",
-    "boolean",
-    "call_no_return",
-    "call_reorder_args",
-    "call_with_args",
-    "function_inputs",
-    "function_output",
-    "signed_constants",
-    "unsigned_constants",
-    "function_comment",
-    "simple_comment",
-    "top_level_comment",
-    "empty_comment",
-  };
 
   fluir::editor::LoadResult parse(fluir::editor::CollectingSink& sink, std::string_view src) {
     fluir::Context ctx{
@@ -64,10 +41,10 @@ namespace {
 
 }  // namespace
 
-class ParseTreeWriterGolden : public testing::TestWithParam<std::string> { };
+class ParseTreeWriterGolden : public testing::TestWithParam<fs::path> { };
 
 TEST_P(ParseTreeWriterGolden, MatchesLegacyXml) {
-  const fs::path path = fs::path(TEST_FOLDER) / "write" / (GetParam() + ".fl");
+  const fs::path path = GetParam();
   const std::string expected = readFile(path);
   ASSERT_FALSE(expected.empty()) << "missing fixture " << path.string();
 
@@ -83,8 +60,8 @@ TEST_P(ParseTreeWriterGolden, MatchesLegacyXml) {
 
 INSTANTIATE_TEST_SUITE_P(Fixtures,
                          ParseTreeWriterGolden,
-                         testing::ValuesIn(kGoldenSubset),
-                         [](const testing::TestParamInfo<std::string>& i) { return i.param; });
+                         testing::ValuesIn(fluir::test::getTestPrograms("write")),
+                         fluir::test::filePathName);
 
 TEST(ParseTreeWriter, WritesEmptyFunctionFromHandBuiltTree) {
   fluir::pt::ParseTree tree;

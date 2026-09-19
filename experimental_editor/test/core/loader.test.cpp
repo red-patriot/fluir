@@ -26,8 +26,7 @@ namespace {
   //   function_with_input_and_output,         -- declare two <return> elements in one
   //   inputs_and_outputs                         <output>; the parser allows a single
   //                                              return only (ERROR_TOO_MANY_RETURNS).
-  const std::vector<std::string> kExpectedFailures{
-    "branching_conduits", "conduits", "function_with_input_and_output", "inputs_and_outputs"};
+  const std::vector<std::string> kExpectedFailures{"branching_conduits", "conduits", "function_with_input_and_output"};
 
   std::string readFile(const fs::path& path) {
     std::ifstream in(path);

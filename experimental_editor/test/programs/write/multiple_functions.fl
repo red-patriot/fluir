@@ -10,10 +10,10 @@
   <function name="foo" id="1" x="10" y="10" z="3" w="100" h="100">
     <body/>
   </function>
-  <function name="baz" id="7" x="330" y="10" z="3" w="100" h="100">
+  <function name="bar" id="2" x="210" y="10" z="3" w="50" h="70">
     <body/>
   </function>
-  <function name="bar" id="2" x="210" y="10" z="3" w="50" h="70">
+  <function name="baz" id="7" x="330" y="10" z="3" w="100" h="100">
     <body/>
   </function>
 </fluir>

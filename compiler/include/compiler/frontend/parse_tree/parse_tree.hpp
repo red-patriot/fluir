@@ -88,13 +88,15 @@ namespace fluir::pt {
     friend bool operator==(const ScopePort&, const ScopePort&) = default;
   };
 
+  using ScopePorts = std::unordered_map<ID, ScopePort>;
+
   struct Conditional {
     ID id;
     FlowGraphLocation location;
 
     ScopePort condition;
-    std::vector<ScopePort> inputs;
-    std::vector<ScopePort> outputs;
+    ScopePorts inputs;
+    ScopePorts outputs;
 
     xyz::indirect<Scope> thenScope;
     xyz::indirect<Scope> elseScope;

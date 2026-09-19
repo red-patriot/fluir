@@ -11,36 +11,13 @@
             at(x10, y3, z1, w500, h500)
             Condition: 3->1 at(10)
             input
+                3->1 at(10)
+                4->2 at(20)
             output
+                5->4 at(10)
             0: Then
             at(x0, y0, z1, w500, h250)
             body
-                1:
-                    Binary
-                    at(x0, y20, z2, w7, h7)
-                    -
-                    lhs2
-                    rhs3
-                2:
-                    Constant
-                    at(x5, y5, z0, w5, h5)
-                    F64 5.6
-                3:
-                    Constant
-                    at(x5, y12, z0, w5, h5)
-                    F64 -4.7
-            conduits
-            1: Else
-            at(x0, y250, z1, w500, h250)
-            body
-                1:
-                    Constant
-                    at(x9, y5, z0, w12, h5)
-                    F64 6.7891
-                2:
-                    Constant
-                    at(x9, y12, z10, w12, h5)
-                    F64 1.2345
                 3:
                     Binary
                     at(x35, y3, z2, w5, h5)
@@ -50,7 +27,7 @@
             conduits
                 7:
                     Conduit
-                    in1.0
+                    in4.0
                     children
                         out3.0
                 8:
@@ -58,4 +35,13 @@
                     in2.0
                     children
                         out3.1
+                9:
+                    Conduit
+                    in3.0
+                    children
+                        out5.0
+            1: Else
+            at(x0, y250, z1, w500, h250)
+            body
+            conduits
     conduits

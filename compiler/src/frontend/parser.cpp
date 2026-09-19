@@ -343,6 +343,16 @@ namespace fluir {
     return block;
   }
 
+  pt::ScopePorts Parser::parseScopePorts(Element* element) {
+    pt::ScopePorts ret;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      auto port = parseScopePort(child);
+      panicIf(ret.contains(port.outerId), child, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+      ret.emplace(port.outerId, port);
+    }
+    return ret;
+  }
+
   std::optional<WithID<pt::Node>> Parser::node(Element* element) {
     using OptionalNodeIdPair = std::optional<WithID<pt::Node>>;
     static const util::Trie<OptionalNodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
@@ -448,6 +458,8 @@ namespace fluir {
     auto id = parseId(element);
     auto location = parseLocation(element);
     std::optional<pt::ScopePort> condition;
+    std::optional<pt::ScopePorts> input;
+    std::optional<pt::ScopePorts> output;
     std::optional<pt::Scope> then;
     std::optional<pt::Scope> else_;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
@@ -474,6 +486,18 @@ namespace fluir {
         auto h = static_cast<int>(getInt(child, "h"));
         auto elseLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = h};
         else_ = parseScope(child, elseLocation);
+      } else if (child->Name() == "input"s) {
+        panicIf(input.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'input' found in conditional.");
+        input = parseScopePorts(child);
+      } else if (child->Name() == "output"s) {
+        panicIf(output.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'input' found in conditional.");
+        output = parseScopePorts(child);
       } else {
         panicAt(child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
@@ -483,17 +507,20 @@ namespace fluir {
     }
 
     panicIf(!condition, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'condition' in conditional node");
+    panicIf(!input, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'input' in conditional node");
+    panicIf(!output, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'output' in conditional node");
     panicIf(!then, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'then' in conditional node");
     panicIf(!else_, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'else' in conditional node");
     else_->location.y = then->location.height;
+
     //? Enforce heights match up?
     return WithID{id,
                   pt::Conditional{
                     .id = id,
                     .location = location,
                     .condition = *condition,
-                    .inputs = {},
-                    .outputs = {},
+                    .inputs = std::move(*input),
+                    .outputs = std::move(*output),
                     .thenScope = xyz::indirect{std::move(*then)},
                     .elseScope = xyz::indirect{std::move(*else_)},
                   }};

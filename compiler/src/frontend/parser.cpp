@@ -671,13 +671,27 @@ namespace fluir {
   }
 
   pt::Scope Parser::parseScope(Element* element, FlowGraphLocation location) {
+    constexpr std::string_view bodyTag = "body";
     auto id = parseId(element);
-    // TODO: Parse body
+    std::optional<pt::Block> body;
+
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      std::string_view childName = child->Name();
+      if (childName == bodyTag) {
+        panicIf(body.has_value(), child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Duplicate '<body>' found.");
+        body = block(child);
+      } else {
+        panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
+      }
+    }
+
+    panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
+
     return pt::Scope{
       .id = id,
       .location = location,
-      .nodes = {},
-      .conduits = {},
+      .nodes = std::move(body->nodes),
+      .conduits = std::move(body->conduits),
     };
   }
 

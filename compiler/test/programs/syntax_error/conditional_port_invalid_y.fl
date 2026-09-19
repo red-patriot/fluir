@@ -1,0 +1,29 @@
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="1000" h="1000">
+    <body>
+      <constant id="1" x="6" y="10" z="1" w="8" h="5">
+        <bool>true</bool>
+      </constant>
+      <conditional id="2" x="10" y="3" z="1" w="500" h="500">
+        <condition outer="3" inner="1" y="10"/>
+        <input>
+          <port outer="3" inner="1" y="abc"/>
+        </input>
+        <output/>
+        <then id="0" h="250">
+          <body/>
+        </then>
+        <else id="1" h="250">
+          <body/>
+        </else>
+      </conditional>
+    </body>
+  </function>
+</fluir>

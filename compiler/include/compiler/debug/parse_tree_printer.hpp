@@ -26,6 +26,8 @@ namespace fluir::debug {
 
     void operator()(const pt::Conduit& conduit);
 
+    void operator()(const pt::Comment& comment);
+
     void operator()(const pt::F64& f64);
     void operator()(const pt::I8& i8);
     void operator()(const pt::I16& i16);

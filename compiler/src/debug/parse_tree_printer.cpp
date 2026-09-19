@@ -135,6 +135,13 @@ namespace fluir::debug {
     }
   }
 
+  void ParseTreePrinter::operator()(const pt::Comment& comment) {
+    out_ << formatIndented("{}:\n", comment.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Comment\n") << doPrint(comment.location);
+    out_ << formatIndented("{{{{") << comment.text << "}}\n";
+  }
+
   void ParseTreePrinter::operator()(const pt::F64& f64) { out_ << formatIndented("F64 {}\n", f64); }
   void ParseTreePrinter::operator()(const pt::I8& i8) { out_ << formatIndented("I8 {}\n", i8); }
   void ParseTreePrinter::operator()(const pt::I16& i16) { out_ << formatIndented("I16 {}\n", i16); }

@@ -19,6 +19,7 @@ namespace fluir::fe {
     ast::UniqueNode operator()(const pt::Unary& pt);
     ast::UniqueNode operator()(const pt::Constant& pt);
     ast::UniqueNode operator()(const pt::Call& pt);
+    ast::UniqueNode operator()(const pt::Comment&) { return nullptr; }
 
    private:
     Context& ctx_;

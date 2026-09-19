@@ -172,28 +172,40 @@ namespace fluir {
     return version;
   }
 
-  void Parser::comment(Element* element) {
-    // These are required, so make sure they exist on the element, but we don't care what they are
-    parseId(element);
-    parseLocation(element);
-  }
-
   void Parser::declaration(Element* element) {
-    static const util::Trie<void (*)(Parser* p, Element* e)> declarationParsers{
-      [](Parser* p, Element* e) -> void {
+    using IdDecl = WithID<pt::Declaration>;
+
+    static const util::Trie<IdDecl (*)(Parser* p, Element* e)> declParsers{
+      [](Parser* p, Element* e) -> IdDecl {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a declaration.");
+        std::unreachable();
       },
-      {{"function", [](Parser* p, Element* e) -> void { p->functionDecl(e); }},
-       {"comment", [](Parser* p, Element* e) -> void { p->comment(e); }}}};
+      {{"function", [](Parser* p, Element* e) -> IdDecl { return p->functionDecl(e); }},
+       {"comment", [](Parser* p, Element* e) -> IdDecl {
+          auto [id, comment] = p->comment(e);
+          return IdDecl{id, std::move(comment)};
+        }}}};
 
     std::string_view name = element->Name();
-    FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
-      auto declarationParser = declarationParsers.at(name);
-      declarationParser(this, element);
-    };
+
+    try {
+      auto declarationParser = declParsers.at(name);
+      auto [id, decl] = declarationParser(this, element);
+      panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+      tree_.declarations.emplace(id, decl);
+    } catch (const diagnostic::Panic&) { }
   }
 
-  void Parser::functionDecl(Element* element) {
+  WithID<pt::Comment> Parser::comment(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+
+    std::string_view text = element->GetText() ? element->GetText() : "";
+
+    return {id, pt::Comment{.id = id, .location = location, .text = std::string{text}}};
+  }
+
+  WithID<pt::Declaration> Parser::functionDecl(Element* element) {
     constexpr std::string_view bodyTag = "body";
     constexpr std::string_view inputTag = "input";
     constexpr std::string_view outputTag = "output";
@@ -234,10 +246,11 @@ namespace fluir {
           output && output->ret && output->ret->id == param.id, element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
       }
     }
+    return {id,
+            pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)}};
 
-    panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-    tree_.declarations.emplace(
-      id, pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)});
+    // panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+    // tree_.declarations.emplace(
   }
 
   pt::FunctionDecl::InputBlock Parser::funcInputs(Element* section) {
@@ -341,10 +354,7 @@ namespace fluir {
        {"binary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->binary(e); }},
        {"unary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->unary(e); }},
        {"call", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->call(e); }},
-       {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair {
-          p->comment(e);
-          return std::nullopt;
-        }}}};
+       {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->comment(e); }}}};
 
     std::string_view type = element->Name();
     auto nodeParser = nodeParsers.at(type);

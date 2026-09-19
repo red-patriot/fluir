@@ -60,6 +60,11 @@ namespace fluir::fe {
     return ast::createDependency<ast::Call>(pt.target, std::move(astArgs), currentID_, pt.location);
   }
 
+  ast::UniqueNode FunctionAstBuilder::operator()(const pt::Conditional&) {
+    assert(false && "UNIMPLEMENTED");
+    return nullptr;
+  }
+
   Results<ast::FunctionDecl> FunctionAstBuilder::run() {
     const auto& body = pt_.body;
     alreadyFound_.reserve(body.nodes.size());

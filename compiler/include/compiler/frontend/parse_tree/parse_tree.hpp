@@ -2,11 +2,14 @@
 #define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
 #include <vector>
+
+#include <indirect.h>
 
 #include "bytecode/version.hpp"
 #include "compiler/models/id.hpp"
@@ -75,6 +78,30 @@ namespace fluir::pt {
     friend bool operator==(const Call&, const Call&) = default;
   };
 
+  struct Scope;
+
+  struct ScopePort {
+    ID outerId; /**< Outward-facing ID to bridge data to the outer scope */
+    ID innerId; /**< Inward-facing ID to bridge dataflow to the inner scope */
+    int y;      /**< Position on the vertical wall where this port lives */
+
+    friend bool operator==(const ScopePort&, const ScopePort&) = default;
+  };
+
+  struct Conditional {
+    ID id;
+    FlowGraphLocation location;
+
+    ScopePort condition;
+    std::vector<ScopePort> inputs;
+    std::vector<ScopePort> outputs;
+
+    xyz::indirect<Scope> thenScope;
+    xyz::indirect<Scope> elseScope;
+
+    friend bool operator==(const Conditional&, const Conditional&) = default;
+  };
+
   struct Conduit {
     struct Output {
       ID target = INVALID_ID;
@@ -91,8 +118,23 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant, Call, Comment>;
+  using Node = std::variant<Binary, Unary, Constant, Call, Comment, Conditional>;
+
+  struct Scope {
+    using Nodes = std::unordered_map<ID, Node>;
+    using Conduits = std::unordered_map<ID, Conduit>;
+
+    ID id;
+    FlowGraphLocation location;
+
+    Nodes nodes;
+    Conduits conduits;
+
+    friend bool operator==(const Scope&, const Scope&) = default;
+  };
+
   struct Block {
+    //! This should probably be deprecated in favor of Scope above
     using Nodes = std::unordered_map<ID, Node>;
     using Conduits = std::unordered_map<ID, Conduit>;
 

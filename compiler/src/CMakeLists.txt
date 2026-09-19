@@ -9,10 +9,16 @@ include(FetchContent)
 FetchContent_Declare(
     argparse
     GIT_REPOSITORY https://github.com/p-ranav/argparse.git
-    REV
-    v3.2
+    GIT_TAG v3.2
 )
 FetchContent_MakeAvailable(argparse)
+
+FetchContent_Declare(
+    value_types
+    GIT_REPOSITORY https://github.com/jbcoe/value_types.git
+    GIT_TAG v1.0.1
+)
+FetchContent_MakeAvailable(value_types)
 
 include(strict-warnings)
 
@@ -79,6 +85,7 @@ target_link_libraries(
            fmt::fmt
            tinyxml2::tinyxml2
            argparse::argparse
+           xyz_value_types::indirect
 )
 
 add_executable(fluir.compiler "main.cpp")

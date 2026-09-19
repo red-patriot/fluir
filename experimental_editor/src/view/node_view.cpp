@@ -5,6 +5,7 @@
 #include "editor/view/draw/binary.hpp"
 #include "editor/view/draw/call.hpp"
 #include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/draw/constant.hpp"
 #include "editor/view/draw/unary.hpp"
 

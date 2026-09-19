@@ -346,6 +346,11 @@ namespace fluir {
   pt::ScopePorts Parser::parseScopePorts(Element* element) {
     pt::ScopePorts ret;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      panicIf(child->Name() != "port"sv,
+              child,
+              diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+              "Unexpected element <{}>. Expected <port>",
+              child->Name());
       auto port = parseScopePort(child);
       panicIf(ret.contains(port.outerId), child, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
       ret.emplace(port.outerId, port);
@@ -496,12 +501,12 @@ namespace fluir {
         panicIf(output.has_value(),
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
-                "Duplicate 'input' found in conditional.");
+                "Duplicate 'output' found in conditional.");
         output = parseScopePorts(child);
       } else {
         panicAt(child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
-                "Expected 'condition', 'then', or 'else', found '{}'",
+                "Expected 'condition', 'input', 'output', 'then', or 'else', found '{}'",
                 child->Name());
       }
     }

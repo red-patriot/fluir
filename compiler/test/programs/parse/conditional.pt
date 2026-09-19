@@ -1,0 +1,21 @@
+1:
+    FunctionDecl(main)
+    at(x0, y0, z0, w1000, h1000)
+    body
+        1:
+            Constant
+            at(x6, y10, z1, w8, h5)
+            BOOL true
+        2:
+            Conditional
+            at(x10, y3, z1, w500, h500)
+            Condition: 3->1 at(10)
+            0: Then
+            at(x0, y0, z1, w500, h250)
+            body
+            conduits
+            1: Else
+            at(x0, y250, z1, w500, h250)
+            body
+            conduits
+    conduits

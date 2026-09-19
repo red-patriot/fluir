@@ -122,7 +122,53 @@ namespace fluir::debug {
     }
   }
 
-  void ParseTreePrinter::operator()(const pt::Conditional&) { assert(false && "UNIMPLEMENTED"); }
+  void ParseTreePrinter::operator()(const pt::Conditional& conditional) {
+    out_ << formatIndented("{}:\n", conditional.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Conditional\n") << doPrint(conditional.location);
+    const auto& condition = conditional.condition;
+    out_ << formatIndented("Condition: {}->{} at({})\n", condition.outerId, condition.innerId, condition.y);
+    // TODO: Ports
+    const auto& then = conditional.thenScope;
+    out_ << formatIndented("{}: Then\n", then->id) << doPrint(then->location);
+    {
+      out_ << formatIndented("body\n");
+      auto orderedNodes = keyOrder(then->nodes);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& node : orderedNodes) {
+        std::visit(*this, then->nodes.at(node));
+      }
+    }
+
+    {
+      out_ << formatIndented("conduits\n");
+      auto orderedConduits = keyOrder(then->conduits);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& conduit : orderedConduits) {
+        (*this)(then->conduits.at(conduit));
+      }
+    }
+
+    const auto& else_ = conditional.elseScope;
+    out_ << formatIndented("{}: Else\n", else_->id) << doPrint(else_->location);
+    {
+      out_ << formatIndented("body\n");
+      auto orderedNodes = keyOrder(else_->nodes);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& node : orderedNodes) {
+        std::visit(*this, else_->nodes.at(node));
+      }
+    }
+
+    {
+      out_ << formatIndented("conduits\n");
+      auto orderedConduits = keyOrder(else_->conduits);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& conduit : orderedConduits) {
+        (*this)(else_->conduits.at(conduit));
+      }
+    }
+  }
 
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
     out_ << formatIndented("{}:\n", conduit.id);

@@ -1,43 +1,67 @@
 find_package(GTest REQUIRED)
 
-add_executable(
+add_executable(fluir.editor.test)
+
+set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
+                                         components/text_field.test.cpp
+)
+
+set(FLUIR_EDITOR_CORE_TEST_SOURCES
+    core/graph_geometry.test.cpp
+    core/identifier.test.cpp
+    core/intelligence.test.cpp
+    core/literal_text.test.cpp
+    core/loader.test.cpp
+    core/module_editor.test.cpp
+    core/parse_tree_writer.test.cpp
+    core/tree_edit.test.cpp
+    core/tree_path.test.cpp
+    core/viewport.test.cpp
+)
+
+set(FLUIR_EDITOR_PAGES_TEST_SOURCES pages/module.test.cpp pages/splash.test.cpp)
+
+set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
+    tools/bool_toggle_tool.test.cpp
+    tools/completion_modal.test.cpp
+    tools/completion_tool.test.cpp
+    tools/conduit_tool.test.cpp
+    tools/context_menu_tool.test.cpp
+    tools/drag_tool.test.cpp
+    tools/function_header_menu.test.cpp
+    tools/menu_popup.test.cpp
+    tools/operator_tool.test.cpp
+    tools/pan_zoom_tool.test.cpp
+    tools/popup_tool.test.cpp
+    tools/rail_menu.test.cpp
+    tools/select_tool.test.cpp
+    tools/text_edit_tool.test.cpp
+    tools/tool_chain.test.cpp
+    tools/type_tool.test.cpp
+)
+
+set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)
+
+set(FLUIR_EDITOR_VIEW_TEST_SOURCES
+    view/draw/draw_utils.test.cpp
+    view/graph_draw.test.cpp
+    view/graph_layout.test.cpp
+    view/toolbar.test.cpp
+)
+
+target_sources(
     fluir.editor.test
-    identifier.test.cpp
-    intelligence.test.cpp
-    input.test.cpp
-    literal_text.test.cpp
-    loader.test.cpp
-    menu.test.cpp
-    menu_popup.test.cpp
-    parse_tree_writer.test.cpp
-    viewport.test.cpp
-    graph_geometry.test.cpp
-    graph_layout.test.cpp
-    graph_draw.test.cpp
-    draw_utils.test.cpp
-    text_field.test.cpp
-    toolbar.test.cpp
-    tool_chain.test.cpp
-    pan_zoom_tool.test.cpp
-    popup_tool.test.cpp
-    completion_modal.test.cpp
-    completion_tool.test.cpp
-    context_menu_tool.test.cpp
-    function_header_menu.test.cpp
-    rail_menu.test.cpp
-    operator_tool.test.cpp
-    type_tool.test.cpp
-    select_tool.test.cpp
-    drag_tool.test.cpp
-    conduit_tool.test.cpp
-    bool_toggle_tool.test.cpp
-    text_edit_tool.test.cpp
-    module.test.cpp
-    splash.test.cpp
-    module_editor.test.cpp
-    tree_edit.test.cpp
-    tree_path.test.cpp
-    transaction.test.cpp
+    PRIVATE ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
+            ${FLUIR_EDITOR_CORE_TEST_SOURCES}
+            ${FLUIR_EDITOR_PAGES_TEST_SOURCES}
+            ${FLUIR_EDITOR_TOOLS_TEST_SOURCES}
+            ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
+            ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
+            input.test.cpp
+)
+
+target_include_directories(
+    fluir.editor.test PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 target_compile_definitions(

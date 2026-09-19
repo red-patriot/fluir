@@ -68,12 +68,14 @@ namespace fluir {
     pt::U64 u64(Element* element);
     pt::BOOL boolean(Element* element);
 
+    pt::Scope parseScope(Element* element, FlowGraphLocation location);
     pt::ScopePort parseScopePort(Element* element);
 
     std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,
                                           std::string_view attribute,
                                           std::string_view defaultValue = "");
+    int64_t getInt(Element* element, std::string_view attribute);
     ID parseId(Element* element);
     ID parseIdReference(Element* element, std::string_view attribute);
     ID parseOptionalIdReference(Element* element, std::string_view attribute);

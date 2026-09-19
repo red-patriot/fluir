@@ -451,6 +451,7 @@ namespace fluir {
     std::optional<pt::Scope> then;
     std::optional<pt::Scope> else_;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      // TODO: Ports
       if (child->Name() == "condition"s) {
         panicIf(condition.has_value(),
                 child,
@@ -462,53 +463,17 @@ namespace fluir {
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
                 "Duplicate 'then' found in conditional.");
-        auto thenId = parseId(child);
-        auto h = fe::parseNumber<int>(getAttribute(child, "h"));
-        panicIf(h.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-                element,
-                diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-                "Expected an integer value, found '{}'.",
-                getAttribute(child, "h"));
-        panicIf(h.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-                element,
-                diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-        auto thenLocation = FlowGraphLocation{
-          .x = 0,
-          .y = 0,
-          .z = location.z,
-          .width = location.width,
-          .height = *h,
-        };
-        // TODO: Parse body
-        then = pt::Scope{
-          .id = thenId,
-          .location = thenLocation,
-          .nodes = {},
-          .conduits = {},
-        };
+        auto h = static_cast<int>(getInt(child, "h"));
+        auto thenLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = h};
+        then = parseScope(child, thenLocation);
       } else if (child->Name() == "else"s) {
         panicIf(else_.has_value(),
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
                 "Duplicate 'else' found in conditional.");
-        auto elseId = parseId(child);
-        auto h = fe::parseNumber<int>(getAttribute(child, "h"));
-        panicIf(h.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-                element,
-                diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-                "Expected an integer value, found '{}'.",
-                getAttribute(child, "h"));
-        panicIf(h.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-                element,
-                diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-        auto elseLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = *h};
-        // TODO: Parse body
-        else_ = pt::Scope{
-          .id = elseId,
-          .location = elseLocation,
-          .nodes = {},
-          .conduits = {},
-        };
+        auto h = static_cast<int>(getInt(child, "h"));
+        auto elseLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = h};
+        else_ = parseScope(child, elseLocation);
       } else {
         panicAt(child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
@@ -705,19 +670,22 @@ namespace fluir {
     std::unreachable();
   }
 
+  pt::Scope Parser::parseScope(Element* element, FlowGraphLocation location) {
+    auto id = parseId(element);
+    // TODO: Parse body
+    return pt::Scope{
+      .id = id,
+      .location = location,
+      .nodes = {},
+      .conduits = {},
+    };
+  }
+
   pt::ScopePort Parser::parseScopePort(Element* element) {
     auto outer = parseIdReference(element, "outer");
     auto inner = parseIdReference(element, "inner");
-    auto y = fe::parseNumber<int>(getAttribute(element, "y"));
-    panicIf(y.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an integer value, found '{}'.",
-            getAttribute(element, "y"));
-    panicIf(
-      y.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS, element, diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-
-    return pt::ScopePort{.outerId = outer, .innerId = inner, .y = *y};
+    auto y = static_cast<int>(getInt(element, "y"));
+    return pt::ScopePort{.outerId = outer, .innerId = inner, .y = y};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {
@@ -741,6 +709,23 @@ namespace fluir {
     } else {
       return value;
     }
+  }
+
+  int64_t Parser::getInt(Element* element, std::string_view attribute) {
+    auto rawValue = getAttribute(element, attribute);
+    auto result = fe::parseInteger(rawValue);
+    if (result.has_value()) {
+      return *result;
+    }
+    panicIf(result.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected an integer value, found '{}'.",
+            rawValue);
+    panicIf(result.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
+    diagnostic::emitInternalError("Control reached an impossible point");
   }
 
   ID Parser::parseId(Element* element) { return parseIdReference(element, "id"); }

@@ -10,6 +10,8 @@
             Conditional
             at(x10, y3, z1, w500, h500)
             Condition: 3->1 at(10)
+            input
+            output
             0: Then
             at(x0, y0, z1, w500, h250)
             body

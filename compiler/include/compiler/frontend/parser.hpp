@@ -46,6 +46,7 @@ namespace fluir {
     pt::FunctionDecl::Return funcReturn(Element* element);
 
     pt::Block block(Element* element);
+    pt::ScopePorts parseScopePorts(Element* element);
     std::optional<WithID<pt::Node>> node(Element* element);
     WithID<pt::Node> constant(Element* element);
     WithID<pt::Node> binary(Element* element);

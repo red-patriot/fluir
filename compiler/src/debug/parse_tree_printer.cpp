@@ -122,6 +122,8 @@ namespace fluir::debug {
     }
   }
 
+  void ParseTreePrinter::operator()(const pt::Conditional&) { assert(false && "UNIMPLEMENTED"); }
+
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
     out_ << formatIndented("{}:\n", conduit.id);
     FLUIR_SCOPED_INDENT;

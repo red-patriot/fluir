@@ -51,6 +51,7 @@ namespace fluir {
     WithID<pt::Node> binary(Element* element);
     WithID<pt::Node> unary(Element* element);
     WithID<pt::Node> call(Element* element);
+    WithID<pt::Node> conditional(Element* element);
 
     WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);
@@ -66,6 +67,8 @@ namespace fluir {
     pt::U32 u32(Element* element);
     pt::U64 u64(Element* element);
     pt::BOOL boolean(Element* element);
+
+    pt::ScopePort parseScopePort(Element* element);
 
     std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,

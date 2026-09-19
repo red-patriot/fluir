@@ -354,6 +354,7 @@ namespace fluir {
        {"binary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->binary(e); }},
        {"unary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->unary(e); }},
        {"call", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->call(e); }},
+       {"conditional", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->conditional(e); }},
        {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->comment(e); }}}};
 
     std::string_view type = element->Name();
@@ -441,6 +442,96 @@ namespace fluir {
       id,
       pt::Call{
         .id = id, .location = location, .target = std::string(target), ._return = return_, .arguments = arguments}};
+  }
+
+  WithID<pt::Node> Parser::conditional(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+    std::optional<pt::ScopePort> condition;
+    std::optional<pt::Scope> then;
+    std::optional<pt::Scope> else_;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      if (child->Name() == "condition"s) {
+        panicIf(condition.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'condition' found in conditional.");
+        condition = parseScopePort(child);
+      } else if (child->Name() == "then"s) {
+        panicIf(then.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'then' found in conditional.");
+        auto thenId = parseId(child);
+        auto h = fe::parseNumber<int>(getAttribute(child, "h"));
+        panicIf(h.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+                element,
+                diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+                "Expected an integer value, found '{}'.",
+                getAttribute(child, "h"));
+        panicIf(h.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+                element,
+                diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
+        auto thenLocation = FlowGraphLocation{
+          .x = 0,
+          .y = 0,
+          .z = location.z,
+          .width = location.width,
+          .height = *h,
+        };
+        // TODO: Parse body
+        then = pt::Scope{
+          .id = thenId,
+          .location = thenLocation,
+          .nodes = {},
+          .conduits = {},
+        };
+      } else if (child->Name() == "else"s) {
+        panicIf(else_.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'else' found in conditional.");
+        auto elseId = parseId(child);
+        auto h = fe::parseNumber<int>(getAttribute(child, "h"));
+        panicIf(h.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+                element,
+                diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+                "Expected an integer value, found '{}'.",
+                getAttribute(child, "h"));
+        panicIf(h.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+                element,
+                diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
+        auto elseLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = *h};
+        // TODO: Parse body
+        else_ = pt::Scope{
+          .id = elseId,
+          .location = elseLocation,
+          .nodes = {},
+          .conduits = {},
+        };
+      } else {
+        panicAt(child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Expected 'condition', 'then', or 'else', found '{}'",
+                child->Name());
+      }
+    }
+
+    panicIf(!condition, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'condition' in conditional node");
+    panicIf(!then, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'then' in conditional node");
+    panicIf(!else_, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'else' in conditional node");
+    else_->location.y = then->location.height;
+    //? Enforce heights match up?
+    return WithID{id,
+                  pt::Conditional{
+                    .id = id,
+                    .location = location,
+                    .condition = *condition,
+                    .inputs = {},
+                    .outputs = {},
+                    .thenScope = xyz::indirect{std::move(*then)},
+                    .elseScope = xyz::indirect{std::move(*else_)},
+                  }};
   }
 
   pt::Literal Parser::literal(Element* element) {
@@ -612,6 +703,21 @@ namespace fluir {
     panicAt(
       element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT, "'{}' is not a valid boolean representation", text);
     std::unreachable();
+  }
+
+  pt::ScopePort Parser::parseScopePort(Element* element) {
+    auto outer = parseIdReference(element, "outer");
+    auto inner = parseIdReference(element, "inner");
+    auto y = fe::parseNumber<int>(getAttribute(element, "y"));
+    panicIf(y.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected an integer value, found '{}'.",
+            getAttribute(element, "y"));
+    panicIf(
+      y.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS, element, diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
+
+    return pt::ScopePort{.outerId = outer, .innerId = inner, .y = *y};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {

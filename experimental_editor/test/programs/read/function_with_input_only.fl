@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+    <fluir>
+        <header>
+            <version>
+                <major>0</major>
+                <minor>1</minor>
+                <patch>3</patch>
+            </version>
+        </header>
+        <function name="add" id="1" x="10" y="10" z="3" w="100" h="100">
+            <input>
+                <param name="a" id="2" type="I32"/>
+                <param name="b" id="3" type="I32"/>
+            </input>
+            <body/>
+        </function>
+    </fluir>

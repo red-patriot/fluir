@@ -1,0 +1,99 @@
+#include "editor/view/graph_draw.hpp"
+
+#include <variant>
+
+#include "editor/core/graph_geometry.hpp"
+#include "editor/core/renderer.hpp"
+#include "editor/core/tree_path.hpp"
+#include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/function.hpp"
+#include "editor/view/node_view.hpp"
+
+namespace fluir::editor {
+  namespace {
+
+    template <typename... Fs>
+    struct Overloaded : Fs... {
+      using Fs::operator()...;
+    };
+
+    // Renderer::drawRect has no thickness, so two concentric rects stand in for a 2px outline.
+    void drawOutline(const Subview& view, const EditorContext& ctx, const Rect& r) {
+      for (const double pad : {ctx.layout.selectionPad, ctx.layout.selectionPad + 1.0}) {
+        view.renderer().drawRect(view.toScreen(Rect{r.x - pad, r.y - pad, r.w + 2 * pad, r.h + 2 * pad}),
+                                 ctx.theme.border);
+      }
+    }
+
+    // A top-level declaration draws its own body; a deeper path is a node.
+    void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
+      if (box.path.size() == 1) {
+        if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
+          std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                                [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+                     *decl);
+        }
+      } else if (const pt::Node* node = nodeAt(tree, box.path)) {
+        drawNode(*node, box.world, view, ctx);
+      }
+    }
+
+    void drawBox(
+      const Subview& view, const pt::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
+      Renderer& r = view.renderer();
+      switch (box.part) {
+        case Part::Body:
+          drawBody(view, tree, box, ctx);
+          if (selected && functionAt(tree, box.path) == nullptr) {
+            drawOutline(view, ctx, box.world);
+          }
+          return;
+        case Part::Frame:
+          if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
+            draw::drawFrame(*fn, box.world, view, ctx);
+            if (selected) {
+              drawOutline(view, ctx, box.world);
+            }
+          }
+          return;
+        case Part::Rail:
+          if (const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
+            draw::drawRail(*fn, box.path.back(), box.world, view, ctx);
+          }
+          return;
+        case Part::Wire:
+          r.drawLine(view.toScreen(box.world.topLeft()),
+                     view.toScreen(Vec2{box.world.x + box.world.w, box.world.y + box.world.h}),
+                     ctx.theme.conduit);
+          return;
+        case Part::MoveGrip:
+          draw::drawMoveGrip(box.world, view, ctx);
+          return;
+        case Part::ResizeX:
+          draw::drawHResizeHandle(box.world, view, ctx);
+          return;
+        case Part::ResizeXY:
+          draw::drawXyResizeHandle(box.world, view, ctx);
+          return;
+      }
+    }
+
+  }  // namespace
+
+  void drawGraph(const Subview& view,
+                 const pt::ParseTree& tree,
+                 std::span<const Box> boxes,
+                 const std::optional<FullID>& selection,
+                 const EditorContext& ctx) {
+    for (const Box& box : boxes) {
+      if (box.clip) {
+        view.renderer().pushClip(view.toScreen(*box.clip));
+      }
+      drawBox(view, tree, box, selection == box.path, ctx);
+      if (box.clip) {
+        view.renderer().popClip();
+      }
+    }
+  }
+
+}  // namespace fluir::editor

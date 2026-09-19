@@ -35,10 +35,10 @@ namespace fluir {
     void header(Element* element);
     Version version(Element* element);
 
-    void comment(Element* element);
+    WithID<pt::Comment> comment(Element* element);
 
     void declaration(Element* element);
-    void functionDecl(Element* element);
+    WithID<pt::Declaration> functionDecl(Element* element);
 
     pt::FunctionDecl::InputBlock funcInputs(Element* element);
     pt::FunctionDecl::Parameter funcParameter(Element* element, int index);

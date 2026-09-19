@@ -50,6 +50,17 @@
       }
     },
     {
+      "name": "gcc-editor",
+      "displayName": "GCC Editor Build (no sanitizers)",
+      "inherits": [
+        "_root-config"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "cmake/gnu-toolchain.cmake"
+      }
+    },
+    {
       "name": "llvm-debug",
       "displayName": "Clang Debug Build",
       "inherits": [
@@ -119,6 +130,13 @@
       ]
     },
     {
+      "name": "gcc-editor",
+      "configurePreset": "gcc-editor",
+      "inherits": [
+        "_root-build"
+      ]
+    },
+    {
       "name": "llvm-debug",
       "configurePreset": "llvm-debug",
       "inherits": [
@@ -168,6 +186,11 @@
       "name": "gcc-release",
       "inherits": "_test_base",
       "configurePreset": "gcc-release"
+    },
+    {
+      "name": "gcc-editor",
+      "inherits": "_test_base",
+      "configurePreset": "gcc-editor"
     },
     {
       "name": "llvm-debug",

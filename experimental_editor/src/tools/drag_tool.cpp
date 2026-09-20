@@ -15,12 +15,20 @@ namespace fluir::editor {
     constexpr Limits<Vec2i> FUNCTION_SIZE{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
     // Tall enough that the corner grip never overlaps the move grip.
     constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
+    // A conditional's height follows its branches, so only its width is dragged.
+    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{8, 0}, .upper = Vec2i{1000, 1000}};
+    // Deep enough that a branch keeps room for a node under the divider.
+    constexpr Limits<Vec2i> BRANCH_SIZE{.lower = Vec2i{4, 5}, .upper = Vec2i{1000, 1000}};
 
     bool isComment(const pt::ParseTree& tree, const FullID& path) {
       const pt::Declaration* decl = declarationAt(tree, path);
       const pt::Node* node = nodeAt(tree, path);
       return (decl != nullptr && std::holds_alternative<pt::Comment>(*decl)) ||
              (node != nullptr && std::holds_alternative<pt::Comment>(*node));
+    }
+
+    bool isConditional(const pt::ParseTree& tree, const FullID& path) {
+      return std::get_if<pt::Conditional>(nodeAt(tree, path)) != nullptr;
     }
 
     bool isGrip(Part part) { return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeXY; }
@@ -106,9 +114,13 @@ namespace fluir::editor {
       edit_.reset();
     }
     const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE :
+                                isScopePath(path_)                 ? BRANCH_SIZE :
+                                isConditional(tree, path_)         ? CONDITIONAL_SIZE :
                                 isComment(tree, path_)             ? COMMENT_SIZE :
                                                                      NODE_SIZE;
-    const int width = std::clamp(start_.width + delta_.x, size.lower.x, size.upper.x);
+    // A branch is only ever as wide as its conditional, so its grip drags height alone.
+    const int wanted = isScopePath(path_) ? start_.width : start_.width + delta_.x;
+    const int width = std::clamp(wanted, size.lower.x, size.upper.x);
     const int height = std::clamp(start_.height + delta_.y, size.lower.y, size.upper.y);
 
     std::unique_ptr<Transaction> next;

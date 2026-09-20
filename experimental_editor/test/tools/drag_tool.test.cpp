@@ -280,3 +280,111 @@ TEST(DragTool, ReleaseAfterThePathVanishedRecordsNothing) {
   EXPECT_FALSE(h.tool.capturing());
   EXPECT_FALSE(h.state.editor.canUndo());
 }
+
+namespace {
+
+  using fluir::ID;
+
+  fluir::pt::Scope makeScope(ID id, int y, int h) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
+  }
+
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,90}, then branch {10,35,100,60}
+  // over else branch {10,95,100,30}, with constant 1 at {15,65,50,50} in the then branch.
+  //   conditional move grip {90,40,15,15}   width bar {105,35,5,25}   corner {95,110,15,15}
+  //   nested constant move grip {45,70,15,15}
+  fluir::pt::ParseTree conditionalTree() {
+    fluir::pt::Scope then = makeScope(0, 0, 12);
+    then.body.nodes.emplace(1,
+                            fluir::pt::Constant{.id = 1,
+                                                .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                .value = fluir::literals_types::I32{0}});
+
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(20,
+                          fluir::pt::Conditional{.id = 20,
+                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18},
+                                                 .condition = {},
+                                                 .inputs = {},
+                                                 .outputs = {},
+                                                 .thenScope = xyz::indirect{std::move(then)},
+                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  struct NestedHarness {
+    EditorState state{kCtx};
+    DragTool tool;
+
+    NestedHarness() { state.editor.load(conditionalTree()); }
+
+    bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
+    FlowGraphLocation loc(const FullID& path) const { return *locationAt(state.editor.tree(), path); }
+  };
+
+  const FullID kConditional{1, 20};
+  const FullID kElseBranch{1, 20, 1};
+  const FullID kNested{1, 20, 0, 1};
+  constexpr Vec2 kNestedGrip{52, 77};       // centre of {45,70,15,15}
+  constexpr Vec2 kConditionalBar{107, 45};  // inside {105,35,5,25}
+  constexpr Vec2 kBranchCorner{102, 117};   // centre of {95,110,15,15}
+  constexpr Vec2 kConditionalGrip{97, 47};  // centre of {90,40,15,15}
+
+}  // namespace
+
+TEST(DragTool, ANestedNodeDragsInsideItsBranch) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kNestedGrip)));
+
+  EXPECT_TRUE(h.send(move(kNestedGrip + Vec2{10, 5})));
+
+  EXPECT_EQ(h.loc(kNested).x, 3);
+  EXPECT_EQ(h.loc(kNested).y, 2);
+  EXPECT_TRUE(h.send(up(kNestedGrip + Vec2{10, 5})));
+  EXPECT_TRUE(h.state.editor.canUndo());
+}
+
+TEST(DragTool, AConditionalMoveGripMovesTheConditional) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kConditionalGrip)));
+
+  EXPECT_TRUE(h.send(move(kConditionalGrip + Vec2{10, 10})));
+
+  EXPECT_EQ(h.loc(kConditional).x, 4);
+  EXPECT_EQ(h.loc(kConditional).y, 4);
+}
+
+TEST(DragTool, AConditionalResizesOnlyItsWidth) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kConditionalBar)));
+
+  EXPECT_TRUE(h.send(move(kConditionalBar + Vec2{20, 25})));
+
+  EXPECT_EQ(h.loc(kConditional).width, 24);
+  EXPECT_EQ(h.loc(kConditional).height, 18) << "height follows the branches, not the grip";
+}
+
+// The corner grip belongs to the bottom branch: a conditional grows by its branches growing.
+TEST(DragTool, TheCornerGripResizesTheElseBranch) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kBranchCorner)));
+
+  EXPECT_TRUE(h.send(move(kBranchCorner + Vec2{0, 20})));
+
+  EXPECT_EQ(h.loc(kElseBranch).height, 10);
+}
+
+TEST(DragTool, ABranchCannotCollapse) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kBranchCorner)));
+
+  EXPECT_TRUE(h.send(move(kBranchCorner - Vec2{0, 200})));
+
+  EXPECT_GE(h.loc(kElseBranch).height, 5);
+}

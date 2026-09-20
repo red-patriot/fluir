@@ -197,3 +197,33 @@ TEST(Intelligence, UnknownBodiesAndCommentsOfferNoCompletions) {
   EXPECT_TRUE(uut.completions(state.editor.tree(), FullID{99}).empty()) << "missing";
   EXPECT_TRUE(uut.completions(state.editor.tree(), FullID{50}).empty()) << "comment";
 }
+
+// A branch is a block, so it offers the same completions a function body does.
+TEST(Intelligence, CompletionsReachIntoABranch) {
+  fluir::pt::Scope then{.id = 0, .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 12}, .body = {}};
+  fluir::pt::FunctionDecl fn;
+  fn.id = 1;
+  fn.name = "f";
+  fn.body.nodes.emplace(
+    20,
+    fluir::pt::Conditional{.id = 20,
+                           .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 18},
+                           .condition = {},
+                           .inputs = {},
+                           .outputs = {},
+                           .thenScope = xyz::indirect{std::move(then)},
+                           .elseScope = xyz::indirect{fluir::pt::Scope{
+                             .id = 1, .location = {.x = 0, .y = 12, .z = 0, .width = 20, .height = 6}, .body = {}}}});
+  fluir::pt::ParseTree tree;
+  tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+
+  const Intelligence uut;
+
+  const std::vector<Completion> branch = uut.completions(tree, FullID{1, 20, 0});
+  const std::vector<Completion> body = uut.completions(tree, FullID{1});
+  ASSERT_EQ(branch.size(), body.size());
+  for (std::size_t i = 0; i < branch.size(); ++i) {
+    EXPECT_EQ(branch[i].label, body[i].label);
+  }
+  EXPECT_TRUE(uut.completions(tree, FullID{1, 20, 7}).empty()) << "no such branch";
+}

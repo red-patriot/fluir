@@ -16,6 +16,8 @@ namespace fluir::editor {
       pt::Scope& then = *conditional->thenScope;
       pt::Scope& else_ = *conditional->elseScope;
       else_.location.y = then.location.height;
+      then.location.width = conditional->location.width;
+      else_.location.width = conditional->location.width;
       conditional->location.height = then.location.height + else_.location.height;
       normalizeConditionalHeights(then.body);
       normalizeConditionalHeights(else_.body);

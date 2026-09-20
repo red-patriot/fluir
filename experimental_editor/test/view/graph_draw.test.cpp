@@ -620,3 +620,20 @@ TEST(GraphDraw, ConditionalHeaderPaintsOverItsNestedNodes) {
   ASSERT_LT(header, r.calls.size());
   EXPECT_LT(node, header);
 }
+
+TEST(GraphDraw, SelectingABranchOutlinesItsConditional) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r, fluir::FullID{1, 20, 1});
+
+  // Frame {10,35,100,90} outset by selectionPad (2), then by one more px.
+  EXPECT_TRUE(hasRect(r.calls, Rect{8, 33, 104, 94}));
+  EXPECT_TRUE(hasRect(r.calls, Rect{7, 32, 106, 96}));
+}
+
+TEST(GraphDraw, SelectingANestedNodeOutlinesThatNodeAlone) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r, fluir::FullID{1, 20, 0, 1});
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{13, 63, 54, 54}));   // the node, outset by 2
+  EXPECT_FALSE(hasRect(r.calls, Rect{8, 33, 104, 94}));  // not its conditional
+}

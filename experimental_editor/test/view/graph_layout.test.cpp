@@ -557,16 +557,21 @@ TEST(GraphLayout, ConditionalSpansBothBranches) {
 TEST(GraphLayout, ConditionalGripsAreHittableOverItsBranches) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  // Frame {10,35,100,90}: header move grip {90,40,15,15}; corner {95,110,15,15}.
+  // Frame {10,35,100,90}: header move grip {90,40,15,15}; width bar {105,35,5,25}; corner {95,110,15,15}.
   const Box* move = hitAt(boxes, Vec2{95, 45});
+  const Box* bar = hitAt(boxes, Vec2{107, 45});
   const Box* corner = hitAt(boxes, Vec2{100, 115});
 
   ASSERT_NE(move, nullptr);
+  ASSERT_NE(bar, nullptr);
   ASSERT_NE(corner, nullptr);
   EXPECT_EQ(move->part, Part::MoveGrip);
   EXPECT_EQ(move->path, (FullID{1, 20}));
+  EXPECT_EQ(bar->part, Part::ResizeX);
+  EXPECT_EQ(bar->path, (FullID{1, 20}));
+  // The corner resizes the bottom branch, which is what makes the conditional taller.
   EXPECT_EQ(corner->part, Part::ResizeXY);
-  EXPECT_EQ(corner->path, (FullID{1, 20}));
+  EXPECT_EQ(corner->path, (FullID{1, 20, 1}));
 }
 
 TEST(GraphLayout, NestingDoesNotChangeGraphBounds) {

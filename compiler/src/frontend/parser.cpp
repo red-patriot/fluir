@@ -719,12 +719,7 @@ namespace fluir {
 
     panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
 
-    return pt::Scope{
-      .id = id,
-      .location = location,
-      .nodes = std::move(body->nodes),
-      .conduits = std::move(body->conduits),
-    };
+    return pt::Scope{.id = id, .location = location, .body = std::move(*body)};
   }
 
   pt::ScopePort Parser::parseScopePort(Element* element) {

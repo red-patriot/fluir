@@ -38,23 +38,7 @@ namespace fluir::debug {
       (*this)(*func.output);
     }
 
-    {
-      out_ << formatIndented("body\n");
-      auto orderedNodes = keyOrder(func.body.nodes);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& node : orderedNodes) {
-        std::visit(*this, func.body.nodes.at(node));
-      }
-    }
-
-    {
-      out_ << formatIndented("conduits\n");
-      auto orderedConduits = keyOrder(func.body.conduits);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& conduit : orderedConduits) {
-        (*this)(func.body.conduits.at(conduit));
-      }
-    }
+    printBlock(func.body);
   }
 
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
@@ -148,43 +132,11 @@ namespace fluir::debug {
     }
     const auto& then = conditional.thenScope;
     out_ << formatIndented("{}: Then\n", then->id) << doPrint(then->location);
-    {
-      out_ << formatIndented("body\n");
-      auto orderedNodes = keyOrder(then->nodes);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& node : orderedNodes) {
-        std::visit(*this, then->nodes.at(node));
-      }
-    }
-
-    {
-      out_ << formatIndented("conduits\n");
-      auto orderedConduits = keyOrder(then->conduits);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& conduit : orderedConduits) {
-        (*this)(then->conduits.at(conduit));
-      }
-    }
+    printBlock(then->body);
 
     const auto& else_ = conditional.elseScope;
     out_ << formatIndented("{}: Else\n", else_->id) << doPrint(else_->location);
-    {
-      out_ << formatIndented("body\n");
-      auto orderedNodes = keyOrder(else_->nodes);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& node : orderedNodes) {
-        std::visit(*this, else_->nodes.at(node));
-      }
-    }
-
-    {
-      out_ << formatIndented("conduits\n");
-      auto orderedConduits = keyOrder(else_->conduits);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& conduit : orderedConduits) {
-        (*this)(else_->conduits.at(conduit));
-      }
-    }
+    printBlock(else_->body);
   }
 
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
@@ -221,4 +173,25 @@ namespace fluir::debug {
   std::string ParseTreePrinter::doPrint(const FlowGraphLocation& loc) {
     return formatIndented("at(x{}, y{}, z{}, w{}, h{})\n", loc.x, loc.y, loc.z, loc.width, loc.height);
   }
+
+  void ParseTreePrinter::printBlock(const pt::Block& block) {
+    {
+      out_ << formatIndented("body\n");
+      auto orderedNodes = keyOrder(block.nodes);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& node : orderedNodes) {
+        std::visit(*this, block.nodes.at(node));
+      }
+    }
+
+    {
+      out_ << formatIndented("conduits\n");
+      auto orderedConduits = keyOrder(block.conduits);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& conduit : orderedConduits) {
+        (*this)(block.conduits.at(conduit));
+      }
+    }
+  }
+
 }  // namespace fluir::debug

@@ -44,6 +44,7 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
 set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)
 
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES
+    view/draw/conditional.test.cpp
     view/draw/draw_utils.test.cpp
     view/graph_draw.test.cpp
     view/graph_layout.test.cpp

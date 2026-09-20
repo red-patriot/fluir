@@ -187,6 +187,8 @@ set(FLUIR_EDITOR_VIEW_SOURCES
     "view/draw/binary.cpp"
     "view/draw/call.cpp"
     "view/draw/comment.cpp"
+    "view/draw/conditional.cpp"
+    "view/draw/conditional.cpp"
     "view/draw/constant.cpp"
     "view/draw/draw_utils.cpp"
     "view/draw/function.cpp"

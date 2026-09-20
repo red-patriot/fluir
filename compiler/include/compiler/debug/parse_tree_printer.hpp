@@ -44,6 +44,7 @@ namespace fluir::debug {
     std::ostream& out_;
 
     std::string doPrint(const FlowGraphLocation& loc);
+    void printBlock(const pt::Block& block);
   };
 }  // namespace fluir::debug
 

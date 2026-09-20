@@ -122,19 +122,6 @@ namespace fluir::pt {
 
   using Node = std::variant<Binary, Unary, Constant, Call, Comment, Conditional>;
 
-  struct Scope {
-    using Nodes = std::unordered_map<ID, Node>;
-    using Conduits = std::unordered_map<ID, Conduit>;
-
-    ID id;
-    FlowGraphLocation location;
-
-    Nodes nodes;
-    Conduits conduits;
-
-    friend bool operator==(const Scope&, const Scope&) = default;
-  };
-
   struct Block {
     //! This should probably be deprecated in favor of Scope above
     using Nodes = std::unordered_map<ID, Node>;
@@ -147,6 +134,18 @@ namespace fluir::pt {
   };
 
   inline const Block EMPTY_BLOCK = {};
+
+  struct Scope {
+    using Nodes = std::unordered_map<ID, Node>;
+    using Conduits = std::unordered_map<ID, Conduit>;
+
+    ID id;
+    FlowGraphLocation location;
+
+    Block body;
+
+    friend bool operator==(const Scope&, const Scope&) = default;
+  };
 
   struct FunctionDecl {
     struct Parameter {

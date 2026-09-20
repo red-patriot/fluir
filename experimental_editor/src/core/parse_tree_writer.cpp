@@ -218,30 +218,14 @@ namespace fluir::editor {
       auto* thenEl = e->InsertNewChildElement("then");
       setId(thenEl, then->id);
       setInt(thenEl, "h"sv, then->location.height);
-      auto* body = thenEl->InsertNewChildElement("body");
-      auto sortedNodes = sortedIds(then->nodes);
-      for (const auto& id : sortedNodes) {
-        node(body, then->nodes.at(id));
-      }
-      auto sortedConduits = sortedIds(then->conduits);
-      for (const auto& id : sortedConduits) {
-        conduit(body, then->conduits.at(id));
-      }
+      block(thenEl, then->body);
     }
     {
       const auto& else_ = conditional.elseScope;
       auto* elseEl = e->InsertNewChildElement("else");
       setId(elseEl, else_->id);
       setInt(elseEl, "h"sv, else_->location.height);
-      auto* body = elseEl->InsertNewChildElement("body");
-      auto sortedNodes = sortedIds(else_->nodes);
-      for (const auto& id : sortedNodes) {
-        node(body, else_->nodes.at(id));
-      }
-      auto sortedConduits = sortedIds(else_->conduits);
-      for (const auto& id : sortedConduits) {
-        conduit(body, else_->conduits.at(id));
-      }
+      block(elseEl, else_->body);
     }
   }
 

@@ -158,6 +158,10 @@ TEST(Intelligence, AFunctionBodyOffersBinaryThenUnaryOperatorsThenConstantsThenA
     auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == expected; });
     EXPECT_NE(actual.end(), found) << "MISSING " << expected;
   }
+  {
+    auto found = std::ranges::find_if(actual, [&](const auto& o) { return o.label == "if-else"; });
+    EXPECT_NE(actual.end(), found) << "MISSING if-else";
+  }
 
   {
     std::string expected = "Comment";

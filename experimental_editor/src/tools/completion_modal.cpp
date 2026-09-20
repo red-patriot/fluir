@@ -179,24 +179,27 @@ namespace fluir::editor {
   void CompletionModal::selectVisible(size_t idx, EditorState& state) {
     const fluir::ID id = state.editor.generateID(body_);
     std::unique_ptr<Transaction> edit = std::visit(
-      Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
-                 },
-                 [&](const CommentOption&) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
-                 },
-                 [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
-                 },
-                 [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
-                   const int w =
-                     std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
-                   return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
-                 },
-                 [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
-                   auto [w, h] = callSize(call);
-                   return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
-                 }},
+      Overloaded{
+        [&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
+          return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
+        },
+        [&](const CommentOption&) -> std::unique_ptr<Transaction> {
+          return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
+        },
+        [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
+          return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
+        },
+        [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
+          const int w = std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
+          return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
+        },
+        [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
+          auto [w, h] = callSize(call);
+          return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
+        },
+        [&](const ConditionalOption& conditional) -> std::unique_ptr<Transaction> {
+          return std::make_unique<AddNode>(body_, id, placed(where_, CONDITIONAL_W, CONDITIONAL_H), conditional);
+        }},
       completions_[visible_[idx]].option);
     state.editor.apply(std::move(edit));
   }

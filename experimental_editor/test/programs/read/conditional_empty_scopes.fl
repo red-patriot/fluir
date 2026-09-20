@@ -1,0 +1,24 @@
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="200" h="200">
+    <body>
+      <conditional id="2" x="10" y="3" z="1" w="100" h="100">
+        <condition outer="3" inner="1" y="10"/>
+        <input/>
+        <output/>
+        <then id="0" h="60">
+          <body/>
+        </then>
+        <else id="1" h="40">
+          <body/>
+        </else>
+      </conditional>
+    </body>
+  </function>
+</fluir>

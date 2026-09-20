@@ -613,3 +613,61 @@ TEST(GraphLayout, ConduitEndpointsResolveWithinTheirOwnBlock) {
   EXPECT_TRUE(thenWire);
   EXPECT_FALSE(elseWire);  // node 2 lives in the other branch
 }
+
+// conditional_with_body.fl: function 1 {0,0,5000,5000}, body from y 25, holds constant 1
+// {30,75,40,25} and conditional 2 -> frame {50,40,2500,2500}.
+//   then branch {50,40,2500,1250}, content from y 65: constant 2 {75,90,25,25}, binary 1 {50,165,35,35}
+//   else branch {50,1290,2500,1250}: constant 1 {95,1315,60,25}, binary 3 {225,1305,25,25}
+TEST(GraphLayout, FixtureConditionalLaysOutBothBranches) {
+  const testutil::Loaded l = loadFixture("read/conditional_with_body.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  const Box* inThen = hitAt(boxes, Vec2{80, 95});     // constant 2, clear of its grips
+  const Box* inElse = hitAt(boxes, Vec2{100, 1320});  // constant 1, clear of its grips
+  const Box* emptyElse = hitAt(boxes, Vec2{2000, 2000});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  ASSERT_NE(emptyElse, nullptr);
+  EXPECT_EQ(inThen->path, (FullID{1, 2, 0, 2}));
+  EXPECT_EQ(inElse->path, (FullID{1, 2, 1, 1}));
+  EXPECT_EQ(emptyElse->path, (FullID{1, 2, 1}));
+}
+
+// The fixture reuses id 1 for a node in the function body, one in the else branch, and the
+// else scope itself: only the path tells them apart.
+TEST(GraphLayout, FixtureIdOneResolvesPerBlock) {
+  const testutil::Loaded l = loadFixture("read/conditional_with_body.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  const Box* inFunction = hitAt(boxes, Vec2{35, 80});
+  const Box* inElse = hitAt(boxes, Vec2{100, 1320});
+
+  ASSERT_NE(inFunction, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  EXPECT_EQ(inFunction->path, (FullID{1, 1}));
+  EXPECT_EQ(inElse->path, (FullID{1, 2, 1, 1}));
+  expectRectNear(inFunction->world, Rect{30, 75, 40, 25});
+  expectRectNear(inElse->world, Rect{95, 1315, 60, 25});
+}
+
+// conditional_empty_scopes.fl: conditional 2 at units (10,3) 100 wide, then 60 over else 40.
+//   frame {50,40,500,500}   then {50,40,500,300}   else {50,340,500,200}
+TEST(GraphLayout, EmptyBranchesStillLayOutAndSpanTheirConditional) {
+  const testutil::Loaded l = loadFixture("read/conditional_empty_scopes.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  const Box* inThen = hitAt(boxes, Vec2{300, 200});
+  const Box* inElse = hitAt(boxes, Vec2{300, 400});
+  const Box* belowIt = hitAt(boxes, Vec2{300, 560});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  ASSERT_NE(belowIt, nullptr);
+  EXPECT_EQ(inThen->path, (FullID{1, 2, 0}));
+  EXPECT_EQ(inElse->path, (FullID{1, 2, 1}));
+  EXPECT_EQ(belowIt->path, (FullID{1}));  // the conditional ends where its branches do
+}

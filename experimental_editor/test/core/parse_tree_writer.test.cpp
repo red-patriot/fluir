@@ -110,3 +110,59 @@ TEST(ParseTreeWriter, WritesEditedCommentsBackReadably) {
   EXPECT_TRUE(sink.empty());
   EXPECT_EQ(*reloaded.tree, edited);
 }
+
+namespace {
+
+  // Writes `tree` and parses the result back, as saving and reopening a file does.
+  fluir::editor::LoadResult roundTrip(fluir::editor::CollectingSink& sink, const fluir::pt::ParseTree& tree) {
+    std::ostringstream out;
+    fluir::editor::ParseTreeWriter(out).write(tree);
+    return parse(sink, out.str());
+  }
+
+  const fluir::pt::Conditional& conditionalOf(const fluir::pt::ParseTree& tree, fluir::ID fn, fluir::ID id) {
+    return std::get<fluir::pt::Conditional>(
+      std::get<fluir::pt::FunctionDecl>(tree.declarations.at(fn)).body.nodes.at(id));
+  }
+
+}  // namespace
+
+TEST(ParseTreeWriter, AConditionalWithEmptyBranchesSurvivesARoundTrip) {
+  fluir::editor::CollectingSink sink;
+  const auto loaded = parse(sink, readFile(fs::path(TEST_FOLDER) / "read/conditional_empty_scopes.fl"));
+  ASSERT_TRUE(loaded.tree.has_value());
+
+  fluir::editor::CollectingSink reloadSink;
+  const auto reloaded = roundTrip(reloadSink, *loaded.tree);
+
+  ASSERT_TRUE(reloaded.tree.has_value());
+  EXPECT_EQ(*reloaded.tree, *loaded.tree);
+}
+
+// The writer drops a binary's lhs/rhs, which this fixture sets, so the trees are not equal
+// whole. What nesting must preserve is the branches: their ids, heights and contents.
+TEST(ParseTreeWriter, BranchesAndTheirContentsSurviveARoundTrip) {
+  fluir::editor::CollectingSink sink;
+  const auto loaded = parse(sink, readFile(fs::path(TEST_FOLDER) / "read/conditional_with_body.fl"));
+  ASSERT_TRUE(loaded.tree.has_value());
+
+  fluir::editor::CollectingSink reloadSink;
+  const auto reloaded = roundTrip(reloadSink, *loaded.tree);
+  ASSERT_TRUE(reloaded.tree.has_value());
+
+  const fluir::pt::Conditional& before = conditionalOf(*loaded.tree, 1, 2);
+  const fluir::pt::Conditional& after = conditionalOf(*reloaded.tree, 1, 2);
+  EXPECT_EQ(after.location, before.location);
+  EXPECT_EQ(after.condition, before.condition);
+  for (const auto& [b, a] :
+       {std::pair{&*before.thenScope, &*after.thenScope}, std::pair{&*before.elseScope, &*after.elseScope}}) {
+    EXPECT_EQ(a->id, b->id);
+    EXPECT_EQ(a->location, b->location);
+    EXPECT_EQ(a->body.conduits, b->body.conduits);
+    ASSERT_EQ(a->body.nodes.size(), b->body.nodes.size());
+    for (const auto& [id, node] : b->body.nodes) {
+      ASSERT_TRUE(a->body.nodes.contains(id));
+      EXPECT_EQ(a->body.nodes.at(id).index(), node.index()) << "node " << id << " changed kind";
+    }
+  }
+}

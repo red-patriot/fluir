@@ -637,3 +637,32 @@ TEST(GraphDraw, SelectingANestedNodeOutlinesThatNodeAlone) {
   EXPECT_TRUE(hasRect(r.calls, Rect{13, 63, 54, 54}));   // the node, outset by 2
   EXPECT_FALSE(hasRect(r.calls, Rect{8, 33, 104, 94}));  // not its conditional
 }
+
+// conditional_with_body.fl: conditional 2 -> frame {50,40,2500,2500}, then branch over
+// else branch {50,1290,2500,1250}.
+TEST(GraphDraw, FixtureConditionalDrawsItsChromeAndDivider) {
+  const Loaded l = loadFixture("read/conditional_with_body.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 40, 2500, 25}));            // header strip
+  EXPECT_TRUE(hasRect(r.calls, Rect{50, 40, 2500, 2500}));          // border over both branches
+  EXPECT_TRUE(hasLine(r.calls, Vec2{50, 1290}, Vec2{2550, 1290}));  // the divider
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 65, 2500, 1225}).empty());
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 1290, 2500, 1250}).empty());
+}
+
+// Both branches hold nodes, and the else branch reuses the ids of the then branch's.
+TEST(GraphDraw, FixtureNestedNodesDrawInBothBranches) {
+  const Loaded l = loadFixture("read/conditional_with_body.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{75, 90, 25, 25}));     // then: constant 2
+  EXPECT_TRUE(hasFill(r.calls, Rect{95, 1315, 60, 25}));   // else: constant 1
+  EXPECT_TRUE(hasFill(r.calls, Rect{225, 1305, 25, 25}));  // else: binary 3
+}

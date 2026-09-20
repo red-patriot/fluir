@@ -9,6 +9,7 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
+#include "fixture_loader.hpp"
 
 // Tree surgery, asserted against a hand-built pt::ParseTree: no page, no
 // renderer, no SDL. Delete is full referential cleanup -- conduits sourced from
@@ -273,4 +274,20 @@ TEST(TreeEdit, NormalizeLeavesAPlainNodeAlone) {
   normalizeConditionalHeights(block);
 
   EXPECT_EQ(block, before);
+}
+
+// The fixtures are already consistent, so normalizing one is a no-op: what a file declares
+// and what its branches add up to agree.
+TEST(TreeEdit, NormalizeLeavesAConsistentFixtureAlone) {
+  for (const char* fixture : {"read/conditional_with_body.fl", "read/conditional_empty_scopes.fl"}) {
+    const testutil::Loaded l = testutil::loadFixture(fixture);
+    ASSERT_TRUE(l.result.tree.has_value()) << fixture;
+    fluir::pt::ParseTree tree = *l.result.tree;
+    auto& body = std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body;
+    const fluir::pt::Block before = body;
+
+    normalizeConditionalHeights(body);
+
+    EXPECT_EQ(body, before) << fixture;
+  }
 }

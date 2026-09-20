@@ -21,6 +21,7 @@ namespace {
   using fluir::Operator;
   using fluir::editor::deleteNode;
   using fluir::editor::hasOperand;
+  using fluir::editor::normalizeConditionalHeights;
   using fluir::editor::touches;
 
   fluir::pt::FunctionDecl makeFunction(ID id, fluir::pt::Block body) {
@@ -220,4 +221,56 @@ TEST(TreeEdit, HasOperandMatchesBinaryAndUnaryOperandsOnly) {
   EXPECT_TRUE(hasOperand(makeUnary(11, 10), 10));
   EXPECT_FALSE(hasOperand(makeUnary(11, 12), 10));
   EXPECT_FALSE(hasOperand(makeConstant(10), 10));  // its own id is not an operand
+}
+
+namespace {
+
+  fluir::pt::Scope makeScope(ID id, int y, int h) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
+  }
+
+  fluir::pt::Conditional makeConditional(ID id, int height, fluir::pt::Scope then, fluir::pt::Scope else_) {
+    return fluir::pt::Conditional{.id = id,
+                                  .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = height},
+                                  .condition = {},
+                                  .inputs = {},
+                                  .outputs = {},
+                                  .thenScope = xyz::indirect{std::move(then)},
+                                  .elseScope = xyz::indirect{std::move(else_)}};
+  }
+
+}  // namespace
+
+TEST(TreeEdit, NormalizeMakesAConditionalAsTallAsItsBranches) {
+  fluir::pt::Block block;
+  block.nodes.emplace(20, makeConditional(20, 3, makeScope(0, 0, 12), makeScope(1, 99, 6)));
+
+  normalizeConditionalHeights(block);
+
+  const auto& conditional = std::get<fluir::pt::Conditional>(block.nodes.at(20));
+  EXPECT_EQ(conditional.location.height, 18);
+  EXPECT_EQ(conditional.elseScope->location.y, 12);  // the else branch sits under the then branch
+}
+
+TEST(TreeEdit, NormalizeReachesConditionalsNestedInBranches) {
+  fluir::pt::Scope then = makeScope(0, 0, 12);
+  then.body.nodes.emplace(30, makeConditional(30, 0, makeScope(0, 0, 4), makeScope(1, 0, 4)));
+  fluir::pt::Block block;
+  block.nodes.emplace(20, makeConditional(20, 3, std::move(then), makeScope(1, 0, 6)));
+
+  normalizeConditionalHeights(block);
+
+  const auto& outer = std::get<fluir::pt::Conditional>(block.nodes.at(20));
+  const auto& inner = std::get<fluir::pt::Conditional>(outer.thenScope->body.nodes.at(30));
+  EXPECT_EQ(inner.location.height, 8);
+}
+
+TEST(TreeEdit, NormalizeLeavesAPlainNodeAlone) {
+  fluir::pt::Block block;
+  block.nodes.emplace(10, makeConstant(10));
+  const fluir::pt::Block before = block;
+
+  normalizeConditionalHeights(block);
+
+  EXPECT_EQ(block, before);
 }

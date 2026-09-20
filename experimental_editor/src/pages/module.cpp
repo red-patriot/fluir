@@ -13,6 +13,7 @@
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
+#include "editor/core/tree_edit.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/bool_toggle_tool.hpp"
 #include "editor/tools/completion_tool.hpp"
@@ -73,6 +74,11 @@ namespace fluir::editor {
         return 1;
       }
       tree = *result.tree;
+    }
+    for (auto& [id, decl] : tree.declarations) {
+      if (auto* fn = std::get_if<pt::FunctionDecl>(&decl)) {
+        normalizeConditionalHeights(fn->body);
+      }
     }
     state_.editor.load(tree);
     state_.intelligence.load(ctx_.program, tree);

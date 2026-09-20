@@ -7,9 +7,8 @@
 namespace fluir::editor {
 
   namespace draw {
-    PortSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout) {
-      assert(false && "UNIMPLEMENTED");
-    }
+    // A conditional carries no wall ports yet; wiring through scope ports is Phase 2.
+    inline PortSet anchors(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
 
     Color color(const pt::Conditional& node, const EditorContext::Theme& theme) { assert(false && "UNIMPLEMENTED"); }
 

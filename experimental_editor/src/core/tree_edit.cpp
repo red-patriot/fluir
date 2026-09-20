@@ -6,6 +6,21 @@
 #include <vector>
 
 namespace fluir::editor {
+
+  void normalizeConditionalHeights(pt::Block& block) {
+    for (auto& [id, node] : block.nodes) {
+      auto* conditional = std::get_if<pt::Conditional>(&node);
+      if (conditional == nullptr) {
+        continue;
+      }
+      pt::Scope& then = *conditional->thenScope;
+      pt::Scope& else_ = *conditional->elseScope;
+      else_.location.y = then.location.height;
+      conditional->location.height = then.location.height + else_.location.height;
+      normalizeConditionalHeights(then.body);
+      normalizeConditionalHeights(else_.body);
+    }
+  }
   namespace {
 
     // Drops `nodeId` from every conduit's target list, returning the conduits

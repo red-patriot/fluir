@@ -165,3 +165,93 @@ TEST(ConduitTool, PortsAreFoundThroughThePannedAndZoomedView) {
 
   EXPECT_TRUE(connected(h.state.editor.tree(), 2, 1, 1));
 }
+
+namespace {
+
+  fluir::pt::Scope makeScope(ID id, int y, int h) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
+  }
+
+  fluir::pt::Constant makeConstant(ID id, int x, int y) {
+    return fluir::pt::Constant{.id = id,
+                               .location = {.x = x, .y = y, .z = 0, .width = 10, .height = 10},
+                               .value = fluir::literals_types::I32{0}};
+  }
+
+  fluir::pt::Unary makeUnary(ID id, int x, int y) {
+    return fluir::pt::Unary{
+      .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
+  }
+
+  // Function 1 {0,0,500,500} holds conditional 20 (frame {10,35,100,90}). Both branches hold a
+  // constant 1 and a unary 2, so the same ids appear on either side of the divider.
+  //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
+  //   else content from y 95: constant 1 {15,100,50,50}, unary 2 {70,100,40,25}
+  fluir::pt::ParseTree conditionalTree() {
+    fluir::pt::Scope then = makeScope(0, 0, 12);
+    then.body.nodes.emplace(1, makeConstant(1, 1, 1));
+    then.body.nodes.emplace(2, makeUnary(2, 12, 1));
+
+    fluir::pt::Scope else_ = makeScope(1, 12, 12);
+    else_.body.nodes.emplace(1, makeConstant(1, 1, 1));
+    else_.body.nodes.emplace(2, makeUnary(2, 12, 1));
+
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(20,
+                          fluir::pt::Conditional{.id = 20,
+                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
+                                                 .condition = {},
+                                                 .inputs = {},
+                                                 .outputs = {},
+                                                 .thenScope = xyz::indirect{std::move(then)},
+                                                 .elseScope = xyz::indirect{std::move(else_)}});
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  struct NestedHarness {
+    EditorState state{kCtx};
+    ConduitTool tool;
+
+    NestedHarness() { state.editor.load(conditionalTree()); }
+
+    bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
+
+    bool drag(Vec2 from, Vec2 to) {
+      send(down(state.view.worldToScreen(from)));
+      send(move(state.view.worldToScreen(to)));
+      return send(up(state.view.worldToScreen(to)));
+    }
+
+    const fluir::pt::Block* branch(const FullID& path) const { return blockOf(state.editor.tree(), path); }
+  };
+
+  constexpr Vec2 kThenConstantOut{65, 90};
+  constexpr Vec2 kThenUnaryIn{70, 77.5};
+  constexpr Vec2 kElseUnaryIn{70, 112.5};
+
+}  // namespace
+
+TEST(ConduitTool, WiresWithinOneBranch) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, kThenUnaryIn);
+
+  EXPECT_FALSE(h.branch(FullID{1, 20, 0})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1, 20, 1})->conduits.empty());
+}
+
+// Same-parent is same-branch now: the two branches share node ids but not a block.
+TEST(ConduitTool, RefusesToWireAcrossTheDivider) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, kElseUnaryIn);
+
+  EXPECT_TRUE(h.branch(FullID{1, 20, 0})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1, 20, 1})->conduits.empty());
+}

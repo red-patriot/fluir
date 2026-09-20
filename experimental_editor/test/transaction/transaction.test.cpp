@@ -1043,3 +1043,68 @@ TEST(AddReturn, ExistingReturnMissingFunctionOrInvalidIdChangeNothing) {
   EXPECT_FALSE((AddReturn{FullID{1}, 3}).execute(bare)) << "a parameter already has id 3";
   EXPECT_EQ(bare, bareBefore);
 }
+
+namespace {
+
+  fluir::pt::Scope makeScope(fluir::ID id, int y, int h) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
+  }
+
+  // Function 1 holds conditional 20; its then branch holds constant 1 and conduit 50 from it.
+  fluir::pt::ParseTree conditionalTree() {
+    fluir::pt::Scope then = makeScope(0, 0, 12);
+    then.body.nodes.emplace(1,
+                            fluir::pt::Constant{.id = 1,
+                                                .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                .value = fluir::literals_types::I32{0}});
+    then.body.conduits.emplace(50, fluir::pt::Conduit{.id = 50, .input = 1});
+
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(20,
+                          fluir::pt::Conditional{.id = 20,
+                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18},
+                                                 .condition = {},
+                                                 .inputs = {},
+                                                 .outputs = {},
+                                                 .thenScope = xyz::indirect{std::move(then)},
+                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  const fluir::pt::Block& thenBody(const fluir::pt::ParseTree& tree) {
+    return std::get<fluir::pt::Conditional>(
+             std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body.nodes.at(20))
+      .thenScope->body;
+  }
+
+}  // namespace
+
+TEST(DeleteTransaction, ANestedNodeAndItsConduitsRoundTrip) {
+  fluir::pt::ParseTree tree = conditionalTree();
+  DeleteTransaction uut{FullID{1, 20, 0, 1}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_FALSE(thenBody(tree).nodes.contains(1));
+  EXPECT_TRUE(thenBody(tree).conduits.empty()) << "a conduit sourced from it goes too";
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_TRUE(thenBody(tree).nodes.contains(1));
+  EXPECT_TRUE(thenBody(tree).conduits.contains(50));
+}
+
+TEST(DeleteTransaction, DeletingAConditionalTakesItsBranchesWithIt) {
+  fluir::pt::ParseTree tree = conditionalTree();
+  DeleteTransaction uut{FullID{1, 20}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_TRUE(std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body.nodes.empty());
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_TRUE(thenBody(tree).nodes.contains(1));
+}

@@ -98,11 +98,14 @@ namespace fluir::editor {
                  std::span<const Box> boxes,
                  const std::optional<FullID>& selection,
                  const EditorContext& ctx) {
+    // A branch has no outline of its own: selecting one outlines the container it belongs to.
+    const std::optional<FullID> outlined =
+      selection && isScopePath(*selection) ? std::optional<FullID>{parentOf(*selection)} : selection;
     for (const Box& box : boxes) {
       if (box.clip) {
         view.renderer().pushClip(view.toScreen(*box.clip));
       }
-      drawBox(view, tree, box, selection == box.path, ctx);
+      drawBox(view, tree, box, outlined == box.path, ctx);
       if (box.clip) {
         view.renderer().popClip();
       }

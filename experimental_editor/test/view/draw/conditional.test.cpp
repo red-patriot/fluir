@@ -81,19 +81,53 @@ TEST(DrawConditional, ScopeDividesItselfFromWhatIsAboveIt) {
   const Viewport viewport;
   const fluir::pt::Conditional conditional = makeConditional();
 
-  fluir::editor::draw::drawScope(*conditional.elseScope, Rect{10, 95, 100, 30}, rootView(r, viewport), kCtx);
+  fluir::editor::draw::drawScope(
+    *conditional.elseScope, fluir::editor::draw::ELSE_TAG, Rect{10, 95, 100, 30}, rootView(r, viewport), kCtx);
 
   EXPECT_TRUE(hasLine(r.calls, Vec2{10, 95}, Vec2{110, 95}));  // the divider runs the branch's full width
 }
 
-TEST(DrawConditional, FrameDrawsItsHeaderStripAndBorder) {
+TEST(DrawConditional, ScopeFillsItsOwnHeaderBandAndTagsIt) {
+  RecordingRenderer r;
+  const Viewport viewport;
+  const fluir::pt::Conditional conditional = makeConditional();
+
+  fluir::editor::draw::drawScope(
+    *conditional.thenScope, fluir::editor::draw::THEN_TAG, Rect{10, 35, 100, 60}, rootView(r, viewport), kCtx);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, kHeaderH}));
+  const std::vector<std::string> texts = textStrings(r.calls);
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{fluir::editor::draw::THEN_TAG}), texts.end());
+}
+
+TEST(DrawConditional, TheElseBranchTagsItsOwnHeaderToo) {
+  RecordingRenderer r;
+  const Viewport viewport;
+  const fluir::pt::Conditional conditional = makeConditional();
+
+  fluir::editor::draw::drawScope(
+    *conditional.elseScope, fluir::editor::draw::ELSE_TAG, Rect{10, 95, 100, 30}, rootView(r, viewport), kCtx);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 95, 100, kHeaderH}));
+  const std::vector<std::string> texts = textStrings(r.calls);
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{fluir::editor::draw::ELSE_TAG}), texts.end());
+}
+
+TEST(DrawConditional, BranchTagNamesWhichBranchAScopeIs) {
+  const fluir::pt::Conditional conditional = makeConditional();
+
+  EXPECT_EQ(fluir::editor::draw::branchTag(conditional, *conditional.thenScope), fluir::editor::draw::THEN_TAG);
+  EXPECT_EQ(fluir::editor::draw::branchTag(conditional, *conditional.elseScope), fluir::editor::draw::ELSE_TAG);
+}
+
+// The `if` chrome is gone: each branch labels itself, so the frame is only a border.
+TEST(DrawConditional, FrameDrawsItsBorderAlone) {
   RecordingRenderer r;
   const Viewport viewport;
 
   fluir::editor::draw::drawFrame(makeConditional(), Rect{10, 35, 100, 90}, rootView(r, viewport), kCtx);
 
-  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, kHeaderH}));  // the header eats the then branch's top
-  EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));        // the border spans both branches
-  const std::vector<std::string> texts = textStrings(r.calls);
-  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{fluir::editor::draw::IF_TAG}), texts.end());
+  EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // the border spans both branches
+  EXPECT_FALSE(hasFill(r.calls, Rect{10, 35, 100, kHeaderH}));
+  EXPECT_TRUE(textStrings(r.calls).empty());
 }

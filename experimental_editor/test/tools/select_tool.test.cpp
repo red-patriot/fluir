@@ -98,12 +98,12 @@ namespace {
     fn.name = "f";
     fn.body.nodes.emplace(20,
                           fluir::pt::Conditional{.id = 20,
-                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18},
+                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
                                                  .condition = {},
                                                  .inputs = {},
                                                  .outputs = {},
                                                  .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+                                                 .elseScope = xyz::indirect{makeScope(1, 12, 12)}});
 
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
@@ -130,7 +130,7 @@ TEST(SelectTool, AnEmptyBranchSelectsItsScopePath) {
   state.editor.load(conditionalTree());
   SelectTool tool;
 
-  testutil::send(tool, state, down(Vec2{90, 110}));
+  testutil::send(tool, state, down(Vec2{90, 130}));  // below the else branch's header
 
   ASSERT_TRUE(state.selection.has_value());
   EXPECT_EQ(*state.selection, (FullID{1, 20, 1}));

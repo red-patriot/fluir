@@ -16,9 +16,9 @@ namespace fluir::editor {
     // Tall enough that the corner grip never overlaps the move grip.
     constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
     // A conditional's height follows its branches, so only its width is dragged.
-    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{8, 0}, .upper = Vec2i{1000, 1000}};
-    // Deep enough that a branch keeps room for a node under the divider.
-    constexpr Limits<Vec2i> BRANCH_SIZE{.lower = Vec2i{4, 5}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{10, 0}, .upper = Vec2i{1000, 1000}};
+    // Deep enough that a branch keeps room for a node under its own header
+    constexpr Limits<Vec2i> BRANCH_SIZE{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
 
     bool isComment(const pt::ParseTree& tree, const FullID& path) {
       const pt::Declaration* decl = declarationAt(tree, path);

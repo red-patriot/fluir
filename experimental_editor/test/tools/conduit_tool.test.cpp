@@ -183,10 +183,11 @@ namespace {
       .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
   }
 
-  // Function 1 {0,0,500,500} holds conditional 20 (frame {10,35,100,90}). Both branches hold a
-  // constant 1 and a unary 2, so the same ids appear on either side of the divider.
+  // Function 1 {0,0,500,500} holds conditional 20. Both branches hold a constant 1 and a
+  // unary 2, so the same ids appear on either side of the divider.
+  // Frame {10,35,100,120}; each branch gives up its own top 25 to its header.
   //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
-  //   else content from y 95: constant 1 {15,100,50,50}, unary 2 {70,100,40,25}
+  //   else content from y 120: constant 1 {15,125,50,50}, unary 2 {70,125,40,25}
   fluir::pt::ParseTree conditionalTree() {
     fluir::pt::Scope then = makeScope(0, 0, 12);
     then.body.nodes.emplace(1, makeConstant(1, 1, 1));
@@ -233,7 +234,7 @@ namespace {
 
   constexpr Vec2 kThenConstantOut{65, 90};
   constexpr Vec2 kThenUnaryIn{70, 77.5};
-  constexpr Vec2 kElseUnaryIn{70, 112.5};
+  constexpr Vec2 kElseUnaryIn{70, 137.5};
 
 }  // namespace
 

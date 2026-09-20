@@ -44,7 +44,10 @@ namespace fluir::editor {
     void binary(Element* parent, const pt::Binary& value);
     void unary(Element* parent, const pt::Unary& value);
     void call(Element* parent, const pt::Call& value);
+    void conditional(Element* parent, const pt::Conditional& conditional);
     void comment(Element* parent, const pt::Comment& value);
+
+    void scopePort(Element* parent, const pt::ScopePort& value, std::string_view name = "port");
 
     void conduit(Element* parent, const pt::Conduit& value);
     void conduitOutput(Element* parent, const pt::Conduit::Output& value);
@@ -52,7 +55,8 @@ namespace fluir::editor {
     void literal(Element* parent, const pt::Literal& value);
 
     void setId(Element* element, ID id);
-    void setInt(Element* element, const char* name, int value);
+    void setIdReference(Element* element, ID id, std::string_view attribute);
+    void setInt(Element* element, std::string_view name, int value);
     void setLocation(Element* element, const FlowGraphLocation& location);
   };
 

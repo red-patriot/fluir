@@ -520,3 +520,103 @@ TEST(GraphDraw, SelectedFunctionIsOutlined) {
 
   EXPECT_TRUE(hasRect(r.calls, Rect{48, 48, 504, 504}));
 }
+
+namespace {
+
+  using fluir::FlowGraphLocation;
+  using fluir::ID;
+
+  fluir::pt::Scope makeScope(ID id, int y, int h) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
+  }
+
+  // Function 1 (frame {0,0,500,500}, body clip {0,25,500,475}) holds conditional 20 at units (x,2)
+  // 20 wide, a 12-unit then branch over a 6-unit else branch, with constant 1 in the then branch.
+  //   frame {10,35,100,90}  then {10,35,100,60} (content {10,60,100,35})  else {10,95,100,30}
+  //   then 1 {15,65,50,50}
+  fluir::pt::ParseTree conditionalTree(int y = 2) {
+    fluir::pt::Scope then = makeScope(0, 0, 12);
+    then.body.nodes.emplace(1,
+                            fluir::pt::Constant{.id = 1,
+                                                .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                .value = fluir::literals_types::I32{0}});
+
+    fluir::pt::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(20,
+                          fluir::pt::Conditional{.id = 20,
+                                                 .location = {.x = 2, .y = y, .z = 0, .width = 20, .height = 18},
+                                                 .condition = {},
+                                                 .inputs = {},
+                                                 .outputs = {},
+                                                 .thenScope = xyz::indirect{std::move(then)},
+                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+
+    fluir::pt::ParseTree tree;
+    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  // Where a fill of `want` first lands in the call list, or calls.size() when it never does.
+  std::size_t firstFillIndex(const std::vector<DrawCall>& calls, Rect want) {
+    for (std::size_t i = 0; i < calls.size(); ++i) {
+      if (calls[i].op == DrawCall::Op::Fill && std::abs(calls[i].rect.x - want.x) < 1e-6 &&
+          std::abs(calls[i].rect.y - want.y) < 1e-6 && std::abs(calls[i].rect.w - want.w) < 1e-6 &&
+          std::abs(calls[i].rect.h - want.h) < 1e-6) {
+        return i;
+      }
+    }
+    return calls.size();
+  }
+
+}  // namespace
+
+TEST(GraphDraw, ConditionalDrawsItsHeaderAndFrame) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, 25}));  // header strip, over the then branch's top
+  EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // border around both branches
+  const std::vector<std::string> texts = textStrings(r.calls);
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{"if"}), texts.end());
+}
+
+TEST(GraphDraw, EachBranchDividesItselfFromWhatIsAboveIt) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasLine(r.calls, Vec2{10, 35}, Vec2{110, 35}));  // then branch's top
+  EXPECT_TRUE(hasLine(r.calls, Vec2{10, 95}, Vec2{110, 95}));  // the else divider
+}
+
+TEST(GraphDraw, BranchClipsToItsContentRegion) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 60, 100, 35}).empty());  // then, minus the header
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 95, 100, 30}).empty());  // else, whole
+}
+
+// A conditional near its function's bottom edge: the branch clip is the intersection of the
+// two, and a branch pushed entirely outside is not drawn at all.
+TEST(GraphDraw, BranchClipIsIntersectedWithItsContainer) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(88), Viewport{}, r);  // frame {10,465,100,90}, function clip ends at y 500
+
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 490, 100, 10}).empty());  // then content 490..525, clipped at 500
+  EXPECT_TRUE(clipsCovering(r.calls, Rect{10, 525, 100, 30}).empty());   // the else branch is past the edge
+}
+
+TEST(GraphDraw, ConditionalHeaderPaintsOverItsNestedNodes) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  const std::size_t node = firstFillIndex(r.calls, Rect{15, 65, 50, 50});
+  const std::size_t header = firstFillIndex(r.calls, Rect{10, 35, 100, 25});
+
+  ASSERT_LT(node, r.calls.size());
+  ASSERT_LT(header, r.calls.size());
+  EXPECT_LT(node, header);
+}

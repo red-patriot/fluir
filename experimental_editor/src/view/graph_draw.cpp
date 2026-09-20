@@ -6,6 +6,7 @@
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/draw/function.hpp"
 #include "editor/view/node_view.hpp"
 
@@ -25,17 +26,20 @@ namespace fluir::editor {
       }
     }
 
-    // A top-level declaration draws its own body; a deeper path is a node.
+    // What the path names decides the body: a declaration, a node, or a container's branch.
     void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
-      if (box.path.size() == 1) {
-        if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
-          std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
-                                [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
-                     *decl);
-        }
+      if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
+        std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                              [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+                   *decl);
       } else if (const pt::Node* node = nodeAt(tree, box.path)) {
         drawNode(*node, box.world, view, ctx);
       }
+    }
+
+    // A container's selection outline belongs to its frame, which paints over its children.
+    bool framed(const pt::ParseTree& tree, const FullID& path) {
+      return functionAt(tree, path) != nullptr || std::get_if<pt::Conditional>(nodeAt(tree, path)) != nullptr;
     }
 
     void drawBox(
@@ -44,16 +48,25 @@ namespace fluir::editor {
       switch (box.part) {
         case Part::Body:
           drawBody(view, tree, box, ctx);
-          if (selected && functionAt(tree, box.path) == nullptr) {
+          if (selected && !framed(tree, box.path)) {
             drawOutline(view, ctx, box.world);
+          }
+          return;
+        case Part::Scope:
+          if (const pt::Scope* scope = scopeAt(tree, box.path)) {
+            draw::drawScope(*scope, box.world, view, ctx);
           }
           return;
         case Part::Frame:
           if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
             draw::drawFrame(*fn, box.world, view, ctx);
-            if (selected) {
-              drawOutline(view, ctx, box.world);
-            }
+          } else if (const auto* conditional = std::get_if<pt::Conditional>(nodeAt(tree, box.path))) {
+            draw::drawFrame(*conditional, box.world, view, ctx);
+          } else {
+            return;
+          }
+          if (selected) {
+            drawOutline(view, ctx, box.world);
           }
           return;
         case Part::Rail:

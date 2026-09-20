@@ -17,14 +17,36 @@ namespace fluir::editor {
     return std::get_if<pt::FunctionDecl>(declarationAt(tree, path));
   }
 
-  // Nested containers (loops, conditionals) resolve here once they exist.
+  bool isNodePath(const FullID& path) { return path.size() >= 2 && path.size() % 2 == 0; }
+
+  bool isScopePath(const FullID& path) { return path.size() >= 3 && path.size() % 2 == 1; }
+
+  pt::Scope* scopeAt(pt::ParseTree& tree, const FullID& path) {
+    if (!isScopePath(path)) {
+      return nullptr;
+    }
+    auto* conditional = std::get_if<pt::Conditional>(nodeAt(tree, parentOf(path)));
+    if (conditional == nullptr) {
+      return nullptr;
+    }
+    const fluir::ID scopeId = path.back();
+    if (conditional->thenScope->id == scopeId) return &*conditional->thenScope;
+    if (conditional->elseScope->id == scopeId) return &*conditional->elseScope;
+    return nullptr;
+  }
+
+  // Mutually recursive with nodeAt; the recursion terminates on path depth.
   pt::Block* blockOf(pt::ParseTree& tree, const FullID& containerPath) {
-    pt::FunctionDecl* fn = functionAt(tree, containerPath);
-    return fn == nullptr ? nullptr : &fn->body;
+    if (containerPath.size() == 1) {
+      pt::FunctionDecl* fn = functionAt(tree, containerPath);
+      return fn == nullptr ? nullptr : &fn->body;
+    }
+    pt::Scope* scope = scopeAt(tree, containerPath);
+    return scope == nullptr ? nullptr : &scope->body;
   }
 
   pt::Node* nodeAt(pt::ParseTree& tree, const FullID& path) {
-    if (path.size() < 2) {
+    if (!isNodePath(path)) {
       return nullptr;
     }
     pt::Block* block = blockOf(tree, parentOf(path));
@@ -39,8 +61,11 @@ namespace fluir::editor {
     if (pt::Declaration* decl = declarationAt(tree, path)) {
       return std::visit([](auto& d) { return &d.location; }, *decl);
     }
-    pt::Node* node = nodeAt(tree, path);
-    return node == nullptr ? nullptr : std::visit([](auto& n) { return &n.location; }, *node);
+    if (pt::Node* node = nodeAt(tree, path)) {
+      return std::visit([](auto& n) { return &n.location; }, *node);
+    }
+    pt::Scope* scope = scopeAt(tree, path);
+    return scope == nullptr ? nullptr : &scope->location;
   }
 
   std::string* railTypeAt(pt::FunctionDecl& fn, fluir::ID railId) {
@@ -63,6 +88,10 @@ namespace fluir::editor {
 
   const pt::FunctionDecl* functionAt(const pt::ParseTree& tree, const FullID& path) {
     return functionAt(const_cast<pt::ParseTree&>(tree), path);
+  }
+
+  const pt::Scope* scopeAt(const pt::ParseTree& tree, const FullID& path) {
+    return scopeAt(const_cast<pt::ParseTree&>(tree), path);
   }
 
   const pt::Block* blockOf(const pt::ParseTree& tree, const FullID& containerPath) {

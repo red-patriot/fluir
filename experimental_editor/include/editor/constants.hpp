@@ -12,6 +12,8 @@ namespace fluir::editor {
   constexpr int CALL_W = 14;
   constexpr int BOOL_CONSTANT_W = 8;
   constexpr int NODE_H = 5;
+  constexpr int CONDITIONAL_H = 40;
+  constexpr int CONDITIONAL_W = 30;
 }  // namespace fluir::editor
 
 #endif

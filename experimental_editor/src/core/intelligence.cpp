@@ -145,6 +145,7 @@ namespace fluir::editor {
         out.push_back({std::string{BUILTIN_TYPES[i]}, ConstantOption{defaults.at(i)}});
       }
       out.push_back({"Comment", CommentOption{}});
+      out.push_back({"if-else", ConditionalOption{}});
       out.push_back({"print",
                      CallFunctionOption{.target = "print",
                                         .parameters = {intelligence::ParamInfo{.name = "object", .typeName = "ANY"}},

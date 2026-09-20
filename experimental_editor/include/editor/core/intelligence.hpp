@@ -41,9 +41,10 @@ namespace fluir::editor {
     std::vector<intelligence::ParamInfo> parameters;
     std::optional<std::string_view> returnType;
   };
+  struct ConditionalOption { };
 
-  using CompletionOption =
-    std::variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption, CallFunctionOption>;
+  using CompletionOption = std::
+    variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption, CallFunctionOption, ConditionalOption>;
 
   struct Completion {
     std::string label;

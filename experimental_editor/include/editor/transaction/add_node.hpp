@@ -15,7 +15,7 @@ namespace fluir::editor {
   /** Adds operator or constant node `newId` at `location` into the body of function `parent`. */
   class AddNode : public Transaction {
    public:
-    using Params = std::variant<OperatorOption, ConstantOption, CallFunctionOption>;
+    using Params = std::variant<OperatorOption, ConstantOption, CallFunctionOption, ConditionalOption>;
 
     AddNode(fluir::FullID parent, fluir::ID newId, fluir::FlowGraphLocation location, Params params) :
       parent_(std::move(parent)), id_(newId), location_(location), params_(std::move(params)) { }

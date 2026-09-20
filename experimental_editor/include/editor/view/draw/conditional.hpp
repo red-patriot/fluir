@@ -7,8 +7,11 @@
 
 namespace fluir::editor::draw {
 
-  /** The small tag in a conditional's header label. */
-  inline constexpr std::string_view IF_TAG = "if";
+  inline constexpr std::string_view THEN_TAG = "then";
+  inline constexpr std::string_view ELSE_TAG = "else";
+
+  /** Which of `conditional`'s two branches `scope` is. */
+  std::string_view branchTag(const pt::Conditional& conditional, const pt::Scope& scope);
 
   /** None yet: a conditional wires through its scope ports, which is Phase 2. */
   PortSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
@@ -20,13 +23,14 @@ namespace fluir::editor::draw {
   /** The body background, under the conditional's branches and their nodes. */
   void drawBody(const pt::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
 
-  /** Branch `scope` at `branch`: its backdrop and the divider along its top edge. */
-  void drawScope(const pt::Scope& scope, const Rect& branch, const Subview& view, const EditorContext& ctx);
+  /** Branch `scope` at `branch`: the divider along its top edge and its tagged header. */
+  void drawScope(
+    const pt::Scope& scope, std::string_view tag, const Rect& branch, const Subview& view, const EditorContext& ctx);
 
-  /** Header and frame chrome, over the branches; selection outlines belong to the caller. */
+  /** The border around both branches. */
   void drawFrame(const pt::Conditional& node, const Rect& frame, const Subview& view, const EditorContext& ctx);
 
-  /** A node-variant entry point: a conditional's body is what `drawNode` paints. */
+  /** A node-variant entry point. */
   void draw(const pt::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw

@@ -531,15 +531,23 @@ namespace {
   }
 
   // Function 1 (frame {0,0,500,500}, body clip {0,25,500,475}) holds conditional 20 at units (x,2)
-  // 20 wide, a 12-unit then branch over a 6-unit else branch, with constant 1 in the then branch.
-  //   frame {10,35,100,90}  then {10,35,100,60} (content {10,60,100,35})  else {10,95,100,30}
-  //   then 1 {15,65,50,50}
+  // 20 wide, a 12-unit then branch over a 6-unit else branch. Each branch holds a constant 1,
+  // and each gives up its own top 25 to its header.
+  //   frame {10,35,100,90}  then {10,35,100,60} (content {10,60,100,35})
+  //                         else {10,95,100,30} (content {10,120,100,5})
+  //   then 1 {15,65,50,50}  else 1 {10,120,50,50}, all but its top 5 clipped away
   fluir::pt::ParseTree conditionalTree(int y = 2) {
     fluir::pt::Scope then = makeScope(0, 0, 12);
     then.body.nodes.emplace(1,
                             fluir::pt::Constant{.id = 1,
                                                 .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
                                                 .value = fluir::literals_types::I32{0}});
+
+    fluir::pt::Scope else_ = makeScope(1, 12, 6);
+    else_.body.nodes.emplace(1,
+                             fluir::pt::Constant{.id = 1,
+                                                 .location = {.x = 0, .y = 0, .z = 0, .width = 10, .height = 10},
+                                                 .value = fluir::literals_types::I32{0}});
 
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
@@ -552,7 +560,7 @@ namespace {
                                                  .inputs = {},
                                                  .outputs = {},
                                                  .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+                                                 .elseScope = xyz::indirect{std::move(else_)}});
 
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
@@ -573,14 +581,26 @@ namespace {
 
 }  // namespace
 
-TEST(GraphDraw, ConditionalDrawsItsHeaderAndFrame) {
+// A branch's own clip must admit the header it paints, or its band, divider and tag are culled.
+TEST(GraphDraw, ABranchIsClippedToItsWholeRectNotJustItsContent) {
   RecordingRenderer r;
   drawTree(kCtx, conditionalTree(), Viewport{}, r);
 
-  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, 25}));  // header strip, over the then branch's top
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 35, 100, 60}).empty());  // then, header included
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 95, 100, 30}).empty());  // else, header included
+}
+
+TEST(GraphDraw, EachBranchDrawsItsOwnHeaderInsideTheFrame) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, 25}));  // the then branch's header
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 95, 100, 25}));  // the else branch's header
   EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // border around both branches
   const std::vector<std::string> texts = textStrings(r.calls);
-  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{"if"}), texts.end());
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{"then"}), texts.end());
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{"else"}), texts.end());
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"if"}), texts.end());
 }
 
 TEST(GraphDraw, EachBranchDividesItselfFromWhatIsAboveIt) {
@@ -595,8 +615,8 @@ TEST(GraphDraw, BranchClipsToItsContentRegion) {
   RecordingRenderer r;
   drawTree(kCtx, conditionalTree(), Viewport{}, r);
 
-  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 60, 100, 35}).empty());  // then, minus the header
-  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 95, 100, 30}).empty());  // else, whole
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 60, 100, 35}).empty());  // then's nodes, minus its header
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 120, 100, 5}).empty());  // else's nodes, minus its header
 }
 
 // A conditional near its function's bottom edge: the branch clip is the intersection of the
@@ -609,7 +629,8 @@ TEST(GraphDraw, BranchClipIsIntersectedWithItsContainer) {
   EXPECT_TRUE(clipsCovering(r.calls, Rect{10, 525, 100, 30}).empty());   // the else branch is past the edge
 }
 
-TEST(GraphDraw, ConditionalHeaderPaintsOverItsNestedNodes) {
+// A branch's header belongs to the branch, so it paints before the nodes it clips.
+TEST(GraphDraw, ABranchHeaderPaintsBeforeItsNestedNodes) {
   RecordingRenderer r;
   drawTree(kCtx, conditionalTree(), Viewport{}, r);
 
@@ -618,7 +639,7 @@ TEST(GraphDraw, ConditionalHeaderPaintsOverItsNestedNodes) {
 
   ASSERT_LT(node, r.calls.size());
   ASSERT_LT(header, r.calls.size());
-  EXPECT_LT(node, header);
+  EXPECT_LT(header, node);
 }
 
 TEST(GraphDraw, SelectingABranchOutlinesItsConditional) {
@@ -647,11 +668,12 @@ TEST(GraphDraw, FixtureConditionalDrawsItsChromeAndDivider) {
   RecordingRenderer r;
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
-  EXPECT_TRUE(hasFill(r.calls, Rect{50, 40, 2500, 25}));            // header strip
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 40, 2500, 25}));            // the then branch's header
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 1290, 2500, 25}));          // the else branch's header
   EXPECT_TRUE(hasRect(r.calls, Rect{50, 40, 2500, 2500}));          // border over both branches
   EXPECT_TRUE(hasLine(r.calls, Vec2{50, 1290}, Vec2{2550, 1290}));  // the divider
   EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 65, 2500, 1225}).empty());
-  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 1290, 2500, 1250}).empty());
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 1315, 2500, 1225}).empty());
 }
 
 // Both branches hold nodes, and the else branch reuses the ids of the then branch's.
@@ -663,6 +685,6 @@ TEST(GraphDraw, FixtureNestedNodesDrawInBothBranches) {
   drawTree(kCtx, *l.result.tree, Viewport{}, r);
 
   EXPECT_TRUE(hasFill(r.calls, Rect{75, 90, 25, 25}));     // then: constant 2
-  EXPECT_TRUE(hasFill(r.calls, Rect{95, 1315, 60, 25}));   // else: constant 1
-  EXPECT_TRUE(hasFill(r.calls, Rect{225, 1305, 25, 25}));  // else: binary 3
+  EXPECT_TRUE(hasFill(r.calls, Rect{95, 1340, 60, 25}));   // else: constant 1
+  EXPECT_TRUE(hasFill(r.calls, Rect{225, 1330, 25, 25}));  // else: binary 3
 }

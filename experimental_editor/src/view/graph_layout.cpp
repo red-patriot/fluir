@@ -101,24 +101,26 @@ namespace fluir::editor {
       const double unit = layout.unitPx;
       out.push_back({path, Part::Body, frame, clip});
 
-      // Branch rects are frame-relative and stack; only the then branch gives up its top to the header.
+      // Branch rects are frame-relative and stack.
       for (const pt::Scope* scope : {&*conditional.thenScope, &*conditional.elseScope}) {
         // A branch spans its conditional's width; only its own height and offset are its own.
         const Rect local = localRect(scope->location, unit);
         const Rect branch{frame.x, frame.y + local.y, frame.w, local.h};
-        const bool underHeader = scope == &*conditional.thenScope;
-        const Vec2 origin = underHeader ? bodyOrigin(branch.topLeft(), layout.headerH()) : branch.topLeft();
-        const Rect content{branch.x, origin.y, branch.w, branch.y + branch.h - origin.y};
-        const std::optional<Rect> branchClip = clip ? intersect(*clip, content) : std::optional<Rect>{content};
+        const std::optional<Rect> branchClip = clip ? intersect(*clip, branch) : std::optional<Rect>{branch};
         if (!branchClip) {
           continue;  // the branch is entirely outside its container
         }
+        const Vec2 origin = bodyOrigin(branch.topLeft(), layout.headerH());
+        const Rect content{branch.x, origin.y, branch.w, branch.y + branch.h - origin.y};
         const FullID scopePath = childOf(path, scope->id);
         out.push_back({scopePath, Part::Scope, branch, branchClip});
-        layoutBlock(scope->body, scopePath, origin, *branchClip, layout, Ports{}, out);
+        if (const std::optional<Rect> contentClip = intersect(*branchClip, content)) {
+          layoutBlock(scope->body, scopePath, origin, *contentClip, layout, Ports{}, out);
+        }
       }
 
       // The corner grip belongs to the bottom branch: a conditional grows by its branches growing.
+      // The move grip rides the top band, which is the then branch's header.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
       out.push_back({path, Part::ResizeX, resizeBar(frame, unit), clip});

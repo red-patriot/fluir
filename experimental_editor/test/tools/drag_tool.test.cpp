@@ -386,5 +386,5 @@ TEST(DragTool, ABranchCannotCollapse) {
 
   EXPECT_TRUE(h.send(move(kBranchCorner - Vec2{0, 200})));
 
-  EXPECT_GE(h.loc(kElseBranch).height, 5);
+  EXPECT_GE(h.loc(kElseBranch).height, 10);
 }

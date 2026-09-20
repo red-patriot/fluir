@@ -54,7 +54,10 @@ namespace fluir::editor {
           return;
         case Part::Scope:
           if (const pt::Scope* scope = scopeAt(tree, box.path)) {
-            draw::drawScope(*scope, box.world, view, ctx);
+            const auto* parent = std::get_if<pt::Conditional>(nodeAt(tree, parentOf(box.path)));
+            if (parent != nullptr) {
+              draw::drawScope(*scope, draw::branchTag(*parent, *scope), box.world, view, ctx);
+            }
           }
           return;
         case Part::Frame:

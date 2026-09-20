@@ -1,10 +1,7 @@
 #include "editor/core/parse_tree_writer.hpp"
 
 #include <algorithm>
-#include <array>
-#include <charconv>
 #include <string>
-#include <string_view>
 #include <variant>
 #include <vector>
 
@@ -12,13 +9,11 @@
 #include <tinyxml2.h>
 
 #include "compiler/models/operator.hpp"
+#include "editor/core/literal_text.hpp"
 
 namespace fluir::editor {
 
   namespace {
-
-    using tinyxml2::XMLDocument;
-    using tinyxml2::XMLElement;
 
     template <typename... Fs>
     struct Overloaded : Fs... {
@@ -42,6 +37,8 @@ namespace fluir::editor {
       return ids;
     }
 
+    // Round-trip formatting, not display formatting: F64 keeps `{:f}` so the
+    // written text reparses as the same value (`renderLiteral` is for labels).
     std::string literalText(const fluir::pt::Literal& v) {
       return std::visit(
         [](auto x) -> std::string {
@@ -58,168 +55,178 @@ namespace fluir::editor {
         v);
     }
 
-    constexpr std::array<std::string_view, 10> LITERAL_TAGS{
-      "f64", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "bool"};
-
-    void setId(XMLElement* el, fluir::ID id) { el->SetAttribute("id", std::to_string(id).c_str()); }
-
-    void setInt(XMLElement* el, const char* name, int value) { el->SetAttribute(name, std::to_string(value).c_str()); }
-
-    void setLocation(XMLElement* el, const fluir::FlowGraphLocation& loc) {
-      setInt(el, "x", loc.x);
-      setInt(el, "y", loc.y);
-      setInt(el, "z", loc.z);
-      setInt(el, "w", loc.width);
-      setInt(el, "h", loc.height);
-    }
-
-    void appendConstant(XMLElement* parent, const fluir::pt::Constant& node) {
-      XMLElement* el = parent->InsertNewChildElement("constant");
-      setId(el, node.id);
-      setLocation(el, node.location);
-      XMLElement* lit = el->InsertNewChildElement(LITERAL_TAGS[node.value.index()].data());
-      lit->SetText(literalText(node.value).c_str());
-    }
-
-    void appendBinary(XMLElement* parent, const fluir::pt::Binary& node) {
-      XMLElement* el = parent->InsertNewChildElement("binary");
-      setId(el, node.id);
-      setLocation(el, node.location);
-      el->SetAttribute("operator", std::string(fluir::stringify(node.op)).c_str());
-    }
-
-    void appendUnary(XMLElement* parent, const fluir::pt::Unary& node) {
-      XMLElement* el = parent->InsertNewChildElement("unary");
-      setId(el, node.id);
-      setLocation(el, node.location);
-      el->SetAttribute("operator", std::string(fluir::stringify(node.op)).c_str());
-    }
-
-    void appendCall(XMLElement* parent, const fluir::pt::Call& node) {
-      XMLElement* el = parent->InsertNewChildElement("call");
-      el->SetAttribute("target", node.target.c_str());
-      setId(el, node.id);
-      setLocation(el, node.location);
-      if (node._return.has_value()) {
-        el->InsertNewChildElement("return");
-      }
-      for (const auto& arg : node.arguments) {
-        XMLElement* ae = el->InsertNewChildElement("arg");
-        ae->SetAttribute("name", arg.name.c_str());
-      }
-    }
-
-    void appendComment(XMLElement* parent, const fluir::pt::Comment& comment) {
-      XMLElement* el = parent->InsertNewChildElement("comment");
-      setId(el, comment.id);
-      setLocation(el, comment.location);
-      el->SetText(comment.text.c_str());
-    }
-
-    void appendNode(XMLElement* parent, const fluir::pt::Node& node) {
-      std::visit(
-        [&](const auto& n) {
-          using T = std::decay_t<decltype(n)>;
-          if constexpr (std::is_same_v<T, fluir::pt::Constant>)
-            appendConstant(parent, n);
-          else if constexpr (std::is_same_v<T, fluir::pt::Binary>)
-            appendBinary(parent, n);
-          else if constexpr (std::is_same_v<T, fluir::pt::Unary>)
-            appendUnary(parent, n);
-          else if constexpr (std::is_same_v<T, fluir::pt::Call>)
-            appendCall(parent, n);
-          else if constexpr (std::is_same_v<T, fluir::pt::Comment>)
-            appendComment(parent, n);
-        },
-        node);
-    }
-
-    void appendConduit(XMLElement* parent, const fluir::pt::Conduit& conduit) {
-      XMLElement* el = parent->InsertNewChildElement("conduit");
-      setId(el, conduit.id);
-      el->SetAttribute("input", std::to_string(conduit.input).c_str());
-      for (const auto& child : conduit.children) {
-        XMLElement* oe = el->InsertNewChildElement("output");
-        oe->SetAttribute("target", std::to_string(child.target).c_str());
-        setInt(oe, "index", child.index);
-      }
-    }
-
-    void appendInput(XMLElement* parent, const fluir::pt::FunctionDecl::InputBlock& input) {
-      XMLElement* el = parent->InsertNewChildElement("input");
-      for (const auto& param : input.parameters) {
-        XMLElement* pe = el->InsertNewChildElement("param");
-        pe->SetAttribute("name", param.name.c_str());
-        setId(pe, param.id);
-        if (!param.typeName.empty()) {
-          pe->SetAttribute("type", param.typeName.c_str());
-        }
-      }
-    }
-
-    void appendOutput(XMLElement* parent, const fluir::pt::FunctionDecl::OutputBlock& output) {
-      XMLElement* el = parent->InsertNewChildElement("output");
-      const auto& ret = *output.ret;
-      XMLElement* re = el->InsertNewChildElement("return");
-      setId(re, ret.id);
-      if (!ret.typeName.empty()) {
-        re->SetAttribute("type", ret.typeName.c_str());
-      }
-    }
-
-    void appendBlock(XMLElement* parent, const fluir::pt::Block& body) {
-      XMLElement* el = parent->InsertNewChildElement("body");
-      for (fluir::ID id : sortedIds(body.nodes))
-        appendNode(el, body.nodes.at(id));
-      for (fluir::ID id : sortedIds(body.conduits))
-        appendConduit(el, body.conduits.at(id));
-    }
-
-    void appendFunction(XMLElement* parent, const fluir::pt::FunctionDecl& fn) {
-      XMLElement* el = parent->InsertNewChildElement("function");
-      el->SetAttribute("name", fn.name.c_str());
-      setId(el, fn.id);
-      setLocation(el, fn.location);
-
-      if (fn.input.has_value() && !fn.input->parameters.empty()) {
-        appendInput(el, *fn.input);
-      }
-      if (fn.output.has_value() && fn.output->ret.has_value()) {
-        appendOutput(el, *fn.output);
-      }
-      appendBlock(el, fn.body);
-    }
-
   }  // namespace
+
+  void write(std::ostream& out, const fluir::pt::ParseTree& tree) { ParseTreeWriter(out).write(tree); }
 
   ParseTreeWriter::ParseTreeWriter(std::ostream& out) : out_(out) { }
 
   void ParseTreeWriter::write(const fluir::pt::ParseTree& tree) {
-    XMLDocument doc;
-    doc.InsertEndChild(doc.NewDeclaration("xml version='1.0' encoding='UTF-8'"));
+    doc_.Clear();
+    doc_.InsertEndChild(doc_.NewDeclaration("xml version='1.0' encoding='UTF-8'"));
 
-    XMLElement* root = doc.NewElement("fluir");
-    doc.InsertEndChild(root);
+    Element* root = doc_.NewElement("fluir");
+    doc_.InsertEndChild(root);
 
-    XMLElement* header = root->InsertNewChildElement("header");
-    XMLElement* version = header->InsertNewChildElement("version");
-    version->InsertNewChildElement("major")->SetText(int(tree.header.version.major));
-    version->InsertNewChildElement("minor")->SetText(int(tree.header.version.minor));
-    version->InsertNewChildElement("patch")->SetText(int(tree.header.version.patch));
+    header(root, tree.header);
 
-    for (fluir::ID id : sortedIds(tree.declarations)) {
-      std::visit(Overloaded{
-                   [&](const fluir::pt::FunctionDecl& fn) { appendFunction(root, fn); },
-                   [&](const fluir::pt::Comment& comment) { appendComment(root, comment); },
-                 },
-                 tree.declarations.at(id));
-    }
+    for (fluir::ID id : sortedIds(tree.declarations))
+      declaration(root, tree.declarations.at(id));
 
     TwoSpacePrinter printer;
-    doc.Print(&printer);
+    doc_.Print(&printer);
     out_ << printer.CStr();
   }
 
   bool ParseTreeWriter::good() const { return out_.good(); }
+
+  void ParseTreeWriter::header(Element* parent, const pt::Header& value) {
+    Element* el = parent->InsertNewChildElement("header");
+    version(el, value.version);
+  }
+
+  void ParseTreeWriter::version(Element* parent, const Version& value) {
+    Element* el = parent->InsertNewChildElement("version");
+    el->InsertNewChildElement("major")->SetText(int(value.major));
+    el->InsertNewChildElement("minor")->SetText(int(value.minor));
+    el->InsertNewChildElement("patch")->SetText(int(value.patch));
+  }
+
+  void ParseTreeWriter::declaration(Element* parent, const pt::Declaration& value) {
+    std::visit(Overloaded{
+                 [&](const pt::FunctionDecl& fn) { functionDecl(parent, fn); },
+                 [&](const pt::Comment& c) { comment(parent, c); },
+               },
+               value);
+  }
+
+  void ParseTreeWriter::functionDecl(Element* parent, const pt::FunctionDecl& value) {
+    Element* el = parent->InsertNewChildElement("function");
+    el->SetAttribute("name", value.name.c_str());
+    setId(el, value.id);
+    setLocation(el, value.location);
+
+    if (value.input.has_value() && !value.input->parameters.empty()) funcInputs(el, *value.input);
+    if (value.output.has_value() && value.output->ret.has_value()) funcOutputs(el, *value.output);
+    block(el, value.body);
+  }
+
+  void ParseTreeWriter::funcInputs(Element* parent, const pt::FunctionDecl::InputBlock& value) {
+    Element* el = parent->InsertNewChildElement("input");
+    for (const auto& param : value.parameters)
+      funcParameter(el, param);
+  }
+
+  void ParseTreeWriter::funcParameter(Element* parent, const pt::FunctionDecl::Parameter& value) {
+    Element* el = parent->InsertNewChildElement("param");
+    el->SetAttribute("name", value.name.c_str());
+    setId(el, value.id);
+    if (!value.typeName.empty()) el->SetAttribute("type", value.typeName.c_str());
+  }
+
+  void ParseTreeWriter::funcOutputs(Element* parent, const pt::FunctionDecl::OutputBlock& value) {
+    Element* el = parent->InsertNewChildElement("output");
+    funcReturn(el, *value.ret);
+  }
+
+  void ParseTreeWriter::funcReturn(Element* parent, const pt::FunctionDecl::Return& value) {
+    Element* el = parent->InsertNewChildElement("return");
+    setId(el, value.id);
+    if (!value.typeName.empty()) el->SetAttribute("type", value.typeName.c_str());
+  }
+
+  void ParseTreeWriter::block(Element* parent, const pt::Block& value) {
+    Element* el = parent->InsertNewChildElement("body");
+    for (fluir::ID id : sortedIds(value.nodes))
+      node(el, value.nodes.at(id));
+    for (fluir::ID id : sortedIds(value.conduits))
+      conduit(el, value.conduits.at(id));
+  }
+
+  // TODO: Conditional/Scope are not serialized yet
+  void ParseTreeWriter::node(Element* parent, const pt::Node& value) {
+    std::visit(Overloaded{
+                 [&](const pt::Constant& n) { constant(parent, n); },
+                 [&](const pt::Binary& n) { binary(parent, n); },
+                 [&](const pt::Unary& n) { unary(parent, n); },
+                 [&](const pt::Call& n) { call(parent, n); },
+                 [&](const pt::Comment& n) { comment(parent, n); },
+                 [&](const pt::Conditional&) {},
+               },
+               value);
+  }
+
+  void ParseTreeWriter::constant(Element* parent, const pt::Constant& value) {
+    Element* el = parent->InsertNewChildElement("constant");
+    setId(el, value.id);
+    setLocation(el, value.location);
+    literal(el, value.value);
+  }
+
+  void ParseTreeWriter::binary(Element* parent, const pt::Binary& value) {
+    Element* el = parent->InsertNewChildElement("binary");
+    setId(el, value.id);
+    setLocation(el, value.location);
+    el->SetAttribute("operator", std::string(fluir::stringify(value.op)).c_str());
+  }
+
+  void ParseTreeWriter::unary(Element* parent, const pt::Unary& value) {
+    Element* el = parent->InsertNewChildElement("unary");
+    setId(el, value.id);
+    setLocation(el, value.location);
+    el->SetAttribute("operator", std::string(fluir::stringify(value.op)).c_str());
+  }
+
+  void ParseTreeWriter::call(Element* parent, const pt::Call& value) {
+    Element* el = parent->InsertNewChildElement("call");
+    el->SetAttribute("target", value.target.c_str());
+    setId(el, value.id);
+    setLocation(el, value.location);
+    if (value._return.has_value()) el->InsertNewChildElement("return");
+    for (const auto& arg : value.arguments) {
+      Element* ae = el->InsertNewChildElement("arg");
+      ae->SetAttribute("name", arg.name.c_str());
+    }
+  }
+
+  void ParseTreeWriter::comment(Element* parent, const pt::Comment& value) {
+    Element* el = parent->InsertNewChildElement("comment");
+    setId(el, value.id);
+    setLocation(el, value.location);
+    el->SetText(value.text.c_str());
+  }
+
+  void ParseTreeWriter::conduit(Element* parent, const pt::Conduit& value) {
+    Element* el = parent->InsertNewChildElement("conduit");
+    setId(el, value.id);
+    el->SetAttribute("input", std::to_string(value.input).c_str());
+    for (const auto& child : value.children)
+      conduitOutput(el, child);
+  }
+
+  void ParseTreeWriter::conduitOutput(Element* parent, const pt::Conduit::Output& value) {
+    Element* el = parent->InsertNewChildElement("output");
+    el->SetAttribute("target", std::to_string(value.target).c_str());
+    setInt(el, "index", value.index);
+  }
+
+  void ParseTreeWriter::literal(Element* parent, const pt::Literal& value) {
+    Element* el = parent->InsertNewChildElement(std::string(literalTypeName(value)).c_str());
+    el->SetText(literalText(value).c_str());
+  }
+
+  void ParseTreeWriter::setId(Element* element, ID id) { element->SetAttribute("id", std::to_string(id).c_str()); }
+
+  void ParseTreeWriter::setInt(Element* element, const char* name, int value) {
+    element->SetAttribute(name, std::to_string(value).c_str());
+  }
+
+  void ParseTreeWriter::setLocation(Element* element, const FlowGraphLocation& location) {
+    setInt(element, "x", location.x);
+    setInt(element, "y", location.y);
+    setInt(element, "z", location.z);
+    setInt(element, "w", location.width);
+    setInt(element, "h", location.height);
+  }
 
 }  // namespace fluir::editor

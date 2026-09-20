@@ -16,6 +16,14 @@ namespace fluir::editor {
   pt::FunctionDecl* functionAt(pt::ParseTree& tree, const FullID& path);
   const pt::FunctionDecl* functionAt(const pt::ParseTree& tree, const FullID& path);
 
+  /** Depth parity names the kind: even depth >= 2 is a node, odd depth >= 3 a scope. */
+  bool isNodePath(const FullID& path);
+  bool isScopePath(const FullID& path);
+
+  /** The scope an odd path of depth >= 3 names inside its parent conditional, or nullptr. */
+  pt::Scope* scopeAt(pt::ParseTree& tree, const FullID& path);
+  const pt::Scope* scopeAt(const pt::ParseTree& tree, const FullID& path);
+
   /** The block a container path owns, or nullptr. The only depth-aware lookup. */
   pt::Block* blockOf(pt::ParseTree& tree, const FullID& containerPath);
   const pt::Block* blockOf(const pt::ParseTree& tree, const FullID& containerPath);

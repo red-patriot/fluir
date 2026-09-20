@@ -50,6 +50,7 @@ namespace fluir::editor {
       Color error{224, 68, 68, 255};
       Color text{225, 225, 235, 255};
       Color funcDeclHeader{237, 170, 30, 255};
+      Color conditionalNodeHeader{1, 140, 105, 255};
       Color operatorNode{75, 107, 210, 255};
       Color uIntNode{242, 44, 189, 255};
       Color sIntNode{225, 31, 251, 255};

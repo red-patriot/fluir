@@ -7,6 +7,7 @@ set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
 )
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
+    core/geometry.test.cpp
     core/graph_geometry.test.cpp
     core/identifier.test.cpp
     core/intelligence.test.cpp

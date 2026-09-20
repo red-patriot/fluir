@@ -146,7 +146,6 @@ namespace fluir::editor {
       conduit(el, value.conduits.at(id));
   }
 
-  // TODO: Conditional/Scope are not serialized yet
   void ParseTreeWriter::node(Element* parent, const pt::Node& value) {
     std::visit(Overloaded{
                  [&](const pt::Constant& n) { constant(parent, n); },

@@ -11,6 +11,8 @@
 #include "compiler/models/operator.hpp"
 #include "editor/core/literal_text.hpp"
 
+using namespace std::string_view_literals;
+
 namespace fluir::editor {
 
   namespace {
@@ -27,6 +29,7 @@ namespace fluir::editor {
       }
     };
 
+    // TODO: Figure out a way to get away from sorting
     template <typename Map>
     std::vector<fluir::ID> sortedIds(const Map& m) {
       std::vector<fluir::ID> ids;
@@ -151,7 +154,7 @@ namespace fluir::editor {
                  [&](const pt::Unary& n) { unary(parent, n); },
                  [&](const pt::Call& n) { call(parent, n); },
                  [&](const pt::Comment& n) { comment(parent, n); },
-                 [&](const pt::Conditional&) {},
+                 [&](const pt::Conditional& n) { conditional(parent, n); },
                },
                value);
   }
@@ -189,11 +192,71 @@ namespace fluir::editor {
     }
   }
 
+  void ParseTreeWriter::conditional(Element* parent, const pt::Conditional& conditional) {
+    auto* e = parent->InsertNewChildElement("conditional");
+    setId(e, conditional.id);
+    setLocation(e, conditional.location);
+    scopePort(e, conditional.condition, "condition");
+    {
+      auto* input = e->InsertNewChildElement("input");
+      auto sorted = sortedIds(conditional.inputs);
+      for (const auto& id : sorted) {
+        const auto& port = conditional.inputs.at(id);
+        scopePort(input, port);
+      }
+    }
+    {
+      auto* output = e->InsertNewChildElement("output");
+      auto sorted = sortedIds(conditional.outputs);
+      for (const auto& id : sorted) {
+        const auto& port = conditional.outputs.at(id);
+        scopePort(output, port);
+      }
+    }
+    {
+      const auto& then = conditional.thenScope;
+      auto* thenEl = e->InsertNewChildElement("then");
+      setId(thenEl, then->id);
+      setInt(thenEl, "h"sv, then->location.height);
+      auto* body = thenEl->InsertNewChildElement("body");
+      auto sortedNodes = sortedIds(then->nodes);
+      for (const auto& id : sortedNodes) {
+        node(body, then->nodes.at(id));
+      }
+      auto sortedConduits = sortedIds(then->conduits);
+      for (const auto& id : sortedConduits) {
+        conduit(body, then->conduits.at(id));
+      }
+    }
+    {
+      const auto& else_ = conditional.elseScope;
+      auto* elseEl = e->InsertNewChildElement("else");
+      setId(elseEl, else_->id);
+      setInt(elseEl, "h"sv, else_->location.height);
+      auto* body = elseEl->InsertNewChildElement("body");
+      auto sortedNodes = sortedIds(else_->nodes);
+      for (const auto& id : sortedNodes) {
+        node(body, else_->nodes.at(id));
+      }
+      auto sortedConduits = sortedIds(else_->conduits);
+      for (const auto& id : sortedConduits) {
+        conduit(body, else_->conduits.at(id));
+      }
+    }
+  }
+
   void ParseTreeWriter::comment(Element* parent, const pt::Comment& value) {
     Element* el = parent->InsertNewChildElement("comment");
     setId(el, value.id);
     setLocation(el, value.location);
     el->SetText(value.text.c_str());
+  }
+
+  void ParseTreeWriter::scopePort(Element* parent, const pt::ScopePort& port, std::string_view name) {
+    Element* e = parent->InsertNewChildElement(name.data());
+    setIdReference(e, port.outerId, "outer"sv);
+    setIdReference(e, port.innerId, "inner"sv);
+    setInt(e, "y"sv, port.y);
   }
 
   void ParseTreeWriter::conduit(Element* parent, const pt::Conduit& value) {
@@ -215,10 +278,14 @@ namespace fluir::editor {
     el->SetText(literalText(value).c_str());
   }
 
-  void ParseTreeWriter::setId(Element* element, ID id) { element->SetAttribute("id", std::to_string(id).c_str()); }
+  void ParseTreeWriter::setId(Element* element, ID id) { setIdReference(element, id, "id"sv); }
 
-  void ParseTreeWriter::setInt(Element* element, const char* name, int value) {
-    element->SetAttribute(name, std::to_string(value).c_str());
+  void ParseTreeWriter::setIdReference(Element* element, ID id, std::string_view attribute) {
+    element->SetAttribute(attribute.data(), std::to_string(id).c_str());
+  }
+
+  void ParseTreeWriter::setInt(Element* element, std::string_view name, int value) {
+    element->SetAttribute(name.data(), std::to_string(value).c_str());
   }
 
   void ParseTreeWriter::setLocation(Element* element, const FlowGraphLocation& location) {

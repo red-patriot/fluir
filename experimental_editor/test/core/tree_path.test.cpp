@@ -324,11 +324,11 @@ TEST(TreePath, ScopeAtMissesNonScopePaths) {
 TEST(TreePath, LocationAtResolvesAndWritesAScopeBand) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  FlowGraphLocation* band = locationAt(tree, FullID{1, 20, 1});
+  FlowGraphLocation* branch = locationAt(tree, FullID{1, 20, 1});
 
-  ASSERT_NE(band, nullptr);
-  EXPECT_EQ(*band, kElseLoc);
-  band->height = 9;
+  ASSERT_NE(branch, nullptr);
+  EXPECT_EQ(*branch, kElseLoc);
+  branch->height = 9;
 
   EXPECT_EQ(locationAt(std::as_const(tree), FullID{1, 20, 1})->height, 9);
 }

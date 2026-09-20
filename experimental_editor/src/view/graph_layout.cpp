@@ -79,17 +79,67 @@ namespace fluir::editor {
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
-    // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
-    // A container node lays out its own blocks here once one exists.
+    double conditionalHeightUnits(const pt::Conditional& conditional) {
+      return conditional.thenScope->location.height + conditional.elseScope->location.height;
+    }
+
     void layoutBlock(const pt::Block& block,
                      const FullID& parent,
                      Vec2 origin,
                      const Rect& clip,
                      const EditorContext::Layout& layout,
-                     Ports& ports,
+                     Ports ports,
+                     std::vector<Box>& out);
+
+    // The conditional's body, then each branch with its own nodes, then its chrome over both.
+    void layoutConditional(const pt::Conditional& conditional,
+                           const FullID& path,
+                           const Rect& frame,
+                           const std::optional<Rect>& clip,
+                           const EditorContext::Layout& layout,
+                           std::vector<Box>& out) {
+      const double unit = layout.unitPx;
+      out.push_back({path, Part::Body, frame, clip});
+
+      // Branch rects are frame-relative and stack; only the then branch gives up its top to the header.
+      for (const pt::Scope* scope : {&*conditional.thenScope, &*conditional.elseScope}) {
+        const Rect branch = atOrigin(frame.topLeft(), localRect(scope->location, unit));
+        const bool underHeader = scope == &*conditional.thenScope;
+        const Vec2 origin = underHeader ? bodyOrigin(branch.topLeft(), layout.headerH()) : branch.topLeft();
+        const Rect content{branch.x, origin.y, branch.w, branch.y + branch.h - origin.y};
+        const std::optional<Rect> branchClip = clip ? intersect(*clip, content) : std::optional<Rect>{content};
+        if (!branchClip) {
+          continue;  // the branch is entirely outside its container
+        }
+        const FullID scopePath = childOf(path, scope->id);
+        out.push_back({scopePath, Part::Scope, branch, branchClip});
+        layoutBlock(scope->body, scopePath, origin, *branchClip, layout, Ports{}, out);
+      }
+
+      const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
+      out.push_back({path, Part::Frame, frame, clip});
+      out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), clip});
+      out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
+    }
+
+    // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
+    // `ports` is per block: node ids repeat across sibling blocks.
+    void layoutBlock(const pt::Block& block,
+                     const FullID& parent,
+                     Vec2 origin,
+                     const Rect& clip,
+                     const EditorContext::Layout& layout,
+                     Ports ports,
                      std::vector<Box>& out) {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
+        if (const auto* conditional = std::get_if<pt::Conditional>(node)) {
+          FlowGraphLocation location = conditional->location;
+          location.height = static_cast<int>(conditionalHeightUnits(*conditional));
+          layoutConditional(
+            *conditional, path, atOrigin(origin, localRect(location, layout.unitPx)), clip, layout, out);
+          continue;
+        }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
         pushNodeBoxes(path, rect, clip, resizePart(*node), layout.unitPx, out);
         ports[idOf(*node)] = editor::ports(*node, rect, layout);
@@ -146,7 +196,7 @@ namespace fluir::editor {
         ports[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
       }
 
-      layoutBlock(fn.body, path, origin, clip, layout, ports, out);
+      layoutBlock(fn.body, path, origin, clip, layout, std::move(ports), out);
 
       // The frame's chrome paints, and so hits, over its body.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};

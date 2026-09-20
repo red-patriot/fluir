@@ -433,3 +433,178 @@ TEST(PortAt, APortDoesNotChangeWhatHitAtFinds) {
   EXPECT_EQ(hit->part, Part::Body);
   EXPECT_EQ(hit->path, (FullID{1, 1}));
 }
+
+namespace {
+
+  fluir::pt::Scope makeScope(ID id, int y, int h, int width) {
+    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = width, .height = h}, .body = {}};
+  }
+
+  // A conditional whose branches are `thenH` and `elseH` units tall. `height` is what the
+  // file claims; the branches are what layout must believe.
+  fluir::pt::Conditional makeConditional(ID id, FlowGraphLocation loc, fluir::pt::Scope then, fluir::pt::Scope else_) {
+    return fluir::pt::Conditional{.id = id,
+                                  .location = loc,
+                                  .condition = {},
+                                  .inputs = {},
+                                  .outputs = {},
+                                  .thenScope = xyz::indirect{std::move(then)},
+                                  .elseScope = xyz::indirect{std::move(else_)}};
+  }
+
+  // Function 1 (frame {0,0,500,500}, body from y 25) holds conditional 20 at units (2,2) 20 wide,
+  // with a 12-unit then branch and a 6-unit else branch. Both branches hold a node with id 1.
+  // The branches stack over the whole frame; the header eats the then branch's top 25.
+  //   frame  {10,35,100,90}    then {10,35,100,60} (content from y 60)   else {10,95,100,30}
+  //   then 1 {15,65,50,50}     else 1 {15,100,20,20}
+  fluir::pt::ParseTree nestedTree(int claimedHeight = 18) {
+    fluir::pt::Scope then = makeScope(0, 0, 12, 20);
+    then.body.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10}));
+    fluir::pt::Scope else_ = makeScope(1, 12, 6, 20);
+    else_.body.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 4, .height = 4}));
+
+    fluir::pt::FunctionDecl fn = makeFunction(1);
+    fn.body.nodes.emplace(
+      20,
+      makeConditional(
+        20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = claimedHeight}, std::move(then), std::move(else_)));
+    return treeOf({fn});
+  }
+
+}  // namespace
+
+TEST(GraphLayout, NestedNodesHitAtTheirDepthFourPaths) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  const Box* inThen = hitAt(boxes, Vec2{20, 90});
+  const Box* inElse = hitAt(boxes, Vec2{17, 102});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  EXPECT_EQ(inThen->part, Part::Body);
+  EXPECT_EQ(inThen->path, (FullID{1, 20, 0, 1}));
+  EXPECT_EQ(inElse->part, Part::Body);
+  EXPECT_EQ(inElse->path, (FullID{1, 20, 1, 1}));
+}
+
+TEST(GraphLayout, TheTwoBranchesIdOneNodesHitAsDifferentPaths) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  const Box* inThen = hitAt(boxes, Vec2{20, 90});
+  const Box* inElse = hitAt(boxes, Vec2{17, 102});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  EXPECT_NE(inThen->path, inElse->path);
+  expectRectNear(inThen->world, Rect{15, 65, 50, 50});
+  expectRectNear(inElse->world, Rect{15, 100, 20, 20});
+}
+
+// A node dragged above its branch is clipped by the branch, not by the function body.
+TEST(GraphLayout, NestedNodeIsClippedByItsBranch) {
+  fluir::pt::Scope then = makeScope(0, 0, 12, 20);
+  then.body.nodes.emplace(1, makeConstant(1, {.x = 1, .y = -3, .z = 0, .width = 10, .height = 10}));  // world y 45
+  fluir::pt::Scope else_ = makeScope(1, 12, 6, 20);
+  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fn.body.nodes.emplace(
+    20, makeConditional(20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18}, std::move(then), std::move(else_)));
+
+  const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
+
+  const Box* aboveBranch = hitAt(boxes, Vec2{20, 50});  // over the conditional's header
+  const Box* insideBranch = hitAt(boxes, Vec2{20, 90});
+
+  ASSERT_NE(aboveBranch, nullptr);
+  ASSERT_NE(insideBranch, nullptr);
+  EXPECT_EQ(aboveBranch->path, (FullID{1, 20}));
+  EXPECT_EQ(insideBranch->path, (FullID{1, 20, 0, 1}));
+}
+
+TEST(GraphLayout, AnEmptyBranchHitCarriesItsScopePath) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  const Box* inThen = hitAt(boxes, Vec2{90, 90});  // clear of the then branch's only node
+  const Box* inElse = hitAt(boxes, Vec2{90, 110});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  EXPECT_EQ(inThen->part, Part::Scope);
+  EXPECT_EQ(inThen->path, (FullID{1, 20, 0}));
+  EXPECT_EQ(inElse->part, Part::Scope);
+  EXPECT_EQ(inElse->path, (FullID{1, 20, 1}));
+}
+
+// The branches are authoritative: a conditional spans exactly the two of them, whatever
+// its own location claims.
+TEST(GraphLayout, ConditionalSpansBothBranches) {
+  const std::vector<Box> tooShort = layoutGraph(nestedTree(3), kCtx.layout);
+  const std::vector<Box> tooTall = layoutGraph(nestedTree(80), kCtx.layout);
+
+  for (const std::vector<Box>& boxes : {tooShort, tooTall}) {
+    const Box* inElse = hitAt(boxes, Vec2{17, 102});
+    const Box* branchBottom = hitAt(boxes, Vec2{90, 120});
+    const Box* belowIt = hitAt(boxes, Vec2{90, 135});
+
+    ASSERT_NE(inElse, nullptr);
+    ASSERT_NE(branchBottom, nullptr);
+    ASSERT_NE(belowIt, nullptr);
+    EXPECT_EQ(inElse->path, (FullID{1, 20, 1, 1}));
+    EXPECT_EQ(branchBottom->path, (FullID{1, 20, 1}));
+    EXPECT_EQ(belowIt->path, (FullID{1}));  // past the conditional's derived bottom edge
+  }
+}
+
+TEST(GraphLayout, ConditionalGripsAreHittableOverItsBranches) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  // Frame {10,35,100,90}: header move grip {90,40,15,15}; corner {95,110,15,15}.
+  const Box* move = hitAt(boxes, Vec2{95, 45});
+  const Box* corner = hitAt(boxes, Vec2{100, 115});
+
+  ASSERT_NE(move, nullptr);
+  ASSERT_NE(corner, nullptr);
+  EXPECT_EQ(move->part, Part::MoveGrip);
+  EXPECT_EQ(move->path, (FullID{1, 20}));
+  EXPECT_EQ(corner->part, Part::ResizeXY);
+  EXPECT_EQ(corner->path, (FullID{1, 20}));
+}
+
+TEST(GraphLayout, NestingDoesNotChangeGraphBounds) {
+  const std::vector<Box> plain = layoutGraph(treeOf({makeFunction(1)}), kCtx.layout);
+  const std::vector<Box> nested = layoutGraph(nestedTree(), kCtx.layout);
+
+  expectRectNear(graphBounds(nested), graphBounds(plain));
+  expectRectNear(graphBounds(nested), Rect{0, 0, 500, 500});
+}
+
+// Node ids repeat across branches, so each block resolves its conduits against its own
+// nodes: a dangling endpoint in one branch must not latch onto a namesake in another.
+TEST(GraphLayout, ConduitEndpointsResolveWithinTheirOwnBlock) {
+  fluir::pt::Scope then = makeScope(0, 0, 12, 20);
+  then.body.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 4, .height = 4}));
+  then.body.nodes.emplace(
+    2,
+    fluir::pt::Unary{
+      .id = 2, .location = {.x = 8, .y = 1, .z = 0, .width = 4, .height = 4}, .lhs = 1, .op = fluir::Operator::BANG});
+  then.body.conduits.emplace(50, fluir::pt::Conduit{.id = 50, .input = 1, .children = {{.target = 2, .index = 0}}});
+
+  fluir::pt::Scope else_ = makeScope(1, 12, 6, 20);
+  else_.body.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 4, .height = 4}));
+  else_.body.conduits.emplace(60, fluir::pt::Conduit{.id = 60, .input = 1, .children = {{.target = 2, .index = 0}}});
+
+  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fn.body.nodes.emplace(
+    20, makeConditional(20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18}, std::move(then), std::move(else_)));
+
+  const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
+
+  bool thenWire = false;
+  bool elseWire = false;
+  for (const Box& box : boxes) {
+    if (box.part != Part::Wire) continue;
+    thenWire = thenWire || box.path == FullID{1, 20, 0, 50};
+    elseWire = elseWire || box.path == FullID{1, 20, 1, 60};
+  }
+  EXPECT_TRUE(thenWire);
+  EXPECT_FALSE(elseWire);  // node 2 lives in the other branch
+}

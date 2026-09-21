@@ -150,16 +150,20 @@ TEST(GraphLayout, BodyClipEndsAtTheFrameBottom) {
 TEST(GraphLayout, NodeGripsAreHittable) {
   const std::vector<Box> boxes = layoutGraph(overlappingNodes(1, 2), kCtx.layout);
 
-  // Node 11 {10,35,50,50}: move grip {40,40,15,15}; resize bar {55,35,5,25}.
+  // Node 11 {10,35,50,50}: move grip {40,40,15,15}; right edge {55,35,5,50}, full height.
   const Box* move = hitAt(boxes, Vec2{45, 45});
-  const Box* resize = hitAt(boxes, Vec2{57, 40});
+  const Box* top = hitAt(boxes, Vec2{57, 40});
+  const Box* bottom = hitAt(boxes, Vec2{57, 80});
 
   ASSERT_NE(move, nullptr);
-  ASSERT_NE(resize, nullptr);
+  ASSERT_NE(top, nullptr);
+  ASSERT_NE(bottom, nullptr);
   EXPECT_EQ(move->part, Part::MoveGrip);
   EXPECT_EQ(move->path, (FullID{1, 11}));
-  EXPECT_EQ(resize->part, Part::ResizeX);
-  EXPECT_EQ(resize->path, (FullID{1, 11}));
+  EXPECT_EQ(top->part, Part::ResizeX);
+  EXPECT_EQ(top->path, (FullID{1, 11}));
+  EXPECT_EQ(bottom->part, Part::ResizeX);
+  EXPECT_EQ(bottom->path, (FullID{1, 11}));
 }
 
 TEST(GraphLayout, BoolConstantHasNoResizeGrip) {
@@ -246,12 +250,13 @@ TEST(GraphLayout, TopLevelCommentLaysOutAtItsWorldRect) {
   expectRectNear(hit->world, Rect{50, 50, 125, 125});
 }
 
-TEST(GraphLayout, TopLevelCommentGripsAreHittable) {
+// A comment sizes in both axes, so it keeps the corner handle rather than thick edges.
+TEST(GraphLayout, TopLevelCommentHasACornerResizeGrip) {
   const testutil::Loaded l = loadFixture("read/top_level_comment_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
-  // Move grip {155,55,15,15}; resize corner {160,160,15,15}.
+  // Comment {50,50,125,125}: move grip {155,55,15,15}; resize corner {160,160,15,15}.
   const Box* move = hitAt(boxes, Vec2{160, 60});
   const Box* resize = hitAt(boxes, Vec2{167, 167});
   const Box* aboveCorner = hitAt(boxes, Vec2{172, 100});
@@ -263,7 +268,7 @@ TEST(GraphLayout, TopLevelCommentGripsAreHittable) {
   EXPECT_EQ(move->path, (FullID{1}));
   EXPECT_EQ(resize->part, Part::ResizeXY);
   EXPECT_EQ(resize->path, (FullID{1}));
-  EXPECT_EQ(aboveCorner->part, Part::Body);
+  EXPECT_EQ(aboveCorner->part, Part::Body) << "no thick right edge on a comment";
 }
 
 TEST(GraphLayout, InBodyCommentHasACornerResizeGrip) {
@@ -577,21 +582,24 @@ TEST(GraphLayout, ConditionalSpansBothBranches) {
 TEST(GraphLayout, ConditionalGripsAreHittableOverItsBranches) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  // Frame {10,35,100,120}: then-header move grip {90,40,15,15}; width bar {105,35,5,25}; corner {95,140,15,15}.
+  // Frame {10,35,100,120}: then-header move grip {90,40,15,15}; right edge {105,35,5,120}; bottom {10,150,100,5}.
   const Box* move = hitAt(boxes, Vec2{95, 45});
-  const Box* bar = hitAt(boxes, Vec2{107, 45});
-  const Box* corner = hitAt(boxes, Vec2{100, 145});
+  const Box* right = hitAt(boxes, Vec2{107, 45});
+  const Box* rightLow = hitAt(boxes, Vec2{107, 140});
+  const Box* bottom = hitAt(boxes, Vec2{60, 152});
 
   ASSERT_NE(move, nullptr);
-  ASSERT_NE(bar, nullptr);
-  ASSERT_NE(corner, nullptr);
+  ASSERT_NE(right, nullptr);
+  ASSERT_NE(rightLow, nullptr);
+  ASSERT_NE(bottom, nullptr);
   EXPECT_EQ(move->part, Part::MoveGrip);
   EXPECT_EQ(move->path, (FullID{1, 20}));
-  EXPECT_EQ(bar->part, Part::ResizeX);
-  EXPECT_EQ(bar->path, (FullID{1, 20}));
-  // The corner resizes the bottom branch, which is what makes the conditional taller.
-  EXPECT_EQ(corner->part, Part::ResizeXY);
-  EXPECT_EQ(corner->path, (FullID{1, 20, 1}));
+  EXPECT_EQ(right->part, Part::ResizeX);
+  EXPECT_EQ(right->path, (FullID{1, 20}));
+  EXPECT_EQ(rightLow->part, Part::ResizeX);
+  // The bottom edge resizes the bottom branch, which is what makes the conditional taller.
+  EXPECT_EQ(bottom->part, Part::ResizeY);
+  EXPECT_EQ(bottom->path, (FullID{1, 20, 1}));
 }
 
 TEST(GraphLayout, NestingDoesNotChangeGraphBounds) {

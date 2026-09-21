@@ -16,8 +16,6 @@ namespace fluir::editor {
     SvgView falseIcon();
     /** Embedded SVG for XY Drag Handle */
     SvgView xyResizeIcon();
-    /** Embedded SVG for a horizontal Drag Handle */
-    SvgView horizontalResizeIcon();
   }  // namespace assets
 }  // namespace fluir::editor
 

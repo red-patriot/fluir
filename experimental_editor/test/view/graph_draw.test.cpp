@@ -642,6 +642,23 @@ TEST(GraphDraw, ABranchHeaderPaintsBeforeItsNestedNodes) {
   EXPECT_LT(header, node);
 }
 
+// The draggable edges are thick lines lying just inside the frame, not icons.
+TEST(GraphDraw, AConditionalDrawsItsDraggableEdgesAsThickLines) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{105, 35, 5, 90}));   // the width edge
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 120, 100, 5}));  // the else branch's height edge
+}
+
+// Function declarations keep the two-axis corner icon: this change does not touch them.
+TEST(GraphDraw, AFunctionKeepsItsCornerResizeIcon) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasIcon(r.calls, fluir::editor::assets::xyResizeIcon(), Rect{485, 485, 15, 15}));
+}
+
 TEST(GraphDraw, SelectingABranchOutlinesItsConditional) {
   RecordingRenderer r;
   drawTree(kCtx, conditionalTree(), Viewport{}, r, fluir::FullID{1, 20, 1});

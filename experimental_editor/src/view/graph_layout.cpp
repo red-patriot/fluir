@@ -6,7 +6,6 @@
 #include <unordered_map>
 #include <variant>
 
-#include "editor/constants.hpp"
 #include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/function.hpp"
@@ -17,20 +16,20 @@ namespace fluir::editor {
     // Grip sizes, in grid units.
     constexpr double DRAG_SIZE = 3;
     constexpr double DRAG_INSET = 1;
-    constexpr double RESIZE_BAR_WIDTH = 1;
+    constexpr double GRIP_THICKNESS = 1;
     constexpr double RESIZE_CORNER_SIZE = 3;
     // A port's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
 
     using Ports = std::unordered_map<fluir::ID, PortSet>;
 
-    Rect resizeBar(const Rect& r, double unit) {
-      return {
-        .x = r.x + r.w - RESIZE_BAR_WIDTH * unit,
-        .y = r.y,
-        .w = RESIZE_BAR_WIDTH * unit,
-        .h = NODE_H * unit,  // Take up 1 row of a node
-      };
+    // A draggable edge is a thick line lying just inside the rect's border; the whole line is the grip.
+    Rect resizeEdgeX(const Rect& r, double unit) {
+      return {r.x + r.w - GRIP_THICKNESS * unit, r.y, GRIP_THICKNESS * unit, r.h};
+    }
+
+    Rect resizeEdgeY(const Rect& r, double unit) {
+      return {r.x, r.y + r.h - GRIP_THICKNESS * unit, r.w, GRIP_THICKNESS * unit};
     }
 
     Rect resizeCorner(const Rect& r, double unit) {
@@ -64,7 +63,7 @@ namespace fluir::editor {
       return Part::ResizeX;
     }
 
-    // A node's body, then its grips over it. `resize` is ResizeX (right bar), ResizeXY (corner) or none.
+    // A node's body, then its grips over it. `resize` is ResizeX (right edge), ResizeXY (corner) or none.
     void pushNodeBoxes(const FullID& path,
                        const Rect& rect,
                        const std::optional<Rect>& clip,
@@ -73,7 +72,7 @@ namespace fluir::editor {
                        std::vector<Box>& out) {
       out.push_back({path, Part::Body, rect, clip});
       if (resize) {
-        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeBar(rect, unit);
+        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeEdgeX(rect, unit);
         out.push_back({path, *resize, grip, clip});
       }
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
@@ -119,12 +118,12 @@ namespace fluir::editor {
         }
       }
 
-      // The corner grip belongs to the bottom branch: a conditional grows by its branches growing.
       // The move grip rides the top band, which is the then branch's header.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
-      out.push_back({path, Part::ResizeX, resizeBar(frame, unit), clip});
-      out.push_back({childOf(path, conditional.elseScope->id), Part::ResizeXY, resizeCorner(frame, unit), clip});
+      out.push_back({path, Part::ResizeX, resizeEdgeX(frame, unit), clip});
+      // The bottom edge belongs to the bottom branch: a conditional grows by its branches growing.
+      out.push_back({childOf(path, conditional.elseScope->id), Part::ResizeY, resizeEdgeY(frame, unit), clip});
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
     }
 

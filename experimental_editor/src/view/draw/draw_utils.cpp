@@ -86,8 +86,8 @@ namespace fluir::editor {
       drawImage(assets::xyResizeIcon(), rect, view, ctx.theme.border);
     }
 
-    void drawHResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx) {
-      drawImage(assets::horizontalResizeIcon(), rect, view, ctx.theme.border);
+    void drawResizeEdge(const Rect& rect, const Subview& view, const EditorContext& ctx) {
+      view.renderer().fillRect(view.toScreen(rect), ctx.theme.border);
     }
 
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {

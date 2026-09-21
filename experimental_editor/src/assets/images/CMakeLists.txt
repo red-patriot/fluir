@@ -23,9 +23,3 @@ fluir_embed_file(
     "XYResizeHandle.svg"
     fluir::editor::assets::xyResizeIcon
 )
-
-fluir_embed_file(
-    fluir.libeditor
-    "HorizResizeHandle.svg"
-    fluir::editor::assets::horizontalResizeIcon
-)

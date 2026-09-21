@@ -481,7 +481,7 @@ namespace {
 TEST(GraphLayout, NestedNodesHitAtTheirDepthFourPaths) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  const Box* inThen = hitAt(boxes, Vec2{20, 90});
+  const Box* inThen = hitAt(boxes, Vec2{20, 85});
   const Box* inElse = hitAt(boxes, Vec2{17, 127});
 
   ASSERT_NE(inThen, nullptr);
@@ -495,7 +495,7 @@ TEST(GraphLayout, NestedNodesHitAtTheirDepthFourPaths) {
 TEST(GraphLayout, TheTwoBranchesIdOneNodesHitAsDifferentPaths) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  const Box* inThen = hitAt(boxes, Vec2{20, 90});
+  const Box* inThen = hitAt(boxes, Vec2{20, 85});
   const Box* inElse = hitAt(boxes, Vec2{17, 127});
 
   ASSERT_NE(inThen, nullptr);
@@ -517,7 +517,7 @@ TEST(GraphLayout, NestedNodeIsClippedByItsBranch) {
   const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
 
   const Box* aboveBranch = hitAt(boxes, Vec2{20, 50});  // over the then branch's own header
-  const Box* insideBranch = hitAt(boxes, Vec2{20, 90});
+  const Box* insideBranch = hitAt(boxes, Vec2{20, 85});
 
   ASSERT_NE(aboveBranch, nullptr);
   ASSERT_NE(insideBranch, nullptr);
@@ -548,7 +548,7 @@ TEST(GraphLayout, ElseBranchNodeIsClippedByItsOwnHeader) {
 TEST(GraphLayout, AnEmptyBranchHitCarriesItsScopePath) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  const Box* inThen = hitAt(boxes, Vec2{90, 90});   // clear of the then branch's only node
+  const Box* inThen = hitAt(boxes, Vec2{90, 85});   // clear of the then branch's only node, above the divider
   const Box* inElse = hitAt(boxes, Vec2{90, 130});  // below the else branch's own header
 
   ASSERT_NE(inThen, nullptr);
@@ -579,10 +579,45 @@ TEST(GraphLayout, ConditionalSpansBothBranches) {
   }
 }
 
+// The divider between the branches is the then branch's bottom edge, and dragging it grows it.
+TEST(GraphLayout, TheDividerIsTheThenBranchesBottomEdge) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  // Then branch {10,35,100,60}, so its bottom edge is {10,90,100,5}.
+  const Box* divider = hitAt(boxes, Vec2{80, 92});  // clear of the then branch's node, which spans x 15..65
+  const Box* bottom = hitAt(boxes, Vec2{60, 152});
+
+  ASSERT_NE(divider, nullptr);
+  ASSERT_NE(bottom, nullptr);
+  EXPECT_EQ(divider->part, Part::ResizeY);
+  EXPECT_EQ(divider->path, (FullID{1, 20, 0}));
+  EXPECT_EQ(bottom->part, Part::ResizeY);
+  EXPECT_EQ(bottom->path, (FullID{1, 20, 1}));  // the two grips stay distinct
+}
+
+// Layout stacks the branches on their heights, so a drag on one branch alone moves the other.
+TEST(GraphLayout, BranchesStackOnTheirHeightsNotTheirStoredOffsets) {
+  fluir::pt::ParseTree tree = nestedTree();
+  auto& conditional =
+    std::get<fluir::pt::Conditional>(std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body.nodes.at(20));
+  conditional.elseScope->location.y = 99;  // stale: layout must ignore it
+
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+
+  const Box* inThen = hitAt(boxes, Vec2{90, 85});
+  const Box* inElse = hitAt(boxes, Vec2{90, 130});
+
+  ASSERT_NE(inThen, nullptr);
+  ASSERT_NE(inElse, nullptr);
+  EXPECT_EQ(inThen->path, (FullID{1, 20, 0}));
+  EXPECT_EQ(inElse->path, (FullID{1, 20, 1}));
+}
+
 TEST(GraphLayout, ConditionalGripsAreHittableOverItsBranches) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
 
-  // Frame {10,35,100,120}: then-header move grip {90,40,15,15}; right edge {105,35,5,120}; bottom {10,150,100,5}.
+  // Frame {10,35,100,120}: then-header move grip {90,40,15,15}; right edge {105,35,5,120}; bottom {10,150,100,5};
+  // the divider (the then branch's bottom edge) {10,90,100,5}.
   const Box* move = hitAt(boxes, Vec2{95, 45});
   const Box* right = hitAt(boxes, Vec2{107, 45});
   const Box* rightLow = hitAt(boxes, Vec2{107, 140});

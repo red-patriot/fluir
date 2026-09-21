@@ -117,7 +117,7 @@ TEST(SelectTool, ANestedNodeSelectsAtItsOwnPath) {
   state.editor.load(conditionalTree());
   SelectTool tool;
 
-  testutil::send(tool, state, down(Vec2{20, 90}));
+  testutil::send(tool, state, down(Vec2{20, 85}));
 
   ASSERT_TRUE(state.selection.has_value());
   EXPECT_EQ(*state.selection, (FullID{1, 20, 0, 1}));

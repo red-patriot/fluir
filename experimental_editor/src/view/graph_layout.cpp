@@ -16,7 +16,7 @@ namespace fluir::editor {
     // Grip sizes, in grid units.
     constexpr double DRAG_SIZE = 3;
     constexpr double DRAG_INSET = 1;
-    constexpr double GRIP_THICKNESS = 1;
+    constexpr double GRIP_THICKNESS = 0.8;
     constexpr double RESIZE_CORNER_SIZE = 3;
     // A port's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
@@ -100,11 +100,12 @@ namespace fluir::editor {
       const double unit = layout.unitPx;
       out.push_back({path, Part::Body, frame, clip});
 
-      // Branch rects are frame-relative and stack.
+      // Branches stack: the else branch begins where the then branch ends, so only heights are its own.
+      double offsetUnits = 0;
       for (const pt::Scope* scope : {&*conditional.thenScope, &*conditional.elseScope}) {
-        // A branch spans its conditional's width; only its own height and offset are its own.
-        const Rect local = localRect(scope->location, unit);
-        const Rect branch{frame.x, frame.y + local.y, frame.w, local.h};
+        // A branch spans its conditional's width; only its own height is its own.
+        const Rect branch{frame.x, frame.y + offsetUnits * unit, frame.w, scope->location.height * unit};
+        offsetUnits += scope->location.height;
         const std::optional<Rect> branchClip = clip ? intersect(*clip, branch) : std::optional<Rect>{branch};
         if (!branchClip) {
           continue;  // the branch is entirely outside its container
@@ -122,6 +123,9 @@ namespace fluir::editor {
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
       out.push_back({path, Part::ResizeX, resizeEdgeX(frame, unit), clip});
+      // The divider is the then branch's bottom edge: growing it makes the conditional taller.
+      const Rect thenBranch{frame.x, frame.y, frame.w, conditional.thenScope->location.height * unit};
+      out.push_back({childOf(path, conditional.thenScope->id), Part::ResizeY, resizeEdgeY(thenBranch, unit), clip});
       // The bottom edge belongs to the bottom branch: a conditional grows by its branches growing.
       out.push_back({childOf(path, conditional.elseScope->id), Part::ResizeY, resizeEdgeY(frame, unit), clip});
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});

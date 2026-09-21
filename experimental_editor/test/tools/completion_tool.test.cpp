@@ -196,3 +196,82 @@ TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
   EXPECT_EQ(fn->location.x, std::lround(world.x));
   EXPECT_EQ(fn->location.y, std::lround(world.y));
 }
+
+// conditional_empty_scopes.fl: function 1 body origin {0,25}; conditional 2 frame {50,40,500,500},
+// then branch {50,40,500,300} (content origin {50,65}), else branch {50,340,500,200} (origin {50,365}).
+namespace {
+  constexpr Vec2 kThenBranch{100, 100};
+  constexpr Vec2 kElseBranch{100, 400};
+
+  const fluir::pt::Conditional& conditionalOf(const EditorState& state) {
+    const auto& body = std::get<fluir::pt::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
+    return std::get<fluir::pt::Conditional>(body.nodes.at(2));
+  }
+}  // namespace
+
+TEST(CompletionTool, ARightPressInAThenBranchOpensTheBodyModal) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(kThenBranch, InputEvent::Button::Right)));
+
+  const auto* modal = modalOf(f.state);
+  ASSERT_NE(modal, nullptr);
+  const auto& labels = modal->labels();
+  EXPECT_NE(std::ranges::find(labels, "+ (binary)"), labels.end());
+  EXPECT_NE(std::ranges::find(labels, "Comment"), labels.end());
+  EXPECT_EQ(std::ranges::find(labels, "Function"), labels.end());
+}
+
+TEST(CompletionTool, ARightPressInAnElseBranchOpensTheBodyModal) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(kElseBranch, InputEvent::Button::Right)));
+
+  const auto* modal = modalOf(f.state);
+  ASSERT_NE(modal, nullptr);
+  const auto& labels = modal->labels();
+  EXPECT_NE(std::ranges::find(labels, "+ (binary)"), labels.end());
+  EXPECT_NE(std::ranges::find(labels, "Comment"), labels.end());
+  EXPECT_EQ(std::ranges::find(labels, "Function"), labels.end());
+}
+
+TEST(CompletionTool, ARightPressOnABranchHeaderOpensNothing) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(Vec2{100, 50}, InputEvent::Button::Right)));
+  EXPECT_EQ(f.state.popup, nullptr) << "then header band";
+
+  EXPECT_FALSE(send(f.uut, f.state, down(Vec2{100, 350}, InputEvent::Button::Right)));
+  EXPECT_EQ(f.state.popup, nullptr) << "else header band";
+}
+
+TEST(CompletionTool, PickingAConstantInABranchPlacesItAtBranchLocalUnits) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+  send(f.uut, f.state, down(kElseBranch, InputEvent::Button::Right));
+
+  ASSERT_TRUE(pick(f.state, "F64"));
+
+  const fluir::pt::Conditional& conditional = conditionalOf(f.state);
+  EXPECT_TRUE(conditional.thenScope->body.nodes.empty());
+  const auto& elseNodes = conditional.elseScope->body.nodes;
+  ASSERT_EQ(elseNodes.size(), 1u);
+  const auto* constant = std::get_if<fluir::pt::Constant>(&elseNodes.begin()->second);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->location.x, 10);
+  EXPECT_EQ(constant->location.y, 7);
+}
+
+TEST(CompletionTool, PickingInABranchHonoursTheViewport) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+  f.state.view.pan = Vec2{20, 10};
+  send(f.uut, f.state, down(kElseBranch + Vec2{20, 10}, InputEvent::Button::Right));
+
+  ASSERT_TRUE(pick(f.state, "F64"));
+
+  const auto& elseNodes = conditionalOf(f.state).elseScope->body.nodes;
+  ASSERT_EQ(elseNodes.size(), 1u);
+  const auto* constant = std::get_if<fluir::pt::Constant>(&elseNodes.begin()->second);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->location.x, 10);
+  EXPECT_EQ(constant->location.y, 7);
+}

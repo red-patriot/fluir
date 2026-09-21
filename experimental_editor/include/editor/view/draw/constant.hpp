@@ -5,7 +5,7 @@
 
 namespace fluir::editor::draw {
 
-  PortSet anchors(const pt::Constant& node, const Rect& world, const EditorContext::Layout& layout);
+  TerminalSet anchors(const pt::Constant& node, const Rect& world, const EditorContext::Layout& layout);
 
   /** Colored by the literal's type family: float, signed or unsigned. */
   Color color(const pt::Constant& node, const EditorContext::Theme& theme);

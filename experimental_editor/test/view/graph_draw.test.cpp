@@ -93,7 +93,7 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
   EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 79, 117, 92}, 1.0));
   EXPECT_EQ(clipsCovering(r.calls, Rect{54, 79, 117, 92}).size(), 1u);
   EXPECT_TRUE(hasScaledTextAt(r.calls, "//", Vec2{54, 64.6}, 0.8));  // header tag
-  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no ports
+  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no terminals
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
 }
 
@@ -192,7 +192,7 @@ TEST(GraphDraw, ParamRailFromInputOnly) {
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));   // header
 
   const auto dots = fillsOfSize(r.calls, 6, 6);
-  EXPECT_EQ(dots.size(), 2u);  // 2 param port dots, no others
+  EXPECT_EQ(dots.size(), 2u);  // 2 param terminal dots, no others
   EXPECT_TRUE(containsRect(dots, Rect{122, 84.5, 6, 6}));
   EXPECT_TRUE(containsRect(dots, Rect{122, 109.5, 6, 6}));
 
@@ -234,7 +234,7 @@ TEST(GraphDraw, ReturnRailFromOutputOnly) {
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));   // header
 
   const auto dots = fillsOfSize(r.calls, 6, 6);
-  EXPECT_EQ(dots.size(), 1u);  // 1 return port dot, no others
+  EXPECT_EQ(dots.size(), 1u);  // 1 return terminal dot, no others
   EXPECT_TRUE(containsRect(dots, Rect{522, 84.5, 6, 6}));
 
   EXPECT_TRUE(hasScaledTextAt(r.calls, "F64", Vec2{529, 89.6}, 0.8));
@@ -441,12 +441,12 @@ TEST(GraphDraw, CallNodeArgsAndReturn) {
 
     EXPECT_TRUE(hasTextAt(r.calls, "doStuff", Vec2{29, 54}));
 
-    EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no port dots
+    EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no terminal dots
     EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
   }
 }
 
-TEST(GraphDraw, WireEndpointsMatchPorts) {
+TEST(GraphDraw, WireEndpointsMatchTerminals) {
   const Loaded l = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 

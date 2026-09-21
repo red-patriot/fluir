@@ -8,10 +8,10 @@
 
 namespace fluir::editor {
 
-  /** `node`'s port anchors, given its world rect. */
-  PortSet ports(const pt::Node& node, Rect world, const EditorContext::Layout& layout);
+  /** `node`'s terminal anchors, given its world rect. */
+  TerminalSet terminals(const pt::Node& node, Rect world, const EditorContext::Layout& layout);
 
-  /** Draws `node`'s body at `world`: fill, border, label and port dots. */
+  /** Draws `node`'s body at `world`: fill, border, label and terminal dots. */
   void drawNode(const pt::Node& node, Rect world, const Subview& view, const EditorContext& ctx);
 
   /** `node`'s fill color. */

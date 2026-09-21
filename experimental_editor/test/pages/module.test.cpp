@@ -61,7 +61,7 @@ namespace {
   const FullID kConstant1{1, 1};
   constexpr Vec2 kConstant1Body{62, 197};
   constexpr Vec2 kConstant1Grip{72.5, 187.5};
-  constexpr Vec2 kConstant1Text{79, 177};  // value region after "i8"'s world-px tag, clear of the grip and port
+  constexpr Vec2 kConstant1Text{79, 177};  // value region after "i8"'s world-px tag, clear of the grip and terminal
   constexpr Vec2 kEmptyFrame{400, 400};
   constexpr Vec2 kBackground{-1000, -1000};
   constexpr Vec2 kHeaderGrip{537.5, 62.5};
@@ -721,16 +721,16 @@ TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
 
 namespace {
 
-  // simple_binary_expr.fl: constant 2's output port, binary 1's input ports.
+  // simple_binary_expr.fl: constant 2's output terminal, binary 1's input terminals.
   constexpr Vec2 kConstant2Out{85, 97.5};
   constexpr Vec2 kBinaryIn0{125, 86};
   constexpr Vec2 kBinaryIn1{125, 110};
-  // function_with_input_only.fl: param a's port, inside its name label.
-  constexpr Vec2 kParamAPort{124, 87.5};
+  // function_with_input_only.fl: param a's terminal, inside its name label.
+  constexpr Vec2 kParamATerminal{124, 87.5};
 
 }  // namespace
 
-TEST(ModulePage, APortToPortDragAddsAConduitAsOneUndoableEdit) {
+TEST(ModulePage, ATerminalToTerminalDragAddsAConduitAsOneUndoableEdit) {
   Harness h{kSimpleBinary};
   const fluir::pt::ParseTree before = h.tree();
 
@@ -744,7 +744,7 @@ TEST(ModulePage, APortToPortDragAddsAConduitAsOneUndoableEdit) {
   EXPECT_EQ(h.tree(), before);
 }
 
-TEST(ModulePage, APressOnAPortOpensNoOperatorMenu) {
+TEST(ModulePage, APressOnATerminalOpensNoOperatorMenu) {
   Harness h{kSimpleBinary};
 
   h.press(kBinaryIn0);
@@ -752,10 +752,10 @@ TEST(ModulePage, APressOnAPortOpensNoOperatorMenu) {
   EXPECT_EQ(h.page->state().popup, nullptr);
 }
 
-TEST(ModulePage, APressOnAParameterPortOpensNoNameDraft) {
+TEST(ModulePage, APressOnAParameterTerminalOpensNoNameDraft) {
   Harness h{kInputOnly};
 
-  h.press(kParamAPort);
+  h.press(kParamATerminal);
   h.send({text("x"), key(InputEvent::Key::Return)});
 
   EXPECT_EQ(paramA(h).name, "a");

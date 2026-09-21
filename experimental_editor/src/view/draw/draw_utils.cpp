@@ -12,8 +12,8 @@ namespace fluir::editor {
     // Split-label tags draw smaller than their text.
     constexpr double kTagScale = 0.8;
 
-    // A lone port sits at the centre; more spread top-to-bottom down the edge.
-    double portFraction(int count, int index) {
+    // A lone terminal sits at the centre; more spread top-to-bottom down the edge.
+    double terminalFraction(int count, int index) {
       return count <= 1 ? 0.5 : static_cast<double>(index) / (static_cast<double>(count) - 1.0);
     }
 
@@ -53,7 +53,7 @@ namespace fluir::editor {
     std::vector<Vec2> edgeAnchors(double edgeX, const Rect& rect, int count) {
       std::vector<Vec2> out;
       for (int i = 0; i < count; ++i) {
-        out.push_back(Vec2{edgeX, rect.y + portFraction(count, i) * rect.h});
+        out.push_back(Vec2{edgeX, rect.y + terminalFraction(count, i) * rect.h});
       }
       return out;
     }
@@ -63,10 +63,10 @@ namespace fluir::editor {
       view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
     }
 
-    void drawPortDots(const PortSet& portSet, const Subview& view, const EditorContext& ctx) {
-      for (const auto* side : {&portSet.inputs, &portSet.outputs}) {
+    void drawTerminalDots(const TerminalSet& terminalSet, const Subview& view, const EditorContext& ctx) {
+      for (const auto* side : {&terminalSet.inputs, &terminalSet.outputs}) {
         for (const Vec2& anchor : *side) {
-          view.renderer().fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
+          view.renderer().fillRect(view.toScreen(dotRect(anchor, ctx.layout.terminalDot)), ctx.theme.border);
         }
       }
     }

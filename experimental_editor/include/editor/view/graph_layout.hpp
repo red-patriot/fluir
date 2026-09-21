@@ -12,7 +12,7 @@
 namespace fluir::editor {
 
   /** What a box is. Only Body and the grips are hittable. */
-  enum class Part { Body, Scope, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY };
+  enum class Part { Body, Scope, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
 
   /** One laid-out piece of the graph, in world space. */
   struct Box {
@@ -35,19 +35,19 @@ namespace fluir::editor {
   /** The rail box of function `fnPath` containing `world`, honouring its clip, or nullptr. */
   const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world);
 
-  /** A port: its node or rail `path`, side, and index on that side. */
-  struct PortHit {
+  /** A terminal: its node or rail `path`, side, and index on that side. */
+  struct TerminalHit {
     FullID path;
     bool output = false;
     int index = 0;
     Vec2 anchor;
   };
 
-  /** The top-painted port whose hit square contains `world`, honouring clips. */
-  std::optional<PortHit> portAt(const pt::ParseTree& tree,
-                                std::span<const Box> boxes,
-                                Vec2 world,
-                                const EditorContext::Layout& layout);
+  /** The top-painted terminal whose hit square contains `world`, honouring clips. */
+  std::optional<TerminalHit> terminalAt(const pt::ParseTree& tree,
+                                        std::span<const Box> boxes,
+                                        Vec2 world,
+                                        const EditorContext::Layout& layout);
 
   /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);

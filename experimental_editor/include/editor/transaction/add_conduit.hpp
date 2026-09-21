@@ -14,7 +14,7 @@ namespace fluir::editor {
    *  A target already fed loses that branch first. */
   class AddConduit : public Transaction {
    public:
-    /** A node or rail id and its port index. */
+    /** A node or rail id and its terminal index. */
     struct Endpoint {
       fluir::ID node;
       int index;

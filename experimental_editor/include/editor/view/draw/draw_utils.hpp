@@ -11,8 +11,8 @@
 
 namespace fluir::editor {
 
-  /** A node's port anchors, in world space. */
-  struct PortSet {
+  /** A node's terminal anchors, in world space. */
+  struct TerminalSet {
     std::vector<Vec2> inputs;
     std::vector<Vec2> outputs;
   };
@@ -43,7 +43,7 @@ namespace fluir::editor {
     void drawShell(const Rect& world, Color fill, const Subview& view, const EditorContext& ctx);
 
     /** A border-colored dot at every input, then every output. */
-    void drawPortDots(const PortSet& portSet, const Subview& view, const EditorContext& ctx);
+    void drawTerminalDots(const TerminalSet& terminalSet, const Subview& view, const EditorContext& ctx);
 
     /** Draws `text` at `world`'s padded top-left; skipped when empty. */
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx);

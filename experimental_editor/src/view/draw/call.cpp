@@ -25,8 +25,8 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  PortSet anchors(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
-    PortSet out;
+  TerminalSet anchors(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+    TerminalSet out;
     const std::size_t count = call.arguments.size();
     for (std::size_t row = 0; row < count; ++row) {
       out.inputs.push_back(Vec2{r.x, argRowTop(r, row, layout) + layout.railStep() * 0.5});
@@ -47,7 +47,7 @@ namespace fluir::editor::draw {
       const Vec2 pos{world.x + ctx.layout.textPad, argRowTop(world, row, ctx.layout) + ctx.layout.textPad};
       view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text, view.composed().scale);
     }
-    drawPortDots(anchors(call, world, ctx.layout), view, ctx);
+    drawTerminalDots(anchors(call, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

@@ -37,7 +37,7 @@ namespace fluir::editor::draw {
     return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
   }
 
-  PortSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
 
@@ -56,7 +56,7 @@ namespace fluir::editor::draw {
     } else {
       drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
     }
-    drawPortDots(anchors(n, world, ctx.layout), view, ctx);
+    drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

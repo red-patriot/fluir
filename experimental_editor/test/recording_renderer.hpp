@@ -243,7 +243,7 @@ namespace testutil {
     return out;
   }
 
-  // Fills of an exact w x h (port dots are 6x6): lets a test assert the set of
+  // Fills of an exact w x h (terminal dots are 6x6): lets a test assert the set of
   // dot positions instead of a bare count.
   inline std::vector<fluir::editor::Rect> fillsOfSize(const std::vector<DrawCall>& calls,
                                                       double w,

@@ -22,10 +22,10 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  PortSet anchors(const pt::FunctionDecl& fn, fluir::ID railId, const Rect& rail) {
+  TerminalSet anchors(const pt::FunctionDecl& fn, fluir::ID railId, const Rect& rail) {
     const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == railId;
     const double midY = rail.y + rail.h * 0.5;
-    return isReturn ? PortSet{{Vec2{rail.x, midY}}, {}} : PortSet{{}, {Vec2{rail.x + rail.w, midY}}};
+    return isReturn ? TerminalSet{{Vec2{rail.x, midY}}, {}} : TerminalSet{{}, {Vec2{rail.x + rail.w, midY}}};
   }
 
   Color color(const pt::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
@@ -39,7 +39,7 @@ namespace fluir::editor::draw {
     const std::string* typeName = railTypeAt(fn, railId);
     drawShell(rail, color(fn, ctx.theme), view, ctx);
     drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, railName(fn, railId), ctx);
-    drawPortDots(anchors(fn, railId, rail), view, ctx);
+    drawTerminalDots(anchors(fn, railId, rail), view, ctx);
   }
 
   void drawFrame(const pt::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx) {

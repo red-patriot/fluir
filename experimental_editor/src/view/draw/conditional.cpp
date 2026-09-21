@@ -4,7 +4,7 @@
 
 namespace fluir::editor::draw {
 
-  PortSet anchors(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
+  TerminalSet anchors(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
 
   Color color(const pt::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
 

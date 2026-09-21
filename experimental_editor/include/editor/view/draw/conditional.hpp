@@ -13,8 +13,8 @@ namespace fluir::editor::draw {
   /** Which of `conditional`'s two branches `scope` is. */
   std::string_view branchTag(const pt::Conditional& conditional, const pt::Scope& scope);
 
-  /** None yet: a conditional wires through its scope ports, which is Phase 2. */
-  PortSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
+  /** None yet: a conditional wires through its scope terminals, which is Phase 2. */
+  TerminalSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
 
   Color color(const pt::Conditional& node, const EditorContext::Theme& theme);
 

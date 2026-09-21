@@ -16,8 +16,8 @@ namespace fluir::editor {
 
   Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }
 
-  Rect dotRect(Vec2 anchor, double portDot) {
-    return {anchor.x - portDot * 0.5, anchor.y - portDot * 0.5, portDot, portDot};
+  Rect dotRect(Vec2 anchor, double terminalDot) {
+    return {anchor.x - terminalDot * 0.5, anchor.y - terminalDot * 0.5, terminalDot, terminalDot};
   }
 
   // Deterministic order: (location.z, id).

@@ -58,13 +58,13 @@ TEST(DrawConditional, ColorIsTheConditionalHeaderTheme) {
   EXPECT_EQ(fluir::editor::draw::color(makeConditional(), kCtx.theme), kCtx.theme.conditionalNodeHeader);
 }
 
-// Wiring through scope ports is Phase 2; a conditional has no wall ports to anchor yet.
+// Wiring through scope terminals is Phase 2; a conditional has no wall terminals to anchor yet.
 TEST(DrawConditional, AnchorsAreEmpty) {
-  const fluir::editor::PortSet ports =
+  const fluir::editor::TerminalSet terminals =
     fluir::editor::draw::anchors(makeConditional(), Rect{10, 35, 100, 90}, kCtx.layout);
 
-  EXPECT_TRUE(ports.inputs.empty());
-  EXPECT_TRUE(ports.outputs.empty());
+  EXPECT_TRUE(terminals.inputs.empty());
+  EXPECT_TRUE(terminals.outputs.empty());
 }
 
 TEST(DrawConditional, BodyFillsItsWholeFrame) {

@@ -6,7 +6,7 @@
 namespace fluir::editor::draw {
 
   /** One input per argument row; an output only when the call returns. */
-  PortSet anchors(const pt::Call& node, const Rect& world, const EditorContext::Layout& layout);
+  TerminalSet anchors(const pt::Call& node, const Rect& world, const EditorContext::Layout& layout);
 
   Color color(const pt::Call& node, const EditorContext::Theme& theme);
 

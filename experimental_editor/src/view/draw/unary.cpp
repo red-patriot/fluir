@@ -4,7 +4,7 @@
 
 namespace fluir::editor::draw {
 
-  PortSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
     return {edgeAnchors(r.x, r, 1), edgeAnchors(r.x + r.w, r, 1)};
   }
 
@@ -13,7 +13,7 @@ namespace fluir::editor::draw {
   void draw(const pt::Unary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
     drawTitle(stringify(n.op), world, view, ctx);
-    drawPortDots(anchors(n, world, ctx.layout), view, ctx);
+    drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

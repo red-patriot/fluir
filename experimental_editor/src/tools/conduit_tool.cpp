@@ -17,7 +17,7 @@ namespace fluir::editor {
             return false;
           }
           const Vec2 world = state.view.screenToWorld(event.pos);
-          const std::optional<PortHit> hit = portAt(state.editor.tree(), boxes, world, state.ctx.layout);
+          const std::optional<TerminalHit> hit = terminalAt(state.editor.tree(), boxes, world, state.ctx.layout);
           if (!hit) {
             return false;
           }
@@ -40,14 +40,14 @@ namespace fluir::editor {
             return false;
           }
           active_ = false;
-          const std::optional<PortHit> to =
-            portAt(state.editor.tree(), boxes, state.view.screenToWorld(event.pos), state.ctx.layout);
+          const std::optional<TerminalHit> to =
+            terminalAt(state.editor.tree(), boxes, state.view.screenToWorld(event.pos), state.ctx.layout);
           if (!to || to->output == from_.output || parentOf(to->path) != parentOf(from_.path)) {
             return true;
           }
           // Either end may start the drag; the conduit always runs output to input.
-          const PortHit& source = from_.output ? from_ : *to;
-          const PortHit& target = from_.output ? *to : from_;
+          const TerminalHit& source = from_.output ? from_ : *to;
+          const TerminalHit& target = from_.output ? *to : from_;
           const FullID parent = parentOf(source.path);
           state.editor.apply(std::make_unique<AddConduit>(parent,
                                                           state.editor.generateID(parent),

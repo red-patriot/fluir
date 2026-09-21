@@ -20,7 +20,7 @@ namespace fluir::editor {
     struct Layout {
       double unitPx = 5.0;
       double textPad = 4.0;
-      double portDot = 6.0;
+      double terminalDot = 6.0;
       double headerUnits = 5.0;
       double railUnits = 5.0;
       double paramUnits = 15.0;

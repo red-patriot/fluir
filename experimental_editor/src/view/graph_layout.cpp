@@ -18,10 +18,10 @@ namespace fluir::editor {
     constexpr double DRAG_INSET = 1;
     constexpr double GRIP_THICKNESS = 0.8;
     constexpr double RESIZE_CORNER_SIZE = 3;
-    // A port's hit square side, in grid units.
+    // A terminal's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
 
-    using Ports = std::unordered_map<fluir::ID, PortSet>;
+    using Terminals = std::unordered_map<fluir::ID, TerminalSet>;
 
     // A draggable edge is a thick line lying just inside the rect's border; the whole line is the grip.
     Rect resizeEdgeX(const Rect& r, double unit) {
@@ -87,7 +87,7 @@ namespace fluir::editor {
                      Vec2 origin,
                      const Rect& clip,
                      const EditorContext::Layout& layout,
-                     Ports ports,
+                     Terminals terminals,
                      std::vector<Box>& out);
 
     // The conditional's body, then each branch with its own nodes, then its chrome over both.
@@ -115,7 +115,7 @@ namespace fluir::editor {
         const FullID scopePath = childOf(path, scope->id);
         out.push_back({scopePath, Part::Scope, branch, branchClip});
         if (const std::optional<Rect> contentClip = intersect(*branchClip, content)) {
-          layoutBlock(scope->body, scopePath, origin, *contentClip, layout, Ports{}, out);
+          layoutBlock(scope->body, scopePath, origin, *contentClip, layout, Terminals{}, out);
         }
       }
 
@@ -131,14 +131,14 @@ namespace fluir::editor {
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
     }
 
-    // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
-    // `ports` is per block: node ids repeat across sibling blocks.
+    // Nodes paint in (z, id) order with their grips; conduits paint after, from terminals resolved by id.
+    // `terminals` is per block: node ids repeat across sibling blocks.
     void layoutBlock(const pt::Block& block,
                      const FullID& parent,
                      Vec2 origin,
                      const Rect& clip,
                      const EditorContext::Layout& layout,
-                     Ports ports,
+                     Terminals terminals,
                      std::vector<Box>& out) {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
@@ -151,19 +151,19 @@ namespace fluir::editor {
         }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
         pushNodeBoxes(path, rect, clip, resizePart(*node), layout.unitPx, out);
-        ports[idOf(*node)] = editor::ports(*node, rect, layout);
+        terminals[idOf(*node)] = editor::terminals(*node, rect, layout);
       }
 
       // A dangling endpoint is a legitimate authoring state: it just draws no line.
       for (const pt::Conduit* conduit : sortedConduits(block)) {
-        const auto source = ports.find(conduit->input);
-        if (source == ports.end() || source->second.outputs.empty()) {
+        const auto source = terminals.find(conduit->input);
+        if (source == terminals.end() || source->second.outputs.empty()) {
           continue;
         }
         const Vec2 from = source->second.outputs.front();
         for (const pt::Conduit::Output& target : conduit->children) {
-          const auto sink = ports.find(target.target);
-          if (sink == ports.end() || target.index < 0 ||
+          const auto sink = terminals.find(target.target);
+          if (sink == terminals.end() || target.index < 0 ||
               static_cast<std::size_t>(target.index) >= sink->second.inputs.size()) {
             continue;
           }
@@ -182,7 +182,7 @@ namespace fluir::editor {
       const Rect clip{frame.x, origin.y, frame.w, frame.h - layout.headerH()};
       out.push_back({path, Part::Body, frame, std::nullopt});
 
-      Ports ports;
+      Terminals terminals;
       if (fn.input) {
         std::vector<const pt::FunctionDecl::Parameter*> params;
         for (const auto& param : fn.input->parameters) {
@@ -193,7 +193,7 @@ namespace fluir::editor {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
           out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
-          ports[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
+          terminals[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
         }
       }
       if (fn.output && fn.output->ret) {
@@ -202,10 +202,10 @@ namespace fluir::editor {
                         layout.railStep(),
                         layout.railStep()};
         out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
-        ports[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
+        terminals[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
       }
 
-      layoutBlock(fn.body, path, origin, clip, layout, std::move(ports), out);
+      layoutBlock(fn.body, path, origin, clip, layout, std::move(terminals), out);
 
       // The frame's chrome paints, and so hits, over its body.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
@@ -216,17 +216,17 @@ namespace fluir::editor {
 
     bool hittable(Part part) { return part != Part::Frame && part != Part::Rail && part != Part::Wire; }
 
-    // A node's or rail's port anchors, given its box.
-    PortSet portsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
+    // A node's or rail's terminal anchors, given its box.
+    TerminalSet terminalsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
       if (box.path.size() < 2) {
         return {};
       }
       if (box.part == Part::Body) {
         const pt::Node* node = nodeAt(tree, box.path);
-        return node == nullptr ? PortSet{} : ports(*node, box.world, layout);
+        return node == nullptr ? TerminalSet{} : terminals(*node, box.world, layout);
       }
       const pt::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
-      return fn == nullptr ? PortSet{} : draw::anchors(*fn, box.path.back(), box.world);
+      return fn == nullptr ? TerminalSet{} : draw::anchors(*fn, box.path.back(), box.world);
     }
 
   }  // namespace
@@ -274,21 +274,21 @@ namespace fluir::editor {
     return nullptr;
   }
 
-  std::optional<PortHit> portAt(const pt::ParseTree& tree,
-                                std::span<const Box> boxes,
-                                Vec2 world,
-                                const EditorContext::Layout& layout) {
+  std::optional<TerminalHit> terminalAt(const pt::ParseTree& tree,
+                                        std::span<const Box> boxes,
+                                        Vec2 world,
+                                        const EditorContext::Layout& layout) {
     const double side = PORT_HIT_UNITS * layout.unitPx;
     for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
       if (it->clip && !it->clip->contains(world)) {
         continue;
       }
-      const PortSet set = portsOf(tree, *it, layout);
+      const TerminalSet set = terminalsOf(tree, *it, layout);
       for (const bool output : {false, true}) {
         const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
         for (std::size_t i = 0; i < anchors.size(); ++i) {
           if (dotRect(anchors[i], side).contains(world)) {
-            return PortHit{it->path, output, static_cast<int>(i), anchors[i]};
+            return TerminalHit{it->path, output, static_cast<int>(i), anchors[i]};
           }
         }
       }

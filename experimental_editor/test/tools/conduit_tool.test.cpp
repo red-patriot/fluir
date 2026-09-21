@@ -82,7 +82,7 @@ namespace {
 
 }  // namespace
 
-TEST(ConduitTool, APressOffAPortIsNotClaimed) {
+TEST(ConduitTool, APressOffATerminalIsNotClaimed) {
   Harness h;
 
   EXPECT_FALSE(h.send(down(h.screen(kEmpty))));
@@ -90,7 +90,7 @@ TEST(ConduitTool, APressOffAPortIsNotClaimed) {
   EXPECT_FALSE(h.tool.capturing());
 }
 
-TEST(ConduitTool, APressOnAPortClaimsAndCaptures) {
+TEST(ConduitTool, APressOnATerminalClaimsAndCaptures) {
   Harness h;
 
   EXPECT_TRUE(h.send(down(h.screen(kConstant2Out))));
@@ -119,7 +119,7 @@ TEST(ConduitTool, DraggingAnInputToAnOutputConnectsTheSameWay) {
   EXPECT_TRUE(connected(h.state.editor.tree(), 2, 1, 1));
 }
 
-TEST(ConduitTool, AReleaseOffACompatiblePortAddsNothing) {
+TEST(ConduitTool, AReleaseOffACompatibleTerminalAddsNothing) {
   for (const Vec2 target : {kEmpty, kConstant3Out, kConstant3Body}) {
     Harness h;
     const fluir::pt::ParseTree before = h.state.editor.tree();
@@ -144,7 +144,7 @@ TEST(ConduitTool, EscapeCancelsTheDrag) {
   EXPECT_EQ(h.state.editor.tree(), before);
 }
 
-TEST(ConduitTool, DrawsALineFromThePortToTheCursorOnlyWhileDragging) {
+TEST(ConduitTool, DrawsALineFromTheTerminalToTheCursorOnlyWhileDragging) {
   Harness h;
   EXPECT_EQ(testutil::countOf(h.draw(), testutil::DrawCall::Op::Line), 0u);
   ASSERT_TRUE(h.send(down(h.screen(kConstant2Out))));
@@ -156,7 +156,7 @@ TEST(ConduitTool, DrawsALineFromThePortToTheCursorOnlyWhileDragging) {
   EXPECT_EQ(testutil::countOf(h.draw(), testutil::DrawCall::Op::Line), 0u);
 }
 
-TEST(ConduitTool, PortsAreFoundThroughThePannedAndZoomedView) {
+TEST(ConduitTool, TerminalsAreFoundThroughThePannedAndZoomedView) {
   Harness h;
   h.state.view.scale = 2.0;
   h.state.view.pan = Vec2{30, -10};

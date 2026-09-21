@@ -11,7 +11,7 @@
 
 namespace fluir::editor {
 
-  PortSet ports(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
+  TerminalSet terminals(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
     return std::visit([&](const auto& n) { return draw::anchors(n, world, layout); }, node);
   }
 

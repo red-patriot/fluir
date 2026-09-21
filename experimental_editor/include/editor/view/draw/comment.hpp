@@ -13,8 +13,8 @@ namespace fluir::editor {
 
   namespace draw {
 
-    /** Comments have no ports. */
-    PortSet anchors(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);
+    /** Comments have no terminals. */
+    TerminalSet anchors(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);
 
     Color color(const pt::Comment& node, const EditorContext::Theme& theme);
 

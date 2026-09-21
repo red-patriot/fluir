@@ -24,7 +24,7 @@ namespace fluir::editor {
 
   namespace draw {
 
-    PortSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
+    TerminalSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
 
     Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 

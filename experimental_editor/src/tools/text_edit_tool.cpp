@@ -280,8 +280,8 @@ namespace fluir::editor {
   void TextEditTool::onPress(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
     const pt::ParseTree& tree = state.editor.tree();
     const Vec2 world = state.view.screenToWorld(event.pos);
-    // A port press starts a conduit, so it only closes the draft.
-    if (portAt(tree, boxes, world, state.ctx.layout)) {
+    // A terminal press starts a conduit, so it only closes the draft.
+    if (terminalAt(tree, boxes, world, state.ctx.layout)) {
       field_.reset();
       return;
     }

@@ -31,7 +31,9 @@ namespace fluir::editor {
       return std::get_if<pt::Conditional>(nodeAt(tree, path)) != nullptr;
     }
 
-    bool isGrip(Part part) { return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeXY; }
+    bool isGrip(Part part) {
+      return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeY || part == Part::ResizeXY;
+    }
 
   }  // namespace
 
@@ -118,9 +120,7 @@ namespace fluir::editor {
                                 isConditional(tree, path_)         ? CONDITIONAL_SIZE :
                                 isComment(tree, path_)             ? COMMENT_SIZE :
                                                                      NODE_SIZE;
-    // A branch is only ever as wide as its conditional, so its grip drags height alone.
-    const int wanted = isScopePath(path_) ? start_.width : start_.width + delta_.x;
-    const int width = std::clamp(wanted, size.lower.x, size.upper.x);
+    const int width = std::clamp(start_.width + delta_.x, size.lower.x, size.upper.x);
     const int height = std::clamp(start_.height + delta_.y, size.lower.y, size.upper.y);
 
     std::unique_ptr<Transaction> next;
@@ -128,6 +128,8 @@ namespace fluir::editor {
       next = std::make_unique<MoveTransaction>(path_, start_.x + delta_.x, start_.y + delta_.y);
     } else if (part_ == Part::ResizeX) {
       next = std::make_unique<ResizeTransaction>(path_, width, start_.height);
+    } else if (part_ == Part::ResizeY) {
+      next = std::make_unique<ResizeTransaction>(path_, start_.width, height);
     } else {
       next = std::make_unique<ResizeTransaction>(path_, width, height);
     }

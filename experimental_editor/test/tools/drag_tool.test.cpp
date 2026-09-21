@@ -36,11 +36,11 @@ namespace {
   const EditorContext kCtx;
   const FullID kBinary{1, 1};
   const FullID kFunction{1};
-  constexpr Vec2 kBinaryGrip{137, 97};       // centre of {130,90,15,15}
-  constexpr Vec2 kBinaryBar{147, 100};       // inside {145,85,5,25}
-  constexpr Vec2 kBinaryBody{127, 107};      // off both grips
-  constexpr Vec2 kHeaderGrip{537.5, 62.5};   // centre of {530,55,15,15}
-  constexpr Vec2 kCornerGrip{542.5, 542.5};  // centre of {535,535,15,15}
+  constexpr Vec2 kBinaryGrip{137, 97};        // centre of {130,90,15,15}
+  constexpr Vec2 kBinaryRightEdge{147, 100};  // inside the right edge {145,85,5,25}
+  constexpr Vec2 kBinaryBody{127, 107};       // off both grips
+  constexpr Vec2 kHeaderGrip{537.5, 62.5};    // centre of {530,55,15,15}
+  constexpr Vec2 kCornerGrip{542.5, 542.5};   // centre of {535,535,15,15}
 
   struct Harness {
     EditorState state{kCtx};
@@ -140,12 +140,12 @@ TEST(DragTool, EscapeCancelsALiveGesture) {
   EXPECT_EQ(h.state.editor.tree(), before);
 }
 
-TEST(DragTool, TheResizeBarGrowsWidthOnly) {
+TEST(DragTool, TheRightEdgeGrowsWidthOnly) {
   Harness h;
-  ASSERT_TRUE(h.send(down(kBinaryBar)));
+  ASSERT_TRUE(h.send(down(kBinaryRightEdge)));
 
-  h.send(move(kBinaryBar + Vec2{15, 20}));
-  h.send(up(kBinaryBar + Vec2{15, 20}));
+  h.send(move(kBinaryRightEdge + Vec2{15, 20}));
+  h.send(up(kBinaryRightEdge + Vec2{15, 20}));
 
   EXPECT_EQ(h.loc(kBinary).width, 8);
   EXPECT_EQ(h.loc(kBinary).height, 5);
@@ -154,9 +154,9 @@ TEST(DragTool, TheResizeBarGrowsWidthOnly) {
 
 TEST(DragTool, ANodeResizeClampsToTheMinimumWidth) {
   Harness h;
-  ASSERT_TRUE(h.send(down(kBinaryBar)));
+  ASSERT_TRUE(h.send(down(kBinaryRightEdge)));
 
-  h.send(move(kBinaryBar + Vec2{-100, 0}));
+  h.send(move(kBinaryRightEdge + Vec2{-100, 0}));
 
   EXPECT_EQ(h.loc(kBinary).width, 4);
 }
@@ -234,7 +234,7 @@ TEST(DragTool, AMoveGripDragMovesATopLevelComment) {
   EXPECT_FALSE(state.editor.canUndo());
 }
 
-// Comment corner {160,160,15,15}.
+// Comment corner {160,160,15,15}: one diagonal gesture sizes both axes, as a function's does.
 TEST(DragTool, TheCornerGripResizesACommentInBothAxes) {
   EditorState state{kCtx};
   testutil::loadInto(state, "read/top_level_comment_only.fl");
@@ -291,7 +291,7 @@ namespace {
 
   // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,90}, then branch {10,35,100,60}
   // over else branch {10,95,100,30}, with constant 1 at {15,65,50,50} in the then branch.
-  //   conditional move grip {90,40,15,15}   width bar {105,35,5,25}   corner {95,110,15,15}
+  //   conditional move grip {90,40,15,15}   right edge {105,35,5,90}   bottom edge {10,120,100,5}
   //   nested constant move grip {45,70,15,15}
   fluir::pt::ParseTree conditionalTree() {
     fluir::pt::Scope then = makeScope(0, 0, 12);
@@ -331,10 +331,10 @@ namespace {
   const FullID kConditional{1, 20};
   const FullID kElseBranch{1, 20, 1};
   const FullID kNested{1, 20, 0, 1};
-  constexpr Vec2 kNestedGrip{52, 77};       // centre of {45,70,15,15}
-  constexpr Vec2 kConditionalBar{107, 45};  // inside {105,35,5,25}
-  constexpr Vec2 kBranchCorner{102, 117};   // centre of {95,110,15,15}
-  constexpr Vec2 kConditionalGrip{97, 47};  // centre of {90,40,15,15}
+  constexpr Vec2 kNestedGrip{52, 77};         // centre of {45,70,15,15}
+  constexpr Vec2 kConditionalBar{107, 45};    // inside the right edge {105,35,5,90}
+  constexpr Vec2 kBranchBottomEdge{60, 122};  // inside the bottom edge {10,120,100,5}
+  constexpr Vec2 kConditionalGrip{97, 47};    // centre of {90,40,15,15}
 
 }  // namespace
 
@@ -370,21 +370,21 @@ TEST(DragTool, AConditionalResizesOnlyItsWidth) {
   EXPECT_EQ(h.loc(kConditional).height, 18) << "height follows the branches, not the grip";
 }
 
-// The corner grip belongs to the bottom branch: a conditional grows by its branches growing.
-TEST(DragTool, TheCornerGripResizesTheElseBranch) {
+// The bottom edge belongs to the bottom branch: a conditional grows by its branches growing.
+TEST(DragTool, TheBottomEdgeResizesTheElseBranch) {
   NestedHarness h;
-  ASSERT_TRUE(h.send(down(kBranchCorner)));
+  ASSERT_TRUE(h.send(down(kBranchBottomEdge)));
 
-  EXPECT_TRUE(h.send(move(kBranchCorner + Vec2{0, 20})));
+  EXPECT_TRUE(h.send(move(kBranchBottomEdge + Vec2{0, 20})));
 
   EXPECT_EQ(h.loc(kElseBranch).height, 10);
 }
 
 TEST(DragTool, ABranchCannotCollapse) {
   NestedHarness h;
-  ASSERT_TRUE(h.send(down(kBranchCorner)));
+  ASSERT_TRUE(h.send(down(kBranchBottomEdge)));
 
-  EXPECT_TRUE(h.send(move(kBranchCorner - Vec2{0, 200})));
+  EXPECT_TRUE(h.send(move(kBranchBottomEdge - Vec2{0, 200})));
 
   EXPECT_GE(h.loc(kElseBranch).height, 10);
 }

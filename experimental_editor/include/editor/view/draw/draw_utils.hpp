@@ -57,8 +57,8 @@ namespace fluir::editor {
     /** An XY resize handle, fit to `rect` */
     void drawXyResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx);
 
-    /** A Horizontal resize handle, fit to `rect` */
-    void drawHResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx);
+    /** A draggable edge: `rect` filled solid, so the whole thick line reads as the grip. */
+    void drawResizeEdge(const Rect& rect, const Subview& view, const EditorContext& ctx);
   }  // namespace draw
 
 }  // namespace fluir::editor

@@ -86,7 +86,8 @@ namespace fluir::editor {
           draw::drawMoveGrip(box.world, view, ctx);
           return;
         case Part::ResizeX:
-          draw::drawHResizeHandle(box.world, view, ctx);
+        case Part::ResizeY:
+          draw::drawResizeEdge(box.world, view, ctx);
           return;
         case Part::ResizeXY:
           draw::drawXyResizeHandle(box.world, view, ctx);

@@ -23,17 +23,20 @@ namespace fluir::editor {
     Vec2 origin;
     int z = 0;  // top-level parent
     if (hit != nullptr) {
-      const pt::FunctionDecl* fn =
-        hit->part == Part::Body && hit->path.size() == 1 ? functionAt(state.editor.tree(), hit->path) : nullptr;
-      if (fn == nullptr) {
+      // Completions go into a container's body.
+      const pt::ParseTree& tree = state.editor.tree();
+      const FlowGraphLocation* location = locationAt(tree, hit->path);
+      if ((hit->part != Part::Body && hit->part != Part::Scope) || location == nullptr ||
+          blockOf(tree, hit->path) == nullptr) {
         return false;
       }
-      origin = bodyOrigin(localRect(fn->location, layout.unitPx).topLeft(), layout.headerH());
+      // The hit box is the container's frame.
+      origin = bodyOrigin(hit->world.topLeft(), layout.headerH());
       if (world.y < origin.y) {
         return false;  // header
       }
       body = hit->path;
-      z = fn->location.z;
+      z = location->z;
     }
     std::vector<Completion> completions = state.intelligence.completions(state.editor.tree(), body);
     if (completions.empty()) {

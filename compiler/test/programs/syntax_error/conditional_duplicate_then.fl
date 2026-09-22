@@ -15,15 +15,9 @@
         <condition outer="3" inner="1" y="10"/>
         <input/>
         <output/>
-        <then id="0" h="250">
-          <body/>
-        </then>
-        <then id="0" h="250">
-          <body/>
-        </then>
-        <else id="1" h="250">
-          <body/>
-        </else>
+        <then/>
+        <then/>
+        <else/>
       </conditional>
     </body>
   </function>

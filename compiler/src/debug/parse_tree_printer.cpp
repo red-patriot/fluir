@@ -131,12 +131,12 @@ namespace fluir::debug {
       }
     }
     const auto& then = conditional.thenScope;
-    out_ << formatIndented("{}: Then\n", then->id) << doPrint(then->location);
-    printBlock(then->body);
+    out_ << formatIndented("Then\n");
+    printBlock(*then);
 
     const auto& else_ = conditional.elseScope;
-    out_ << formatIndented("{}: Else\n", else_->id) << doPrint(else_->location);
-    printBlock(else_->body);
+    out_ << formatIndented("Else\n");
+    printBlock(*else_);
   }
 
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {

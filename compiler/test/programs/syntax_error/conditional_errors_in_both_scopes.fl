@@ -15,15 +15,11 @@
         <condition outer="3" inner="1" y="10"/>
         <input/>
         <output/>
-        <then id="0" h="250">
-          <body>
-            <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="?"/>
-          </body>
+        <then>
+          <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="?"/>
         </then>
-        <else id="1" h="250">
-          <body>
-            <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="?"/>
-          </body>
+        <else>
+          <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="?"/>
         </else>
       </conditional>
     </body>

@@ -12,8 +12,7 @@
             Condition: 3->1 at(10)
             input
             output
-            0: Then
-            at(x0, y0, z1, w500, h250)
+            Then
             body
                 1:
                     Binary
@@ -30,8 +29,7 @@
                     at(x5, y12, z0, w5, h5)
                     F64 -4.7
             conduits
-            1: Else
-            at(x0, y250, z1, w500, h250)
+            Else
             body
                 1:
                     Constant

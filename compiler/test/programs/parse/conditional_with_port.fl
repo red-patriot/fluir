@@ -20,24 +20,19 @@
         <output>
           <port outer="5" inner="4" y="10"/>
         </output>
-        <then id="0" h="250">
-          <body>
-            <binary id="3" x="35" y="3" z="2" w="5" h="5" operator="/"/>
-            <conduit id="7" input="4">
-              <output target="3" index="0"/>
-            </conduit>
-            <conduit id="8" input="2" index="0">
-              <output target="3" index="1"/>
-            </conduit>
-            <conduit id="9" input="3" index="0">
-              <output target="5"/>
-            </conduit>
-          </body>
+        <then>
+          <binary id="3" x="35" y="3" z="2" w="5" h="5" operator="/"/>
+          <conduit id="7" input="4">
+            <output target="3" index="0"/>
+          </conduit>
+          <conduit id="8" input="2" index="0">
+            <output target="3" index="1"/>
+          </conduit>
+          <conduit id="9" input="3" index="0">
+            <output target="5"/>
+          </conduit>
         </then>
-        <else id="1" h="250">
-          <body>
-          </body>
-        </else>
+        <else/>
       </conditional>
     </body>
   </function>

@@ -15,8 +15,7 @@
                 4->2 at(20)
             output
                 5->4 at(10)
-            0: Then
-            at(x0, y0, z1, w500, h250)
+            Then
             body
                 3:
                     Binary
@@ -40,8 +39,7 @@
                     in3.0
                     children
                         out5.0
-            1: Else
-            at(x0, y250, z1, w500, h250)
+            Else
             body
             conduits
     conduits

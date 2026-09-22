@@ -16,12 +16,8 @@
         <input/>
         <output/>
         <output/>
-        <then id="0" h="250">
-          <body/>
-        </then>
-        <else id="1" h="250">
-          <body/>
-        </else>
+        <then />
+        <else />
       </conditional>
     </body>
   </function>

@@ -46,7 +46,7 @@ namespace fluir {
     pt::FunctionDecl::Return funcReturn(Element* element);
 
     pt::Block block(Element* element);
-    pt::ScopePorts parseScopePorts(Element* element);
+    pt::BlockPorts parseScopePorts(Element* element);
     std::optional<WithID<pt::Node>> node(Element* element);
     WithID<pt::Node> constant(Element* element);
     WithID<pt::Node> binary(Element* element);
@@ -69,8 +69,7 @@ namespace fluir {
     pt::U64 u64(Element* element);
     pt::BOOL boolean(Element* element);
 
-    pt::Scope parseScope(Element* element, FlowGraphLocation location);
-    pt::ScopePort parseScopePort(Element* element);
+    pt::BlockPort parseBlockPort(Element* element);
 
     std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,

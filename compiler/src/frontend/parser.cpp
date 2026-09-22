@@ -343,15 +343,15 @@ namespace fluir {
     return block;
   }
 
-  pt::ScopePorts Parser::parseScopePorts(Element* element) {
-    pt::ScopePorts ret;
+  pt::BlockPorts Parser::parseScopePorts(Element* element) {
+    pt::BlockPorts ret;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       panicIf(child->Name() != "port"sv,
               child,
               diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
               "Unexpected element <{}>. Expected <port>",
               child->Name());
-      auto port = parseScopePort(child);
+      auto port = parseBlockPort(child);
       panicIf(ret.contains(port.outerId), child, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
       ret.emplace(port.outerId, port);
     }
@@ -462,11 +462,11 @@ namespace fluir {
   WithID<pt::Node> Parser::conditional(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
-    std::optional<pt::ScopePort> condition;
-    std::optional<pt::ScopePorts> input;
-    std::optional<pt::ScopePorts> output;
-    std::optional<pt::Scope> then;
-    std::optional<pt::Scope> else_;
+    std::optional<pt::BlockPort> condition;
+    std::optional<pt::BlockPorts> input;
+    std::optional<pt::BlockPorts> output;
+    std::optional<pt::Block> then;
+    std::optional<pt::Block> else_;
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       // TODO: Ports
       if (child->Name() == "condition"s) {
@@ -474,23 +474,19 @@ namespace fluir {
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
                 "Duplicate 'condition' found in conditional.");
-        condition = parseScopePort(child);
+        condition = parseBlockPort(child);
       } else if (child->Name() == "then"s) {
         panicIf(then.has_value(),
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
                 "Duplicate 'then' found in conditional.");
-        auto h = static_cast<int>(getInt(child, "h"));
-        auto thenLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = h};
-        then = parseScope(child, thenLocation);
+        then = block(child);
       } else if (child->Name() == "else"s) {
         panicIf(else_.has_value(),
                 child,
                 diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
                 "Duplicate 'else' found in conditional.");
-        auto h = static_cast<int>(getInt(child, "h"));
-        auto elseLocation = FlowGraphLocation{.x = 0, .y = 0, .z = location.z, .width = location.width, .height = h};
-        else_ = parseScope(child, elseLocation);
+        else_ = block(child);
       } else if (child->Name() == "input"s) {
         panicIf(input.has_value(),
                 child,
@@ -516,7 +512,6 @@ namespace fluir {
     panicIf(!output, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'output' in conditional node");
     panicIf(!then, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'then' in conditional node");
     panicIf(!else_, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'else' in conditional node");
-    else_->location.y = then->location.height;
 
     //? Enforce heights match up?
     return WithID{id,
@@ -702,31 +697,11 @@ namespace fluir {
     std::unreachable();
   }
 
-  pt::Scope Parser::parseScope(Element* element, FlowGraphLocation location) {
-    constexpr std::string_view bodyTag = "body";
-    auto id = parseId(element);
-    std::optional<pt::Block> body;
-
-    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
-      std::string_view childName = child->Name();
-      if (childName == bodyTag) {
-        panicIf(body.has_value(), child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Duplicate '<body>' found.");
-        body = block(child);
-      } else {
-        panicAt(child, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Unexpected element '{}'.", childName);
-      }
-    }
-
-    panicIf(!body, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected a '<body>' element.");
-
-    return pt::Scope{.id = id, .location = location, .body = std::move(*body)};
-  }
-
-  pt::ScopePort Parser::parseScopePort(Element* element) {
+  pt::BlockPort Parser::parseBlockPort(Element* element) {
     auto outer = parseIdReference(element, "outer");
     auto inner = parseIdReference(element, "inner");
     auto y = static_cast<int>(getInt(element, "y"));
-    return pt::ScopePort{.outerId = outer, .innerId = inner, .y = y};
+    return pt::BlockPort{.outerId = outer, .innerId = inner, .y = y};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {

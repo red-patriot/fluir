@@ -16,14 +16,10 @@
         <input/>
         <output/>
         <then id="0" h="250">
-          <body>
-            <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="+"/>
-            <binary id="3" x="0" y="10" z="2" w="5" h="5" operator="-"/>
-          </body>
+          <binary id="3" x="0" y="0" z="2" w="5" h="5" operator="+"/>
+          <binary id="3" x="0" y="10" z="2" w="5" h="5" operator="-"/>
         </then>
-        <else id="1" h="250">
-          <body/>
-        </else>
+        <else/>
       </conditional>
     </body>
   </function>

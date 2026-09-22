@@ -15,8 +15,7 @@
         <condition outer="3" inner="1" y="10"/>
         <input/>
         <output/>
-        <else id="1" h="250">
-          <body/>
+        <else>
         </else>
       </conditional>
     </body>

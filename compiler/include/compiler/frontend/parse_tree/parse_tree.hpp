@@ -78,28 +78,28 @@ namespace fluir::pt {
     friend bool operator==(const Call&, const Call&) = default;
   };
 
-  struct Scope;
+  struct Block;
 
-  struct ScopePort {
+  struct BlockPort {
     ID outerId; /**< Outward-facing ID to bridge data to the outer scope */
     ID innerId; /**< Inward-facing ID to bridge dataflow to the inner scope */
     int y;      /**< Position on the vertical wall where this port lives */
 
-    friend bool operator==(const ScopePort&, const ScopePort&) = default;
+    friend bool operator==(const BlockPort&, const BlockPort&) = default;
   };
 
-  using ScopePorts = std::unordered_map<ID, ScopePort>;
+  using BlockPorts = std::unordered_map<ID, BlockPort>;
 
   struct Conditional {
     ID id;
     FlowGraphLocation location;
 
-    ScopePort condition;
-    ScopePorts inputs;
-    ScopePorts outputs;
+    BlockPort condition;
+    BlockPorts inputs;
+    BlockPorts outputs;
 
-    xyz::indirect<Scope> thenScope;
-    xyz::indirect<Scope> elseScope;
+    xyz::indirect<Block> thenScope;
+    xyz::indirect<Block> elseScope;
 
     friend bool operator==(const Conditional&, const Conditional&) = default;
   };
@@ -134,18 +134,6 @@ namespace fluir::pt {
   };
 
   inline const Block EMPTY_BLOCK = {};
-
-  struct Scope {
-    using Nodes = std::unordered_map<ID, Node>;
-    using Conduits = std::unordered_map<ID, Conduit>;
-
-    ID id;
-    FlowGraphLocation location;
-
-    Block body;
-
-    friend bool operator==(const Scope&, const Scope&) = default;
-  };
 
   struct FunctionDecl {
     struct Parameter {

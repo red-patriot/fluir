@@ -12,12 +12,10 @@
             Condition: 3->1 at(10)
             input
             output
-            0: Then
-            at(x0, y0, z1, w500, h250)
+            Then
             body
             conduits
-            1: Else
-            at(x0, y250, z1, w500, h250)
+            Else
             body
             conduits
     conduits

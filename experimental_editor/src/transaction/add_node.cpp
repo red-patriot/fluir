@@ -59,22 +59,15 @@ namespace fluir::editor {
                                    ._return = ret,
                                    .arguments = std::move(args)};
                  },
-                 [&](const ConditionalOption& conditional) -> pt::Node {
-                   FlowGraphLocation thenLoc{
-                     .x = 0, .y = 0, .z = location_.z, .width = location_.width, .height = location_.height / 2};
-                   FlowGraphLocation elseLoc{.x = 0,
-                                             .y = thenLoc.height,
-                                             .z = location_.z,
-                                             .width = location_.width,
-                                             .height = location_.height - thenLoc.height};
+                 [&](const ConditionalOption&) -> pt::Node {
                    return pt::Conditional{
                      .id = id_,
                      .location = location_,
                      .condition = {},
                      .inputs = {},
                      .outputs = {},
-                     .thenScope = xyz::indirect<pt::Scope>(pt::Scope{.id = 0, .location = thenLoc}),
-                     .elseScope = xyz::indirect<pt::Scope>(pt::Scope{.id = 1, .location = elseLoc}),
+                     .thenScope = xyz::indirect<pt::Block>{},
+                     .elseScope = xyz::indirect<pt::Block>{},
                    };
                  }},
       params_);

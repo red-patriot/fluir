@@ -52,14 +52,8 @@ namespace fluir::editor {
             drawOutline(view, ctx, box.world);
           }
           return;
-        case Part::Scope:
-          if (const pt::Scope* scope = scopeAt(tree, box.path)) {
-            const auto* parent = std::get_if<pt::Conditional>(nodeAt(tree, parentOf(box.path)));
-            if (parent != nullptr) {
-              draw::drawScope(*scope, draw::branchTag(*parent, *scope), box.world, view, ctx);
-            }
-          }
-          return;
+        case Part::Branch:
+          return;  // a branch is a hit region: its conditional's frame paints its chrome
         case Part::Frame:
           if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
             draw::drawFrame(*fn, box.world, view, ctx);
@@ -104,7 +98,7 @@ namespace fluir::editor {
                  const EditorContext& ctx) {
     // A branch has no outline of its own: selecting one outlines the container it belongs to.
     const std::optional<FullID> outlined =
-      selection && isScopePath(*selection) ? std::optional<FullID>{parentOf(*selection)} : selection;
+      selection && isBranchPath(*selection) ? std::optional<FullID>{parentOf(*selection)} : selection;
     for (const Box& box : boxes) {
       if (box.clip) {
         view.renderer().pushClip(view.toScreen(*box.clip));

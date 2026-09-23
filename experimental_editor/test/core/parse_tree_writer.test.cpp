@@ -140,7 +140,7 @@ TEST(ParseTreeWriter, AConditionalWithEmptyBranchesSurvivesARoundTrip) {
 }
 
 // The writer drops a binary's lhs/rhs, which this fixture sets, so the trees are not equal
-// whole. What nesting must preserve is the branches: their ids, heights and contents.
+// whole. What nesting must preserve is the branches' contents.
 TEST(ParseTreeWriter, BranchesAndTheirContentsSurviveARoundTrip) {
   fluir::editor::CollectingSink sink;
   const auto loaded = parse(sink, readFile(fs::path(TEST_FOLDER) / "read/conditional_with_body.fl"));
@@ -156,13 +156,11 @@ TEST(ParseTreeWriter, BranchesAndTheirContentsSurviveARoundTrip) {
   EXPECT_EQ(after.condition, before.condition);
   for (const auto& [b, a] :
        {std::pair{&*before.thenScope, &*after.thenScope}, std::pair{&*before.elseScope, &*after.elseScope}}) {
-    EXPECT_EQ(a->id, b->id);
-    EXPECT_EQ(a->location, b->location);
-    EXPECT_EQ(a->body.conduits, b->body.conduits);
-    ASSERT_EQ(a->body.nodes.size(), b->body.nodes.size());
-    for (const auto& [id, node] : b->body.nodes) {
-      ASSERT_TRUE(a->body.nodes.contains(id));
-      EXPECT_EQ(a->body.nodes.at(id).index(), node.index()) << "node " << id << " changed kind";
+    EXPECT_EQ(a->conduits, b->conduits);
+    ASSERT_EQ(a->nodes.size(), b->nodes.size());
+    for (const auto& [id, node] : b->nodes) {
+      ASSERT_TRUE(a->nodes.contains(id));
+      EXPECT_EQ(a->nodes.at(id).index(), node.index()) << "node " << id << " changed kind";
     }
   }
 }

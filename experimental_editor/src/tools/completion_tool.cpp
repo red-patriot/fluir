@@ -25,13 +25,15 @@ namespace fluir::editor {
     if (hit != nullptr) {
       // Completions go into a container's body.
       const pt::ParseTree& tree = state.editor.tree();
-      const FlowGraphLocation* location = locationAt(tree, hit->path);
-      if ((hit->part != Part::Body && hit->part != Part::Scope) || location == nullptr ||
-          blockOf(tree, hit->path) == nullptr) {
+      // A branch has no geometry of its own: its box is already the content area under its
+      // conditional's header, and its z is the conditional's.
+      const bool branch = hit->part == Part::Branch;
+      const FlowGraphLocation* location = locationAt(tree, branch ? parentOf(hit->path) : hit->path);
+      if ((hit->part != Part::Body && !branch) || location == nullptr || blockOf(tree, hit->path) == nullptr) {
         return false;
       }
-      // The hit box is the container's frame.
-      origin = bodyOrigin(hit->world.topLeft(), layout.headerH());
+      // A declaration's or node's hit box is its frame, so its content starts under the header.
+      origin = branch ? hit->world.topLeft() : bodyOrigin(hit->world.topLeft(), layout.headerH());
       if (world.y < origin.y) {
         return false;  // header
       }

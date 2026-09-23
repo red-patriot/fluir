@@ -168,9 +168,7 @@ TEST(ConduitTool, TerminalsAreFoundThroughThePannedAndZoomedView) {
 
 namespace {
 
-  fluir::pt::Scope makeScope(ID id, int y, int h) {
-    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
-  }
+  using fluir::editor::THEN_BRANCH_ID;
 
   fluir::pt::Constant makeConstant(ID id, int x, int y) {
     return fluir::pt::Constant{.id = id,
@@ -183,24 +181,19 @@ namespace {
       .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
   }
 
-  // Function 1 {0,0,500,500} holds conditional 20. Both branches hold a constant 1 and a
-  // unary 2, so the same ids appear on either side of the divider.
-  // Frame {10,35,100,120}; each branch gives up its own top 25 to its header.
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, and unary 3
+  // {250,35,40,25} beside it. The conditional's then branch holds a constant 1 and a unary 2.
   //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
-  //   else content from y 120: constant 1 {15,125,50,50}, unary 2 {70,125,40,25}
   fluir::pt::ParseTree conditionalTree() {
-    fluir::pt::Scope then = makeScope(0, 0, 12);
-    then.body.nodes.emplace(1, makeConstant(1, 1, 1));
-    then.body.nodes.emplace(2, makeUnary(2, 12, 1));
-
-    fluir::pt::Scope else_ = makeScope(1, 12, 12);
-    else_.body.nodes.emplace(1, makeConstant(1, 1, 1));
-    else_.body.nodes.emplace(2, makeUnary(2, 12, 1));
+    fluir::pt::Block then;
+    then.nodes.emplace(1, makeConstant(1, 1, 1));
+    then.nodes.emplace(2, makeUnary(2, 12, 1));
 
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
     fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
+    fn.body.nodes.emplace(3, makeUnary(3, 50, 2));
     fn.body.nodes.emplace(20,
                           fluir::pt::Conditional{.id = 20,
                                                  .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
@@ -208,7 +201,7 @@ namespace {
                                                  .inputs = {},
                                                  .outputs = {},
                                                  .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect{std::move(else_)}});
+                                                 .elseScope = xyz::indirect<fluir::pt::Block>{}});
 
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
@@ -234,7 +227,7 @@ namespace {
 
   constexpr Vec2 kThenConstantOut{65, 90};
   constexpr Vec2 kThenUnaryIn{70, 77.5};
-  constexpr Vec2 kElseUnaryIn{70, 137.5};
+  constexpr Vec2 kFunctionUnaryIn{250, 47.5};
 
 }  // namespace
 
@@ -243,16 +236,16 @@ TEST(ConduitTool, WiresWithinOneBranch) {
 
   h.drag(kThenConstantOut, kThenUnaryIn);
 
-  EXPECT_FALSE(h.branch(FullID{1, 20, 0})->conduits.empty());
-  EXPECT_TRUE(h.branch(FullID{1, 20, 1})->conduits.empty());
+  EXPECT_FALSE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
 }
 
-// Same-parent is same-branch now: the two branches share node ids but not a block.
-TEST(ConduitTool, RefusesToWireAcrossTheDivider) {
+// A conduit lives in one block: a branch's node cannot reach out to its function's body.
+TEST(ConduitTool, RefusesToWireOutOfItsBranch) {
   NestedHarness h;
 
-  h.drag(kThenConstantOut, kElseUnaryIn);
+  h.drag(kThenConstantOut, kFunctionUnaryIn);
 
-  EXPECT_TRUE(h.branch(FullID{1, 20, 0})->conduits.empty());
-  EXPECT_TRUE(h.branch(FullID{1, 20, 1})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
 }

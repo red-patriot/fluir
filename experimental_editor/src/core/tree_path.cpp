@@ -19,20 +19,24 @@ namespace fluir::editor {
 
   bool isNodePath(const FullID& path) { return path.size() >= 2 && path.size() % 2 == 0; }
 
-  bool isScopePath(const FullID& path) { return path.size() >= 3 && path.size() % 2 == 1; }
+  bool isBranchPath(const FullID& path) { return path.size() >= 3 && path.size() % 2 == 1; }
 
-  pt::Scope* scopeAt(pt::ParseTree& tree, const FullID& path) {
-    if (!isScopePath(path)) {
+  pt::Block* branchAt(pt::ParseTree& tree, const FullID& path) {
+    if (!isBranchPath(path)) {
       return nullptr;
     }
     auto* conditional = std::get_if<pt::Conditional>(nodeAt(tree, parentOf(path)));
     if (conditional == nullptr) {
       return nullptr;
     }
-    const fluir::ID scopeId = path.back();
-    if (conditional->thenScope->id == scopeId) return &*conditional->thenScope;
-    if (conditional->elseScope->id == scopeId) return &*conditional->elseScope;
-    return nullptr;
+    switch (path.back()) {
+      case THEN_BRANCH_ID:
+        return &*conditional->thenScope;
+      case ELSE_BRANCH_ID:
+        return &*conditional->elseScope;
+      default:
+        return nullptr;
+    }
   }
 
   // Mutually recursive with nodeAt; the recursion terminates on path depth.
@@ -41,8 +45,7 @@ namespace fluir::editor {
       pt::FunctionDecl* fn = functionAt(tree, containerPath);
       return fn == nullptr ? nullptr : &fn->body;
     }
-    pt::Scope* scope = scopeAt(tree, containerPath);
-    return scope == nullptr ? nullptr : &scope->body;
+    return branchAt(tree, containerPath);
   }
 
   pt::Node* nodeAt(pt::ParseTree& tree, const FullID& path) {
@@ -64,8 +67,7 @@ namespace fluir::editor {
     if (pt::Node* node = nodeAt(tree, path)) {
       return std::visit([](auto& n) { return &n.location; }, *node);
     }
-    pt::Scope* scope = scopeAt(tree, path);
-    return scope == nullptr ? nullptr : &scope->location;
+    return nullptr;  // a branch has no geometry of its own: its rect is its conditional's.
   }
 
   std::string* railTypeAt(pt::FunctionDecl& fn, fluir::ID railId) {
@@ -90,8 +92,8 @@ namespace fluir::editor {
     return functionAt(const_cast<pt::ParseTree&>(tree), path);
   }
 
-  const pt::Scope* scopeAt(const pt::ParseTree& tree, const FullID& path) {
-    return scopeAt(const_cast<pt::ParseTree&>(tree), path);
+  const pt::Block* branchAt(const pt::ParseTree& tree, const FullID& path) {
+    return branchAt(const_cast<pt::ParseTree&>(tree), path);
   }
 
   const pt::Block* blockOf(const pt::ParseTree& tree, const FullID& containerPath) {

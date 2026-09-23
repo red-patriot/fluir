@@ -12,12 +12,8 @@
         <condition outer="3" inner="1" y="10"/>
         <input/>
         <output/>
-        <then id="0" h="60">
-          <body/>
-        </then>
-        <else id="1" h="40">
-          <body/>
-        </else>
+        <then/>
+        <else/>
       </conditional>
     </body>
   </function>

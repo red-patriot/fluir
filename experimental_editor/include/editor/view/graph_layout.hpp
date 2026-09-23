@@ -12,7 +12,7 @@
 namespace fluir::editor {
 
   /** What a box is. Only Body and the grips are hittable. */
-  enum class Part { Body, Scope, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
+  enum class Part { Body, Branch, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
 
   /** One laid-out piece of the graph, in world space. */
   struct Box {

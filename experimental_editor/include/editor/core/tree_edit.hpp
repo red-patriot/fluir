@@ -14,9 +14,6 @@ namespace fluir::editor {
   /** Whether `conduit` is sourced from or lands on `nodeId`. */
   bool touches(const pt::Conduit& conduit, fluir::ID nodeId);
 
-  /** Restacks every conditional in `block` on its branches */
-  void normalizeConditionalHeights(pt::Block& block);
-
   /** Whether `node` names `nodeId` as an operand. */
   bool hasOperand(const pt::Node& node, fluir::ID nodeId);
 

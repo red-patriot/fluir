@@ -15,10 +15,8 @@ namespace fluir::editor {
     constexpr Limits<Vec2i> FUNCTION_SIZE{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
     // Tall enough that the corner grip never overlaps the move grip.
     constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
-    // A conditional's height follows its branches, so only its width is dragged.
-    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{10, 0}, .upper = Vec2i{1000, 1000}};
-    // Deep enough that a branch keeps room for a node under its own header
-    constexpr Limits<Vec2i> BRANCH_SIZE{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
+    // Deep enough that the conditional keeps room for a node under its header.
+    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
 
     bool isComment(const pt::ParseTree& tree, const FullID& path) {
       const pt::Declaration* decl = declarationAt(tree, path);
@@ -116,7 +114,6 @@ namespace fluir::editor {
       edit_.reset();
     }
     const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE :
-                                isScopePath(path_)                 ? BRANCH_SIZE :
                                 isConditional(tree, path_)         ? CONDITIONAL_SIZE :
                                 isComment(tree, path_)             ? COMMENT_SIZE :
                                                                      NODE_SIZE;

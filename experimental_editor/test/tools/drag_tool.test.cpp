@@ -283,23 +283,18 @@ TEST(DragTool, ReleaseAfterThePathVanishedRecordsNothing) {
 
 namespace {
 
-  using fluir::ID;
+  using fluir::editor::THEN_BRANCH_ID;
 
-  fluir::pt::Scope makeScope(ID id, int y, int h) {
-    return fluir::pt::Scope{.id = id, .location = {.x = 0, .y = y, .z = 0, .width = 20, .height = h}, .body = {}};
-  }
-
-  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,90}, then branch {10,35,100,60}
-  // over else branch {10,95,100,30}, with constant 1 at {15,65,50,50} in the then branch.
-  //   conditional move grip {90,40,15,15}   right edge {105,35,5,90}   bottom edge {10,120,100,5}
-  //   divider, the then branch's bottom edge {10,90,100,5}
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,90}, one header band over its
+  // then branch, which holds constant 1 at {15,65,50,50}.
+  //   conditional move grip {90,40,15,15}   corner grip {95,110,15,15}
   //   nested constant move grip {45,70,15,15}
   fluir::pt::ParseTree conditionalTree() {
-    fluir::pt::Scope then = makeScope(0, 0, 12);
-    then.body.nodes.emplace(1,
-                            fluir::pt::Constant{.id = 1,
-                                                .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
-                                                .value = fluir::literals_types::I32{0}});
+    fluir::pt::Block then;
+    then.nodes.emplace(1,
+                       fluir::pt::Constant{.id = 1,
+                                           .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                           .value = fluir::literals_types::I32{0}});
 
     fluir::pt::FunctionDecl fn;
     fn.id = 1;
@@ -312,7 +307,7 @@ namespace {
                                                  .inputs = {},
                                                  .outputs = {},
                                                  .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect{makeScope(1, 12, 6)}});
+                                                 .elseScope = xyz::indirect<fluir::pt::Block>{}});
 
     fluir::pt::ParseTree tree;
     tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
@@ -330,14 +325,10 @@ namespace {
   };
 
   const FullID kConditional{1, 20};
-  const FullID kThenBranch{1, 20, 0};
-  const FullID kElseBranch{1, 20, 1};
-  const FullID kNested{1, 20, 0, 1};
-  constexpr Vec2 kNestedGrip{52, 77};         // centre of {45,70,15,15}
-  constexpr Vec2 kConditionalBar{107, 45};    // inside the right edge {105,35,5,90}
-  constexpr Vec2 kBranchBottomEdge{60, 122};  // inside the bottom edge {10,120,100,5}
-  constexpr Vec2 kThenDividerEdge{80, 92};    // inside the divider {10,90,100,5}, clear of the nested node
-  constexpr Vec2 kConditionalGrip{97, 47};    // centre of {90,40,15,15}
+  const FullID kNested{1, 20, THEN_BRANCH_ID, 1};
+  constexpr Vec2 kNestedGrip{52, 77};           // centre of {45,70,15,15}
+  constexpr Vec2 kConditionalGrip{97, 47};      // centre of {90,40,15,15}
+  constexpr Vec2 kConditionalCorner{102, 117};  // centre of {95,110,15,15}
 
 }  // namespace
 
@@ -363,57 +354,23 @@ TEST(DragTool, AConditionalMoveGripMovesTheConditional) {
   EXPECT_EQ(h.loc(kConditional).y, 4);
 }
 
-TEST(DragTool, AConditionalResizesOnlyItsWidth) {
+// The conditional owns its height now, so its corner grip resizes both axes.
+TEST(DragTool, AConditionalCornerGripResizesBothAxes) {
   NestedHarness h;
-  ASSERT_TRUE(h.send(down(kConditionalBar)));
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
 
-  EXPECT_TRUE(h.send(move(kConditionalBar + Vec2{20, 25})));
+  EXPECT_TRUE(h.send(move(kConditionalCorner + Vec2{20, 25})));
 
   EXPECT_EQ(h.loc(kConditional).width, 24);
-  EXPECT_EQ(h.loc(kConditional).height, 18) << "height follows the branches, not the grip";
+  EXPECT_EQ(h.loc(kConditional).height, 23);
 }
 
-// The bottom edge belongs to the bottom branch: a conditional grows by its branches growing.
-TEST(DragTool, TheBottomEdgeResizesTheElseBranch) {
+TEST(DragTool, AConditionalCannotCollapse) {
   NestedHarness h;
-  ASSERT_TRUE(h.send(down(kBranchBottomEdge)));
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
 
-  EXPECT_TRUE(h.send(move(kBranchBottomEdge + Vec2{0, 20})));
+  EXPECT_TRUE(h.send(move(kConditionalCorner - Vec2{200, 200})));
 
-  EXPECT_EQ(h.loc(kElseBranch).height, 10);
-}
-
-TEST(DragTool, ABranchCannotCollapse) {
-  NestedHarness h;
-  ASSERT_TRUE(h.send(down(kBranchBottomEdge)));
-
-  EXPECT_TRUE(h.send(move(kBranchBottomEdge - Vec2{0, 200})));
-
-  EXPECT_GE(h.loc(kElseBranch).height, 10);
-}
-
-// Growing the then branch makes the conditional taller and pushes the else branch down.
-TEST(DragTool, TheDividerResizesTheThenBranchAndPushesTheElseDown) {
-  NestedHarness h;
-  ASSERT_TRUE(h.send(down(kThenDividerEdge)));
-
-  EXPECT_TRUE(h.send(move(kThenDividerEdge + Vec2{0, 20})));
-
-  EXPECT_EQ(h.loc(kThenBranch).height, 16);
-  EXPECT_EQ(h.loc(kElseBranch).height, 6) << "the else branch keeps its own height";
-
-  const auto boxes = fluir::editor::layoutGraph(h.state.editor.tree(), kCtx.layout);
-  const auto* hit = fluir::editor::hitAt(boxes, Vec2{90, 130});
-  ASSERT_NE(hit, nullptr);
-  EXPECT_EQ(hit->path, kElseBranch);
-  testutil::expectRectNear(hit->world, fluir::editor::Rect{10, 115, 100, 30});
-}
-
-TEST(DragTool, TheThenBranchCannotCollapse) {
-  NestedHarness h;
-  ASSERT_TRUE(h.send(down(kThenDividerEdge)));
-
-  EXPECT_TRUE(h.send(move(kThenDividerEdge - Vec2{0, 200})));
-
-  EXPECT_GE(h.loc(kThenBranch).height, 10);
+  EXPECT_GE(h.loc(kConditional).width, 10);
+  EXPECT_GE(h.loc(kConditional).height, 10);
 }

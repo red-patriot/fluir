@@ -139,11 +139,14 @@ namespace fluir::editor {
   }
 
   void ParseTreeWriter::block(Element* parent, const pt::Block& value) {
-    Element* el = parent->InsertNewChildElement("body");
+    blockContents(parent->InsertNewChildElement("body"), value);
+  }
+
+  void ParseTreeWriter::blockContents(Element* element, const pt::Block& value) {
     for (fluir::ID id : sortedIds(value.nodes))
-      node(el, value.nodes.at(id));
+      node(element, value.nodes.at(id));
     for (fluir::ID id : sortedIds(value.conduits))
-      conduit(el, value.conduits.at(id));
+      conduit(element, value.conduits.at(id));
   }
 
   void ParseTreeWriter::node(Element* parent, const pt::Node& value) {
@@ -195,13 +198,13 @@ namespace fluir::editor {
     auto* e = parent->InsertNewChildElement("conditional");
     setId(e, conditional.id);
     setLocation(e, conditional.location);
-    scopePort(e, conditional.condition, "condition");
+    blockPort(e, conditional.condition, "condition");
     {
       auto* input = e->InsertNewChildElement("input");
       auto sorted = sortedIds(conditional.inputs);
       for (const auto& id : sorted) {
         const auto& port = conditional.inputs.at(id);
-        scopePort(input, port);
+        blockPort(input, port);
       }
     }
     {
@@ -209,23 +212,12 @@ namespace fluir::editor {
       auto sorted = sortedIds(conditional.outputs);
       for (const auto& id : sorted) {
         const auto& port = conditional.outputs.at(id);
-        scopePort(output, port);
+        blockPort(output, port);
       }
     }
-    {
-      const auto& then = conditional.thenScope;
-      auto* thenEl = e->InsertNewChildElement("then");
-      setId(thenEl, then->id);
-      setInt(thenEl, "h"sv, then->location.height);
-      block(thenEl, then->body);
-    }
-    {
-      const auto& else_ = conditional.elseScope;
-      auto* elseEl = e->InsertNewChildElement("else");
-      setId(elseEl, else_->id);
-      setInt(elseEl, "h"sv, else_->location.height);
-      block(elseEl, else_->body);
-    }
+    // A branch has no id and no geometry: its contents sit straight inside its element.
+    blockContents(e->InsertNewChildElement("then"), *conditional.thenScope);
+    blockContents(e->InsertNewChildElement("else"), *conditional.elseScope);
   }
 
   void ParseTreeWriter::comment(Element* parent, const pt::Comment& value) {
@@ -235,7 +227,7 @@ namespace fluir::editor {
     el->SetText(value.text.c_str());
   }
 
-  void ParseTreeWriter::scopePort(Element* parent, const pt::ScopePort& port, std::string_view name) {
+  void ParseTreeWriter::blockPort(Element* parent, const pt::BlockPort& port, std::string_view name) {
     Element* e = parent->InsertNewChildElement(name.data());
     setIdReference(e, port.outerId, "outer"sv);
     setIdReference(e, port.innerId, "inner"sv);

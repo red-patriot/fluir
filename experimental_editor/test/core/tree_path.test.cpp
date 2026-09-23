@@ -18,15 +18,17 @@ namespace {
   using fluir::FlowGraphLocation;
   using fluir::FullID;
   using fluir::editor::blockOf;
+  using fluir::editor::branchAt;
   using fluir::editor::declarationAt;
+  using fluir::editor::ELSE_BRANCH_ID;
   using fluir::editor::functionAt;
+  using fluir::editor::isBranchPath;
   using fluir::editor::isNodePath;
-  using fluir::editor::isScopePath;
   using fluir::editor::locationAt;
   using fluir::editor::nodeAt;
   using fluir::editor::parentOf;
   using fluir::editor::railTypeAt;
-  using fluir::editor::scopeAt;
+  using fluir::editor::THEN_BRANCH_ID;
 
   constexpr FlowGraphLocation kFnLoc{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
   constexpr FlowGraphLocation kNodeLoc{.x = 3, .y = 4, .z = 1, .width = 5, .height = 6};
@@ -212,8 +214,6 @@ TEST(TreePath, RailTypeAtMissesUnknownIds) {
 namespace {
 
   constexpr FlowGraphLocation kCondLoc{.x = 1, .y = 1, .z = 0, .width = 20, .height = 12};
-  constexpr FlowGraphLocation kThenLoc{.x = 0, .y = 0, .z = 0, .width = 20, .height = 5};
-  constexpr FlowGraphLocation kElseLoc{.x = 0, .y = 5, .z = 0, .width = 20, .height = 6};
   constexpr FlowGraphLocation kThenNodeLoc{.x = 2, .y = 2, .z = 0, .width = 4, .height = 1};
   constexpr FlowGraphLocation kElseNodeLoc{.x = 3, .y = 3, .z = 0, .width = 4, .height = 1};
 
@@ -221,23 +221,23 @@ namespace {
     return fluir::pt::Constant{.id = id, .location = location, .value = fluir::literals_types::I32{0}};
   }
 
-  // Function 1 holds constant 10 and conditional 20. Both of 20's scopes hold a
-  // node with id 1 — the collision a scope-aware path must keep apart.
+  // Function 1 holds constant 10 and conditional 20. Both of 20's branches hold a
+  // node with id 1 — the collision a branch-aware path must keep apart.
   fluir::pt::ParseTree makeNestedTree() {
-    fluir::pt::Scope thenScope{.id = 0, .location = kThenLoc, .body = {}};
-    thenScope.body.nodes.emplace(1, makeConstant(1, kThenNodeLoc));
-    thenScope.body.conduits.emplace(50, fluir::pt::Conduit{.id = 50, .input = 1});
+    fluir::pt::Block thenBranch;
+    thenBranch.nodes.emplace(1, makeConstant(1, kThenNodeLoc));
+    thenBranch.conduits.emplace(50, fluir::pt::Conduit{.id = 50, .input = 1});
 
-    fluir::pt::Scope elseScope{.id = 1, .location = kElseLoc, .body = {}};
-    elseScope.body.nodes.emplace(1, makeConstant(1, kElseNodeLoc));
+    fluir::pt::Block elseBranch;
+    elseBranch.nodes.emplace(1, makeConstant(1, kElseNodeLoc));
 
     fluir::pt::Conditional conditional{.id = 20,
                                        .location = kCondLoc,
                                        .condition = {},
                                        .inputs = {},
                                        .outputs = {},
-                                       .thenScope = xyz::indirect{std::move(thenScope)},
-                                       .elseScope = xyz::indirect{std::move(elseScope)}};
+                                       .thenScope = xyz::indirect{std::move(thenBranch)},
+                                       .elseScope = xyz::indirect{std::move(elseBranch)}};
 
     fluir::pt::ParseTree tree = makeTree();
     std::get<fluir::pt::FunctionDecl>(tree.declarations.at(1)).body.nodes.emplace(20, conditional);
@@ -246,11 +246,11 @@ namespace {
 
 }  // namespace
 
-TEST(TreePath, BlockOfAScopePathIsThatScopesBody) {
+TEST(TreePath, BlockOfABranchPathIsThatBranch) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  const fluir::pt::Block* thenBlock = blockOf(tree, FullID{1, 20, 0});
-  const fluir::pt::Block* elseBlock = blockOf(tree, FullID{1, 20, 1});
+  const fluir::pt::Block* thenBlock = blockOf(tree, FullID{1, 20, THEN_BRANCH_ID});
+  const fluir::pt::Block* elseBlock = blockOf(tree, FullID{1, 20, ELSE_BRANCH_ID});
 
   ASSERT_NE(thenBlock, nullptr);
   ASSERT_NE(elseBlock, nullptr);
@@ -262,17 +262,17 @@ TEST(TreePath, BlockOfAScopePathIsThatScopesBody) {
 TEST(TreePath, NodeAtResolvesANestedNode) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  const fluir::pt::Node* node = nodeAt(tree, FullID{1, 20, 0, 1});
+  const fluir::pt::Node* node = nodeAt(tree, FullID{1, 20, THEN_BRANCH_ID, 1});
 
   ASSERT_NE(node, nullptr);
   EXPECT_EQ(std::get<fluir::pt::Constant>(*node).location, kThenNodeLoc);
 }
 
-TEST(TreePath, TheTwoScopesIdOneNodesAreDifferentNodes) {
+TEST(TreePath, TheTwoBranchesIdOneNodesAreDifferentNodes) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  const FlowGraphLocation* thenNode = locationAt(tree, FullID{1, 20, 0, 1});
-  const FlowGraphLocation* elseNode = locationAt(tree, FullID{1, 20, 1, 1});
+  const FlowGraphLocation* thenNode = locationAt(tree, FullID{1, 20, THEN_BRANCH_ID, 1});
+  const FlowGraphLocation* elseNode = locationAt(tree, FullID{1, 20, ELSE_BRANCH_ID, 1});
 
   ASSERT_NE(thenNode, nullptr);
   ASSERT_NE(elseNode, nullptr);
@@ -280,70 +280,68 @@ TEST(TreePath, TheTwoScopesIdOneNodesAreDifferentNodes) {
   EXPECT_EQ(*elseNode, kElseNodeLoc);
 }
 
-TEST(TreePath, BlockOfMissesWrongParityAndUnknownScopes) {
+TEST(TreePath, BlockOfMissesWrongParityAndUnknownBranches) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
   EXPECT_EQ(blockOf(tree, FullID{1, 20}), nullptr);        // even depth names a node, not a block
   EXPECT_EQ(blockOf(tree, FullID{1, 20, 7}), nullptr);     // neither then nor else
-  EXPECT_EQ(blockOf(tree, FullID{1, 10, 0}), nullptr);     // a constant owns no scope
-  EXPECT_EQ(blockOf(tree, FullID{1, 99, 0}), nullptr);     // no such node
-  EXPECT_EQ(blockOf(tree, FullID{9, 20, 0}), nullptr);     // no such function
-  EXPECT_EQ(blockOf(tree, FullID{1, 20, 0, 1}), nullptr);  // a nested node owns no block
+  EXPECT_EQ(blockOf(tree, FullID{1, 10, 1}), nullptr);     // a constant owns no branch
+  EXPECT_EQ(blockOf(tree, FullID{1, 99, 1}), nullptr);     // no such node
+  EXPECT_EQ(blockOf(tree, FullID{9, 20, 1}), nullptr);     // no such function
+  EXPECT_EQ(blockOf(tree, FullID{1, 20, 1, 1}), nullptr);  // a nested node owns no block
 }
 
-TEST(TreePath, NodeAtMissesInsideAnUnresolvableScope) {
+TEST(TreePath, NodeAtMissesInsideAnUnresolvableBranch) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
   EXPECT_EQ(nodeAt(tree, FullID{1, 20, 7, 1}), nullptr);
-  EXPECT_EQ(nodeAt(tree, FullID{1, 20, 0, 99}), nullptr);
-  EXPECT_EQ(nodeAt(tree, FullID{1, 20, 0, 50}), nullptr);  // a conduit is not a node
+  EXPECT_EQ(nodeAt(tree, FullID{1, 20, THEN_BRANCH_ID, 99}), nullptr);
+  EXPECT_EQ(nodeAt(tree, FullID{1, 20, THEN_BRANCH_ID, 50}), nullptr);  // a conduit is not a node
 }
 
-TEST(TreePath, ScopeAtResolvesEitherBranch) {
+TEST(TreePath, BranchAtResolvesEitherBranch) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  const fluir::pt::Scope* thenScope = scopeAt(tree, FullID{1, 20, 0});
-  const fluir::pt::Scope* elseScope = scopeAt(tree, FullID{1, 20, 1});
+  const fluir::pt::Block* thenBranch = branchAt(tree, FullID{1, 20, THEN_BRANCH_ID});
+  const fluir::pt::Block* elseBranch = branchAt(tree, FullID{1, 20, ELSE_BRANCH_ID});
 
-  ASSERT_NE(thenScope, nullptr);
-  ASSERT_NE(elseScope, nullptr);
-  EXPECT_EQ(thenScope->location, kThenLoc);
-  EXPECT_EQ(elseScope->location, kElseLoc);
+  ASSERT_NE(thenBranch, nullptr);
+  ASSERT_NE(elseBranch, nullptr);
+  EXPECT_TRUE(thenBranch->nodes.at(1) == fluir::pt::Node{makeConstant(1, kThenNodeLoc)});
+  EXPECT_TRUE(elseBranch->nodes.at(1) == fluir::pt::Node{makeConstant(1, kElseNodeLoc)});
 }
 
-TEST(TreePath, ScopeAtMissesNonScopePaths) {
+TEST(TreePath, BranchAtMissesNonBranchPaths) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  EXPECT_EQ(scopeAt(tree, FullID{}), nullptr);
-  EXPECT_EQ(scopeAt(tree, FullID{1}), nullptr);
-  EXPECT_EQ(scopeAt(tree, FullID{1, 20}), nullptr);
-  EXPECT_EQ(scopeAt(tree, FullID{1, 20, 7}), nullptr);
-  EXPECT_EQ(scopeAt(tree, FullID{1, 10, 0}), nullptr);
+  EXPECT_EQ(branchAt(tree, FullID{}), nullptr);
+  EXPECT_EQ(branchAt(tree, FullID{1}), nullptr);
+  EXPECT_EQ(branchAt(tree, FullID{1, 20}), nullptr);
+  EXPECT_EQ(branchAt(tree, FullID{1, 20, 0}), nullptr);  // 0 is not a branch index
+  EXPECT_EQ(branchAt(tree, FullID{1, 20, 7}), nullptr);
+  EXPECT_EQ(branchAt(tree, FullID{1, 10, THEN_BRANCH_ID}), nullptr);
 }
 
-TEST(TreePath, LocationAtResolvesAndWritesAScopeBand) {
+TEST(TreePath, LocationAtMissesABranchPath) {
   fluir::pt::ParseTree tree = makeNestedTree();
 
-  FlowGraphLocation* branch = locationAt(tree, FullID{1, 20, 1});
-
-  ASSERT_NE(branch, nullptr);
-  EXPECT_EQ(*branch, kElseLoc);
-  branch->height = 9;
-
-  EXPECT_EQ(locationAt(std::as_const(tree), FullID{1, 20, 1})->height, 9);
+  // A branch has no geometry of its own: its rect is the conditional's.
+  EXPECT_EQ(locationAt(tree, FullID{1, 20, THEN_BRANCH_ID}), nullptr);
+  EXPECT_EQ(locationAt(tree, FullID{1, 20, ELSE_BRANCH_ID}), nullptr);
+  EXPECT_NE(locationAt(tree, FullID{1, 20}), nullptr);
 }
 
 TEST(TreePath, PathKindsFollowDepthParity) {
   EXPECT_FALSE(isNodePath(FullID{}));
   EXPECT_FALSE(isNodePath(FullID{1}));
   EXPECT_TRUE(isNodePath(FullID{1, 20}));
-  EXPECT_FALSE(isNodePath(FullID{1, 20, 0}));
-  EXPECT_TRUE(isNodePath(FullID{1, 20, 0, 1}));
+  EXPECT_FALSE(isNodePath(FullID{1, 20, 1}));
+  EXPECT_TRUE(isNodePath(FullID{1, 20, 1, 1}));
 
-  EXPECT_FALSE(isScopePath(FullID{}));
-  EXPECT_FALSE(isScopePath(FullID{1}));
-  EXPECT_FALSE(isScopePath(FullID{1, 20}));
-  EXPECT_TRUE(isScopePath(FullID{1, 20, 0}));
-  EXPECT_FALSE(isScopePath(FullID{1, 20, 0, 1}));
-  EXPECT_TRUE(isScopePath(FullID{1, 20, 0, 1, 0}));
+  EXPECT_FALSE(isBranchPath(FullID{}));
+  EXPECT_FALSE(isBranchPath(FullID{1}));
+  EXPECT_FALSE(isBranchPath(FullID{1, 20}));
+  EXPECT_TRUE(isBranchPath(FullID{1, 20, 1}));
+  EXPECT_FALSE(isBranchPath(FullID{1, 20, 1, 1}));
+  EXPECT_TRUE(isBranchPath(FullID{1, 20, 1, 1, 1}));
 }

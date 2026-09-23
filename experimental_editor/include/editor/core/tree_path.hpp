@@ -16,13 +16,17 @@ namespace fluir::editor {
   pt::FunctionDecl* functionAt(pt::ParseTree& tree, const FullID& path);
   const pt::FunctionDecl* functionAt(const pt::ParseTree& tree, const FullID& path);
 
-  /** Depth parity names the kind: even depth >= 2 is a node, odd depth >= 3 a scope. */
-  bool isNodePath(const FullID& path);
-  bool isScopePath(const FullID& path);
+  /** A branch's path segment is its 1-based index in its conditional; the model holds no id. */
+  inline constexpr fluir::ID THEN_BRANCH_ID = 1;
+  inline constexpr fluir::ID ELSE_BRANCH_ID = 2;
 
-  /** The scope an odd path of depth >= 3 names inside its parent conditional, or nullptr. */
-  pt::Scope* scopeAt(pt::ParseTree& tree, const FullID& path);
-  const pt::Scope* scopeAt(const pt::ParseTree& tree, const FullID& path);
+  /** Depth parity names the kind: even depth >= 2 is a node, odd depth >= 3 a branch. */
+  bool isNodePath(const FullID& path);
+  bool isBranchPath(const FullID& path);
+
+  /** The branch block an odd path of depth >= 3 names inside its parent conditional, or nullptr. */
+  pt::Block* branchAt(pt::ParseTree& tree, const FullID& path);
+  const pt::Block* branchAt(const pt::ParseTree& tree, const FullID& path);
 
   /** The block a container path owns, or nullptr. The only depth-aware lookup. */
   pt::Block* blockOf(pt::ParseTree& tree, const FullID& containerPath);

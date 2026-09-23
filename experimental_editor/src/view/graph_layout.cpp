@@ -28,10 +28,6 @@ namespace fluir::editor {
       return {r.x + r.w - GRIP_THICKNESS * unit, r.y, GRIP_THICKNESS * unit, r.h};
     }
 
-    Rect resizeEdgeY(const Rect& r, double unit) {
-      return {r.x, r.y + r.h - GRIP_THICKNESS * unit, r.w, GRIP_THICKNESS * unit};
-    }
-
     Rect resizeCorner(const Rect& r, double unit) {
       const double size = RESIZE_CORNER_SIZE * unit;
       return {r.x + r.w - size, r.y + r.h - size, size, size};
@@ -78,10 +74,6 @@ namespace fluir::editor {
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
-    double conditionalHeightUnits(const pt::Conditional& conditional) {
-      return conditional.thenScope->location.height + conditional.elseScope->location.height;
-    }
-
     void layoutBlock(const pt::Block& block,
                      const FullID& parent,
                      Vec2 origin,
@@ -90,7 +82,7 @@ namespace fluir::editor {
                      Terminals terminals,
                      std::vector<Box>& out);
 
-    // The conditional's body, then each branch with its own nodes, then its chrome over both.
+    // The conditional's body, its visible branch's nodes, then its chrome over them.
     void layoutConditional(const pt::Conditional& conditional,
                            const FullID& path,
                            const Rect& frame,
@@ -100,34 +92,19 @@ namespace fluir::editor {
       const double unit = layout.unitPx;
       out.push_back({path, Part::Body, frame, clip});
 
-      // Branches stack: the else branch begins where the then branch ends, so only heights are its own.
-      double offsetUnits = 0;
-      for (const pt::Scope* scope : {&*conditional.thenScope, &*conditional.elseScope}) {
-        // A branch spans its conditional's width; only its own height is its own.
-        const Rect branch{frame.x, frame.y + offsetUnits * unit, frame.w, scope->location.height * unit};
-        offsetUnits += scope->location.height;
-        const std::optional<Rect> branchClip = clip ? intersect(*clip, branch) : std::optional<Rect>{branch};
-        if (!branchClip) {
-          continue;  // the branch is entirely outside its container
-        }
-        const Vec2 origin = bodyOrigin(branch.topLeft(), layout.headerH());
-        const Rect content{branch.x, origin.y, branch.w, branch.y + branch.h - origin.y};
-        const FullID scopePath = childOf(path, scope->id);
-        out.push_back({scopePath, Part::Scope, branch, branchClip});
-        if (const std::optional<Rect> contentClip = intersect(*branchClip, content)) {
-          layoutBlock(scope->body, scopePath, origin, *contentClip, layout, Terminals{}, out);
-        }
+      // One frame, one header band, one visible branch: the branch is the frame under its header.
+      const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
+      const Rect content{frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
+      const FullID branchPath = childOf(path, THEN_BRANCH_ID);
+      if (const std::optional<Rect> contentClip = clip ? intersect(*clip, content) : std::optional<Rect>{content}) {
+        out.push_back({branchPath, Part::Branch, content, contentClip});
+        layoutBlock(*conditional.thenScope, branchPath, origin, *contentClip, layout, Terminals{}, out);
       }
 
-      // The move grip rides the top band, which is the then branch's header.
+      // The frame's chrome paints, and so hits, over its branch.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
-      out.push_back({path, Part::ResizeX, resizeEdgeX(frame, unit), clip});
-      // The divider is the then branch's bottom edge: growing it makes the conditional taller.
-      const Rect thenBranch{frame.x, frame.y, frame.w, conditional.thenScope->location.height * unit};
-      out.push_back({childOf(path, conditional.thenScope->id), Part::ResizeY, resizeEdgeY(thenBranch, unit), clip});
-      // The bottom edge belongs to the bottom branch: a conditional grows by its branches growing.
-      out.push_back({childOf(path, conditional.elseScope->id), Part::ResizeY, resizeEdgeY(frame, unit), clip});
+      out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), clip});
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
     }
 
@@ -143,10 +120,8 @@ namespace fluir::editor {
       for (const pt::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
         if (const auto* conditional = std::get_if<pt::Conditional>(node)) {
-          FlowGraphLocation location = conditional->location;
-          location.height = static_cast<int>(conditionalHeightUnits(*conditional));
           layoutConditional(
-            *conditional, path, atOrigin(origin, localRect(location, layout.unitPx)), clip, layout, out);
+            *conditional, path, atOrigin(origin, localRect(conditional->location, layout.unitPx)), clip, layout, out);
           continue;
         }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));

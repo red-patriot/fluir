@@ -39,6 +39,7 @@ namespace fluir::editor {
     void funcReturn(Element* parent, const pt::FunctionDecl::Return& value);
 
     void block(Element* parent, const pt::Block& value);
+    void blockContents(Element* element, const pt::Block& value);
     void node(Element* parent, const pt::Node& value);
     void constant(Element* parent, const pt::Constant& value);
     void binary(Element* parent, const pt::Binary& value);
@@ -47,7 +48,7 @@ namespace fluir::editor {
     void conditional(Element* parent, const pt::Conditional& conditional);
     void comment(Element* parent, const pt::Comment& value);
 
-    void scopePort(Element* parent, const pt::ScopePort& value, std::string_view name = "port");
+    void blockPort(Element* parent, const pt::BlockPort& value, std::string_view name = "port");
 
     void conduit(Element* parent, const pt::Conduit& value);
     void conduitOutput(Element* parent, const pt::Conduit::Output& value);

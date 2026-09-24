@@ -2,21 +2,17 @@
 
 #include <variant>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/comment.hpp"
 #include "editor/view/draw/conditional.hpp"
 #include "editor/view/draw/function.hpp"
+#include "editor/view/graph_geometry.hpp"
 #include "editor/view/node_view.hpp"
+#include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
   namespace {
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
 
     // Renderer::drawRect has no thickness, so two concentric rects stand in for a 2px outline.
     void drawOutline(const Subview& view, const EditorContext& ctx, const Rect& r) {
@@ -29,8 +25,8 @@ namespace fluir::editor {
     // What the path names decides the body: a declaration, a node, or a container's branch.
     void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
       if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
-        std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
-                              [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+        std::visit(util::Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                                    [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
                    *decl);
       } else if (const pt::Node* node = nodeAt(tree, box.path)) {
         drawNode(*node, box.world, view, ctx);

@@ -15,6 +15,7 @@
 #include "editor/transaction/add_comment.hpp"
 #include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/add_node.hpp"
+#include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -25,11 +26,6 @@ namespace fluir::editor {
     constexpr double ROW_PAD_PX = 6.0;
     constexpr double CARET_W_PX = 1.0;
     constexpr std::size_t MAX_VISIBLE_ROWS = 10;
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
 
     FlowGraphLocation placed(Coordinate where, int w, int h) {
       return FlowGraphLocation{.x = where.x, .y = where.y, .z = where.z + 1, .width = w, .height = h};
@@ -53,7 +49,7 @@ namespace fluir::editor {
   }  // namespace
 
   CompletionModal::CompletionModal(
-    std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where, FullID body) :
+    std::vector<Completion> completions, Rect bounds, TextMetrics* text, Coordinate where, FullID body) :
     completions_(std::move(completions)), bounds_(bounds), where_(where), body_(std::move(body)) {
     for (const Completion& completion : completions_) {
       labels_.emplace_back(completion.label);
@@ -179,7 +175,7 @@ namespace fluir::editor {
   void CompletionModal::selectVisible(size_t idx, EditorState& state) {
     const fluir::ID id = state.editor.generateID(body_);
     std::unique_ptr<Transaction> edit = std::visit(
-      Overloaded{
+      util::Overloaded{
         [&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
           return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
         },

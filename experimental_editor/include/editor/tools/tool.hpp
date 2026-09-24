@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_TOOLS_TOOL_HPP
+#define FLUIR_EDITOR_TOOLS_TOOL_HPP
 
 #include <memory>
 #include <optional>
@@ -17,7 +18,7 @@
 
 namespace fluir::editor {
 
-  class Renderer;
+  class TextMetrics;
 
   /** Everything a tool may read or change. */
   struct EditorState {
@@ -25,8 +26,10 @@ namespace fluir::editor {
     ModuleEditor editor;
     std::optional<FullID> selection;
     Viewport view;
-    /** Wrapped-text layout queries; null puts the caret at the end. */
-    Renderer* text = nullptr;
+    /** Optional text layout queries. */
+    TextMetrics* text = nullptr;
+    /** Where popups fit, in screen px; nullopt means unbounded. */
+    std::optional<Rect> screen;
     Intelligence intelligence;
     /** The open popup; the page draws it last, over everything. PopupTool routes input to it. */
     std::unique_ptr<Popup> popup;
@@ -63,3 +66,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

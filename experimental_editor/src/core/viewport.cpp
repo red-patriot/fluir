@@ -10,6 +10,11 @@ namespace fluir::editor {
 
   Vec2 Viewport::screenToWorld(Vec2 screen) const { return (screen - pan) / scale; }
 
+  Rect Viewport::toScreen(Rect world) const {
+    const Vec2 topLeft = worldToScreen(world.topLeft());
+    return {topLeft.x, topLeft.y, world.w * scale, world.h * scale};
+  }
+
   void Viewport::zoomAbout(Vec2 screenPivot, double factor) {
     const Vec2 worldAtPivot = screenToWorld(screenPivot);
     scale *= factor;

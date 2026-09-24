@@ -6,7 +6,6 @@
 #include "editor/assets/images.hpp"
 #include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
-#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
   namespace {

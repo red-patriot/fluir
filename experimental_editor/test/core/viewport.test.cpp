@@ -28,6 +28,15 @@ namespace {
     EXPECT_NEAR(s.y, 28.0, 1e-4);
   }
 
+  TEST(Viewport, RectToScreenMapsTopLeftAndScalesSize) {
+    const Viewport vp{.pan = {10.0, 20.0}, .scale = 2.0};
+    const Rect r = vp.toScreen(Rect{3.0, 4.0, 5.0, 6.0});
+    EXPECT_NEAR(r.x, 16.0, 1e-6);
+    EXPECT_NEAR(r.y, 28.0, 1e-6);
+    EXPECT_NEAR(r.w, 10.0, 1e-6);
+    EXPECT_NEAR(r.h, 12.0, 1e-6);
+  }
+
   TEST(Viewport, ScreenToWorldInvertsWorldToScreen) {
     const Viewport vp{.pan = {-7.5, 12.0}, .scale = 3.0};
     const Vec2 w = vp.screenToWorld(vp.worldToScreen({42.0, -13.0}));

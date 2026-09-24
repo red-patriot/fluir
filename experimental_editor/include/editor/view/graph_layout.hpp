@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_GRAPH_LAYOUT_HPP
+#define FLUIR_EDITOR_VIEW_GRAPH_LAYOUT_HPP
 
 #include <optional>
 #include <span>
@@ -22,9 +23,6 @@ namespace fluir::editor {
     Rect world;
     std::optional<Rect> clip;
   };
-
-  /** The move grip over `frame`'s top-right corner, in the same space. */
-  Rect moveGrip(const Rect& frame, double unit);
 
   /** Every box `tree` draws as, in paint order. */
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout);
@@ -53,3 +51,5 @@ namespace fluir::editor {
   Rect graphBounds(std::span<const Box> boxes);
 
 }  // namespace fluir::editor
+
+#endif

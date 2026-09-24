@@ -1,4 +1,4 @@
-#include "editor/core/graph_geometry.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 #include <vector>
 

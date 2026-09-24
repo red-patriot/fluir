@@ -11,6 +11,7 @@
 
 #include "editor/core/identifier.hpp"
 #include "editor/core/literal_text.hpp"
+#include "editor/core/node_access.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
@@ -41,16 +42,6 @@ namespace fluir::editor {
       return node == nullptr ? nullptr : std::get_if<pt::Call>(node);
     }
 
-    // A top-level comment (one-segment path) or one in a body.
-    const pt::Comment* commentAt(const pt::ParseTree& tree, const FullID& path) {
-      if (path.size() == 1) {
-        const pt::Declaration* decl = declarationAt(tree, path);
-        return decl == nullptr ? nullptr : std::get_if<pt::Comment>(decl);
-      }
-      const pt::Node* node = nodeAt(tree, path);
-      return node == nullptr ? nullptr : std::get_if<pt::Comment>(node);
-    }
-
     const pt::FunctionDecl::Parameter* paramAt(const pt::FunctionDecl& fn, int index) {
       if (!fn.input) {
         return nullptr;
@@ -62,15 +53,6 @@ namespace fluir::editor {
     const pt::Call::Argument* argumentAt(const pt::Call& call, int index) {
       const auto it = std::ranges::find(call.arguments, index, &pt::Call::Argument::index);
       return it == call.arguments.end() ? nullptr : &*it;
-    }
-
-    std::vector<const pt::Call::Argument*> sortedArguments(const pt::Call& call) {
-      std::vector<const pt::Call::Argument*> args;
-      for (const auto& arg : call.arguments) {
-        args.push_back(&arg);
-      }
-      std::ranges::sort(args, {}, &pt::Call::Argument::index);
-      return args;
     }
 
     std::size_t argumentRow(const pt::Call& call, int index) {
@@ -302,10 +284,7 @@ namespace fluir::editor {
         return text.size();
       }
       const Rect local = commentTextRect(label->rect, state.ctx.layout);
-      const Vec2 topLeft = state.view.worldToScreen(local.topLeft());
-      const double scale = state.view.scale;
-      return state.text->wrappedIndexAt(
-        Rect{topLeft.x, topLeft.y, local.w * scale, local.h * scale}, text, scale, event.pos);
+      return state.text->wrappedIndexAt(state.view.toScreen(local), text, state.view.scale, event.pos);
     };
     if (field_ && target_ == *target) {
       field_->setCaret(caretAt(field_->text()));

@@ -28,8 +28,7 @@ namespace fluir::editor {
     for (const fluir::Operator op : ops) {
       labels.emplace_back(stringify(op));
     }
-    const Vec2 topLeft = state.view.worldToScreen(hit->world.topLeft());
-    const Rect anchor{topLeft.x, topLeft.y, hit->world.w * state.view.scale, hit->world.h * state.view.scale};
+    const Rect anchor = state.view.toScreen(hit->world);
     state.popup = std::make_unique<MenuPopup>(std::move(labels),
                                               anchor,
                                               popupBounds(state),

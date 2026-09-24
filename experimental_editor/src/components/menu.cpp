@@ -13,7 +13,7 @@ namespace fluir::editor {
                         Rect anchor,
                         Rect bounds,
                         const EditorContext::Layout& layout,
-                        Renderer* text) {
+                        TextMetrics* text) {
     Vec2 largest;
     for (const std::string& label : labels) {
       const Vec2 size =

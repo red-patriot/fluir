@@ -3,17 +3,13 @@
 #include <algorithm>
 #include <cstddef>
 #include <utility>
-#include <variant>
 
+#include "editor/core/node_access.hpp"
 #include "editor/core/tree_edit.hpp"
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
   namespace {
-
-    fluir::ID idOf(const pt::Node& node) {
-      return std::visit([](const auto& n) { return n.id; }, node);
-    }
 
     std::vector<pt::Conduit> touchedConduits(const pt::Block& block, fluir::ID id) {
       std::vector<pt::Conduit> out;

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_TOOLS_COMPLETION_MODAL_HPP
+#define FLUIR_EDITOR_TOOLS_COMPLETION_MODAL_HPP
 
 #include <cstddef>
 #include <optional>
@@ -23,7 +24,7 @@ namespace fluir::editor {
      * bounds, then wheel-scrolled), centered. Rows fit `text`'s measured line height (null falls back to GLYPH_PX).
      * Picks land at world units `where` (z is the parent's) inside `body`. */
     CompletionModal(
-      std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where = {}, FullID body = {});
+      std::vector<Completion> completions, Rect bounds, TextMetrics* text, Coordinate where = {}, FullID body = {});
 
     bool onEvent(const InputEvent& event, EditorState& state) override;
     void draw(Renderer& renderer, const EditorContext& ctx) const override;
@@ -57,3 +58,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

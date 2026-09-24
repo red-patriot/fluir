@@ -51,8 +51,7 @@ namespace fluir::editor {
       return false;
     }
     std::vector<std::string> labels(types.begin(), types.end());
-    const Vec2 topLeft = state.view.worldToScreen(rail->world.topLeft());
-    const Rect anchor{topLeft.x, topLeft.y, rail->world.w * state.view.scale, rail->world.h * state.view.scale};
+    const Rect anchor = state.view.toScreen(rail->world);
     state.popup = std::make_unique<MenuPopup>(
       labels,
       anchor,

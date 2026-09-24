@@ -12,6 +12,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/text_metrics.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/view/graph_draw.hpp"
@@ -666,6 +667,22 @@ TEST(TextEditTool, WithoutTextLayoutACommentOpensWithTheCaretAtTheEnd) {
 
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_EQ(h.tool.field()->caret(), 8u);
+}
+
+// Caret placement needs only text metrics, not a whole renderer.
+TEST(TextEditTool, ACommentCaretComesFromTextMetricsAlone) {
+  struct FixedIndex : fluir::editor::TextMetrics {
+    Vec2 measureText(std::string_view) override { return {}; }
+    std::size_t wrappedIndexAt(Rect, std::string_view, double, Vec2) override { return 5; }
+    Rect wrappedCaretRect(Rect, std::string_view, double, std::size_t) override { return {}; }
+  } metrics;
+  Harness h;
+  h.state.text = &metrics;
+
+  h.send(down(kCommentText));
+
+  ASSERT_NE(h.tool.field(), nullptr);
+  EXPECT_EQ(h.tool.field()->caret(), 5u);
 }
 
 TEST(TextEditTool, ReturnEditsTheCommentUndoably) {

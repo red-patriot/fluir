@@ -43,6 +43,7 @@ namespace {
 
     explicit Fixture(const std::string& file = "read/single_empty_function.fl") {
       state.text = &renderer;
+      state.screen = fluir::editor::Rect{0, 0, renderer.outputSize_.x, renderer.outputSize_.y};
       testutil::loadInto(state, file);
     }
   };

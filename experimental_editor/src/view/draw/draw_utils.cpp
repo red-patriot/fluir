@@ -3,14 +3,18 @@
 #include <algorithm>
 
 #include "editor/assets/images.hpp"
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor {
   namespace {
 
     // Split-label tags draw smaller than their text.
     constexpr double kTagScale = 0.8;
+    // Grip sizes, in grid units.
+    constexpr double DRAG_SIZE = 3;
+    constexpr double DRAG_INSET = 1;
+    constexpr double RESIZE_CORNER_SIZE = 3;
 
     // A lone terminal sits at the centre; more spread top-to-bottom down the edge.
     double terminalFraction(int count, int index) {
@@ -18,6 +22,18 @@ namespace fluir::editor {
     }
 
   }  // namespace
+
+  Rect moveGrip(const Rect& frame, double unit) {
+    return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
+            frame.y + DRAG_INSET * unit,
+            DRAG_SIZE * unit,
+            DRAG_SIZE * unit};
+  }
+
+  Rect resizeCorner(const Rect& frame, double unit) {
+    const double size = RESIZE_CORNER_SIZE * unit;
+    return {frame.x + frame.w - size, frame.y + frame.h - size, size, size};
+  }
 
   Rect fitInto(Rect target, Vec2 intrinsic) {
     if (intrinsic.x <= 0.0 || intrinsic.y <= 0.0 || target.w <= 0.0 || target.h <= 0.0) {

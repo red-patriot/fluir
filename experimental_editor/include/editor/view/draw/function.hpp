@@ -18,6 +18,9 @@ namespace fluir::editor::draw {
 
   Color color(const pt::FunctionDecl& fn, const EditorContext::Theme& theme);
 
+  /** How far the function may be resized, in grid units. */
+  Limits<Vec2i> sizeLimits(const pt::FunctionDecl& fn);
+
   /** The name, after the tag in the frame's header band. */
   std::vector<FieldLabel> labels(const pt::FunctionDecl& fn, const Rect& frame, const EditorContext::Layout& layout);
 

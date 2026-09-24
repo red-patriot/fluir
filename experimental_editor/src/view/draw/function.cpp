@@ -8,6 +8,9 @@
 namespace fluir::editor::draw {
   namespace {
 
+    // In grid units.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
+
     // The parameter a rail shows; the return rail has none.
     const pt::FunctionDecl::Parameter* paramOf(const pt::FunctionDecl& fn, fluir::ID railId) {
       if (fn.input) {
@@ -33,6 +36,8 @@ namespace fluir::editor::draw {
   }
 
   Color color(const pt::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
+
+  Limits<Vec2i> sizeLimits(const pt::FunctionDecl&) { return SIZE_LIMITS; }
 
   std::vector<FieldLabel> labels(const pt::FunctionDecl&, const Rect& frame, const EditorContext::Layout& layout) {
     return {{{Field::Kind::Name}, splitLabel(headerOf(frame, layout), FN_TAG, layout).text}};

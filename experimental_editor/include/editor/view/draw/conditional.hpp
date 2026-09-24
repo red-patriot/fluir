@@ -1,12 +1,14 @@
 #ifndef FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
 #define FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
 
+#include <optional>
 #include <string_view>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/view/draw/draw_utils.hpp"
+#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
 
@@ -20,6 +22,12 @@ namespace fluir::editor::draw {
   TerminalSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
 
   Color color(const pt::Conditional& node, const EditorContext::Theme& theme);
+
+  /** How far the node may be resized, in grid units. */
+  Limits<Vec2i> sizeLimits(const pt::Conditional& node);
+
+  /** The grip that resizes the node, if any. */
+  std::optional<Part> resizePart(const pt::Conditional& node);
 
   /** None: a conditional has no editable text. */
   std::vector<FieldLabel> labels(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);

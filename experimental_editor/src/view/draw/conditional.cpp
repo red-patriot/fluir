@@ -4,10 +4,20 @@
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor::draw {
+  namespace {
+
+    // In grid units; deep enough that the conditional keeps room for a node under its header.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
+
+  }  // namespace
 
   TerminalSet anchors(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
 
   Color color(const pt::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
+
+  Limits<Vec2i> sizeLimits(const pt::Conditional&) { return SIZE_LIMITS; }
+
+  std::optional<Part> resizePart(const pt::Conditional&) { return Part::ResizeXY; }
 
   std::vector<FieldLabel> labels(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
 

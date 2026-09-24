@@ -140,6 +140,7 @@ target_include_directories(
 
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
+    "core/fields.cpp"
     "core/identifier.cpp"
     "core/intelligence.cpp"
     "core/literal_text.cpp"

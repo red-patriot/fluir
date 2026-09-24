@@ -6,61 +6,21 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <variant>
 #include <vector>
 
-#include "editor/core/identifier.hpp"
-#include "editor/core/literal_text.hpp"
+#include "editor/core/fields.hpp"
 #include "editor/core/node_access.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
-#include "editor/transaction/edit_call_argument.hpp"
-#include "editor/transaction/edit_call_node.hpp"
-#include "editor/transaction/edit_comment.hpp"
-#include "editor/transaction/rename.hpp"
-#include "editor/transaction/set_constant_value.hpp"
 #include "editor/transaction/transaction.hpp"
-#include "editor/transaction/update_func_param.hpp"
 #include "editor/view/draw/comment.hpp"
 #include "editor/view/draw/function.hpp"
 #include "editor/view/node_view.hpp"
 
-// Editable kinds: a constant's literal, a call's target and argument names, a function's name and parameter names,
-// and a comment's text (any text, drawn wrapped). Where each sits comes from the view's `labels`; a new kind adds a
-// branch to `draftText` and `commit` below.
+// Edits any text field: where it sits comes from the view's `labels`, its value and edit from `core/fields`.
 
 namespace fluir::editor {
   namespace {
-
-    const pt::Constant* constantAt(const pt::ParseTree& tree, const FullID& path) {
-      const pt::Node* node = nodeAt(tree, path);
-      return node == nullptr ? nullptr : std::get_if<pt::Constant>(node);
-    }
-
-    const pt::Call* callAt(const pt::ParseTree& tree, const FullID& path) {
-      const pt::Node* node = nodeAt(tree, path);
-      return node == nullptr ? nullptr : std::get_if<pt::Call>(node);
-    }
-
-    const pt::FunctionDecl::Parameter* paramAt(const pt::FunctionDecl& fn, int index) {
-      if (!fn.input) {
-        return nullptr;
-      }
-      const auto it = std::ranges::find(fn.input->parameters, index, &pt::FunctionDecl::Parameter::index);
-      return it == fn.input->parameters.end() ? nullptr : &*it;
-    }
-
-    const pt::Call::Argument* argumentAt(const pt::Call& call, int index) {
-      const auto it = std::ranges::find(call.arguments, index, &pt::Call::Argument::index);
-      return it == call.arguments.end() ? nullptr : &*it;
-    }
-
-    // The argument or parameter a target names, if any.
-    std::optional<int> indexOf(const TextEditTool::Target& target) {
-      const Field::Kind kind = target.field.kind;
-      return kind == Field::Kind::Arg || kind == Field::Kind::ParamName ? std::optional{target.field.index} :
-                                                                          std::nullopt;
-    }
 
     // Whether `box` shows labels of `owner`: its body, or one of its function's rails.
     bool showsLabelsOf(const Box& box, const FullID& owner) {
@@ -82,9 +42,6 @@ namespace fluir::editor {
       return node == nullptr ? std::vector<FieldLabel>{} : nodeLabels(*node, box.world, layout);
     }
 
-    // Operators and bools have their own tools.
-    bool isText(Field::Kind kind) { return kind != Field::Kind::Operator && kind != Field::Kind::Bool; }
-
     // What a press at `world` opens, or nullopt.
     std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree,
                                                  std::span<const Box> boxes,
@@ -99,7 +56,7 @@ namespace fluir::editor {
           continue;
         }
         for (const FieldLabel& label : labelsOf(tree, box, layout)) {
-          if (isText(label.field.kind) && label.rect.contains(world)) {
+          if (label.rect.contains(world) && fields::read(tree, hit->path, label.field)) {
             return TextEditTool::Target{hit->path, label.field};
           }
         }
@@ -130,61 +87,6 @@ namespace fluir::editor {
       return std::nullopt;
     }
 
-    std::optional<std::string> draftText(const pt::ParseTree& tree, const TextEditTool::Target& target) {
-      if (const pt::Comment* comment = commentAt(tree, target.path)) {
-        return comment->text;
-      }
-      const std::optional<int> index = indexOf(target);
-      if (const pt::FunctionDecl* fn = functionAt(tree, target.path)) {
-        if (!index) {
-          return fn->name;
-        }
-        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *index);
-        return param == nullptr ? std::nullopt : std::optional{param->name};
-      }
-      if (const pt::Call* call = callAt(tree, target.path)) {
-        if (!index) {
-          return call->target;
-        }
-        const pt::Call::Argument* arg = argumentAt(*call, *index);
-        return arg == nullptr ? std::nullopt : std::optional{arg->name};
-      }
-      if (const pt::Constant* constant = constantAt(tree, target.path);
-          constant && isEditableLiteral(constant->value)) {
-        return renderLiteral(constant->value);
-      }
-      return std::nullopt;
-    }
-
-    // The edit `text` commits: nullopt rejects the draft, a null edit means the value is unchanged.
-    std::optional<std::unique_ptr<Transaction>> commit(const pt::ParseTree& tree,
-                                                       const TextEditTool::Target& target,
-                                                       const std::string& text) {
-      const FullID& path = target.path;
-      const std::optional<int> index = indexOf(target);
-      if (const pt::Comment* comment = commentAt(tree, path)) {
-        return comment->text == text ? nullptr : editComment(path, text);
-      }
-      if (functionAt(tree, path) != nullptr || callAt(tree, path) != nullptr) {
-        if (!isValidIdentifier(text)) {
-          return std::nullopt;
-        }
-        if (text == *draftText(tree, target)) {
-          return nullptr;
-        }
-        if (functionAt(tree, path) != nullptr) {
-          return index ? renameParameter(path, *index, text) : renameFunction(path, text);
-        }
-        return index ? renameCallArgument(path, *index, text) : retargetCall(path, text);
-      }
-      const pt::Literal& value = constantAt(tree, path)->value;
-      const std::optional<pt::Literal> parsed = tryParseLiteral(value, text);
-      if (!parsed) {
-        return std::nullopt;
-      }
-      return *parsed == value ? nullptr : setConstantValue(path, *parsed);
-    }
-
     // A function's name or parameter sits on header chrome; everything else on its node.
     Color coverColor(const pt::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
       if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
@@ -205,7 +107,7 @@ namespace fluir::editor {
 
   bool TextEditTool::onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
     // An undo or delete may have removed what the draft edits.
-    if (field_ && !draftText(state.editor.tree(), target_)) {
+    if (field_ && !fields::read(state.editor.tree(), target_.path, target_.field)) {
       field_.reset();
     }
     switch (event.type) {
@@ -258,7 +160,7 @@ namespace fluir::editor {
       field_->setCaret(caretAt(field_->text()));
       return;
     }
-    const std::string text = *draftText(tree, *target);
+    const std::string text = *fields::read(tree, target->path, target->field);
     target_ = *target;
     field_.emplace(text, caretAt(text));
   }
@@ -267,7 +169,8 @@ namespace fluir::editor {
     switch (key) {
       case InputEvent::Key::Return:
         {
-          std::optional<std::unique_ptr<Transaction>> edit = commit(state.editor.tree(), target_, field_->text());
+          std::optional<std::unique_ptr<Transaction>> edit =
+            fields::write(state.editor.tree(), target_.path, target_.field, field_->text());
           if (!edit) {
             field_->reject();
             return true;

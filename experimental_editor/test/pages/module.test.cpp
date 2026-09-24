@@ -548,6 +548,7 @@ namespace {
   // function_with_input_only.fl: param a (id 2, I32) rail {50,75,75,25}; its tag, then its name.
   const fs::path kInputOnly = fs::path(TEST_FOLDER) / "read/function_with_input_only.fl";
   const Rect kParamARail{50, 75, 75, 25};
+  const Rect kParamATagRect{50, 75, 23.2, 25};  // the menu's anchor: textPad + 3 glyphs at 0.8x
   constexpr Vec2 kParamATag{55, 90};
 
   const fluir::pt::FunctionDecl::Parameter& paramA(const Harness& h) {
@@ -560,7 +561,7 @@ TEST(ModulePage, PickingFromTheTypeMenuIsOneUndoableEdit) {
   Harness h{kInputOnly};
   h.press(kParamATag);
 
-  const Vec2 f64 = menuRow(h, "F64", kParamARail).center();
+  const Vec2 f64 = menuRow(h, "F64", kParamATagRect).center();
   h.send({move(f64), down(f64), up(f64)});
 
   EXPECT_EQ(paramA(h).typeName, "F64");

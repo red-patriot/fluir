@@ -35,8 +35,9 @@ namespace {
   using Literal = fluir::literals_types::Literal;
 
   const EditorContext ctx;
-  const std::vector<std::string_view> BUILTIN_TYPES{
-    "F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
+  using Kind = fluir::editor::Field::Kind;
+
+  const std::vector<std::string> BUILTIN_TYPES{"F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
 
 }  // namespace
 
@@ -44,72 +45,59 @@ TEST(Intelligence, ABinaryNodeOffersTheBinaryOperators) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/simple_binary_expr.fl");
 
-  const std::vector<Operator> expected{Operator::PLUS,
-                                       Operator::MINUS,
-                                       Operator::STAR,
-                                       Operator::SLASH,
-                                       Operator::EQUAL_EQUAL,
-                                       Operator::BANG_EQUAL,
-                                       Operator::GREATER_EQUAL,
-                                       Operator::LESS_EQUAL,
-                                       Operator::GREATER,
-                                       Operator::LESS,
-                                       Operator::AND_AND,
-                                       Operator::BAR_BAR};
-  EXPECT_EQ(Intelligence{}.operators(state.editor.tree(), FullID{1, 1}), expected);
+  const std::vector<std::string> expected{"+", "-", "*", "/", "==", "!=", ">=", "<=", ">", "<", "&&", "||"};
+  EXPECT_EQ(Intelligence{}.choices(state.editor.tree(), FullID{1, 1}, {Kind::Operator}), expected);
 }
 
 TEST(Intelligence, AUnaryNodeOffersTheUnaryOperators) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/simple_unary_expr.fl");
 
-  const std::vector<Operator> expected{
-    Operator::PLUS, Operator::MINUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS, Operator::BANG};
-  EXPECT_EQ(Intelligence{}.operators(state.editor.tree(), FullID{1, 7}), expected);
+  const std::vector<std::string> expected{"+", "-", "++", "--", "!"};
+  EXPECT_EQ(Intelligence{}.choices(state.editor.tree(), FullID{1, 7}, {Kind::Operator}), expected);
 }
 
-TEST(Intelligence, NonOperatorsAndMissingPathsOfferNothing) {
+TEST(Intelligence, NonOperatorsAndMissingPathsOfferNoOperators) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/simple_binary_expr.fl");
   const Intelligence uut;
 
-  EXPECT_TRUE(uut.operators(state.editor.tree(), FullID{1, 2}).empty()) << "constant";
-  EXPECT_TRUE(uut.operators(state.editor.tree(), FullID{1}).empty()) << "function";
-  EXPECT_TRUE(uut.operators(state.editor.tree(), FullID{1, 99}).empty()) << "missing";
-  EXPECT_TRUE(uut.operators(state.editor.tree(), FullID{}).empty()) << "empty path";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{1, 2}, {Kind::Operator}).empty()) << "constant";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{1}, {Kind::Operator}).empty()) << "function";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{1, 99}, {Kind::Operator}).empty()) << "missing";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{}, {Kind::Operator}).empty()) << "empty path";
 }
 
-TEST(Intelligence, ACallOffersNothing) {
-  EditorState state{ctx};
-  testutil::loadInto(state, "read/function_call.fl");
-  const Intelligence uut;
-
-  EXPECT_TRUE(uut.operators(state.editor.tree(), FullID{1, 3}).empty());
-}
-
-TEST(Intelligence, AParamRailOffersTheBuiltinTypes) {
+TEST(Intelligence, AParamOffersTheBuiltinTypes) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_input_only.fl");
 
-  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 2}), BUILTIN_TYPES);
+  EXPECT_EQ(Intelligence{}.choices(state.editor.tree(), FullID{1}, {Kind::ParamType, 0}), BUILTIN_TYPES);
 }
 
-TEST(Intelligence, AReturnRailOffersTheBuiltinTypes) {
+TEST(Intelligence, AReturnOffersTheBuiltinTypes) {
   EditorState state{ctx};
   testutil::loadInto(state, "read/function_with_output_only.fl");
 
-  EXPECT_EQ(Intelligence{}.types(state.editor.tree(), FullID{1, 4}), BUILTIN_TYPES);
+  EXPECT_EQ(Intelligence{}.choices(state.editor.tree(), FullID{1}, {Kind::ReturnType}), BUILTIN_TYPES);
 }
 
-TEST(Intelligence, NonRailsAndMissingPathsOfferNoTypes) {
+TEST(Intelligence, MissingParamsAndReturnsOfferNoTypes) {
   EditorState state{ctx};
-  testutil::loadInto(state, "read/simple_binary_expr.fl");
+  testutil::loadInto(state, "read/function_with_input_only.fl");
   const Intelligence uut;
 
-  EXPECT_TRUE(uut.types(state.editor.tree(), FullID{1}).empty()) << "function";
-  EXPECT_TRUE(uut.types(state.editor.tree(), FullID{1, 1}).empty()) << "node";
-  EXPECT_TRUE(uut.types(state.editor.tree(), FullID{1, 99}).empty()) << "missing";
-  EXPECT_TRUE(uut.types(state.editor.tree(), FullID{}).empty()) << "empty path";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{1}, {Kind::ParamType, 9}).empty()) << "no param 9";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{1}, {Kind::ReturnType}).empty()) << "no return";
+  EXPECT_TRUE(uut.choices(state.editor.tree(), FullID{99}, {Kind::ParamType, 0}).empty()) << "missing";
+}
+
+TEST(Intelligence, TextFieldsOfferNoChoices) {
+  EditorState state{ctx};
+  testutil::loadInto(state, "read/function_with_input_only.fl");
+
+  EXPECT_TRUE(Intelligence{}.choices(state.editor.tree(), FullID{1}, {Kind::ParamName, 0}).empty());
+  EXPECT_TRUE(Intelligence{}.choices(state.editor.tree(), FullID{1}, {Kind::Name}).empty());
 }
 
 TEST(Intelligence, TheTopLevelOffersAFunctionThenAComment) {

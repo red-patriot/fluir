@@ -1,13 +1,16 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_INTELLIGENCE_HPP
+#define FLUIR_EDITOR_CORE_INTELLIGENCE_HPP
 
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
+#include "editor/core/field.hpp"
 
 namespace fluir::editor {
   namespace intelligence {
@@ -64,11 +67,8 @@ namespace fluir::editor {
      */
     bool unload(std::optional<std::filesystem::path> programPath);
 
-    /** Operators the operator node at `path` may take; empty for anything else. */
-    std::vector<fluir::Operator> operators(const pt::ParseTree& tree, const FullID& path) const;
-
-    /** Type names the param or return rail at `path` ([fn, railId]) may take; empty for anything else. */
-    std::vector<std::string_view> types(const pt::ParseTree& tree, const FullID& path) const;
+    /** What `field` at `path` may be picked from; empty for a typed field or a missing one. */
+    std::vector<std::string> choices(const pt::ParseTree& tree, const FullID& path, Field field) const;
 
     /** Completions available inside `body`. Empty `body` indicates a top-level addition, otherwise completions will be
      * applied inside `body`. */
@@ -85,3 +85,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

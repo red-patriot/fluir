@@ -21,7 +21,7 @@ namespace fluir::editor::draw {
   /** The name, after the tag in the frame's header band. */
   std::vector<FieldLabel> labels(const pt::FunctionDecl& fn, const Rect& frame, const EditorContext::Layout& layout);
 
-  /** A parameter rail's name after its type tag; the return rail has none. */
+  /** A rail's type tag, then a parameter's name after it; the return rail has no name. */
   std::vector<FieldLabel> labels(const pt::FunctionDecl& fn,
                                  fluir::ID railId,
                                  const Rect& rail,

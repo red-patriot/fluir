@@ -172,6 +172,7 @@ namespace fluir::editor {
                         layout.railStep(),
                         layout.railStep()};
         out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
+        pushLabels(path, draw::labels(fn, fn.output->ret->id, rail, layout), clip, out);
         terminals[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
       }
 

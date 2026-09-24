@@ -25,6 +25,7 @@ set(FLUIR_EDITOR_PAGES_TEST_SOURCES pages/module.test.cpp pages/splash.test.cpp)
 
 set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/bool_toggle_tool.test.cpp
+    tools/choice_tool.test.cpp
     tools/completion_modal.test.cpp
     tools/completion_tool.test.cpp
     tools/conduit_tool.test.cpp
@@ -32,14 +33,12 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/drag_tool.test.cpp
     tools/function_header_menu.test.cpp
     tools/menu_popup.test.cpp
-    tools/operator_tool.test.cpp
     tools/pan_zoom_tool.test.cpp
     tools/popup_tool.test.cpp
     tools/rail_menu.test.cpp
     tools/select_tool.test.cpp
     tools/text_edit_tool.test.cpp
     tools/tool_chain.test.cpp
-    tools/type_tool.test.cpp
 )
 
 set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)

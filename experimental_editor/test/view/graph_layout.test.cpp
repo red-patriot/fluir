@@ -284,6 +284,9 @@ TEST(LabelAt, FindsEachFieldAtThePathFieldsTakes) {
   EXPECT_EQ(paramB->field, (Field{Field::Kind::ParamName, 1}));
   EXPECT_EQ(literal->path, (FullID{1, 11}));
   EXPECT_EQ(literal->field, (Field{Field::Kind::Literal}));
+  const Box* typeA = labelAt(boxes, Vec2{60, 90});
+  ASSERT_NE(typeA, nullptr);
+  EXPECT_EQ(typeA->field, (Field{Field::Kind::ParamType, 0}));
 }
 
 TEST(LabelAt, IsNullOffALabelOrUnderAGrip) {
@@ -291,7 +294,6 @@ TEST(LabelAt, IsNullOffALabelOrUnderAGrip) {
   ASSERT_TRUE(l.result.tree.has_value());
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
 
-  EXPECT_EQ(labelAt(boxes, Vec2{60, 90}), nullptr) << "a rail's type tag";
   EXPECT_EQ(labelAt(boxes, Vec2{55, 60}), nullptr) << "the header's fn tag";
   EXPECT_EQ(labelAt(boxes, Vec2{535, 60}), nullptr) << "the move grip over the name";
   EXPECT_EQ(labelAt(boxes, Vec2{300, 300}), nullptr) << "the empty body";

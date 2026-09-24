@@ -60,7 +60,7 @@ namespace fluir::editor::draw {
         view.toScreen(label), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
 
     } else {
-      drawSplitLabel(view, world, literalTypeName(n.value), {}, ctx);
+      drawSplitLabel(view, world, literalTypeName(n.value), ctx);
       drawTitle(renderLiteral(n.value), label, view, ctx);
     }
     drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);

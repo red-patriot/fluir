@@ -16,8 +16,8 @@ namespace fluir::editor {
     bool enabled = true;
   };
 
-  /** Items for a right-press on `hit` at `world`; empty when this provider has nothing for it. */
-  using MenuProvider = std::function<std::vector<MenuItem>(const Box& hit, Vec2 world, const EditorState&)>;
+  /** Items for a right-press on `hit`; empty when this provider has nothing for it. */
+  using MenuProvider = std::function<std::vector<MenuItem>(const Box& hit, const EditorState&)>;
 
   /** Right-press on a hit box opens the first provider's non-empty items at the cursor. Consumes only when it opens. */
   class ContextMenuTool : public Tool {

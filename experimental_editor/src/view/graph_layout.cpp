@@ -8,6 +8,7 @@
 
 #include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/comment.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/draw/function.hpp"
 #include "editor/view/graph_geometry.hpp"
@@ -45,14 +46,25 @@ namespace fluir::editor {
       return Part::ResizeX;
     }
 
-    // A node's body, then its grips over it. `resize` is ResizeX (right edge), ResizeXY (corner) or none.
+    void pushLabels(const FullID& path,
+                    const std::vector<FieldLabel>& labels,
+                    const std::optional<Rect>& clip,
+                    std::vector<Box>& out) {
+      for (const FieldLabel& label : labels) {
+        out.push_back({path, Part::Label, label.rect, clip, label.field});
+      }
+    }
+
+    // A node's body and labels, then its grips over them. `resize` is ResizeX (right edge), ResizeXY (corner) or none.
     void pushNodeBoxes(const FullID& path,
                        const Rect& rect,
                        const std::optional<Rect>& clip,
                        std::optional<Part> resize,
+                       const std::vector<FieldLabel>& labels,
                        double unit,
                        std::vector<Box>& out) {
       out.push_back({path, Part::Body, rect, clip});
+      pushLabels(path, labels, clip, out);
       if (resize) {
         const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeEdgeX(rect, unit);
         out.push_back({path, *resize, grip, clip});
@@ -111,7 +123,7 @@ namespace fluir::editor {
           continue;
         }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        pushNodeBoxes(path, rect, clip, resizePart(*node), layout.unitPx, out);
+        pushNodeBoxes(path, rect, clip, resizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
         terminals[idOf(*node)] = editor::terminals(*node, rect, layout);
       }
 
@@ -150,6 +162,7 @@ namespace fluir::editor {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
           out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
+          pushLabels(path, draw::labels(fn, params[row]->id, rail, layout), clip, out);
           terminals[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
         }
       }
@@ -167,11 +180,24 @@ namespace fluir::editor {
       // The frame's chrome paints, and so hits, over its body.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, std::nullopt});
+      out.push_back({path, Part::Header, header, std::nullopt});
+      pushLabels(path, draw::labels(fn, frame, layout), std::nullopt, out);
       out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), std::nullopt});
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), std::nullopt});
     }
 
-    bool hittable(Part part) { return part != Part::Frame && part != Part::Rail && part != Part::Wire; }
+    bool hittable(Part part) { return part != Part::Frame && part != Part::Wire; }
+
+    // The last-painted hittable box containing `world`, Labels included unless `throughLabels`.
+    const Box* topAt(std::span<const Box> boxes, Vec2 world, bool throughLabels) {
+      for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
+        if (hittable(it->part) && !(throughLabels && it->part == Part::Label) &&
+            (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
+          return &*it;
+        }
+      }
+      return nullptr;
+    }
 
     // A node's or rail's terminal anchors, given its box.
     TerminalSet terminalsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
@@ -194,10 +220,12 @@ namespace fluir::editor {
       if (const auto* fn = std::get_if<pt::FunctionDecl>(decl)) {
         layoutFunction(*fn, layout, out);
       } else if (const auto* comment = std::get_if<pt::Comment>(decl)) {
+        const Rect rect = localRect(comment->location, layout.unitPx);
         pushNodeBoxes(FullID{comment->id},
-                      localRect(comment->location, layout.unitPx),
+                      rect,
                       std::nullopt,
                       Part::ResizeXY,
+                      draw::labels(*comment, rect, layout),
                       layout.unitPx,
                       out);
       }
@@ -205,23 +233,11 @@ namespace fluir::editor {
     return out;
   }
 
-  const Box* hitAt(std::span<const Box> boxes, Vec2 world) {
-    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (hittable(it->part) && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
-        return &*it;
-      }
-    }
-    return nullptr;
-  }
+  const Box* hitAt(std::span<const Box> boxes, Vec2 world) { return topAt(boxes, world, true); }
 
-  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world) {
-    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (it->part == Part::Rail && parentOf(it->path) == fnPath && (!it->clip || it->clip->contains(world)) &&
-          it->world.contains(world)) {
-        return &*it;
-      }
-    }
-    return nullptr;
+  const Box* labelAt(std::span<const Box> boxes, Vec2 world) {
+    const Box* top = topAt(boxes, world, false);
+    return top != nullptr && top->part == Part::Label ? top : nullptr;
   }
 
   std::optional<TerminalHit> terminalAt(const pt::ParseTree& tree,

@@ -16,8 +16,8 @@ namespace fluir::editor {
     if (event.type != InputEvent::Type::MouseDown || event.button != InputEvent::Button::Left) {
       return false;
     }
-    const Box* hit = hitAt(boxes, state.view.screenToWorld(event.pos));
-    if (hit == nullptr || hit->part != Part::Body) {
+    const Box* hit = labelAt(boxes, state.view.screenToWorld(event.pos));
+    if (!hit || hit->field->kind != Field::Kind::Operator) {
       return false;
     }
     std::vector<fluir::Operator> ops = state.intelligence.operators(state.editor.tree(), hit->path);

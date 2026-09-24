@@ -42,7 +42,7 @@ namespace {
     std::vector<MenuItem> itemsAt(Vec2 world) const {
       const std::vector<Box> boxes = layoutGraph(state.editor.tree(), kCtx.layout);
       const Box* hit = hitAt(boxes, world);
-      return hit == nullptr ? std::vector<MenuItem>{} : functionHeaderItems(*hit, world, state);
+      return hit == nullptr ? std::vector<MenuItem>{} : functionHeaderItems(*hit, state);
     }
   };
 

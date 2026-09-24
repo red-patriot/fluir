@@ -44,9 +44,8 @@ namespace fluir::editor {
    *  `target`'s centre. */
   Rect fitInto(Rect target, Vec2 intrinsic);
 
-  /** Draws `tag` small along `box`'s bottom and, when non-empty, `text` full size after it. */
-  void drawSplitLabel(
-    const Subview& view, Rect box, std::string_view tag, std::string_view text, const EditorContext& ctx);
+  /** Draws `tag` small along `box`'s bottom; the text after it sits at `splitLabel(...).text`. */
+  void drawSplitLabel(const Subview& view, Rect box, std::string_view tag, const EditorContext& ctx);
 
   namespace draw {
 

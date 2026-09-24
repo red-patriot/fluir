@@ -57,7 +57,7 @@ namespace fluir::editor::draw {
     const pt::FunctionDecl& fn, fluir::ID railId, const Rect& rail, const Subview& view, const EditorContext& ctx) {
     const std::string* typeName = railTypeAt(fn, railId);
     drawShell(rail, color(fn, ctx.theme), view, ctx);
-    drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, {}, ctx);
+    drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, ctx);
     if (const pt::FunctionDecl::Parameter* param = paramOf(fn, railId)) {
       drawTitle(param->name, labels(fn, railId, rail, ctx.layout).front().rect, view, ctx);
     }
@@ -68,7 +68,7 @@ namespace fluir::editor::draw {
     const Rect header = headerOf(frame, ctx.layout);
     view.renderer().fillRect(view.toScreen(header), color(fn, ctx.theme));
     view.renderer().drawRect(view.toScreen(frame), ctx.theme.border);
-    drawSplitLabel(view, header, FN_TAG, {}, ctx);
+    drawSplitLabel(view, header, FN_TAG, ctx);
     drawTitle(fn.name, labels(fn, frame, ctx.layout).front().rect, view, ctx);
   }
 

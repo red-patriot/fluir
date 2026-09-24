@@ -20,7 +20,7 @@ namespace fluir::editor {
       return false;  // the background belongs to CompletionTool
     }
     for (const MenuProvider& provider : providers_) {
-      std::vector<MenuItem> items = provider(*hit, world, state);
+      std::vector<MenuItem> items = provider(*hit, state);
       if (items.empty()) {
         continue;
       }

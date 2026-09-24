@@ -22,46 +22,13 @@
 namespace fluir::editor {
   namespace {
 
-    // Whether `box` shows labels of `owner`: its body, or one of its function's rails.
-    bool showsLabelsOf(const Box& box, const FullID& owner) {
-      return (box.part == Part::Body && box.path == owner) || (box.part == Part::Rail && parentOf(box.path) == owner);
-    }
-
-    std::vector<FieldLabel> labelsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
-      if (box.part == Part::Rail) {
-        const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path));
-        return fn == nullptr ? std::vector<FieldLabel>{} : draw::labels(*fn, box.path.back(), box.world, layout);
-      }
-      if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
-        return draw::labels(*fn, box.world, layout);
-      }
-      if (const pt::Comment* comment = commentAt(tree, box.path)) {
-        return draw::labels(*comment, box.world, layout);
-      }
-      const pt::Node* node = nodeAt(tree, box.path);
-      return node == nullptr ? std::vector<FieldLabel>{} : nodeLabels(*node, box.world, layout);
-    }
-
     // What a press at `world` opens, or nullopt.
-    std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree,
-                                                 std::span<const Box> boxes,
-                                                 Vec2 world,
-                                                 const EditorContext::Layout& layout) {
-      const Box* hit = hitAt(boxes, world);
-      if (hit == nullptr || hit->part != Part::Body) {
+    std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree, std::span<const Box> boxes, Vec2 world) {
+      const Box* label = labelAt(boxes, world);
+      if (!label || !fields::read(tree, label->path, *label->field)) {
         return std::nullopt;
       }
-      for (const Box& box : boxes) {
-        if (!showsLabelsOf(box, hit->path) || (box.clip && !box.clip->contains(world))) {
-          continue;
-        }
-        for (const FieldLabel& label : labelsOf(tree, box, layout)) {
-          if (label.rect.contains(world) && fields::read(tree, hit->path, label.field)) {
-            return TextEditTool::Target{hit->path, label.field};
-          }
-        }
-      }
-      return std::nullopt;
+      return TextEditTool::Target{label->path, *label->field};
     }
 
     // Where the target's text sits and the clip it draws under; the draft covers it while drawn.
@@ -70,21 +37,11 @@ namespace fluir::editor {
       std::optional<Rect> clip;
     };
 
-    std::optional<Label> labelRect(const pt::ParseTree& tree,
-                                   std::span<const Box> boxes,
-                                   const TextEditTool::Target& target,
-                                   const EditorContext::Layout& layout) {
-      for (const Box& box : boxes) {
-        if (!showsLabelsOf(box, target.path)) {
-          continue;
-        }
-        const std::vector<FieldLabel> labels = labelsOf(tree, box, layout);
-        const auto it = std::ranges::find(labels, target.field, &FieldLabel::field);
-        if (it != labels.end()) {
-          return Label{it->rect, box.clip};
-        }
-      }
-      return std::nullopt;
+    std::optional<Label> labelRect(std::span<const Box> boxes, const TextEditTool::Target& target) {
+      const auto it = std::ranges::find_if(boxes, [&](const Box& box) {
+        return box.part == Part::Label && box.path == target.path && box.field == target.field;
+      });
+      return it == boxes.end() ? std::nullopt : std::optional{Label{it->world, it->clip}};
     }
 
     // A function's name or parameter sits on header chrome; everything else on its node.
@@ -137,10 +94,9 @@ namespace fluir::editor {
       field_.reset();
       return;
     }
-    const std::optional<Target> target = targetAt(tree, boxes, world, state.ctx.layout);
-    const std::optional<Label> label =
-      target ? labelRect(tree, boxes, *target, state.ctx.layout) : std::optional<Label>{};
-    if (!label || !label->rect.contains(world)) {
+    const std::optional<Target> target = targetAt(tree, boxes, world);
+    const std::optional<Label> label = target ? labelRect(boxes, *target) : std::nullopt;
+    if (!label) {
       field_.reset();
       return;
     }
@@ -197,7 +153,7 @@ namespace fluir::editor {
       return;
     }
     const pt::ParseTree& tree = state.editor.tree();
-    const std::optional<Label> label = labelRect(tree, boxes, target_, state.ctx.layout);
+    const std::optional<Label> label = labelRect(boxes, target_);
     if (!label) {
       return;
     }

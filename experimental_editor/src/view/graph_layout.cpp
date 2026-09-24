@@ -9,6 +9,7 @@
 #include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/draw/function.hpp"
 #include "editor/view/graph_geometry.hpp"
@@ -32,18 +33,6 @@ namespace fluir::editor {
       FullID out = parent;
       out.push_back(id);
       return out;
-    }
-
-    // A bool constant draws a fixed-size toggle square, so there is nothing to widen: no resize grip.
-    std::optional<Part> resizePart(const pt::Node& node) {
-      if (std::holds_alternative<pt::Comment>(node)) {
-        return Part::ResizeXY;
-      }
-      const auto* c = std::get_if<pt::Constant>(&node);
-      if (c != nullptr && std::holds_alternative<literals_types::BOOL>(c->value)) {
-        return std::nullopt;
-      }
-      return Part::ResizeX;
     }
 
     void pushLabels(const FullID& path,
@@ -102,7 +91,9 @@ namespace fluir::editor {
       // The frame's chrome paints, and so hits, over its branch.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
-      out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), clip});
+      if (const std::optional<Part> resize = draw::resizePart(conditional)) {
+        out.push_back({path, *resize, resizeCorner(frame, unit), clip});
+      }
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
     }
 
@@ -123,7 +114,7 @@ namespace fluir::editor {
           continue;
         }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        pushNodeBoxes(path, rect, clip, resizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
+        pushNodeBoxes(path, rect, clip, nodeResizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
         terminals[idOf(*node)] = editor::terminals(*node, rect, layout);
       }
 
@@ -225,7 +216,7 @@ namespace fluir::editor {
         pushNodeBoxes(FullID{comment->id},
                       rect,
                       std::nullopt,
-                      Part::ResizeXY,
+                      draw::resizePart(*comment),
                       draw::labels(*comment, rect, layout),
                       layout.unitPx,
                       out);

@@ -2,25 +2,28 @@
 
 #include <algorithm>
 #include <memory>
-#include <variant>
+#include <optional>
 
 #include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/resize.hpp"
+#include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/function.hpp"
+#include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
   namespace {
-    // Size limits in grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> NODE_SIZE{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
-    constexpr Limits<Vec2i> FUNCTION_SIZE{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
-    // Tall enough that the corner grip never overlaps the move grip.
-    constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
-    // Deep enough that the conditional keeps room for a node under its header.
-    constexpr Limits<Vec2i> CONDITIONAL_SIZE{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
-
-    bool isConditional(const pt::ParseTree& tree, const FullID& path) {
-      return std::get_if<pt::Conditional>(nodeAt(tree, path)) != nullptr;
+    // What the function, top-level comment or node at `path` may be resized to; nullopt when it is gone.
+    std::optional<Limits<Vec2i>> sizeLimitsAt(const pt::ParseTree& tree, const FullID& path) {
+      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
+        return draw::sizeLimits(*fn);
+      }
+      if (const pt::Comment* comment = commentAt(tree, path)) {
+        return draw::sizeLimits(*comment);
+      }
+      const pt::Node* node = nodeAt(tree, path);
+      return node == nullptr ? std::nullopt : std::optional{nodeSizeLimits(*node)};
     }
 
     bool isGrip(Part part) {
@@ -107,10 +110,11 @@ namespace fluir::editor {
       edit_->unexecute(tree);
       edit_.reset();
     }
-    const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE :
-                                isConditional(tree, path_)         ? CONDITIONAL_SIZE :
-                                commentAt(tree, path_) != nullptr  ? COMMENT_SIZE :
-                                                                     NODE_SIZE;
+    const std::optional<Limits<Vec2i>> limits = sizeLimitsAt(tree, path_);
+    if (!limits) {
+      return;
+    }
+    const Limits<Vec2i>& size = *limits;
     const int width = std::clamp(start_.width + delta_.x, size.lower.x, size.upper.x);
     const int height = std::clamp(start_.height + delta_.y, size.lower.y, size.upper.y);
 

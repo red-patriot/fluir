@@ -1,10 +1,12 @@
 #ifndef FLUIR_EDITOR_VIEW_DRAW_COMMENT_HPP
 #define FLUIR_EDITOR_VIEW_DRAW_COMMENT_HPP
 
+#include <optional>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/view/draw/draw_utils.hpp"
+#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor {
 
@@ -20,6 +22,12 @@ namespace fluir::editor {
     TerminalSet anchors(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);
 
     Color color(const pt::Comment& node, const EditorContext::Theme& theme);
+
+    /** How far the comment may be resized, in grid units. */
+    Limits<Vec2i> sizeLimits(const pt::Comment& node);
+
+    /** The grip that resizes the comment, if any. */
+    std::optional<Part> resizePart(const pt::Comment& node);
 
     /** The text, over the body below the header band. */
     std::vector<FieldLabel> labels(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);

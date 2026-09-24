@@ -19,6 +19,14 @@ namespace fluir::editor {
     return std::visit([&](const auto& n) { return draw::labels(n, world, layout); }, node);
   }
 
+  Limits<Vec2i> nodeSizeLimits(const pt::Node& node) {
+    return std::visit([](const auto& n) { return draw::sizeLimits(n); }, node);
+  }
+
+  std::optional<Part> nodeResizePart(const pt::Node& node) {
+    return std::visit([](const auto& n) { return draw::resizePart(n); }, node);
+  }
+
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme) {
     return std::visit([&](const auto& n) { return draw::color(n, theme); }, node);
   }

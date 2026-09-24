@@ -11,6 +11,9 @@ namespace fluir::editor::draw {
   namespace {
     using namespace ::fluir::literals_types;
 
+    // In grid units. A node's height follows its content, so it is unbounded below.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
+
     // Gap between the bool square and the node's edges, in world px.
     constexpr double TOGGLE_PAD = 4.0;
 
@@ -41,6 +44,13 @@ namespace fluir::editor::draw {
       return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
     }
     return {{{Field::Kind::Literal}, splitLabel(world, literalTypeName(n.value), layout).text}};
+  }
+
+  Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }
+
+  // A bool draws a fixed-size toggle square, so there is nothing to widen.
+  std::optional<Part> resizePart(const pt::Constant& c) {
+    return std::holds_alternative<BOOL>(c.value) ? std::nullopt : std::optional{Part::ResizeX};
   }
 
   TerminalSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {

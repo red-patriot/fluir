@@ -9,7 +9,6 @@
 #include <utility>
 #include <variant>
 
-#include "editor/constants.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/tools/tool.hpp"
 #include "editor/transaction/add_comment.hpp"
@@ -26,6 +25,18 @@ namespace fluir::editor {
     constexpr double ROW_PAD_PX = 6.0;
     constexpr double CARET_W_PX = 1.0;
     constexpr std::size_t MAX_VISIBLE_ROWS = 10;
+    // Default sizes for a picked option, in grid units.
+    constexpr int FUNCTION_W = 40;
+    constexpr int FUNCTION_H = 30;
+    constexpr int COMMENT_W = 10;
+    constexpr int COMMENT_H = 10;
+    constexpr int OPERATOR_W = 8;
+    constexpr int CONSTANT_W = 12;
+    constexpr int CALL_W = 14;
+    constexpr int BOOL_CONSTANT_W = 8;
+    constexpr int NODE_H = 5;
+    constexpr int CONDITIONAL_H = 40;
+    constexpr int CONDITIONAL_W = 30;
 
     FlowGraphLocation placed(Coordinate where, int w, int h) {
       return FlowGraphLocation{.x = where.x, .y = where.y, .z = where.z + 1, .width = w, .height = h};

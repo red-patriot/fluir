@@ -1,4 +1,7 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_DRAW_CONSTANT_HPP
+#define FLUIR_EDITOR_VIEW_DRAW_CONSTANT_HPP
+
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/view/draw/draw_utils.hpp"
@@ -14,7 +17,12 @@ namespace fluir::editor::draw {
    *  too narrow to hold it. */
   Rect boolToggleRect(const Rect& world, const EditorContext::Layout& layout);
 
+  /** A bool's toggle square, or any other literal's text after its type tag. */
+  std::vector<FieldLabel> labels(const pt::Constant& node, const Rect& world, const EditorContext::Layout& layout);
+
   /** Draws the body only; selection outlines belong to the caller. */
   void draw(const pt::Constant& node, const Rect& world, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw
+
+#endif

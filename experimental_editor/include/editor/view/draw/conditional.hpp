@@ -1,6 +1,8 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
+#define FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
 
 #include <string_view>
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
@@ -19,6 +21,9 @@ namespace fluir::editor::draw {
 
   Color color(const pt::Conditional& node, const EditorContext::Theme& theme);
 
+  /** None: a conditional has no editable text. */
+  std::vector<FieldLabel> labels(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
+
   // A conditional paints in parts at different depths, so each part has its own draw.
 
   /** The body background, under the conditional's branches and their nodes. */
@@ -31,3 +36,5 @@ namespace fluir::editor::draw {
   void draw(const pt::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw
+
+#endif

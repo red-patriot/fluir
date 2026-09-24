@@ -1,4 +1,7 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_NODE_VIEW_HPP
+#define FLUIR_EDITOR_VIEW_NODE_VIEW_HPP
+
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
@@ -11,6 +14,9 @@ namespace fluir::editor {
   /** `node`'s terminal anchors, given its world rect. */
   TerminalSet terminals(const pt::Node& node, Rect world, const EditorContext::Layout& layout);
 
+  /** Where `node`'s editable fields draw, given its world rect. */
+  std::vector<FieldLabel> nodeLabels(const pt::Node& node, Rect world, const EditorContext::Layout& layout);
+
   /** Draws `node`'s body at `world`: fill, border, label and terminal dots. */
   void drawNode(const pt::Node& node, Rect world, const Subview& view, const EditorContext& ctx);
 
@@ -18,3 +24,5 @@ namespace fluir::editor {
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme);
 
 }  // namespace fluir::editor
+
+#endif

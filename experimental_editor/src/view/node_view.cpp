@@ -15,6 +15,10 @@ namespace fluir::editor {
     return std::visit([&](const auto& n) { return draw::anchors(n, world, layout); }, node);
   }
 
+  std::vector<FieldLabel> nodeLabels(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
+    return std::visit([&](const auto& n) { return draw::labels(n, world, layout); }, node);
+  }
+
   Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme) {
     return std::visit([&](const auto& n) { return draw::color(n, theme); }, node);
   }

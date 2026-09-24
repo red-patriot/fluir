@@ -10,17 +10,13 @@
 
 #include "compiler/models/operator.hpp"
 #include "editor/core/literal_text.hpp"
+#include "fluir/util/overloaded.hpp"
 
 using namespace std::string_view_literals;
 
 namespace fluir::editor {
 
   namespace {
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
 
     struct TwoSpacePrinter : tinyxml2::XMLPrinter {
       void PrintSpace(int depth) override {
@@ -96,7 +92,7 @@ namespace fluir::editor {
   }
 
   void ParseTreeWriter::declaration(Element* parent, const pt::Declaration& value) {
-    std::visit(Overloaded{
+    std::visit(util::Overloaded{
                  [&](const pt::FunctionDecl& fn) { functionDecl(parent, fn); },
                  [&](const pt::Comment& c) { comment(parent, c); },
                },
@@ -150,7 +146,7 @@ namespace fluir::editor {
   }
 
   void ParseTreeWriter::node(Element* parent, const pt::Node& value) {
-    std::visit(Overloaded{
+    std::visit(util::Overloaded{
                  [&](const pt::Constant& n) { constant(parent, n); },
                  [&](const pt::Binary& n) { binary(parent, n); },
                  [&](const pt::Unary& n) { unary(parent, n); },

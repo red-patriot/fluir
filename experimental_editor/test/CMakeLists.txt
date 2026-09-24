@@ -8,10 +8,10 @@ set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
     core/geometry.test.cpp
-    core/graph_geometry.test.cpp
     core/identifier.test.cpp
     core/intelligence.test.cpp
     core/literal_text.test.cpp
+    core/node_access.test.cpp
     core/loader.test.cpp
     core/module_editor.test.cpp
     core/parse_tree_writer.test.cpp
@@ -46,6 +46,7 @@ set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/conditional.test.cpp
     view/draw/draw_utils.test.cpp
+    view/graph_geometry.test.cpp
     view/graph_draw.test.cpp
     view/graph_layout.test.cpp
     view/toolbar.test.cpp

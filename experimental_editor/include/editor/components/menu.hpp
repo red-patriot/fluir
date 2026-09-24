@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_COMPONENTS_MENU_HPP
+#define FLUIR_EDITOR_COMPONENTS_MENU_HPP
 
 #include <cstddef>
 #include <optional>
@@ -20,8 +21,11 @@ namespace fluir::editor {
 
   /** Rows `labels` under `anchor`, flipping above past `bounds`' bottom. Measures with `text`; null estimates GLYPH_PX.
    */
-  MenuLayout layoutMenu(
-    std::span<const std::string> labels, Rect anchor, Rect bounds, const EditorContext::Layout& layout, Renderer* text);
+  MenuLayout layoutMenu(std::span<const std::string> labels,
+                        Rect anchor,
+                        Rect bounds,
+                        const EditorContext::Layout& layout,
+                        TextMetrics* text);
 
   /** Rows past `enabled`'s end are enabled; a disabled row is greyed and never highlighted. */
   void drawMenu(Renderer& renderer,
@@ -38,3 +42,5 @@ namespace fluir::editor {
   std::optional<std::size_t> menuItemAt(const MenuLayout& layout, Vec2 screen);
 
 }  // namespace fluir::editor
+
+#endif

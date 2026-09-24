@@ -6,18 +6,17 @@
 #include <unordered_map>
 #include <variant>
 
-#include "editor/core/graph_geometry.hpp"
+#include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/draw/function.hpp"
+#include "editor/view/graph_geometry.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
   namespace {
-    // Grip sizes, in grid units.
-    constexpr double DRAG_SIZE = 3;
-    constexpr double DRAG_INSET = 1;
+    // A resize edge's thickness, in grid units.
     constexpr double GRIP_THICKNESS = 0.8;
-    constexpr double RESIZE_CORNER_SIZE = 3;
     // A terminal's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
 
@@ -28,23 +27,10 @@ namespace fluir::editor {
       return {r.x + r.w - GRIP_THICKNESS * unit, r.y, GRIP_THICKNESS * unit, r.h};
     }
 
-    Rect resizeCorner(const Rect& r, double unit) {
-      const double size = RESIZE_CORNER_SIZE * unit;
-      return {r.x + r.w - size, r.y + r.h - size, size, size};
-    }
-
     FullID childOf(const FullID& parent, fluir::ID id) {
       FullID out = parent;
       out.push_back(id);
       return out;
-    }
-
-    const FlowGraphLocation& locationOf(const pt::Node& node) {
-      return std::visit([](const auto& n) -> const FlowGraphLocation& { return n.location; }, node);
-    }
-
-    fluir::ID idOf(const pt::Node& node) {
-      return std::visit([](const auto& n) { return n.id; }, node);
     }
 
     // A bool constant draws a fixed-size toggle square, so there is nothing to widen: no resize grip.
@@ -159,11 +145,7 @@ namespace fluir::editor {
 
       Terminals terminals;
       if (fn.input) {
-        std::vector<const pt::FunctionDecl::Parameter*> params;
-        for (const auto& param : fn.input->parameters) {
-          params.push_back(&param);
-        }
-        std::ranges::sort(params, {}, &pt::FunctionDecl::Parameter::index);
+        const std::vector<const pt::FunctionDecl::Parameter*> params = sortedParameters(fn);
         for (std::size_t row = 0; row < params.size(); ++row) {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
@@ -205,13 +187,6 @@ namespace fluir::editor {
     }
 
   }  // namespace
-
-  Rect moveGrip(const Rect& frame, double unit) {
-    return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
-            frame.y + DRAG_INSET * unit,
-            DRAG_SIZE * unit,
-            DRAG_SIZE * unit};
-  }
 
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
     std::vector<Box> out;

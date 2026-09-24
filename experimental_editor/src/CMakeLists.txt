@@ -140,10 +140,10 @@ target_include_directories(
 
 set(FLUIR_EDITOR_CORE_SOURCES
     "core/collecting_sink.cpp"
-    "core/graph_geometry.cpp"
     "core/identifier.cpp"
     "core/intelligence.cpp"
     "core/literal_text.cpp"
+    "core/node_access.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
@@ -183,11 +183,11 @@ set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
 
 set(FLUIR_EDITOR_VIEW_SOURCES
     "view/graph_draw.cpp"
+    "view/graph_geometry.cpp"
     "view/graph_layout.cpp"
     "view/draw/binary.cpp"
     "view/draw/call.cpp"
     "view/draw/comment.cpp"
-    "view/draw/conditional.cpp"
     "view/draw/conditional.cpp"
     "view/draw/constant.cpp"
     "view/draw/draw_utils.cpp"
@@ -240,6 +240,7 @@ target_link_libraries(
            nfd
            plutosvg
            fluir::compiler
+           fluir::utility
 )
 
 add_executable(fluir.editor "main.cpp")

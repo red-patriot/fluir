@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/add_parameter.hpp"
 #include "editor/transaction/add_return.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor {
 

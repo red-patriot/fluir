@@ -5,10 +5,10 @@
 #include <utility>
 #include <vector>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/tools/completion_modal.hpp"
 #include "editor/tools/menu_popup.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor {
 

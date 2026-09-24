@@ -1,11 +1,12 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_RENDERER_HPP
+#define FLUIR_EDITOR_CORE_RENDERER_HPP
 
-#include <cstddef>
 #include <string_view>
 
+#include "editor/assets/images.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
-#include "editor/view/draw/draw_utils.hpp"
+#include "editor/core/text_metrics.hpp"
 
 namespace fluir::editor {
 
@@ -14,10 +15,8 @@ namespace fluir::editor {
   inline constexpr double GLYPH_PX = 8.0;
 
   /** Sink for drawing primitives, in screen-space pixels. */
-  class Renderer {
+  class Renderer : public TextMetrics {
    public:
-    virtual ~Renderer() = default;
-
     /** Called once before drawing to set up for drawing the next frame*/
     virtual void beginFrame() = 0;
     /** Called once at the end of drawing to present the frame */
@@ -33,14 +32,6 @@ namespace fluir::editor {
     virtual void drawText(Vec2 topLeft, std::string_view text, const Color& color, double scale = 1.0) = 0;
     /** Text from `screen`'s top-left, wrapped at `screen.w`; glyphs are UI size x `scale`. Caller clips. */
     virtual void drawTextWrapped(Rect screen, std::string_view text, double scale, const Color& color) = 0;
-    /** Caret byte index nearest `point` in `text` laid out as `drawTextWrapped` would. */
-    virtual std::size_t wrappedIndexAt(Rect screen, std::string_view text, double scale, Vec2 point) = 0;
-    /** 1 px wide caret before byte `index` of `text` laid out as `drawTextWrapped` would. */
-    virtual Rect wrappedCaretRect(Rect screen, std::string_view text, double scale, std::size_t index) = 0;
-
-    /** Screen-px size `text` would occupy if drawn. */
-    virtual Vec2 measureText(std::string_view text) = 0;
-
     /** Fills `screen` exactly with the SVG in `svg`, stretched to it and recolored to `tint`. Callers fit;
      *  this does not. */
     virtual void drawIcon(Rect screen, SvgView svg, const Color& tint) = 0;
@@ -53,3 +44,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

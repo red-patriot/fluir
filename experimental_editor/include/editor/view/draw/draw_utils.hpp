@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_DRAW_DRAW_UTILS_HPP
+#define FLUIR_EDITOR_VIEW_DRAW_DRAW_UTILS_HPP
 
 #include <span>
 #include <string_view>
@@ -23,6 +24,12 @@ namespace fluir::editor {
     Rect tag;
     Rect text;
   };
+
+  /** The move grip over `frame`'s top-right corner, in the same space. */
+  Rect moveGrip(const Rect& frame, double unit);
+
+  /** The XY resize grip in `frame`'s bottom-right corner, in the same space. */
+  Rect resizeCorner(const Rect& frame, double unit);
 
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout);
 
@@ -62,3 +69,5 @@ namespace fluir::editor {
   }  // namespace draw
 
 }  // namespace fluir::editor
+
+#endif

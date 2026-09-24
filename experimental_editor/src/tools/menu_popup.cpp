@@ -3,24 +3,23 @@
 #include <limits>
 #include <utility>
 
-#include "editor/core/renderer.hpp"
 #include "editor/tools/tool.hpp"
 
 namespace fluir::editor {
 
   Rect popupBounds(const EditorState& state) {
-    if (state.text == nullptr) {
+    if (!state.screen) {
       const double unbounded = std::numeric_limits<double>::max() / 4;
       return Rect{-unbounded, -unbounded, 2 * unbounded, 2 * unbounded};
     }
-    return Rect{0, 0, state.text->outputSize().x, state.text->outputSize().y};
+    return *state.screen;
   }
 
   MenuPopup::MenuPopup(std::vector<std::string> labels,
                        Rect anchor,
                        Rect bounds,
                        const EditorContext::Layout& layout,
-                       Renderer* text,
+                       TextMetrics* text,
                        OnPick onPick,
                        std::vector<bool> enabled) :
     labels_(std::move(labels)),

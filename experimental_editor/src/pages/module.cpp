@@ -104,6 +104,7 @@ namespace fluir::editor {
   void ModulePage::onResize() {
     header_.label = ctx_.program ? ctx_.program->filename().string() : std::string{"<new file>"};
     headerLayout_ = layoutToolbar(header_, renderer_.outputSize().x, ctx_.layout, renderer_);
+    state_.screen = Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y};
   }
 
   void ModulePage::onDraw() {

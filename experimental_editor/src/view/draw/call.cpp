@@ -1,22 +1,13 @@
 #include "editor/view/draw/call.hpp"
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
 
+#include "editor/core/node_access.hpp"
 #include "editor/core/renderer.hpp"
 
 namespace fluir::editor::draw {
   namespace {
-
-    std::vector<const pt::Call::Argument*> sortedArgs(const pt::Call& call) {
-      std::vector<const pt::Call::Argument*> args;
-      for (const auto& arg : call.arguments) {
-        args.push_back(&arg);
-      }
-      std::ranges::sort(args, {}, &pt::Call::Argument::index);
-      return args;
-    }
 
     // One row per argument below the header row, each input at its row's centre.
     double argRowTop(const Rect& rect, std::size_t row, const EditorContext::Layout& layout) {
@@ -42,7 +33,7 @@ namespace fluir::editor::draw {
   void draw(const pt::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(call, ctx.theme), view, ctx);
     drawTitle(call.target, world, view, ctx);
-    const std::vector<const pt::Call::Argument*> args = sortedArgs(call);
+    const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
       const Vec2 pos{world.x + ctx.layout.textPad, argRowTop(world, row, ctx.layout) + ctx.layout.textPad};
       view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text, view.composed().scale);

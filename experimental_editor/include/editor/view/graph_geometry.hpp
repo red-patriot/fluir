@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
+#define FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
 
 #include <vector>
 
@@ -31,3 +32,5 @@ namespace fluir::editor {
   std::vector<const pt::Conduit*> sortedConduits(const pt::Block& block);
 
 }  // namespace fluir::editor
+
+#endif

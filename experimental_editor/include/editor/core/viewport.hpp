@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_VIEWPORT_HPP
+#define FLUIR_EDITOR_CORE_VIEWPORT_HPP
 
 #include "editor/core/geometry.hpp"
 
@@ -13,6 +14,8 @@ namespace fluir::editor {
 
     Vec2 worldToScreen(Vec2 world) const;
     Vec2 screenToWorld(Vec2 screen) const;
+    /** `world` mapped to screen: top-left transformed, size scaled. */
+    Rect toScreen(Rect world) const;
 
     /** Multiply `scale` by `factor`, keeping the world point currently under
      *  `screenPivot` fixed under `screenPivot`. */
@@ -49,10 +52,7 @@ namespace fluir::editor {
     [[nodiscard]] Subview child(Rect frameLocal) const { return Subview{*this, frameLocal}; }
 
     Vec2 toScreen(Vec2 local) const { return composed_.worldToScreen(local); }
-    Rect toScreen(Rect local) const {
-      const Vec2 tl = composed_.worldToScreen(local.topLeft());
-      return {tl.x, tl.y, local.w * composed_.scale, local.h * composed_.scale};
-    }
+    Rect toScreen(Rect local) const { return composed_.toScreen(local); }
     const Viewport& composed() const { return composed_; }
     Renderer& renderer() const { return renderer_; }
 
@@ -62,3 +62,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

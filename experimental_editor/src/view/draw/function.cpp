@@ -42,11 +42,16 @@ namespace fluir::editor::draw {
                                  fluir::ID railId,
                                  const Rect& rail,
                                  const EditorContext::Layout& layout) {
-    const pt::FunctionDecl::Parameter* param = paramOf(fn, railId);
-    if (param == nullptr) {
+    const std::string* typeName = railTypeAt(fn, railId);
+    if (typeName == nullptr) {
       return {};
     }
-    return {{{Field::Kind::ParamName, param->index}, splitLabel(rail, param->typeName, layout).text}};
+    const SplitLabel split = splitLabel(rail, *typeName, layout);
+    const pt::FunctionDecl::Parameter* param = paramOf(fn, railId);
+    if (param == nullptr) {
+      return {{{Field::Kind::ReturnType}, split.tag}};
+    }
+    return {{{Field::Kind::ParamType, param->index}, split.tag}, {{Field::Kind::ParamName, param->index}, split.text}};
   }
 
   void drawBody(const pt::FunctionDecl&, const Rect& world, const Subview& view, const EditorContext& ctx) {
@@ -59,7 +64,7 @@ namespace fluir::editor::draw {
     drawShell(rail, color(fn, ctx.theme), view, ctx);
     drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, ctx);
     if (const pt::FunctionDecl::Parameter* param = paramOf(fn, railId)) {
-      drawTitle(param->name, labels(fn, railId, rail, ctx.layout).front().rect, view, ctx);
+      drawTitle(param->name, labels(fn, railId, rail, ctx.layout).back().rect, view, ctx);
     }
     drawTerminalDots(anchors(fn, railId, rail), view, ctx);
   }

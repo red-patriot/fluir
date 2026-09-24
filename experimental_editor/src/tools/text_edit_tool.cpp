@@ -25,7 +25,7 @@ namespace fluir::editor {
     // What a press at `world` opens, or nullopt.
     std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree, std::span<const Box> boxes, Vec2 world) {
       const Box* label = labelAt(boxes, world);
-      if (!label || !fields::read(tree, label->path, *label->field)) {
+      if (!label || isChoice(label->field->kind) || !fields::read(tree, label->path, *label->field)) {
         return std::nullopt;
       }
       return TextEditTool::Target{label->path, *label->field};

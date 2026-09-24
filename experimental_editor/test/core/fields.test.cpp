@@ -14,11 +14,12 @@ namespace {
   namespace pt = fluir::pt;
   namespace fields = fluir::editor::fields;
 
-  // Function 1 "main" (param x at index 0) holds constant 2, call 3 foo(a), comment 4 and binary 5; comment 6 is
-  // top level.
+  // Function 1 "main" (param x at index 0, returns I32) holds constant 2, call 3 foo(a), comment 4 and binary 5;
+  // comment 6 is top level.
   pt::ParseTree makeTree() {
     pt::FunctionDecl fn{.id = 1, .location = {}, .name = "main", .body = {}, .input = {}, .output = {}};
     fn.input = pt::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 0, .name = "x", .typeName = "I32"}}};
+    fn.output = pt::FunctionDecl::OutputBlock{.ret = pt::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
     fn.body.nodes.emplace(2, pt::Constant{.id = 2, .location = {}, .value = fluir::literals_types::I32{7}});
     fn.body.nodes.emplace(
       3, pt::Call{.id = 3, .location = {}, .target = "foo", ._return = {}, .arguments = {{.name = "a", .index = 0}}});
@@ -70,6 +71,14 @@ TEST(Fields, ReadGivesEachTextField) {
   EXPECT_EQ(fields::read(tree, kTopComment, {Kind::Text}), "outer");
 }
 
+TEST(Fields, ReadGivesEachChoiceField) {
+  const pt::ParseTree tree = makeTree();
+
+  EXPECT_EQ(fields::read(tree, kBinary, {Kind::Operator}), "+");
+  EXPECT_EQ(fields::read(tree, kFn, {Kind::ParamType, 0}), "I32");
+  EXPECT_EQ(fields::read(tree, kFn, {Kind::ReturnType}), "I32");
+}
+
 TEST(Fields, ReadOfAMissingFieldIsNullopt) {
   const pt::ParseTree tree = makeTree();
 
@@ -77,7 +86,9 @@ TEST(Fields, ReadOfAMissingFieldIsNullopt) {
   EXPECT_EQ(fields::read(tree, kCall, {Kind::Name}), std::nullopt) << "a call has no name";
   EXPECT_EQ(fields::read(tree, kCall, {Kind::Arg, 5}), std::nullopt) << "no argument at index 5";
   EXPECT_EQ(fields::read(tree, kFn, {Kind::ParamName, 5}), std::nullopt) << "no parameter at index 5";
-  EXPECT_EQ(fields::read(tree, kBinary, {Kind::Operator}), std::nullopt) << "an operator is not text";
+  EXPECT_EQ(fields::read(tree, kConstant, {Kind::Operator}), std::nullopt) << "a constant has no operator";
+  EXPECT_EQ(fields::read(tree, kFn, {Kind::ParamType, 5}), std::nullopt) << "no parameter at index 5";
+  EXPECT_EQ(fields::read(tree, kCall, {Kind::ReturnType}), std::nullopt) << "a call has no return rail";
 }
 
 TEST(Fields, WriteEditsEachTextField) {
@@ -90,6 +101,12 @@ TEST(Fields, WriteEditsEachTextField) {
   EXPECT_EQ(roundTrip(kTopComment, {Kind::Text}, ""), "");
 }
 
+TEST(Fields, WriteEditsEachChoiceField) {
+  EXPECT_EQ(roundTrip(kBinary, {Kind::Operator}, "-"), "-");
+  EXPECT_EQ(roundTrip(kFn, {Kind::ParamType, 0}, "F64"), "F64");
+  EXPECT_EQ(roundTrip(kFn, {Kind::ReturnType}, "BOOL"), "BOOL");
+}
+
 TEST(Fields, WriteOfTheCurrentValueIsUnchanged) {
   EXPECT_TRUE(unchanged(kFn, {Kind::Name}, "main"));
   EXPECT_TRUE(unchanged(kFn, {Kind::ParamName, 0}, "x"));
@@ -97,6 +114,9 @@ TEST(Fields, WriteOfTheCurrentValueIsUnchanged) {
   EXPECT_TRUE(unchanged(kCall, {Kind::Arg, 0}, "a"));
   EXPECT_TRUE(unchanged(kConstant, {Kind::Literal}, "7"));
   EXPECT_TRUE(unchanged(kComment, {Kind::Text}, "inner"));
+  EXPECT_TRUE(unchanged(kBinary, {Kind::Operator}, "+"));
+  EXPECT_TRUE(unchanged(kFn, {Kind::ParamType, 0}, "I32"));
+  EXPECT_TRUE(unchanged(kFn, {Kind::ReturnType}, "I32"));
 }
 
 TEST(Fields, WriteRejectsInvalidText) {
@@ -105,11 +125,14 @@ TEST(Fields, WriteRejectsInvalidText) {
   EXPECT_TRUE(rejected(kCall, {Kind::Target}, ""));
   EXPECT_TRUE(rejected(kCall, {Kind::Arg, 0}, "a b"));
   EXPECT_TRUE(rejected(kConstant, {Kind::Literal}, "seven"));
+  EXPECT_TRUE(rejected(kBinary, {Kind::Operator}, "%%"));
+  EXPECT_TRUE(rejected(kFn, {Kind::ParamType, 0}, "not a type"));
 }
 
 TEST(Fields, WriteOfAMissingFieldIsRejected) {
   EXPECT_TRUE(rejected({1, 99}, {Kind::Literal}, "1"));
   EXPECT_TRUE(rejected(kCall, {Kind::Name}, "bar"));
   EXPECT_TRUE(rejected(kCall, {Kind::Arg, 5}, "b"));
-  EXPECT_TRUE(rejected(kBinary, {Kind::Operator}, "-"));
+  EXPECT_TRUE(rejected(kConstant, {Kind::Operator}, "-"));
+  EXPECT_TRUE(rejected(kCall, {Kind::ReturnType}, "I32"));
 }

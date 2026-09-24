@@ -15,18 +15,17 @@
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/bool_toggle_tool.hpp"
+#include "editor/tools/choice_tool.hpp"
 #include "editor/tools/completion_tool.hpp"
 #include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/context_menu_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
 #include "editor/tools/function_header_menu.hpp"
-#include "editor/tools/operator_tool.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
 #include "editor/tools/popup_tool.hpp"
 #include "editor/tools/rail_menu.hpp"
 #include "editor/tools/select_tool.hpp"
 #include "editor/tools/text_edit_tool.hpp"
-#include "editor/tools/type_tool.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/view/graph_draw.hpp"
 #include "editor/view/graph_layout.hpp"
@@ -41,8 +40,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<PanZoomTool>());
     tools_.add(std::make_unique<SelectTool>());
     tools_.add(std::make_unique<ConduitTool>());
-    tools_.add(std::make_unique<OperatorTool>());
-    tools_.add(std::make_unique<TypeTool>());
+    tools_.add(std::make_unique<ChoiceTool>());
     tools_.add(std::make_unique<BoolToggleTool>());
     tools_.add(std::make_unique<ContextMenuTool>(std::vector<MenuProvider>{functionHeaderItems, railItems}));
     tools_.add(std::make_unique<CompletionTool>());

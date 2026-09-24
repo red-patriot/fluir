@@ -197,7 +197,7 @@ TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
   EXPECT_TRUE(textDrawnIn(r.calls, "main", labels.front().rect));
 }
 
-TEST(Labels, ParameterRailLabelsItsNameByParameterIndex) {
+TEST(Labels, ParameterRailLabelsItsTypeAndNameByParameterIndex) {
   RecordingRenderer r;
   const Viewport viewport;
   const fluir::pt::FunctionDecl fn = makeFunction();
@@ -205,11 +205,17 @@ TEST(Labels, ParameterRailLabelsItsNameByParameterIndex) {
 
   fluir::editor::draw::drawRail(fn, 20, kRect, rootView(r, viewport), kCtx);
 
-  EXPECT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamName, 3}}));
+  EXPECT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamType, 3}, {Kind::ParamName, 3}}));
   expectAllInside(labels, kRect);
-  EXPECT_TRUE(textDrawnIn(r.calls, "x", labels.front().rect));
+  const Rect type = labelFor(labels, {Kind::ParamType, 3}).rect;
+  const Rect name = labelFor(labels, {Kind::ParamName, 3}).rect;
+  EXPECT_LE(type.x + type.w, name.x) << "the type tag sits before the name";
+  EXPECT_TRUE(textDrawnIn(r.calls, "x", name));
 }
 
-TEST(Labels, ReturnRailHasNoLabels) {
-  EXPECT_TRUE(fluir::editor::draw::labels(makeFunction(), 25, kRect, kCtx.layout).empty());
+TEST(Labels, ReturnRailLabelsItsType) {
+  const auto labels = fluir::editor::draw::labels(makeFunction(), 25, kRect, kCtx.layout);
+
+  EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::ReturnType}});
+  expectAllInside(labels, kRect);
 }

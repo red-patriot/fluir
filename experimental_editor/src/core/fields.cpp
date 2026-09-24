@@ -4,6 +4,7 @@
 #include <utility>
 #include <variant>
 
+#include "compiler/models/operator.hpp"
 #include "editor/core/identifier.hpp"
 #include "editor/core/literal_text.hpp"
 #include "editor/core/node_access.hpp"
@@ -11,6 +12,7 @@
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
 #include "editor/transaction/edit_comment.hpp"
+#include "editor/transaction/edit_operator.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/set_constant_value.hpp"
 #include "editor/transaction/update_func_param.hpp"
@@ -34,6 +36,28 @@ namespace fluir::editor::fields {
       return it == fn.input->parameters.end() ? nullptr : &*it;
     }
 
+    const pt::FunctionDecl::Return* returnOf(const pt::FunctionDecl* fn) {
+      return fn && fn->output && fn->output->ret ? &*fn->output->ret : nullptr;
+    }
+
+    std::optional<fluir::Operator> operatorOf(const pt::ParseTree& tree, const FullID& path) {
+      if (const auto* binary = nodeOf<pt::Binary>(tree, path)) {
+        return binary->op;
+      }
+      const auto* unary = nodeOf<pt::Unary>(tree, path);
+      return !unary ? std::nullopt : std::optional{unary->op};
+    }
+
+    // The operator spelled `text`; BAR_BAR is the enum's last operator.
+    std::optional<fluir::Operator> operatorNamed(const std::string& text) {
+      for (int i = static_cast<int>(fluir::Operator::PLUS); i <= static_cast<int>(fluir::Operator::BAR_BAR); ++i) {
+        if (stringify(static_cast<fluir::Operator>(i)) == text) {
+          return static_cast<fluir::Operator>(i);
+        }
+      }
+      return std::nullopt;
+    }
+
     const pt::Call::Argument* argumentAt(const pt::Call& call, int index) {
       const auto it = std::ranges::find(call.arguments, index, &pt::Call::Argument::index);
       return it == call.arguments.end() ? nullptr : &*it;
@@ -53,6 +77,17 @@ namespace fluir::editor::fields {
           const pt::FunctionDecl* fn = functionAt(tree, path);
           const pt::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
           return !param ? std::nullopt : std::optional{param->name};
+        }
+      case Field::Kind::ParamType:
+        {
+          const pt::FunctionDecl* fn = functionAt(tree, path);
+          const pt::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
+          return !param ? std::nullopt : std::optional{param->typeName};
+        }
+      case Field::Kind::ReturnType:
+        {
+          const pt::FunctionDecl::Return* ret = returnOf(functionAt(tree, path));
+          return !ret ? std::nullopt : std::optional{ret->typeName};
         }
       case Field::Kind::Target:
         {
@@ -76,8 +111,12 @@ namespace fluir::editor::fields {
           const pt::Comment* comment = commentAt(tree, path);
           return !comment ? std::nullopt : std::optional{comment->text};
         }
-      case Field::Kind::Bool:
       case Field::Kind::Operator:
+        {
+          const std::optional<fluir::Operator> op = operatorOf(tree, path);
+          return !op ? std::nullopt : std::optional{std::string{stringify(*op)}};
+        }
+      case Field::Kind::Bool:
         return std::nullopt;
     }
     return std::nullopt;
@@ -99,6 +138,13 @@ namespace fluir::editor::fields {
       }
       return *parsed == value ? nullptr : setConstantValue(path, *parsed);
     }
+    if (field.kind == Field::Kind::Operator) {
+      const std::optional<fluir::Operator> op = operatorNamed(text);
+      if (!op) {
+        return std::nullopt;
+      }
+      return text == *current ? nullptr : setOperator(path, *op);
+    }
     if (field.kind != Field::Kind::Text && !isValidIdentifier(text)) {
       return std::nullopt;
     }
@@ -110,6 +156,10 @@ namespace fluir::editor::fields {
         return renameFunction(path, text);
       case Field::Kind::ParamName:
         return renameParameter(path, field.index, text);
+      case Field::Kind::ParamType:
+        return setRailType(path, paramAt(*functionAt(tree, path), field.index)->id, text);
+      case Field::Kind::ReturnType:
+        return setRailType(path, returnOf(functionAt(tree, path))->id, text);
       case Field::Kind::Target:
         return retargetCall(path, text);
       case Field::Kind::Arg:

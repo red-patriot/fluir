@@ -1,5 +1,6 @@
 #include "editor/transaction/set_constant_value.hpp"
 
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -15,6 +16,10 @@ namespace fluir::editor {
     }
     std::swap(constant->value, value_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> setConstantValue(fluir::FullID path, pt::Literal value) {
+    return std::make_unique<SetConstantValueTransaction>(std::move(path), std::move(value));
   }
 
 }  // namespace fluir::editor

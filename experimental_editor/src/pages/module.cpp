@@ -141,7 +141,7 @@ namespace fluir::editor {
       return;
     }
     tools_.cancel(state_);
-    state_.editor.apply(std::make_unique<DeleteTransaction>(*state_.selection));
+    state_.editor.apply(deleteAt(*state_.selection));
     state_.selection.reset();
   }
 

@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_EDIT_CALL_NODE_HPP
 #define FLUIR_EDITOR_TRANSACTION_EDIT_CALL_NODE_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -23,6 +24,8 @@ namespace fluir::editor {
     fluir::FullID path_;
     std::string target_;
   };
+
+  std::unique_ptr<Transaction> retargetCall(fluir::FullID path, std::string target);
 
 }  // namespace fluir::editor
 

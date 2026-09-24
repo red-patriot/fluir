@@ -48,4 +48,12 @@ namespace fluir::editor {
     return true;
   }
 
+  std::unique_ptr<Transaction> renameParameter(fluir::FullID path, int index, std::string name) {
+    return UpdateFuncParamTransaction::rename(std::move(path), index, std::move(name));
+  }
+
+  std::unique_ptr<Transaction> setRailType(fluir::FullID path, fluir::ID railId, std::string typeName) {
+    return UpdateFuncParamTransaction::setType(std::move(path), railId, std::move(typeName));
+  }
+
 }  // namespace fluir::editor

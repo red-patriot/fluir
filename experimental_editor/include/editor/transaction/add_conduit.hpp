@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_ADD_CONDUIT_HPP
 #define FLUIR_EDITOR_TRANSACTION_ADD_CONDUIT_HPP
 
+#include <memory>
 #include <optional>
 #include <utility>
 
@@ -33,6 +34,11 @@ namespace fluir::editor {
     Endpoint target_;
     std::optional<pt::Conduit> replaced_; /**< the target's old conduit, as it was */
   };
+
+  std::unique_ptr<Transaction> addConduit(fluir::FullID parent,
+                                          fluir::ID newId,
+                                          AddConduit::Endpoint source,
+                                          AddConduit::Endpoint target);
 
 }  // namespace fluir::editor
 

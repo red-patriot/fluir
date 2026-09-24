@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_ADD_NODE_HPP
 #define FLUIR_EDITOR_TRANSACTION_ADD_NODE_HPP
 
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -29,6 +30,11 @@ namespace fluir::editor {
     fluir::FlowGraphLocation location_;
     Params params_;
   };
+
+  std::unique_ptr<Transaction> addNode(fluir::FullID parent,
+                                       fluir::ID newId,
+                                       fluir::FlowGraphLocation location,
+                                       AddNode::Params params);
 
 }  // namespace fluir::editor
 

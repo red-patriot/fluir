@@ -193,7 +193,7 @@ namespace fluir::editor {
                                                        const std::string& text) {
       const FullID& path = target.path;
       if (const pt::Comment* comment = commentAt(tree, path)) {
-        return comment->text == text ? nullptr : std::make_unique<EditCommentTransaction>(path, text);
+        return comment->text == text ? nullptr : editComment(path, text);
       }
       if (functionAt(tree, path) != nullptr || callAt(tree, path) != nullptr) {
         if (!isValidIdentifier(text)) {
@@ -203,18 +203,16 @@ namespace fluir::editor {
           return nullptr;
         }
         if (functionAt(tree, path) != nullptr) {
-          return target.index ? UpdateFuncParamTransaction::rename(path, *target.index, text) :
-                                std::unique_ptr<Transaction>{std::make_unique<RenameTransaction>(path, text)};
+          return target.index ? renameParameter(path, *target.index, text) : renameFunction(path, text);
         }
-        return target.index ? std::make_unique<EditCallArgumentTransaction>(path, *target.index, text) :
-                              std::unique_ptr<Transaction>{std::make_unique<EditCallNodeTransaction>(path, text)};
+        return target.index ? renameCallArgument(path, *target.index, text) : retargetCall(path, text);
       }
       const pt::Literal& value = constantAt(tree, path)->value;
       const std::optional<pt::Literal> parsed = tryParseLiteral(value, text);
       if (!parsed) {
         return std::nullopt;
       }
-      return *parsed == value ? nullptr : std::make_unique<SetConstantValueTransaction>(path, *parsed);
+      return *parsed == value ? nullptr : setConstantValue(path, *parsed);
     }
 
     // A function's name or parameter sits on header chrome; everything else on its node.

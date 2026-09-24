@@ -1,5 +1,6 @@
 #include "editor/transaction/edit_comment.hpp"
 
+#include <memory>
 #include <utility>
 
 #include "editor/core/node_access.hpp"
@@ -13,6 +14,10 @@ namespace fluir::editor {
     }
     std::swap(comment->text, text_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> editComment(fluir::FullID path, std::string text) {
+    return std::make_unique<EditCommentTransaction>(std::move(path), std::move(text));
   }
 
 }  // namespace fluir::editor

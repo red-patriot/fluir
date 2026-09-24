@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <utility>
 
 #include "editor/core/node_access.hpp"
@@ -118,6 +119,10 @@ namespace fluir::editor {
     conduits_.clear();
     referrers_.clear();
     return true;
+  }
+
+  std::unique_ptr<Transaction> deleteAt(fluir::FullID path) {
+    return std::make_unique<DeleteTransaction>(std::move(path));
   }
 
 }  // namespace fluir::editor

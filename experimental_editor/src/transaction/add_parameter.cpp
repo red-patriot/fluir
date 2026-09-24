@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "editor/core/tree_path.hpp"
@@ -45,6 +47,10 @@ namespace fluir::editor {
       fn->input = std::nullopt;
     }
     return true;
+  }
+
+  std::unique_ptr<Transaction> addParameter(fluir::FullID path, fluir::ID newId) {
+    return std::make_unique<AddParameter>(std::move(path), newId);
   }
 
 }  // namespace fluir::editor

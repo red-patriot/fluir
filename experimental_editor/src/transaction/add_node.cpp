@@ -1,7 +1,9 @@
 #include "editor/transaction/add_node.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <ranges>
+#include <utility>
 
 #include "editor/core/tree_path.hpp"
 #include "fluir/util/overloaded.hpp"
@@ -70,6 +72,13 @@ namespace fluir::editor {
   bool AddNode::unexecute(pt::ParseTree& tree) {
     pt::Block* block = blockOf(tree, parent_);
     return block != nullptr && block->nodes.erase(id_) > 0;
+  }
+
+  std::unique_ptr<Transaction> addNode(fluir::FullID parent,
+                                       fluir::ID newId,
+                                       fluir::FlowGraphLocation location,
+                                       AddNode::Params params) {
+    return std::make_unique<AddNode>(std::move(parent), newId, location, std::move(params));
   }
 
 }  // namespace fluir::editor

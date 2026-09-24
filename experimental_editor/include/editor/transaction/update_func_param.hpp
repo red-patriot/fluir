@@ -42,6 +42,9 @@ namespace fluir::editor {
     std::variant<Rename, SetType> edit_;
   };
 
+  std::unique_ptr<Transaction> renameParameter(fluir::FullID path, int index, std::string name);
+  std::unique_ptr<Transaction> setRailType(fluir::FullID path, fluir::ID railId, std::string typeName);
+
 }  // namespace fluir::editor
 
 #endif

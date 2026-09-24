@@ -1,6 +1,7 @@
 #include "editor/transaction/edit_call_argument.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -21,6 +22,10 @@ namespace fluir::editor {
     }
     std::swap(arg->name, name_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> renameCallArgument(fluir::FullID path, int index, std::string name) {
+    return std::make_unique<EditCallArgumentTransaction>(std::move(path), index, std::move(name));
   }
 
 }  // namespace fluir::editor

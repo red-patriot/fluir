@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTIONS_ADD_DECL_HPP
 #define FLUIR_EDITOR_TRANSACTIONS_ADD_DECL_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -24,6 +25,8 @@ namespace fluir::editor {
     fluir::ID id_;
     fluir::FlowGraphLocation location_;
   };
+
+  std::unique_ptr<Transaction> addDecl(fluir::FullID parent, fluir::ID newId, fluir::FlowGraphLocation location);
 
 }  // namespace fluir::editor
 

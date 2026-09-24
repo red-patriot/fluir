@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_EDIT_OPERATOR_HPP
 #define FLUIR_EDITOR_TRANSACTION_EDIT_OPERATOR_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -22,6 +23,8 @@ namespace fluir::editor {
     fluir::FullID path_;
     fluir::Operator op_;
   };
+
+  std::unique_ptr<Transaction> setOperator(fluir::FullID path, fluir::Operator op);
 
 }  // namespace fluir::editor
 

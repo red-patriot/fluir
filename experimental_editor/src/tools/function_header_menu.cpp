@@ -18,13 +18,10 @@ namespace fluir::editor {
     return {
       MenuItem{.label = "Add parameter",
                .onClick =
-                 [path = hit.path](EditorState& s) {
-                   s.editor.apply(std::make_unique<AddParameter>(path, s.editor.generateID(path)));
-                 }},
+                 [path = hit.path](EditorState& s) { s.editor.apply(addParameter(path, s.editor.generateID(path))); }},
       MenuItem{
         .label = "Add return",
-        .onClick = [path = hit.path](
-                     EditorState& s) { s.editor.apply(std::make_unique<AddReturn>(path, s.editor.generateID(path))); },
+        .onClick = [path = hit.path](EditorState& s) { s.editor.apply(addReturn(path, s.editor.generateID(path))); },
         .enabled = !(fn->output && fn->output->ret)},
     };
   }

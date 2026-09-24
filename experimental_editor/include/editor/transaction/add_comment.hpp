@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_ADD_COMMENT_HPP
 #define FLUIR_EDITOR_TRANSACTION_ADD_COMMENT_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -24,6 +25,8 @@ namespace fluir::editor {
     fluir::ID id_;
     fluir::FlowGraphLocation location_;
   };
+
+  std::unique_ptr<Transaction> addComment(fluir::FullID parent, fluir::ID newId, fluir::FlowGraphLocation location);
 
 }  // namespace fluir::editor
 

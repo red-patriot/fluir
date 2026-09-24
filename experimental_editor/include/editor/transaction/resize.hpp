@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_RESIZE_HPP
 #define FLUIR_EDITOR_TRANSACTION_RESIZE_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/models/id.hpp"
@@ -22,6 +23,8 @@ namespace fluir::editor {
     int width_;
     int height_;
   };
+
+  std::unique_ptr<Transaction> resizeTo(fluir::FullID path, int width, int height);
 
 }  // namespace fluir::editor
 

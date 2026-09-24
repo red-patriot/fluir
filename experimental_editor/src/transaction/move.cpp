@@ -1,5 +1,6 @@
 #include "editor/transaction/move.hpp"
 
+#include <memory>
 #include <utility>
 
 #include "editor/core/tree_path.hpp"
@@ -14,6 +15,10 @@ namespace fluir::editor {
     std::swap(location->x, x_);
     std::swap(location->y, y_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> moveTo(fluir::FullID path, int x, int y) {
+    return std::make_unique<MoveTransaction>(std::move(path), x, y);
   }
 
 }  // namespace fluir::editor

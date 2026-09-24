@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTIONS_ADD_PARAMETER_HPP
 #define FLUIR_EDITOR_TRANSACTIONS_ADD_PARAMETER_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -22,6 +23,8 @@ namespace fluir::editor {
     fluir::ID id_;
     bool createdInput_ = false;
   };
+
+  std::unique_ptr<Transaction> addParameter(fluir::FullID path, fluir::ID newId);
 
 }  // namespace fluir::editor
 

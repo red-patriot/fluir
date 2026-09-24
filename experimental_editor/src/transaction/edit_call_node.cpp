@@ -1,5 +1,6 @@
 #include "editor/transaction/edit_call_node.hpp"
 
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -16,6 +17,10 @@ namespace fluir::editor {
     }
     std::swap(call->target, target_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> retargetCall(fluir::FullID path, std::string target) {
+    return std::make_unique<EditCallNodeTransaction>(std::move(path), std::move(target));
   }
 
 }  // namespace fluir::editor

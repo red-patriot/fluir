@@ -1,5 +1,6 @@
 #include "editor/transaction/resize.hpp"
 
+#include <memory>
 #include <utility>
 
 #include "editor/core/tree_path.hpp"
@@ -14,6 +15,10 @@ namespace fluir::editor {
     std::swap(location->width, width_);
     std::swap(location->height, height_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> resizeTo(fluir::FullID path, int width, int height) {
+    return std::make_unique<ResizeTransaction>(std::move(path), width, height);
   }
 
 }  // namespace fluir::editor

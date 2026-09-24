@@ -35,7 +35,7 @@ namespace fluir::editor {
                                               state.ctx.layout,
                                               state.text,
                                               [path = hit->path, ops = std::move(ops)](std::size_t i, EditorState& s) {
-                                                s.editor.apply(std::make_unique<EditOperatorTransaction>(path, ops[i]));
+                                                s.editor.apply(setOperator(path, ops[i]));
                                               });
     return false;  // tracked, never consumed
   }

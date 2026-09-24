@@ -1,6 +1,8 @@
 #include "editor/transaction/add_conduit.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 #include "editor/core/tree_path.hpp"
 
@@ -54,6 +56,13 @@ namespace fluir::editor {
       block->conduits.insert_or_assign(replaced_->id, *replaced_);
     }
     return true;
+  }
+
+  std::unique_ptr<Transaction> addConduit(fluir::FullID parent,
+                                          fluir::ID newId,
+                                          AddConduit::Endpoint source,
+                                          AddConduit::Endpoint target) {
+    return std::make_unique<AddConduit>(std::move(parent), newId, source, target);
   }
 
 }  // namespace fluir::editor

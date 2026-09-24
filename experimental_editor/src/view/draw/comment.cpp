@@ -28,13 +28,17 @@ namespace fluir::editor {
 
     Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 
+    std::vector<FieldLabel> labels(const pt::Comment&, const Rect& world, const EditorContext::Layout& layout) {
+      return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
+    }
+
     void draw(const pt::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
       drawShell(world, color(comment, ctx.theme), view, ctx);
       drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, {}, ctx);
       if (comment.text.empty()) {
         return;
       }
-      const Rect textRect = commentTextRect(commentBodyRect(world, ctx.layout), ctx.layout);
+      const Rect textRect = commentTextRect(labels(comment, world, ctx.layout).front().rect, ctx.layout);
       const Subview clipped = view.child(textRect);
       clipped.renderer().drawTextWrapped(
         clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);

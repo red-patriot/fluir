@@ -1,10 +1,10 @@
 #include "editor/view/draw/call.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <vector>
 
 #include "editor/core/node_access.hpp"
-#include "editor/core/renderer.hpp"
 
 namespace fluir::editor::draw {
   namespace {
@@ -30,13 +30,23 @@ namespace fluir::editor::draw {
 
   Color color(const pt::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
 
-  void draw(const pt::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(call, ctx.theme), view, ctx);
-    drawTitle(call.target, world, view, ctx);
+  std::vector<FieldLabel> labels(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+    std::vector<FieldLabel> out{{{Field::Kind::Target}, {r.x, r.y, r.w, std::min(r.h, layout.railStep())}}};
     const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
-      const Vec2 pos{world.x + ctx.layout.textPad, argRowTop(world, row, ctx.layout) + ctx.layout.textPad};
-      view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text, view.composed().scale);
+      out.push_back({{Field::Kind::Arg, args[row]->index}, {r.x, argRowTop(r, row, layout), r.w, layout.railStep()}});
+    }
+    return out;
+  }
+
+  void draw(const pt::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
+    drawShell(world, color(call, ctx.theme), view, ctx);
+    // Rows follow `labels`' order: the target, then each argument by index.
+    const std::vector<FieldLabel> rows = labels(call, world, ctx.layout);
+    const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
+    drawTitle(call.target, rows.front().rect, view, ctx);
+    for (std::size_t row = 0; row < args.size(); ++row) {
+      drawTitle(args[row]->name, rows[row + 1].rect, view, ctx);
     }
     drawTerminalDots(anchors(call, world, ctx.layout), view, ctx);
   }

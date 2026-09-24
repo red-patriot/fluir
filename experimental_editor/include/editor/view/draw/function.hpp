@@ -1,6 +1,8 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_DRAW_FUNCTION_HPP
+#define FLUIR_EDITOR_VIEW_DRAW_FUNCTION_HPP
 
 #include <string_view>
+#include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
@@ -16,6 +18,15 @@ namespace fluir::editor::draw {
 
   Color color(const pt::FunctionDecl& fn, const EditorContext::Theme& theme);
 
+  /** The name, after the tag in the frame's header band. */
+  std::vector<FieldLabel> labels(const pt::FunctionDecl& fn, const Rect& frame, const EditorContext::Layout& layout);
+
+  /** A parameter rail's name after its type tag; the return rail has none. */
+  std::vector<FieldLabel> labels(const pt::FunctionDecl& fn,
+                                 fluir::ID railId,
+                                 const Rect& rail,
+                                 const EditorContext::Layout& layout);
+
   // A function paints in parts at different depths, so each part has its own draw.
 
   /** The body background, under the function's nodes. */
@@ -29,3 +40,5 @@ namespace fluir::editor::draw {
   void drawFrame(const pt::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw
+
+#endif

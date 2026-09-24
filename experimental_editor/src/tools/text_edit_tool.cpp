@@ -26,8 +26,8 @@
 #include "editor/view/node_view.hpp"
 
 // Editable kinds: a constant's literal, a call's target and argument names, a function's name and parameter names,
-// and a comment's text (any text, drawn wrapped). A new kind adds a branch to `targetAt`, `labelRect`, `draftText` and
-// `commit` below.
+// and a comment's text (any text, drawn wrapped). Where each sits comes from the view's `labels`; a new kind adds a
+// branch to `draftText` and `commit` below.
 
 namespace fluir::editor {
   namespace {
@@ -55,16 +55,35 @@ namespace fluir::editor {
       return it == call.arguments.end() ? nullptr : &*it;
     }
 
-    std::size_t argumentRow(const pt::Call& call, int index) {
-      const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
-      const auto it = std::ranges::find(args, index, &pt::Call::Argument::index);
-      return static_cast<std::size_t>(it - args.begin()) + 1;
+    // The argument or parameter a target names, if any.
+    std::optional<int> indexOf(const TextEditTool::Target& target) {
+      const Field::Kind kind = target.field.kind;
+      return kind == Field::Kind::Arg || kind == Field::Kind::ParamName ? std::optional{target.field.index} :
+                                                                          std::nullopt;
     }
 
-    const Box* findBox(std::span<const Box> boxes, Part part, const FullID& path) {
-      const auto it = std::ranges::find_if(boxes, [&](const Box& b) { return b.part == part && b.path == path; });
-      return it == boxes.end() ? nullptr : &*it;
+    // Whether `box` shows labels of `owner`: its body, or one of its function's rails.
+    bool showsLabelsOf(const Box& box, const FullID& owner) {
+      return (box.part == Part::Body && box.path == owner) || (box.part == Part::Rail && parentOf(box.path) == owner);
     }
+
+    std::vector<FieldLabel> labelsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
+      if (box.part == Part::Rail) {
+        const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path));
+        return fn == nullptr ? std::vector<FieldLabel>{} : draw::labels(*fn, box.path.back(), box.world, layout);
+      }
+      if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
+        return draw::labels(*fn, box.world, layout);
+      }
+      if (const pt::Comment* comment = commentAt(tree, box.path)) {
+        return draw::labels(*comment, box.world, layout);
+      }
+      const pt::Node* node = nodeAt(tree, box.path);
+      return node == nullptr ? std::vector<FieldLabel>{} : nodeLabels(*node, box.world, layout);
+    }
+
+    // Operators and bools have their own tools.
+    bool isText(Field::Kind kind) { return kind != Field::Kind::Operator && kind != Field::Kind::Bool; }
 
     // What a press at `world` opens, or nullopt.
     std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree,
@@ -75,41 +94,15 @@ namespace fluir::editor {
       if (hit == nullptr || hit->part != Part::Body) {
         return std::nullopt;
       }
-      if (commentAt(tree, hit->path) != nullptr) {
-        return TextEditTool::Target{hit->path, std::nullopt};
-      }
-      if (const pt::FunctionDecl* fn = functionAt(tree, hit->path)) {
-        if (world.y < hit->world.y + layout.headerH()) {
-          return TextEditTool::Target{hit->path, std::nullopt};
+      for (const Box& box : boxes) {
+        if (!showsLabelsOf(box, hit->path) || (box.clip && !box.clip->contains(world))) {
+          continue;
         }
-        for (const Box& rail : boxes) {
-          if (rail.part != Part::Rail || parentOf(rail.path) != hit->path || !rail.world.contains(world) ||
-              (rail.clip && !rail.clip->contains(world))) {
-            continue;
-          }
-          if (fn->input) {
-            for (const auto& param : fn->input->parameters) {
-              if (param.id == rail.path.back()) {
-                return TextEditTool::Target{hit->path, param.index};
-              }
-            }
+        for (const FieldLabel& label : labelsOf(tree, box, layout)) {
+          if (isText(label.field.kind) && label.rect.contains(world)) {
+            return TextEditTool::Target{hit->path, label.field};
           }
         }
-        return std::nullopt;
-      }
-      if (const pt::Call* call = callAt(tree, hit->path)) {
-        const auto row = static_cast<std::size_t>((world.y - hit->world.y) / layout.railStep());
-        if (row == 0) {
-          return TextEditTool::Target{hit->path, std::nullopt};
-        }
-        const std::vector<const pt::Call::Argument*> args = sortedArguments(*call);
-        if (row > args.size()) {
-          return std::nullopt;
-        }
-        return TextEditTool::Target{hit->path, args[row - 1]->index};
-      }
-      if (const pt::Constant* constant = constantAt(tree, hit->path); constant && isEditableLiteral(constant->value)) {
-        return TextEditTool::Target{hit->path, std::nullopt};
       }
       return std::nullopt;
     }
@@ -124,40 +117,15 @@ namespace fluir::editor {
                                    std::span<const Box> boxes,
                                    const TextEditTool::Target& target,
                                    const EditorContext::Layout& layout) {
-      if (const pt::FunctionDecl* fn = functionAt(tree, target.path); fn && target.index) {
-        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
-        FullID railPath = target.path;
-        railPath.push_back(param == nullptr ? INVALID_ID : param->id);
-        const Box* rail = param == nullptr ? nullptr : findBox(boxes, Part::Rail, railPath);
-        if (rail == nullptr) {
-          return std::nullopt;
+      for (const Box& box : boxes) {
+        if (!showsLabelsOf(box, target.path)) {
+          continue;
         }
-        return Label{splitLabel(rail->world, param->typeName, layout).text, rail->clip};
-      }
-      const Box* body = findBox(boxes, Part::Body, target.path);
-      if (body == nullptr) {
-        return std::nullopt;
-      }
-      if (commentAt(tree, target.path) != nullptr) {
-        return Label{commentBodyRect(body->world, layout), body->clip};
-      }
-      const Rect& r = body->world;
-      if (functionAt(tree, target.path) != nullptr) {
-        return Label{splitLabel({r.x, r.y, r.w, layout.headerH()}, draw::FN_TAG, layout).text, body->clip};
-      }
-      if (const pt::Call* call = callAt(tree, target.path)) {
-        if (!target.index) {
-          return Label{{r.x, r.y, r.w, std::min(r.h, layout.railStep())}, body->clip};
+        const std::vector<FieldLabel> labels = labelsOf(tree, box, layout);
+        const auto it = std::ranges::find(labels, target.field, &FieldLabel::field);
+        if (it != labels.end()) {
+          return Label{it->rect, box.clip};
         }
-        if (argumentAt(*call, *target.index) == nullptr) {
-          return std::nullopt;
-        }
-        const double top = r.y + static_cast<double>(argumentRow(*call, *target.index)) * layout.railStep();
-        return Label{{r.x, top, r.w, layout.railStep()}, body->clip};
-      }
-      if (const pt::Constant* constant = constantAt(tree, target.path);
-          constant && isEditableLiteral(constant->value)) {
-        return Label{splitLabel(r, literalTypeName(constant->value), layout).text, body->clip};
       }
       return std::nullopt;
     }
@@ -166,18 +134,19 @@ namespace fluir::editor {
       if (const pt::Comment* comment = commentAt(tree, target.path)) {
         return comment->text;
       }
+      const std::optional<int> index = indexOf(target);
       if (const pt::FunctionDecl* fn = functionAt(tree, target.path)) {
-        if (!target.index) {
+        if (!index) {
           return fn->name;
         }
-        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *target.index);
+        const pt::FunctionDecl::Parameter* param = paramAt(*fn, *index);
         return param == nullptr ? std::nullopt : std::optional{param->name};
       }
       if (const pt::Call* call = callAt(tree, target.path)) {
-        if (!target.index) {
+        if (!index) {
           return call->target;
         }
-        const pt::Call::Argument* arg = argumentAt(*call, *target.index);
+        const pt::Call::Argument* arg = argumentAt(*call, *index);
         return arg == nullptr ? std::nullopt : std::optional{arg->name};
       }
       if (const pt::Constant* constant = constantAt(tree, target.path);
@@ -192,6 +161,7 @@ namespace fluir::editor {
                                                        const TextEditTool::Target& target,
                                                        const std::string& text) {
       const FullID& path = target.path;
+      const std::optional<int> index = indexOf(target);
       if (const pt::Comment* comment = commentAt(tree, path)) {
         return comment->text == text ? nullptr : editComment(path, text);
       }
@@ -203,9 +173,9 @@ namespace fluir::editor {
           return nullptr;
         }
         if (functionAt(tree, path) != nullptr) {
-          return target.index ? renameParameter(path, *target.index, text) : renameFunction(path, text);
+          return index ? renameParameter(path, *index, text) : renameFunction(path, text);
         }
-        return target.index ? renameCallArgument(path, *target.index, text) : retargetCall(path, text);
+        return index ? renameCallArgument(path, *index, text) : retargetCall(path, text);
       }
       const pt::Literal& value = constantAt(tree, path)->value;
       const std::optional<pt::Literal> parsed = tryParseLiteral(value, text);

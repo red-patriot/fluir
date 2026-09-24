@@ -10,9 +10,13 @@ namespace fluir::editor::draw {
 
   Color color(const pt::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
 
+  std::vector<FieldLabel> labels(const pt::Unary&, const Rect& world, const EditorContext::Layout&) {
+    return {{{Field::Kind::Operator}, world}};
+  }
+
   void draw(const pt::Unary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
-    drawTitle(stringify(n.op), world, view, ctx);
+    drawTitle(stringify(n.op), labels(n, world, ctx.layout).front().rect, view, ctx);
     drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }
 

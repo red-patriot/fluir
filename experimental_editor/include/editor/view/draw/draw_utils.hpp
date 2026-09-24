@@ -7,6 +7,7 @@
 
 #include "editor/assets/images.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/viewport.hpp"
 
@@ -16,6 +17,12 @@ namespace fluir::editor {
   struct TerminalSet {
     std::vector<Vec2> inputs;
     std::vector<Vec2> outputs;
+  };
+
+  /** Where `field`'s value draws and edits, in world space. */
+  struct FieldLabel {
+    Field field;
+    Rect rect;
   };
 
   /** A label's small tag and main text regions in world space; glyph cells are world px, so the split does not depend

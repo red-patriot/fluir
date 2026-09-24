@@ -9,6 +9,8 @@ namespace fluir::editor::draw {
 
   Color color(const pt::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
 
+  std::vector<FieldLabel> labels(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
+
   void drawBody(const pt::Conditional&, const Rect& world, const Subview& view, const EditorContext& ctx) {
     view.renderer().fillRect(view.toScreen(world), ctx.theme.background);
   }

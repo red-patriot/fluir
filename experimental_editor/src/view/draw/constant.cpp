@@ -36,6 +36,13 @@ namespace fluir::editor::draw {
     return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
   }
 
+  std::vector<FieldLabel> labels(const pt::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
+    if (std::holds_alternative<BOOL>(n.value)) {
+      return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
+    }
+    return {{{Field::Kind::Literal}, splitLabel(world, literalTypeName(n.value), layout).text}};
+  }
+
   TerminalSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
@@ -47,13 +54,14 @@ namespace fluir::editor::draw {
   void draw(const pt::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
     // A bool shows its value as a checkbox instead of a label: outlined when false, filled when true.
+    const Rect label = labels(n, world, ctx.layout).front().rect;
     if (const auto* flag = std::get_if<BOOL>(&n.value)) {
-      const Rect square = boolToggleRect(world, ctx.layout);
       view.renderer().drawIcon(
-        view.toScreen(square), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
+        view.toScreen(label), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
 
     } else {
-      drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
+      drawSplitLabel(view, world, literalTypeName(n.value), {}, ctx);
+      drawTitle(renderLiteral(n.value), label, view, ctx);
     }
     drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }

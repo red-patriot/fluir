@@ -15,25 +15,13 @@
 namespace fluir::editor {
   namespace {
 
-    // The rail of the function under `world` whose type tag holds `world`, or nullptr.
+    // The rail whose type tag holds `world`, or nullptr.
     const Box* railTagAt(const EditorState& state, std::span<const Box> boxes, Vec2 world) {
-      const Box* hit = hitAt(boxes, world);
+      const Box* rail = hitAt(boxes, world);
       const pt::FunctionDecl* fn =
-        hit == nullptr || hit->part != Part::Body ? nullptr : functionAt(state.editor.tree(), hit->path);
-      if (fn == nullptr) {
-        return nullptr;
-      }
-      for (const Box& rail : boxes) {
-        if (rail.part != Part::Rail || parentOf(rail.path) != hit->path || !rail.world.contains(world) ||
-            (rail.clip && !rail.clip->contains(world))) {
-          continue;
-        }
-        const std::string* type = railTypeAt(*fn, rail.path.back());
-        if (type != nullptr && splitLabel(rail.world, *type, state.ctx.layout).tag.contains(world)) {
-          return &rail;
-        }
-      }
-      return nullptr;
+        !rail || rail->part != Part::Rail ? nullptr : functionAt(state.editor.tree(), parentOf(rail->path));
+      const std::string* type = !fn ? nullptr : railTypeAt(*fn, rail->path.back());
+      return type && splitLabel(rail->world, *type, state.ctx.layout).tag.contains(world) ? rail : nullptr;
     }
 
   }  // namespace

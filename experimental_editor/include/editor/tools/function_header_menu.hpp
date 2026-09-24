@@ -7,6 +7,6 @@
 namespace fluir::editor {
 
   /** "Add parameter" / "Add return" for a right-press on a function's header; empty elsewhere. */
-  std::vector<MenuItem> functionHeaderItems(const Box& hit, Vec2 world, const EditorState& state);
+  std::vector<MenuItem> functionHeaderItems(const Box& hit, const EditorState& state);
 
 }  // namespace fluir::editor

@@ -34,7 +34,7 @@ namespace fluir::editor {
 
     void draw(const pt::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
       drawShell(world, color(comment, ctx.theme), view, ctx);
-      drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, {}, ctx);
+      drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, ctx);
       if (comment.text.empty()) {
         return;
       }

@@ -21,7 +21,7 @@ namespace fluir::editor::draw {
     const Rect header{frame.x, frame.y, frame.w, ctx.layout.headerH()};
     view.renderer().fillRect(view.toScreen(header), color(node, ctx.theme));
     view.renderer().drawRect(view.toScreen(frame), ctx.theme.border);
-    drawSplitLabel(view, header, branchTag(THEN_BRANCH_ID), {}, ctx);
+    drawSplitLabel(view, header, branchTag(THEN_BRANCH_ID), ctx);
   }
 
   void draw(const pt::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx) {

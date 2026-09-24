@@ -44,14 +44,12 @@ namespace {
     std::vector<std::string> labels;
     int calls = 0;
     std::optional<FullID> path;
-    std::optional<Vec2> world;
     std::vector<int> ran;
 
     MenuProvider provider() {
-      return [this](const Box& hit, Vec2 at, const EditorState&) {
+      return [this](const Box& hit, const EditorState&) {
         ++calls;
         path = hit.path;
-        world = at;
         std::vector<MenuItem> items;
         for (std::size_t i = 0; i < labels.size(); ++i) {
           items.push_back(MenuItem{labels[i], [this, i](EditorState&) { ran.push_back(static_cast<int>(i)); }});
@@ -162,7 +160,7 @@ TEST(ContextMenuTool, TheFirstProviderWithItemsWins) {
   EXPECT_EQ(later.calls, 0);
 }
 
-TEST(ContextMenuTool, ProvidersGetTheHitPathAndWorldPointThroughTheViewport) {
+TEST(ContextMenuTool, ProvidersGetTheHitPathThroughTheViewport) {
   Fixture f;
   f.state.view.pan = Vec2{40, -30};
   f.state.view.scale = 2.0;
@@ -172,14 +170,12 @@ TEST(ContextMenuTool, ProvidersGetTheHitPathAndWorldPointThroughTheViewport) {
   send(uut, f.state, down(f.state.view.worldToScreen(kNodeBody), InputEvent::Button::Right));
 
   EXPECT_EQ(p.path, (FullID{1, 1}));
-  ASSERT_TRUE(p.world.has_value());
-  testutil::expectVecNear(*p.world, kNodeBody);
 }
 
 TEST(ContextMenuTool, PickingADisabledRowRunsNothingAndKeepsTheMenu) {
   Fixture f;
   std::vector<int> ran;
-  MenuProvider provider = [&ran](const Box&, Vec2, const EditorState&) {
+  MenuProvider provider = [&ran](const Box&, const EditorState&) {
     return std::vector<MenuItem>{
       MenuItem{.label = "Off", .onClick = [&ran](EditorState&) { ran.push_back(0); }, .enabled = false},
       MenuItem{.label = "On", .onClick = [&ran](EditorState&) { ran.push_back(1); }}};

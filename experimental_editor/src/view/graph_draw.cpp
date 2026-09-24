@@ -49,7 +49,9 @@ namespace fluir::editor {
           }
           return;
         case Part::Branch:
-          return;  // a branch is a hit region: its conditional's frame paints its chrome
+        case Part::Header:
+        case Part::Label:
+          return;  // hit regions only: their owner paints them
         case Part::Frame:
           if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
             draw::drawFrame(*fn, box.world, view, ctx);

@@ -22,11 +22,12 @@ namespace {
   using fluir::ID;
   using fluir::editor::Box;
   using fluir::editor::EditorContext;
+  using fluir::editor::Field;
   using fluir::editor::graphBounds;
   using fluir::editor::hitAt;
+  using fluir::editor::labelAt;
   using fluir::editor::layoutGraph;
   using fluir::editor::Part;
-  using fluir::editor::railAt;
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
   using testutil::expectRectNear;
@@ -205,7 +206,7 @@ TEST(GraphLayout, FunctionGripsAreHittableAndDrawnOverTheBody) {
   EXPECT_EQ(corner->path, (FullID{1}));
 }
 
-TEST(GraphLayout, RailsAndWiresAreNotHittable) {
+TEST(GraphLayout, RailsAreHittableAndWiresAreNot) {
   const testutil::Loaded rails = loadFixture("read/function_with_input_only.fl");
   const testutil::Loaded wires = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(rails.result.tree.has_value());
@@ -219,24 +220,83 @@ TEST(GraphLayout, RailsAndWiresAreNotHittable) {
 
   ASSERT_NE(onRail, nullptr);
   ASSERT_NE(onWire, nullptr);
-  EXPECT_EQ(onRail->path.size(), 1u);
+  EXPECT_EQ(onRail->part, Part::Rail);
+  EXPECT_EQ(onRail->path, (FullID{1, 2}));
   EXPECT_EQ(onWire->path.size(), 1u);
 }
 
-TEST(GraphLayout, RailAtFindsAFunctionsRailUnderAPoint) {
-  const testutil::Loaded rails = loadFixture("read/function_with_input_only.fl");
-  ASSERT_TRUE(rails.result.tree.has_value());
-  const std::vector<Box> boxes = layoutGraph(*rails.result.tree, kCtx.layout);
+// function_with_input_only.fl: frame {50,50,500,500}, header band y 50..75, move grip {530,55,15,15}; rails a
+// {50,75,75,25} and b {50,100,75,25}, each type tag "I32" ending near x 73.
+TEST(GraphLayout, FunctionHeaderIsHittableUnderItsMoveGrip) {
+  const testutil::Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
 
-  const Box* onRail = railAt(boxes, FullID{1}, Vec2{60, 90});  // param a rail {50,75,75,25}
+  const Box* header = hitAt(boxes, Vec2{60, 60});
+  const Box* move = hitAt(boxes, Vec2{535, 60});
 
-  ASSERT_NE(onRail, nullptr);
-  EXPECT_EQ(onRail->path, (FullID{1, 2}));
-  EXPECT_EQ(railAt(boxes, FullID{1}, Vec2{300, 300}), nullptr);
-  EXPECT_EQ(railAt(boxes, FullID{2}, Vec2{60, 90}), nullptr);
+  ASSERT_NE(header, nullptr);
+  ASSERT_NE(move, nullptr);
+  EXPECT_EQ(header->part, Part::Header);
+  EXPECT_EQ(header->path, (FullID{1}));
+  EXPECT_EQ(move->part, Part::MoveGrip);
 }
 
-// top_level_comment_only.fl: comment 1 at units (10,10) 25x25, no header offset.
+TEST(GraphLayout, HitAtLooksThroughLabels) {
+  const testutil::Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+
+  const Box* onName = hitAt(boxes, Vec2{200, 60});
+  const Box* onParamName = hitAt(boxes, Vec2{100, 90});
+  const std::vector<Box> nodes = layoutGraph(overlappingNodes(1, 2), kCtx.layout);
+  const Box* onLiteral = hitAt(nodes, Vec2{35, 70});
+
+  ASSERT_NE(onName, nullptr);
+  ASSERT_NE(onParamName, nullptr);
+  ASSERT_NE(onLiteral, nullptr);
+  EXPECT_EQ(onName->part, Part::Header);
+  EXPECT_EQ(onParamName->part, Part::Rail);
+  EXPECT_EQ(onLiteral->part, Part::Body);
+}
+
+// A label is addressed the way `core/fields` takes it: a parameter name by its function's path.
+TEST(LabelAt, FindsEachFieldAtThePathFieldsTakes) {
+  const testutil::Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+  const std::vector<Box> nodes = layoutGraph(overlappingNodes(1, 2), kCtx.layout);
+
+  const Box* name = labelAt(boxes, Vec2{200, 60});
+  const Box* paramA = labelAt(boxes, Vec2{100, 90});
+  const Box* paramB = labelAt(boxes, Vec2{100, 110});
+  const Box* literal = labelAt(nodes, Vec2{35, 70});  // node 11 {10,35,50,50}, over node 10
+
+  ASSERT_NE(name, nullptr);
+  ASSERT_NE(paramA, nullptr);
+  ASSERT_NE(paramB, nullptr);
+  ASSERT_NE(literal, nullptr);
+  EXPECT_EQ(name->part, Part::Label);
+  EXPECT_EQ(name->path, (FullID{1}));
+  EXPECT_EQ(name->field, (Field{Field::Kind::Name}));
+  EXPECT_EQ(paramA->path, (FullID{1}));
+  EXPECT_EQ(paramA->field, (Field{Field::Kind::ParamName, 0}));
+  EXPECT_EQ(paramB->field, (Field{Field::Kind::ParamName, 1}));
+  EXPECT_EQ(literal->path, (FullID{1, 11}));
+  EXPECT_EQ(literal->field, (Field{Field::Kind::Literal}));
+}
+
+TEST(LabelAt, IsNullOffALabelOrUnderAGrip) {
+  const testutil::Loaded l = loadFixture("read/function_with_input_only.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+
+  EXPECT_EQ(labelAt(boxes, Vec2{60, 90}), nullptr) << "a rail's type tag";
+  EXPECT_EQ(labelAt(boxes, Vec2{55, 60}), nullptr) << "the header's fn tag";
+  EXPECT_EQ(labelAt(boxes, Vec2{535, 60}), nullptr) << "the move grip over the name";
+  EXPECT_EQ(labelAt(boxes, Vec2{300, 300}), nullptr) << "the empty body";
+}
+
 TEST(GraphLayout, TopLevelCommentLaysOutAtItsWorldRect) {
   const testutil::Loaded l = loadFixture("read/top_level_comment_only.fl");
   ASSERT_TRUE(l.result.tree.has_value());

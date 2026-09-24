@@ -1,5 +1,7 @@
 #include "editor/tools/select_tool.hpp"
 
+#include "editor/core/tree_path.hpp"
+
 namespace fluir::editor {
 
   bool SelectTool::onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
@@ -7,7 +9,12 @@ namespace fluir::editor {
       return false;
     }
     const Box* hit = hitAt(boxes, state.view.screenToWorld(event.pos));
-    state.selection = hit == nullptr ? std::nullopt : std::optional<FullID>{hit->path};
+    if (!hit) {
+      state.selection = std::nullopt;
+    } else {
+      // A rail belongs to its function.
+      state.selection = hit->part == Part::Rail ? parentOf(hit->path) : hit->path;
+    }
     return false;  // tracked, never consumed
   }
 

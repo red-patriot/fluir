@@ -8,12 +8,13 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor {
 
-  /** What a box is. Only Body and the grips are hittable. */
-  enum class Part { Body, Branch, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
+  /** What a box is. Frame and Wire are not hittable. Header and Label paint nothing; a Label sits over its owner. */
+  enum class Part { Body, Branch, Frame, Header, Rail, Label, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
 
   /** One laid-out piece of the graph, in world space. */
   struct Box {
@@ -22,16 +23,18 @@ namespace fluir::editor {
     /** A Wire runs from this rect's top-left to its (x + w, y + h) corner. */
     Rect world;
     std::optional<Rect> clip;
+    /** A Label's field; its path is the one `core/fields` takes. */
+    std::optional<Field> field;
   };
 
   /** Every box `tree` draws as, in paint order. */
   std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout);
 
-  /** The last-painted hittable box containing `world`, or nullptr. */
+  /** The last-painted hittable box containing `world`, looking through Labels, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
 
-  /** The rail box of function `fnPath` containing `world`, honouring its clip, or nullptr. */
-  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world);
+  /** The Label at `world` when it is the last-painted hittable box there, or nullptr. */
+  const Box* labelAt(std::span<const Box> boxes, Vec2 world);
 
   /** A terminal: its node or rail `path`, side, and index on that side. */
   struct TerminalHit {

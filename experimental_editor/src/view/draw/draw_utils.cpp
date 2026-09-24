@@ -49,8 +49,7 @@ namespace fluir::editor {
     return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
   }
 
-  void drawSplitLabel(
-    const Subview& view, Rect box, std::string_view tag, std::string_view text, const EditorContext& ctx) {
+  void drawSplitLabel(const Subview& view, Rect box, std::string_view tag, const EditorContext& ctx) {
     Renderer& r = view.renderer();
     const double pad = ctx.layout.textPad;
     const double s = view.composed().scale;
@@ -58,10 +57,6 @@ namespace fluir::editor {
     // `measureText` reports unscaled px, so the baseline lift scales with the tag.
     r.drawText(
       Vec2{tagBottom.x, tagBottom.y - r.measureText(tag).y * kTagScale * s}, tag, ctx.theme.text, kTagScale * s);
-    if (!text.empty()) {
-      const Rect textRect = splitLabel(box, tag, ctx.layout).text;
-      r.drawText(view.toScreen(Vec2{textRect.x + pad, box.y + pad}), text, ctx.theme.text, s);
-    }
   }
 
   namespace draw {

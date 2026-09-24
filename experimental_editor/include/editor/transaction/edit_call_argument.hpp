@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_EDIT_CALL_ARGUMENT_HPP
 #define FLUIR_EDITOR_TRANSACTION_EDIT_CALL_ARGUMENT_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -24,6 +25,8 @@ namespace fluir::editor {
     int index_;
     std::string name_;
   };
+
+  std::unique_ptr<Transaction> renameCallArgument(fluir::FullID path, int index, std::string name);
 
 }  // namespace fluir::editor
 

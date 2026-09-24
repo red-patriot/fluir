@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_RENAME_HPP
 #define FLUIR_EDITOR_TRANSACTION_RENAME_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -22,6 +23,8 @@ namespace fluir::editor {
     fluir::FullID path_;
     std::string name_;
   };
+
+  std::unique_ptr<Transaction> renameFunction(fluir::FullID path, std::string name);
 
 }  // namespace fluir::editor
 

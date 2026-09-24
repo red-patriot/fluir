@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_EDIT_COMMENT_HPP
 #define FLUIR_EDITOR_TRANSACTION_EDIT_COMMENT_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -22,6 +23,8 @@ namespace fluir::editor {
     fluir::FullID path_;
     std::string text_;
   };
+
+  std::unique_ptr<Transaction> editComment(fluir::FullID path, std::string text);
 
 }  // namespace fluir::editor
 

@@ -32,7 +32,7 @@ namespace fluir::editor {
     if (value == nullptr || !draw::boolToggleRect(hit->world, state.ctx.layout).contains(world)) {
       return false;
     }
-    state.editor.apply(std::make_unique<SetConstantValueTransaction>(hit->path, pt::Literal{!*value}));
+    state.editor.apply(setConstantValue(hit->path, pt::Literal{!*value}));
     return true;
   }
 

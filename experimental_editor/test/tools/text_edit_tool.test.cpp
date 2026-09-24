@@ -34,7 +34,7 @@ namespace {
   using fluir::FlowGraphLocation;
   using fluir::FullID;
   using fluir::ID;
-  using fluir::editor::DeleteTransaction;
+  using fluir::editor::deleteAt;
   using fluir::editor::EditorContext;
   using fluir::editor::EditorState;
   using fluir::editor::InputEvent;
@@ -364,7 +364,7 @@ TEST(TextEditTool, CancelClosesTheDraft) {
 TEST(TextEditTool, TheDraftClosesWhenItsConstantVanishes) {
   Harness h;
   h.send(down(kTextOrigin));
-  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kInt)));
+  ASSERT_TRUE(h.state.editor.apply(deleteAt(kInt)));
 
   EXPECT_FALSE(h.send(text("7")));
 
@@ -568,7 +568,7 @@ TEST(TextEditTool, APressOnTheReturnRailOpensNothing) {
 TEST(TextEditTool, TheParameterDraftClosesWhenItsFunctionVanishes) {
   Harness h;
   h.send(down(kParamRail1));
-  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kFn)));
+  ASSERT_TRUE(h.state.editor.apply(deleteAt(kFn)));
 
   EXPECT_FALSE(h.send(text("7")));
 
@@ -605,7 +605,7 @@ TEST(TextEditTool, AnInvalidCallTargetStaysOpenAndInvalid) {
 TEST(TextEditTool, TheNameDraftClosesWhenItsFunctionVanishes) {
   Harness h;
   h.send(down(kFnName));
-  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kFn)));
+  ASSERT_TRUE(h.state.editor.apply(deleteAt(kFn)));
 
   EXPECT_FALSE(h.send(text("7")));
 
@@ -744,7 +744,7 @@ TEST(TextEditTool, RePressingTheOpenCommentKeepsTheDraftAndReAimsTheCaret) {
 TEST(TextEditTool, TheCommentDraftClosesWhenTheCommentVanishes) {
   Harness h;
   h.send(down(kCommentText));
-  ASSERT_TRUE(h.state.editor.apply(std::make_unique<DeleteTransaction>(kComment)));
+  ASSERT_TRUE(h.state.editor.apply(deleteAt(kComment)));
 
   EXPECT_FALSE(h.send(text("7")));
 

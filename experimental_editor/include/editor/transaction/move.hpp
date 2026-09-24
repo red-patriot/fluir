@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_MOVE_HPP
 #define FLUIR_EDITOR_TRANSACTION_MOVE_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/models/id.hpp"
@@ -21,6 +22,8 @@ namespace fluir::editor {
     int x_;
     int y_;
   };
+
+  std::unique_ptr<Transaction> moveTo(fluir::FullID path, int x, int y);
 
 }  // namespace fluir::editor
 

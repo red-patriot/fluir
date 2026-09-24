@@ -1,5 +1,8 @@
 #include "editor/transaction/add_comment.hpp"
 
+#include <memory>
+#include <utility>
+
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
@@ -22,6 +25,10 @@ namespace fluir::editor {
     }
     pt::Block* block = blockOf(tree, parent_);
     return block != nullptr && block->nodes.erase(id_) > 0;
+  }
+
+  std::unique_ptr<Transaction> addComment(fluir::FullID parent, fluir::ID newId, fluir::FlowGraphLocation location) {
+    return std::make_unique<AddComment>(std::move(parent), newId, location);
   }
 
 }  // namespace fluir::editor

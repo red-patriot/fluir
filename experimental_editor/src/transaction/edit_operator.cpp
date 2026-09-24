@@ -1,5 +1,6 @@
 #include "editor/transaction/edit_operator.hpp"
 
+#include <memory>
 #include <utility>
 #include <variant>
 
@@ -20,6 +21,10 @@ namespace fluir::editor {
     }
     std::swap(*op, op_);
     return true;
+  }
+
+  std::unique_ptr<Transaction> setOperator(fluir::FullID path, fluir::Operator op) {
+    return std::make_unique<EditOperatorTransaction>(std::move(path), op);
   }
 
 }  // namespace fluir::editor

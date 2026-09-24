@@ -19,9 +19,8 @@ namespace fluir::editor {
     if (rail == nullptr) {
       return {};
     }
-    return {MenuItem{.label = "Delete", .onClick = [path = rail->path](EditorState& s) {
-                       s.editor.apply(std::make_unique<DeleteTransaction>(path));
-                     }}};
+    return {
+      MenuItem{.label = "Delete", .onClick = [path = rail->path](EditorState& s) { s.editor.apply(deleteAt(path)); }}};
   }
 
 }  // namespace fluir::editor

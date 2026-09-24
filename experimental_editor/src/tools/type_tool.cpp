@@ -59,7 +59,7 @@ namespace fluir::editor {
       state.ctx.layout,
       state.text,
       [fnPath = parentOf(rail->path), id = rail->path.back(), labels](std::size_t i, EditorState& s) {
-        s.editor.apply(UpdateFuncParamTransaction::setType(fnPath, id, labels[i]));
+        s.editor.apply(setRailType(fnPath, id, labels[i]));
       });
     return false;  // tracked, never consumed
   }

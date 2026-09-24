@@ -49,10 +49,10 @@ namespace fluir::editor {
           const TerminalHit& source = from_.output ? from_ : *to;
           const TerminalHit& target = from_.output ? *to : from_;
           const FullID parent = parentOf(source.path);
-          state.editor.apply(std::make_unique<AddConduit>(parent,
-                                                          state.editor.generateID(parent),
-                                                          AddConduit::Endpoint{source.path.back(), source.index},
-                                                          AddConduit::Endpoint{target.path.back(), target.index}));
+          state.editor.apply(addConduit(parent,
+                                        state.editor.generateID(parent),
+                                        AddConduit::Endpoint{source.path.back(), source.index},
+                                        AddConduit::Endpoint{target.path.back(), target.index}));
           return true;
         }
 

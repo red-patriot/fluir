@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_SET_CONSTANT_VALUE_HPP
 #define FLUIR_EDITOR_TRANSACTION_SET_CONSTANT_VALUE_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -22,6 +23,8 @@ namespace fluir::editor {
     fluir::FullID path_;
     pt::Literal value_;
   };
+
+  std::unique_ptr<Transaction> setConstantValue(fluir::FullID path, pt::Literal value);
 
 }  // namespace fluir::editor
 

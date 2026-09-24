@@ -2,6 +2,7 @@
 #define FLUIR_EDITOR_TRANSACTION_DELETE_HPP
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -33,6 +34,8 @@ namespace fluir::editor {
     std::vector<pt::Conduit> conduits_; /**< touched conduits, as they were */
     std::vector<pt::Node> referrers_;   /**< nodes whose operands named it, as they were */
   };
+
+  std::unique_ptr<Transaction> deleteAt(fluir::FullID path);
 
 }  // namespace fluir::editor
 

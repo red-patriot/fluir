@@ -116,13 +116,13 @@ namespace fluir::editor {
 
     std::unique_ptr<Transaction> next;
     if (part_ == Part::MoveGrip) {
-      next = std::make_unique<MoveTransaction>(path_, start_.x + delta_.x, start_.y + delta_.y);
+      next = moveTo(path_, start_.x + delta_.x, start_.y + delta_.y);
     } else if (part_ == Part::ResizeX) {
-      next = std::make_unique<ResizeTransaction>(path_, width, start_.height);
+      next = resizeTo(path_, width, start_.height);
     } else if (part_ == Part::ResizeY) {
-      next = std::make_unique<ResizeTransaction>(path_, start_.width, height);
+      next = resizeTo(path_, start_.width, height);
     } else {
-      next = std::make_unique<ResizeTransaction>(path_, width, height);
+      next = resizeTo(path_, width, height);
     }
     // Back at the start is a no-op, so there is then no live edit.
     if (next->execute(tree)) {

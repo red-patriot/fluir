@@ -1,6 +1,8 @@
 #include "editor/transaction/add_return.hpp"
 
+#include <memory>
 #include <optional>
+#include <utility>
 
 #include "editor/core/tree_path.hpp"
 
@@ -30,6 +32,10 @@ namespace fluir::editor {
       fn->output->ret = std::nullopt;
     }
     return true;
+  }
+
+  std::unique_ptr<Transaction> addReturn(fluir::FullID path, fluir::ID newId) {
+    return std::make_unique<AddReturn>(std::move(path), newId);
   }
 
 }  // namespace fluir::editor

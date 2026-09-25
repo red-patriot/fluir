@@ -1,7 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_TRANSACTION_HPP
 #define FLUIR_EDITOR_TRANSACTION_TRANSACTION_HPP
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
@@ -12,9 +12,9 @@ namespace fluir::editor {
     virtual ~Transaction() = default;
 
     /** Applies the edit. False when nothing changed. */
-    virtual bool execute(pt::ParseTree& tree) = 0;
+    virtual bool execute(et::ParseTree& tree) = 0;
     /** Reverses `execute`. False when the tree is not in the expected state. */
-    virtual bool unexecute(pt::ParseTree& tree) = 0;
+    virtual bool unexecute(et::ParseTree& tree) = 0;
   };
 
 }  // namespace fluir::editor

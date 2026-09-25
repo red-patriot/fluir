@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "recording_renderer.hpp"
@@ -32,14 +32,14 @@ namespace {
   const EditorContext kCtx;
   constexpr double kHeaderH = 25;  // headerUnits 5 * unitPx 5
 
-  fluir::pt::Conditional makeConditional() {
-    return fluir::pt::Conditional{.id = 20,
-                                  .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 18},
-                                  .condition = {},
-                                  .inputs = {},
-                                  .outputs = {},
-                                  .thenScope = xyz::indirect<fluir::pt::Block>{},
-                                  .elseScope = xyz::indirect<fluir::pt::Block>{}};
+  fluir::editor::et::Conditional makeConditional() {
+    return fluir::editor::et::Conditional{.id = 20,
+                                          .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 18},
+                                          .condition = {},
+                                          .inputs = {},
+                                          .outputs = {},
+                                          .thenScope = xyz::indirect<fluir::editor::et::Block>{},
+                                          .elseScope = xyz::indirect<fluir::editor::et::Block>{}};
   }
 
   // An identity view: world px are screen px, so the rects asserted below are the ones passed in.
@@ -91,4 +91,17 @@ TEST(DrawConditional, FrameFillsItsHeaderBandAndTagsIt) {
   EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, kHeaderH}));
   EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // the border spans the whole frame
   EXPECT_TRUE(hasText(r, fluir::editor::draw::THEN_TAG));
+}
+
+// The tag is the annotation's, not a fixed one: that is all the header says about which branch is shown.
+TEST(DrawConditional, FrameTagsTheBranchTheAnnotationShows) {
+  RecordingRenderer r;
+  const Viewport viewport;
+  fluir::editor::et::Conditional node = makeConditional();
+  node.annotation.shownBranch = ELSE_BRANCH_ID;
+
+  fluir::editor::draw::drawFrame(node, Rect{10, 35, 100, 90}, rootView(r, viewport), kCtx);
+
+  EXPECT_TRUE(hasText(r, fluir::editor::draw::ELSE_TAG));
+  EXPECT_FALSE(hasText(r, fluir::editor::draw::THEN_TAG));
 }

@@ -10,9 +10,9 @@
 namespace fluir::editor {
   namespace {
 
-    const literals_types::BOOL* boolAt(const pt::ParseTree& tree, const FullID& path) {
-      const pt::Node* node = nodeAt(tree, path);
-      const auto* constant = node == nullptr ? nullptr : std::get_if<pt::Constant>(node);
+    const literals_types::BOOL* boolAt(const et::ParseTree& tree, const FullID& path) {
+      const et::Node* node = nodeAt(tree, path);
+      const auto* constant = node == nullptr ? nullptr : std::get_if<et::Constant>(node);
       return constant == nullptr ? nullptr : std::get_if<literals_types::BOOL>(&constant->value);
     }
 
@@ -30,7 +30,7 @@ namespace fluir::editor {
     if (value == nullptr) {
       return false;
     }
-    state.editor.apply(setConstantValue(label->path, pt::Literal{!*value}));
+    state.editor.apply(setConstantValue(label->path, et::Literal{!*value}));
     return true;
   }
 

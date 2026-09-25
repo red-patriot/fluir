@@ -4,10 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
 
 namespace {
 
@@ -24,22 +24,23 @@ namespace {
 
   // Builds a bare-bones FunctionDecl at the given (id, z), for ordering tests
   // only — geometry fields are irrelevant here.
-  fluir::pt::FunctionDecl makeFunction(ID id, int z) {
-    fluir::pt::FunctionDecl fn;
+  fluir::editor::et::FunctionDecl makeFunction(ID id, int z) {
+    fluir::editor::et::FunctionDecl fn;
     fn.id = id;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = z, .width = 0, .height = 0};
     fn.name = "f";
     return fn;
   }
 
-  fluir::pt::Comment makeComment(ID id, int z) {
-    return fluir::pt::Comment{.id = id, .location = FlowGraphLocation{.x = 0, .y = 0, .z = z, .width = 0, .height = 0}};
+  fluir::editor::et::Comment makeComment(ID id, int z) {
+    return fluir::editor::et::Comment{.id = id,
+                                      .location = FlowGraphLocation{.x = 0, .y = 0, .z = z, .width = 0, .height = 0}};
   }
 
   // Builds a bare-bones Constant node at the given (id, z), for ordering tests
   // only — geometry fields are irrelevant here.
-  fluir::pt::Node makeNode(ID id, int z) {
-    fluir::pt::Constant constant;
+  fluir::editor::et::Node makeNode(ID id, int z) {
+    fluir::editor::et::Constant constant;
     constant.id = id;
     constant.location = FlowGraphLocation{.x = 0, .y = 0, .z = z, .width = 0, .height = 0};
     constant.value = fluir::literals_types::I32{0};
@@ -69,17 +70,18 @@ TEST(GraphGeometry, AtOriginShiftsLocalRectKeepingSize) {
 TEST(GraphGeometry, DotRectIsCenteredOnAnchor) { EXPECT_EQ(dotRect(Vec2{122, 84.5}, 6.0), (Rect{119, 81.5, 6, 6})); }
 
 TEST(GraphGeometry, SortedDeclarationsOrdersMixedKindsByZThenId) {
-  fluir::pt::ParseTree tree;
-  tree.declarations.emplace(1, fluir::pt::Declaration{makeFunction(1, 2)});
-  tree.declarations.emplace(2, fluir::pt::Declaration{makeComment(2, 1)});
-  tree.declarations.emplace(3, fluir::pt::Declaration{makeFunction(3, 1)});  // ties z=1 with id=2, lower id first
-  tree.declarations.emplace(4, fluir::pt::Declaration{makeComment(4, 3)});
+  fluir::editor::et::ParseTree tree;
+  tree.declarations.emplace(1, fluir::editor::et::Declaration{makeFunction(1, 2)});
+  tree.declarations.emplace(2, fluir::editor::et::Declaration{makeComment(2, 1)});
+  tree.declarations.emplace(3,
+                            fluir::editor::et::Declaration{makeFunction(3, 1)});  // ties z=1 with id=2, lower id first
+  tree.declarations.emplace(4, fluir::editor::et::Declaration{makeComment(4, 3)});
 
-  const auto idOf = [](const fluir::pt::Declaration* d) {
+  const auto idOf = [](const fluir::editor::et::Declaration* d) {
     return std::visit([](const auto& decl) { return decl.id; }, *d);
   };
 
-  const std::vector<const fluir::pt::Declaration*> sorted = sortedDeclarations(tree);
+  const std::vector<const fluir::editor::et::Declaration*> sorted = sortedDeclarations(tree);
   ASSERT_EQ(sorted.size(), 4u);
   EXPECT_EQ(idOf(sorted[0]), 2u);  // z=1, id=2, comment
   EXPECT_EQ(idOf(sorted[1]), 3u);  // z=1, id=3
@@ -88,14 +90,16 @@ TEST(GraphGeometry, SortedDeclarationsOrdersMixedKindsByZThenId) {
 }
 
 TEST(GraphGeometry, SortedNodesOrdersByZThenId) {
-  fluir::pt::Block block;
+  fluir::editor::et::Block block;
   block.nodes.emplace(1, makeNode(1, 2));
   block.nodes.emplace(2, makeNode(2, 1));
   block.nodes.emplace(3, makeNode(3, 1));  // ties z=1 with id=2, lower id first
 
-  const auto idOf = [](const fluir::pt::Node* n) { return std::visit([](const auto& node) { return node.id; }, *n); };
+  const auto idOf = [](const fluir::editor::et::Node* n) {
+    return std::visit([](const auto& node) { return node.id; }, *n);
+  };
 
-  const std::vector<const fluir::pt::Node*> sorted = sortedNodes(block);
+  const std::vector<const fluir::editor::et::Node*> sorted = sortedNodes(block);
   ASSERT_EQ(sorted.size(), 3u);
   EXPECT_EQ(idOf(sorted[0]), 2u);  // z=1, id=2
   EXPECT_EQ(idOf(sorted[1]), 3u);  // z=1, id=3

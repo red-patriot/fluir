@@ -44,11 +44,11 @@ namespace fluir::editor {
 
   }  // namespace
 
-  bool Intelligence::load(std::optional<std::filesystem::path>, const pt::ParseTree& tree) {
+  bool Intelligence::load(std::optional<std::filesystem::path>, const et::ParseTree& tree) {
     // TODO: Load other information about a module, for now just add parse its decls as available
     module_.functions.clear();
     for (const auto& [id, decl] : tree.declarations) {
-      if (const auto* func = std::get_if<pt::FunctionDecl>(&decl); func) {
+      if (const auto* func = std::get_if<et::FunctionDecl>(&decl); func) {
         intelligence::FunctionDecl functionInfo;
         functionInfo.name = func->name;
         if (func->output && func->output->ret) {
@@ -73,14 +73,14 @@ namespace fluir::editor {
     return true;
   }
 
-  std::vector<std::string> Intelligence::choices(const pt::ParseTree& tree, const FullID& path, Field field) const {
+  std::vector<std::string> Intelligence::choices(const et::ParseTree& tree, const FullID& path, Field field) const {
     if (!fields::read(tree, path, field)) {
       return {};
     }
     switch (field.kind) {
       case Field::Kind::Operator:
         {
-          const bool unary = std::holds_alternative<pt::Unary>(*nodeAt(tree, path));
+          const bool unary = std::holds_alternative<et::Unary>(*nodeAt(tree, path));
           std::vector<std::string> out;
           for (const fluir::Operator op : unary ? UNARY_OPERATORS : BINARY_OPERATORS) {
             out.emplace_back(stringify(op));
@@ -95,7 +95,7 @@ namespace fluir::editor {
     }
   }
 
-  std::vector<Completion> Intelligence::completions(const pt::ParseTree& tree, const FullID& body) const {
+  std::vector<Completion> Intelligence::completions(const et::ParseTree& tree, const FullID& body) const {
     if (body.empty()) {
       return TOP_LEVEL_COMPLETIONS;
     }
@@ -103,7 +103,7 @@ namespace fluir::editor {
     return block ? completionsAt(*block) : std::vector<Completion>{};
   }
 
-  std::vector<Completion> Intelligence::completionsAt(const pt::Block&) const {
+  std::vector<Completion> Intelligence::completionsAt(const et::Block&) const {
     auto options = bodyBuiltins();
 
     options.reserve(options.size() + module_.functions.size());

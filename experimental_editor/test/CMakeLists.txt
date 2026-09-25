@@ -7,6 +7,7 @@ set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
 )
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
+    core/annotate.test.cpp
     core/fields.test.cpp
     core/geometry.test.cpp
     core/identifier.test.cpp
@@ -25,6 +26,7 @@ set(FLUIR_EDITOR_PAGES_TEST_SOURCES pages/module.test.cpp pages/splash.test.cpp)
 
 set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/bool_toggle_tool.test.cpp
+    tools/branch_toggle_tool.test.cpp
     tools/choice_tool.test.cpp
     tools/completion_modal.test.cpp
     tools/completion_tool.test.cpp

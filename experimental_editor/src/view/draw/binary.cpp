@@ -10,21 +10,21 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  TerminalSet anchors(const pt::Binary&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const et::Binary&, const Rect& r, const EditorContext::Layout&) {
     return {edgeAnchors(r.x, r, 2), edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const pt::Binary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
+  Color color(const et::Binary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
 
-  Limits<Vec2i> sizeLimits(const pt::Binary&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const et::Binary&) { return SIZE_LIMITS; }
 
-  std::optional<Part> resizePart(const pt::Binary&) { return Part::ResizeX; }
+  std::optional<Part> resizePart(const et::Binary&) { return Part::ResizeX; }
 
-  std::vector<FieldLabel> labels(const pt::Binary&, const Rect& world, const EditorContext::Layout&) {
+  std::vector<FieldLabel> labels(const et::Binary&, const Rect& world, const EditorContext::Layout&) {
     return {{{Field::Kind::Operator}, world}};
   }
 
-  void draw(const pt::Binary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
+  void draw(const et::Binary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
     drawTitle(stringify(n.op), labels(n, world, ctx.layout).front().rect, view, ctx);
     drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);

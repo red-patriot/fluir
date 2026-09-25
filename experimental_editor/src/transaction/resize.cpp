@@ -7,7 +7,7 @@
 
 namespace fluir::editor {
 
-  bool ResizeTransaction::execute(pt::ParseTree& tree) {
+  bool ResizeTransaction::execute(et::ParseTree& tree) {
     FlowGraphLocation* location = locationAt(tree, path_);
     if (location == nullptr || (location->width == width_ && location->height == height_)) {
       return false;

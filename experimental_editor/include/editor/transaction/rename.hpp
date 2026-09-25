@@ -5,8 +5,8 @@
 #include <string>
 #include <utility>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -16,8 +16,8 @@ namespace fluir::editor {
    public:
     RenameTransaction(fluir::FullID path, std::string name) : path_(std::move(path)), name_(std::move(name)) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     fluir::FullID path_;

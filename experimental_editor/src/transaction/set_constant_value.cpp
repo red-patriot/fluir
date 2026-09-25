@@ -8,9 +8,9 @@
 
 namespace fluir::editor {
 
-  bool SetConstantValueTransaction::execute(pt::ParseTree& tree) {
-    pt::Node* node = nodeAt(tree, path_);
-    auto* constant = node == nullptr ? nullptr : std::get_if<pt::Constant>(node);
+  bool SetConstantValueTransaction::execute(et::ParseTree& tree) {
+    et::Node* node = nodeAt(tree, path_);
+    auto* constant = node == nullptr ? nullptr : std::get_if<et::Constant>(node);
     if (constant == nullptr || constant->value.index() != value_.index() || constant->value == value_) {
       return false;
     }
@@ -18,7 +18,7 @@ namespace fluir::editor {
     return true;
   }
 
-  std::unique_ptr<Transaction> setConstantValue(fluir::FullID path, pt::Literal value) {
+  std::unique_ptr<Transaction> setConstantValue(fluir::FullID path, et::Literal value) {
     return std::make_unique<SetConstantValueTransaction>(std::move(path), std::move(value));
   }
 

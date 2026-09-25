@@ -2,41 +2,41 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/core/tree.hpp"
 
 namespace {
 
   using fluir::FlowGraphLocation;
   using fluir::FullID;
-  namespace pt = fluir::pt;
+  namespace et = fluir::editor::et;
   namespace editor = fluir::editor;
 
   constexpr FlowGraphLocation kAt{.x = 1, .y = 2, .z = 3, .width = 4, .height = 5};
 
-  pt::ParseTree treeWithComments() {
-    pt::FunctionDecl fn{.id = 1, .location = kAt, .name = "f", .body = {}, .input = {}, .output = {}};
-    fn.body.nodes.emplace(2, pt::Comment{.id = 2, .location = kAt, .text = "inner"});
-    fn.body.nodes.emplace(3, pt::Constant{.id = 3, .location = kAt, .value = fluir::literals_types::I32{7}});
-    pt::ParseTree tree;
+  et::ParseTree treeWithComments() {
+    et::FunctionDecl fn{.id = 1, .location = kAt, .name = "f", .body = {}, .input = {}, .output = {}};
+    fn.body.nodes.emplace(2, et::Comment{.id = 2, .location = kAt, .text = "inner"});
+    fn.body.nodes.emplace(3, et::Constant{.id = 3, .location = kAt, .value = fluir::literals_types::I32{7}});
+    et::ParseTree tree;
     tree.declarations.emplace(1, std::move(fn));
-    tree.declarations.emplace(4, pt::Comment{.id = 4, .location = kAt, .text = "outer"});
+    tree.declarations.emplace(4, et::Comment{.id = 4, .location = kAt, .text = "outer"});
     return tree;
   }
 
   TEST(NodeAccess, IdAndLocationOfNode) {
-    const pt::Node node = pt::Constant{.id = 9, .location = kAt, .value = fluir::literals_types::I32{0}};
+    const et::Node node = et::Constant{.id = 9, .location = kAt, .value = fluir::literals_types::I32{0}};
     EXPECT_EQ(editor::idOf(node), 9u);
     EXPECT_EQ(editor::locationOf(node), kAt);
   }
 
   TEST(NodeAccess, IdAndLocationOfDeclaration) {
-    const pt::Declaration decl = pt::Comment{.id = 6, .location = kAt, .text = ""};
+    const et::Declaration decl = et::Comment{.id = 6, .location = kAt, .text = ""};
     EXPECT_EQ(editor::idOf(decl), 6u);
     EXPECT_EQ(editor::locationOf(decl), kAt);
   }
 
   TEST(NodeAccess, SortedArgumentsOrdersByIndex) {
-    const pt::Call call{.id = 1, .location = kAt, .target = "g", ._return = {}, .arguments = {{"b", 1}, {"a", 0}}};
+    const et::Call call{.id = 1, .location = kAt, .target = "g", ._return = {}, .arguments = {{"b", 1}, {"a", 0}}};
     const auto args = editor::sortedArguments(call);
     ASSERT_EQ(args.size(), 2u);
     EXPECT_EQ(args[0]->name, "a");
@@ -44,9 +44,9 @@ namespace {
   }
 
   TEST(NodeAccess, SortedParametersOrdersByIndexAndIsEmptyWithoutInput) {
-    pt::FunctionDecl fn{.id = 1, .location = kAt, .name = "f", .body = {}, .input = {}, .output = {}};
+    et::FunctionDecl fn{.id = 1, .location = kAt, .name = "f", .body = {}, .input = {}, .output = {}};
     EXPECT_TRUE(editor::sortedParameters(fn).empty());
-    fn.input = pt::FunctionDecl::InputBlock{
+    fn.input = et::FunctionDecl::InputBlock{
       {{.id = 5, .index = 1, .name = "y", .typeName = "I32"}, {.id = 6, .index = 0, .name = "x", .typeName = "I32"}}};
     const auto params = editor::sortedParameters(fn);
     ASSERT_EQ(params.size(), 2u);
@@ -55,8 +55,8 @@ namespace {
   }
 
   TEST(NodeAccess, CommentAtFindsDeclarationAndNodeComments) {
-    pt::ParseTree tree = treeWithComments();
-    const pt::ParseTree& constTree = tree;
+    et::ParseTree tree = treeWithComments();
+    const et::ParseTree& constTree = tree;
     ASSERT_NE(editor::commentAt(constTree, FullID{4}), nullptr);
     EXPECT_EQ(editor::commentAt(constTree, FullID{4})->text, "outer");
     ASSERT_NE(editor::commentAt(constTree, FullID{1, 2}), nullptr);
@@ -66,7 +66,7 @@ namespace {
   }
 
   TEST(NodeAccess, CommentAtIsNullForOtherKindsAndMissingPaths) {
-    const pt::ParseTree tree = treeWithComments();
+    const et::ParseTree tree = treeWithComments();
     EXPECT_EQ(editor::commentAt(tree, FullID{1}), nullptr);
     EXPECT_EQ(editor::commentAt(tree, FullID{1, 3}), nullptr);
     EXPECT_EQ(editor::commentAt(tree, FullID{1, 99}), nullptr);

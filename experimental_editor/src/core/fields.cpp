@@ -23,28 +23,28 @@ namespace fluir::editor::fields {
   namespace {
 
     template <typename T>
-    const T* nodeOf(const pt::ParseTree& tree, const FullID& path) {
-      const pt::Node* node = nodeAt(tree, path);
+    const T* nodeOf(const et::ParseTree& tree, const FullID& path) {
+      const et::Node* node = nodeAt(tree, path);
       return !node ? nullptr : std::get_if<T>(node);
     }
 
-    const pt::FunctionDecl::Parameter* paramAt(const pt::FunctionDecl& fn, int index) {
+    const et::FunctionDecl::Parameter* paramAt(const et::FunctionDecl& fn, int index) {
       if (!fn.input) {
         return nullptr;
       }
-      const auto it = std::ranges::find(fn.input->parameters, index, &pt::FunctionDecl::Parameter::index);
+      const auto it = std::ranges::find(fn.input->parameters, index, &et::FunctionDecl::Parameter::index);
       return it == fn.input->parameters.end() ? nullptr : &*it;
     }
 
-    const pt::FunctionDecl::Return* returnOf(const pt::FunctionDecl* fn) {
+    const et::FunctionDecl::Return* returnOf(const et::FunctionDecl* fn) {
       return fn && fn->output && fn->output->ret ? &*fn->output->ret : nullptr;
     }
 
-    std::optional<fluir::Operator> operatorOf(const pt::ParseTree& tree, const FullID& path) {
-      if (const auto* binary = nodeOf<pt::Binary>(tree, path)) {
+    std::optional<fluir::Operator> operatorOf(const et::ParseTree& tree, const FullID& path) {
+      if (const auto* binary = nodeOf<et::Binary>(tree, path)) {
         return binary->op;
       }
-      const auto* unary = nodeOf<pt::Unary>(tree, path);
+      const auto* unary = nodeOf<et::Unary>(tree, path);
       return !unary ? std::nullopt : std::optional{unary->op};
     }
 
@@ -58,57 +58,57 @@ namespace fluir::editor::fields {
       return std::nullopt;
     }
 
-    const pt::Call::Argument* argumentAt(const pt::Call& call, int index) {
-      const auto it = std::ranges::find(call.arguments, index, &pt::Call::Argument::index);
+    const et::Call::Argument* argumentAt(const et::Call& call, int index) {
+      const auto it = std::ranges::find(call.arguments, index, &et::Call::Argument::index);
       return it == call.arguments.end() ? nullptr : &*it;
     }
 
   }  // namespace
 
-  std::optional<std::string> read(const pt::ParseTree& tree, const FullID& path, Field field) {
+  std::optional<std::string> read(const et::ParseTree& tree, const FullID& path, Field field) {
     switch (field.kind) {
       case Field::Kind::Name:
         {
-          const pt::FunctionDecl* fn = functionAt(tree, path);
+          const et::FunctionDecl* fn = functionAt(tree, path);
           return !fn ? std::nullopt : std::optional{fn->name};
         }
       case Field::Kind::ParamName:
         {
-          const pt::FunctionDecl* fn = functionAt(tree, path);
-          const pt::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
+          const et::FunctionDecl* fn = functionAt(tree, path);
+          const et::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
           return !param ? std::nullopt : std::optional{param->name};
         }
       case Field::Kind::ParamType:
         {
-          const pt::FunctionDecl* fn = functionAt(tree, path);
-          const pt::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
+          const et::FunctionDecl* fn = functionAt(tree, path);
+          const et::FunctionDecl::Parameter* param = !fn ? nullptr : paramAt(*fn, field.index);
           return !param ? std::nullopt : std::optional{param->typeName};
         }
       case Field::Kind::ReturnType:
         {
-          const pt::FunctionDecl::Return* ret = returnOf(functionAt(tree, path));
+          const et::FunctionDecl::Return* ret = returnOf(functionAt(tree, path));
           return !ret ? std::nullopt : std::optional{ret->typeName};
         }
       case Field::Kind::Target:
         {
-          const auto* call = nodeOf<pt::Call>(tree, path);
+          const auto* call = nodeOf<et::Call>(tree, path);
           return !call ? std::nullopt : std::optional{call->target};
         }
       case Field::Kind::Arg:
         {
-          const auto* call = nodeOf<pt::Call>(tree, path);
-          const pt::Call::Argument* arg = !call ? nullptr : argumentAt(*call, field.index);
+          const auto* call = nodeOf<et::Call>(tree, path);
+          const et::Call::Argument* arg = !call ? nullptr : argumentAt(*call, field.index);
           return !arg ? std::nullopt : std::optional{arg->name};
         }
       case Field::Kind::Literal:
         {
-          const auto* constant = nodeOf<pt::Constant>(tree, path);
+          const auto* constant = nodeOf<et::Constant>(tree, path);
           return !constant || !isEditableLiteral(constant->value) ? std::nullopt :
                                                                     std::optional{renderLiteral(constant->value)};
         }
       case Field::Kind::Text:
         {
-          const pt::Comment* comment = commentAt(tree, path);
+          const et::Comment* comment = commentAt(tree, path);
           return !comment ? std::nullopt : std::optional{comment->text};
         }
       case Field::Kind::Operator:
@@ -122,7 +122,7 @@ namespace fluir::editor::fields {
     return std::nullopt;
   }
 
-  std::optional<std::unique_ptr<Transaction>> write(const pt::ParseTree& tree,
+  std::optional<std::unique_ptr<Transaction>> write(const et::ParseTree& tree,
                                                     const FullID& path,
                                                     Field field,
                                                     const std::string& text) {
@@ -131,8 +131,8 @@ namespace fluir::editor::fields {
       return std::nullopt;
     }
     if (field.kind == Field::Kind::Literal) {
-      const pt::Literal& value = nodeOf<pt::Constant>(tree, path)->value;
-      const std::optional<pt::Literal> parsed = tryParseLiteral(value, text);
+      const et::Literal& value = nodeOf<et::Constant>(tree, path)->value;
+      const std::optional<et::Literal> parsed = tryParseLiteral(value, text);
       if (!parsed) {
         return std::nullopt;
       }

@@ -30,8 +30,8 @@ namespace {
   constexpr Vec2 kFalseGrip{85, 187};
 
   bool valueOf(const EditorState& state, const FullID& path) {
-    const fluir::pt::Node* node = fluir::editor::nodeAt(state.editor.tree(), path);
-    return std::get<fluir::literals_types::BOOL>(std::get<fluir::pt::Constant>(*node).value);
+    const fluir::editor::et::Node* node = fluir::editor::nodeAt(state.editor.tree(), path);
+    return std::get<fluir::literals_types::BOOL>(std::get<fluir::editor::et::Constant>(*node).value);
   }
 
 }  // namespace

@@ -5,11 +5,11 @@
 #include <span>
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
@@ -28,7 +28,7 @@ namespace fluir::editor {
   };
 
   /** Every box `tree` draws as, in paint order. */
-  std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout);
+  std::vector<Box> layoutGraph(const et::ParseTree& tree, const EditorContext::Layout& layout);
 
   /** The last-painted hittable box containing `world`, looking through Labels, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
@@ -45,7 +45,7 @@ namespace fluir::editor {
   };
 
   /** The top-painted terminal whose hit square contains `world`, honouring clips. */
-  std::optional<TerminalHit> terminalAt(const pt::ParseTree& tree,
+  std::optional<TerminalHit> terminalAt(const et::ParseTree& tree,
                                         std::span<const Box> boxes,
                                         Vec2 world,
                                         const EditorContext::Layout& layout);

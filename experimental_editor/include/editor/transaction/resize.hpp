@@ -15,8 +15,8 @@ namespace fluir::editor {
     ResizeTransaction(fluir::FullID path, int width, int height) :
       path_(std::move(path)), width_(width), height_(height) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     fluir::FullID path_;

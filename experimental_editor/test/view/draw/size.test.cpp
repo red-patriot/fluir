@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/view/draw/binary.hpp"
 #include "editor/view/draw/call.hpp"
 #include "editor/view/draw/comment.hpp"
@@ -23,20 +23,20 @@ namespace {
   using fluir::editor::Rect;
   using fluir::editor::Vec2i;
   namespace draw = fluir::editor::draw;
-  namespace pt = fluir::pt;
+  namespace et = fluir::editor::et;
 
   const EditorContext kCtx;
 
-  const pt::Constant kI32{.id = 1, .location = {}, .value = fluir::literals_types::I32{0}};
-  const pt::Constant kBool{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
-  const pt::Comment kComment{.id = 1, .location = {}, .text = ""};
-  const pt::Conditional kConditional{.id = 1,
+  const et::Constant kI32{.id = 1, .location = {}, .value = fluir::literals_types::I32{0}};
+  const et::Constant kBool{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
+  const et::Comment kComment{.id = 1, .location = {}, .text = ""};
+  const et::Conditional kConditional{.id = 1,
                                      .location = {},
                                      .condition = {},
                                      .inputs = {},
                                      .outputs = {},
-                                     .thenScope = xyz::indirect<pt::Block>{},
-                                     .elseScope = xyz::indirect<pt::Block>{}};
+                                     .thenScope = xyz::indirect<et::Block>{},
+                                     .elseScope = xyz::indirect<et::Block>{}};
 
   Rect atLeast(const Limits<Vec2i>& limits) {
     const double unit = kCtx.layout.unitPx;
@@ -46,9 +46,9 @@ namespace {
 }  // namespace
 
 TEST(SizeFacts, OneRowNodesResizeAlongXOnly) {
-  EXPECT_EQ(draw::resizePart(pt::Binary{}), Part::ResizeX);
-  EXPECT_EQ(draw::resizePart(pt::Unary{}), Part::ResizeX);
-  EXPECT_EQ(draw::resizePart(pt::Call{}), Part::ResizeX);
+  EXPECT_EQ(draw::resizePart(et::Binary{}), Part::ResizeX);
+  EXPECT_EQ(draw::resizePart(et::Unary{}), Part::ResizeX);
+  EXPECT_EQ(draw::resizePart(et::Call{}), Part::ResizeX);
   EXPECT_EQ(draw::resizePart(kI32), Part::ResizeX);
 }
 
@@ -61,13 +61,13 @@ TEST(SizeFacts, CommentsAndConditionalsResizeFromTheCorner) {
 }
 
 TEST(SizeFacts, EveryLowerLimitIsWithinItsUpper) {
-  for (const Limits<Vec2i>& limits : {draw::sizeLimits(pt::Binary{}),
-                                      draw::sizeLimits(pt::Unary{}),
-                                      draw::sizeLimits(pt::Call{}),
+  for (const Limits<Vec2i>& limits : {draw::sizeLimits(et::Binary{}),
+                                      draw::sizeLimits(et::Unary{}),
+                                      draw::sizeLimits(et::Call{}),
                                       draw::sizeLimits(kI32),
                                       draw::sizeLimits(kComment),
                                       draw::sizeLimits(kConditional),
-                                      draw::sizeLimits(pt::FunctionDecl{})}) {
+                                      draw::sizeLimits(et::FunctionDecl{})}) {
     EXPECT_LE(limits.lower.x, limits.upper.x);
     EXPECT_LE(limits.lower.y, limits.upper.y);
   }

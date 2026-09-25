@@ -11,7 +11,7 @@ namespace fluir::editor {
   std::vector<MenuItem> functionHeaderItems(const Box& hit, const EditorState& state) {
     // A function's move grip sits in its header.
     const bool header = hit.part == Part::Header || hit.part == Part::MoveGrip;
-    const pt::FunctionDecl* fn = header ? functionAt(state.editor.tree(), hit.path) : nullptr;
+    const et::FunctionDecl* fn = header ? functionAt(state.editor.tree(), hit.path) : nullptr;
     if (!fn) {
       return {};
     }

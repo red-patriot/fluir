@@ -84,28 +84,29 @@ namespace {
 
   // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, its then branch's
   // content from y 60 with constant 1 at {15,65,50,50}.
-  fluir::pt::ParseTree conditionalTree() {
-    fluir::pt::Block then;
+  fluir::editor::et::ParseTree conditionalTree() {
+    fluir::editor::et::Block then;
     then.nodes.emplace(1,
-                       fluir::pt::Constant{.id = 1,
-                                           .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
-                                           .value = fluir::literals_types::I32{0}});
+                       fluir::editor::et::Constant{.id = 1,
+                                                   .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                   .value = fluir::literals_types::I32{0}});
 
-    fluir::pt::FunctionDecl fn;
+    fluir::editor::et::FunctionDecl fn;
     fn.id = 1;
     fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
-    fn.body.nodes.emplace(20,
-                          fluir::pt::Conditional{.id = 20,
-                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
-                                                 .condition = {},
-                                                 .inputs = {},
-                                                 .outputs = {},
-                                                 .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect<fluir::pt::Block>{}});
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
 
-    fluir::pt::ParseTree tree;
-    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
     return tree;
   }
 

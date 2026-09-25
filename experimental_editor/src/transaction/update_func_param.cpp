@@ -22,8 +22,8 @@ namespace fluir::editor {
       new UpdateFuncParamTransaction(std::move(path), SetType{railId, std::move(typeName)}));
   }
 
-  bool UpdateFuncParamTransaction::execute(pt::ParseTree& tree) {
-    pt::FunctionDecl* fn = functionAt(tree, path_);
+  bool UpdateFuncParamTransaction::execute(et::ParseTree& tree) {
+    et::FunctionDecl* fn = functionAt(tree, path_);
     if (fn == nullptr) {
       return false;
     }
@@ -40,7 +40,7 @@ namespace fluir::editor {
       return false;
     }
     auto& params = fn->input->parameters;
-    const auto param = std::ranges::find(params, rename.index, &pt::FunctionDecl::Parameter::index);
+    const auto param = std::ranges::find(params, rename.index, &et::FunctionDecl::Parameter::index);
     if (param == params.end() || param->name == rename.name) {
       return false;
     }

@@ -8,12 +8,12 @@
 
 namespace fluir::editor {
 
-  bool EditOperatorTransaction::execute(pt::ParseTree& tree) {
-    pt::Node* node = nodeAt(tree, path_);
+  bool EditOperatorTransaction::execute(et::ParseTree& tree) {
+    et::Node* node = nodeAt(tree, path_);
     fluir::Operator* op = nullptr;
-    if (auto* binary = std::get_if<pt::Binary>(node)) {
+    if (auto* binary = std::get_if<et::Binary>(node)) {
       op = &binary->op;
-    } else if (auto* unary = std::get_if<pt::Unary>(node)) {
+    } else if (auto* unary = std::get_if<et::Unary>(node)) {
       op = &unary->op;
     }
     if (op == nullptr || op_ == fluir::Operator::UNKNOWN || *op == op_) {

@@ -61,7 +61,7 @@ namespace fluir::editor {
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
-    void layoutBlock(const pt::Block& block,
+    void layoutBlock(const et::Block& block,
                      const FullID& parent,
                      Vec2 origin,
                      const Rect& clip,
@@ -70,7 +70,7 @@ namespace fluir::editor {
                      std::vector<Box>& out);
 
     // The conditional's body, its visible branch's nodes, then its chrome over them.
-    void layoutConditional(const pt::Conditional& conditional,
+    void layoutConditional(const et::Conditional& conditional,
                            const FullID& path,
                            const Rect& frame,
                            const std::optional<Rect>& clip,
@@ -82,15 +82,19 @@ namespace fluir::editor {
       // One frame, one header band, one visible branch: the branch is the frame under its header.
       const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
       const Rect content{frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
-      const FullID branchPath = childOf(path, THEN_BRANCH_ID);
+      const FullID branchPath = childOf(path, conditional.annotation.shownBranch);
+      const et::Block* branch = branchBlock(conditional, conditional.annotation.shownBranch);
       if (const std::optional<Rect> contentClip = clip ? intersect(*clip, content) : std::optional<Rect>{content}) {
         out.push_back({branchPath, Part::Branch, content, contentClip});
-        layoutBlock(*conditional.thenScope, branchPath, origin, *contentClip, layout, Terminals{}, out);
+        if (branch != nullptr) {
+          layoutBlock(*branch, branchPath, origin, *contentClip, layout, Terminals{}, out);
+        }
       }
 
       // The frame's chrome paints, and so hits, over its branch.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
+      out.push_back({path, Part::Header, header, clip});
       if (const std::optional<Part> resize = draw::resizePart(conditional)) {
         out.push_back({path, *resize, resizeCorner(frame, unit), clip});
       }
@@ -99,16 +103,16 @@ namespace fluir::editor {
 
     // Nodes paint in (z, id) order with their grips; conduits paint after, from terminals resolved by id.
     // `terminals` is per block: node ids repeat across sibling blocks.
-    void layoutBlock(const pt::Block& block,
+    void layoutBlock(const et::Block& block,
                      const FullID& parent,
                      Vec2 origin,
                      const Rect& clip,
                      const EditorContext::Layout& layout,
                      Terminals terminals,
                      std::vector<Box>& out) {
-      for (const pt::Node* node : sortedNodes(block)) {
+      for (const et::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
-        if (const auto* conditional = std::get_if<pt::Conditional>(node)) {
+        if (const auto* conditional = std::get_if<et::Conditional>(node)) {
           layoutConditional(
             *conditional, path, atOrigin(origin, localRect(conditional->location, layout.unitPx)), clip, layout, out);
           continue;
@@ -119,13 +123,13 @@ namespace fluir::editor {
       }
 
       // A dangling endpoint is a legitimate authoring state: it just draws no line.
-      for (const pt::Conduit* conduit : sortedConduits(block)) {
+      for (const et::Conduit* conduit : sortedConduits(block)) {
         const auto source = terminals.find(conduit->input);
         if (source == terminals.end() || source->second.outputs.empty()) {
           continue;
         }
         const Vec2 from = source->second.outputs.front();
-        for (const pt::Conduit::Output& target : conduit->children) {
+        for (const et::Conduit::Output& target : conduit->children) {
           const auto sink = terminals.find(target.target);
           if (sink == terminals.end() || target.index < 0 ||
               static_cast<std::size_t>(target.index) >= sink->second.inputs.size()) {
@@ -138,7 +142,7 @@ namespace fluir::editor {
       }
     }
 
-    void layoutFunction(const pt::FunctionDecl& fn, const EditorContext::Layout& layout, std::vector<Box>& out) {
+    void layoutFunction(const et::FunctionDecl& fn, const EditorContext::Layout& layout, std::vector<Box>& out) {
       const FullID path{fn.id};
       const double unit = layout.unitPx;
       const Rect frame = localRect(fn.location, unit);
@@ -148,7 +152,7 @@ namespace fluir::editor {
 
       Terminals terminals;
       if (fn.input) {
-        const std::vector<const pt::FunctionDecl::Parameter*> params = sortedParameters(fn);
+        const std::vector<const et::FunctionDecl::Parameter*> params = sortedParameters(fn);
         for (std::size_t row = 0; row < params.size(); ++row) {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
@@ -192,26 +196,26 @@ namespace fluir::editor {
     }
 
     // A node's or rail's terminal anchors, given its box.
-    TerminalSet terminalsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
+    TerminalSet terminalsOf(const et::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
       if (box.path.size() < 2) {
         return {};
       }
       if (box.part == Part::Body) {
-        const pt::Node* node = nodeAt(tree, box.path);
+        const et::Node* node = nodeAt(tree, box.path);
         return node == nullptr ? TerminalSet{} : terminals(*node, box.world, layout);
       }
-      const pt::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
+      const et::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
       return fn == nullptr ? TerminalSet{} : draw::anchors(*fn, box.path.back(), box.world);
     }
 
   }  // namespace
 
-  std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
+  std::vector<Box> layoutGraph(const et::ParseTree& tree, const EditorContext::Layout& layout) {
     std::vector<Box> out;
-    for (const pt::Declaration* decl : sortedDeclarations(tree)) {
-      if (const auto* fn = std::get_if<pt::FunctionDecl>(decl)) {
+    for (const et::Declaration* decl : sortedDeclarations(tree)) {
+      if (const auto* fn = std::get_if<et::FunctionDecl>(decl)) {
         layoutFunction(*fn, layout, out);
-      } else if (const auto* comment = std::get_if<pt::Comment>(decl)) {
+      } else if (const auto* comment = std::get_if<et::Comment>(decl)) {
         const Rect rect = localRect(comment->location, layout.unitPx);
         pushNodeBoxes(FullID{comment->id},
                       rect,
@@ -232,7 +236,7 @@ namespace fluir::editor {
     return top != nullptr && top->part == Part::Label ? top : nullptr;
   }
 
-  std::optional<TerminalHit> terminalAt(const pt::ParseTree& tree,
+  std::optional<TerminalHit> terminalAt(const et::ParseTree& tree,
                                         std::span<const Box> boxes,
                                         Vec2 world,
                                         const EditorContext::Layout& layout) {

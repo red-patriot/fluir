@@ -9,9 +9,9 @@
 
 namespace fluir::editor {
 
-  bool EditCallNodeTransaction::execute(pt::ParseTree& tree) {
-    pt::Node* node = nodeAt(tree, path_);
-    auto* call = node == nullptr ? nullptr : std::get_if<pt::Call>(node);
+  bool EditCallNodeTransaction::execute(et::ParseTree& tree) {
+    et::Node* node = nodeAt(tree, path_);
+    auto* call = node == nullptr ? nullptr : std::get_if<et::Call>(node);
     if (call == nullptr || !isValidIdentifier(target_) || call->target == target_) {
       return false;
     }

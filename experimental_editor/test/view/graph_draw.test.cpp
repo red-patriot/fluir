@@ -60,7 +60,7 @@ namespace {
 
   // Lays `tree` out and draws it into one root view, exactly as ModulePage does.
   void drawTree(const fluir::editor::EditorContext& ctx,
-                const fluir::pt::ParseTree& tree,
+                const fluir::editor::et::ParseTree& tree,
                 const Viewport& viewport,
                 RecordingRenderer& r,
                 const std::optional<fluir::FullID>& selection = std::nullopt) {
@@ -73,7 +73,7 @@ namespace {
 
 TEST(GraphDraw, EmptyTreeDrawsNothing) {
   RecordingRenderer r;
-  drawTree(kCtx, fluir::pt::ParseTree{}, Viewport{}, r);
+  drawTree(kCtx, fluir::editor::et::ParseTree{}, Viewport{}, r);
 
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Rect), 0u);
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 0u);
@@ -532,28 +532,29 @@ namespace {
   // 20 wide and 18 tall. It is one frame with one header band over its then branch, which holds
   // a constant 1:
   //   frame {10,35,100,90}   then branch content {10,60,100,65}   then 1 {15,65,50,50}
-  fluir::pt::ParseTree conditionalTree(int y = 2) {
-    fluir::pt::Block then;
+  fluir::editor::et::ParseTree conditionalTree(int y = 2) {
+    fluir::editor::et::Block then;
     then.nodes.emplace(1,
-                       fluir::pt::Constant{.id = 1,
-                                           .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
-                                           .value = fluir::literals_types::I32{0}});
+                       fluir::editor::et::Constant{.id = 1,
+                                                   .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                   .value = fluir::literals_types::I32{0}});
 
-    fluir::pt::FunctionDecl fn;
+    fluir::editor::et::FunctionDecl fn;
     fn.id = 1;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
-    fn.body.nodes.emplace(20,
-                          fluir::pt::Conditional{.id = 20,
-                                                 .location = {.x = 2, .y = y, .z = 0, .width = 20, .height = 18},
-                                                 .condition = {},
-                                                 .inputs = {},
-                                                 .outputs = {},
-                                                 .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect<fluir::pt::Block>{}});
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = y, .z = 0, .width = 20, .height = 18},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
 
-    fluir::pt::ParseTree tree;
-    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
     return tree;
   }
 

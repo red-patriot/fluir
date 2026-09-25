@@ -193,19 +193,19 @@ TEST(Intelligence, UnknownBodiesAndCommentsOfferNoCompletions) {
 
 // A branch is a block, so it offers the same completions a function body does.
 TEST(Intelligence, CompletionsReachIntoABranch) {
-  fluir::pt::FunctionDecl fn;
+  fluir::editor::et::FunctionDecl fn;
   fn.id = 1;
   fn.name = "f";
   fn.body.nodes.emplace(20,
-                        fluir::pt::Conditional{.id = 20,
-                                               .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 18},
-                                               .condition = {},
-                                               .inputs = {},
-                                               .outputs = {},
-                                               .thenScope = xyz::indirect<fluir::pt::Block>{},
-                                               .elseScope = xyz::indirect<fluir::pt::Block>{}});
-  fluir::pt::ParseTree tree;
-  tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+                        fluir::editor::et::Conditional{.id = 20,
+                                                       .location = {.x = 0, .y = 0, .z = 0, .width = 20, .height = 18},
+                                                       .condition = {},
+                                                       .inputs = {},
+                                                       .outputs = {},
+                                                       .thenScope = xyz::indirect<fluir::editor::et::Block>{},
+                                                       .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+  fluir::editor::et::ParseTree tree;
+  tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
 
   const Intelligence uut;
 

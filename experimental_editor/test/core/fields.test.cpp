@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/core/tree.hpp"
 
 // read gives a text field's value; write's edit, once executed, makes read return the new text.
 
@@ -11,23 +11,23 @@ namespace {
   using fluir::FullID;
   using fluir::editor::Field;
   using Kind = fluir::editor::Field::Kind;
-  namespace pt = fluir::pt;
+  namespace et = fluir::editor::et;
   namespace fields = fluir::editor::fields;
 
   // Function 1 "main" (param x at index 0, returns I32) holds constant 2, call 3 foo(a), comment 4 and binary 5;
   // comment 6 is top level.
-  pt::ParseTree makeTree() {
-    pt::FunctionDecl fn{.id = 1, .location = {}, .name = "main", .body = {}, .input = {}, .output = {}};
-    fn.input = pt::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 0, .name = "x", .typeName = "I32"}}};
-    fn.output = pt::FunctionDecl::OutputBlock{.ret = pt::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
-    fn.body.nodes.emplace(2, pt::Constant{.id = 2, .location = {}, .value = fluir::literals_types::I32{7}});
+  et::ParseTree makeTree() {
+    et::FunctionDecl fn{.id = 1, .location = {}, .name = "main", .body = {}, .input = {}, .output = {}};
+    fn.input = et::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 0, .name = "x", .typeName = "I32"}}};
+    fn.output = et::FunctionDecl::OutputBlock{.ret = et::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
+    fn.body.nodes.emplace(2, et::Constant{.id = 2, .location = {}, .value = fluir::literals_types::I32{7}});
     fn.body.nodes.emplace(
-      3, pt::Call{.id = 3, .location = {}, .target = "foo", ._return = {}, .arguments = {{.name = "a", .index = 0}}});
-    fn.body.nodes.emplace(4, pt::Comment{.id = 4, .location = {}, .text = "inner"});
-    fn.body.nodes.emplace(5, pt::Binary{.id = 5, .location = {}, .op = fluir::Operator::PLUS});
-    pt::ParseTree tree;
+      3, et::Call{.id = 3, .location = {}, .target = "foo", ._return = {}, .arguments = {{.name = "a", .index = 0}}});
+    fn.body.nodes.emplace(4, et::Comment{.id = 4, .location = {}, .text = "inner"});
+    fn.body.nodes.emplace(5, et::Binary{.id = 5, .location = {}, .op = fluir::Operator::PLUS});
+    et::ParseTree tree;
     tree.declarations.emplace(1, std::move(fn));
-    tree.declarations.emplace(6, pt::Comment{.id = 6, .location = {}, .text = "outer"});
+    tree.declarations.emplace(6, et::Comment{.id = 6, .location = {}, .text = "outer"});
     return tree;
   }
 
@@ -40,7 +40,7 @@ namespace {
 
   // Writes `text`, executes the edit and returns what read then gives.
   std::optional<std::string> roundTrip(const FullID& path, Field field, const std::string& text) {
-    pt::ParseTree tree = makeTree();
+    et::ParseTree tree = makeTree();
     auto edit = fields::write(tree, path, field, text);
     if (!edit || !*edit || !(*edit)->execute(tree)) {
       return std::nullopt;
@@ -60,7 +60,7 @@ namespace {
 }  // namespace
 
 TEST(Fields, ReadGivesEachTextField) {
-  const pt::ParseTree tree = makeTree();
+  const et::ParseTree tree = makeTree();
 
   EXPECT_EQ(fields::read(tree, kFn, {Kind::Name}), "main");
   EXPECT_EQ(fields::read(tree, kFn, {Kind::ParamName, 0}), "x");
@@ -72,7 +72,7 @@ TEST(Fields, ReadGivesEachTextField) {
 }
 
 TEST(Fields, ReadGivesEachChoiceField) {
-  const pt::ParseTree tree = makeTree();
+  const et::ParseTree tree = makeTree();
 
   EXPECT_EQ(fields::read(tree, kBinary, {Kind::Operator}), "+");
   EXPECT_EQ(fields::read(tree, kFn, {Kind::ParamType, 0}), "I32");
@@ -80,7 +80,7 @@ TEST(Fields, ReadGivesEachChoiceField) {
 }
 
 TEST(Fields, ReadOfAMissingFieldIsNullopt) {
-  const pt::ParseTree tree = makeTree();
+  const et::ParseTree tree = makeTree();
 
   EXPECT_EQ(fields::read(tree, {1, 99}, {Kind::Literal}), std::nullopt) << "unknown path";
   EXPECT_EQ(fields::read(tree, kCall, {Kind::Name}), std::nullopt) << "a call has no name";

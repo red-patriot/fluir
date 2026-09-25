@@ -9,17 +9,17 @@
 namespace fluir::editor {
   namespace {
 
-    bool carries(const pt::Conduit& conduit, AddConduit::Endpoint target) {
-      return std::ranges::any_of(conduit.children, [&](const pt::Conduit::Output& out) {
+    bool carries(const et::Conduit& conduit, AddConduit::Endpoint target) {
+      return std::ranges::any_of(conduit.children, [&](const et::Conduit::Output& out) {
         return out.target == target.node && out.index == target.index;
       });
     }
 
   }  // namespace
 
-  bool AddConduit::execute(pt::ParseTree& tree) {
+  bool AddConduit::execute(et::ParseTree& tree) {
     replaced_.reset();
-    pt::Block* block = blockOf(tree, parent_);
+    et::Block* block = blockOf(tree, parent_);
     if (id_ == INVALID_ID || block == nullptr || block->nodes.contains(id_) || block->conduits.contains(id_) ||
         source_.node == target_.node) {
       return false;
@@ -27,12 +27,12 @@ namespace fluir::editor {
     const auto fed =
       std::ranges::find_if(block->conduits, [&](const auto& entry) { return carries(entry.second, target_); });
     if (fed != block->conduits.end()) {
-      pt::Conduit& old = fed->second;
+      et::Conduit& old = fed->second;
       if (old.input == source_.node && old.index == source_.index) {
         return false;
       }
       replaced_ = old;
-      std::erase_if(old.children, [&](const pt::Conduit::Output& out) {
+      std::erase_if(old.children, [&](const et::Conduit::Output& out) {
         return out.target == target_.node && out.index == target_.index;
       });
       if (old.children.empty()) {
@@ -40,15 +40,15 @@ namespace fluir::editor {
       }
     }
     block->conduits.emplace(id_,
-                            pt::Conduit{.id = id_,
+                            et::Conduit{.id = id_,
                                         .input = source_.node,
                                         .index = source_.index,
                                         .children = {{.target = target_.node, .index = target_.index}}});
     return true;
   }
 
-  bool AddConduit::unexecute(pt::ParseTree& tree) {
-    pt::Block* block = blockOf(tree, parent_);
+  bool AddConduit::unexecute(et::ParseTree& tree) {
+    et::Block* block = blockOf(tree, parent_);
     if (block == nullptr || block->conduits.erase(id_) == 0) {
       return false;
     }

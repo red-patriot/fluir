@@ -16,69 +16,118 @@
 #include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
+#include "compiler/utility/macros.hpp"
 
 namespace fluir::pt {
   using namespace literals_types;
 
-  struct Comment {
+  /** Optional annotations a consumer hangs on the tree. */
+  struct NoAnnotations {
+    struct Comment {
+      friend bool operator==(const Comment&, const Comment&) = default;
+    };
+    struct Constant {
+      friend bool operator==(const Constant&, const Constant&) = default;
+    };
+    struct Binary {
+      friend bool operator==(const Binary&, const Binary&) = default;
+    };
+    struct Unary {
+      friend bool operator==(const Unary&, const Unary&) = default;
+    };
+    struct Call {
+      friend bool operator==(const Call&, const Call&) = default;
+    };
+    struct Conditional {
+      friend bool operator==(const Conditional&, const Conditional&) = default;
+    };
+    struct FunctionDecl {
+      friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
+    };
+    struct ParseTree {
+      friend bool operator==(const ParseTree&, const ParseTree&) = default;
+    };
+  };
+
+  template <class A>
+  struct CommentT {
     ID id;
     FlowGraphLocation location;
     std::string text;
 
-    friend bool operator==(const Comment& lhs, const Comment& rhs) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Comment annotation{};
+
+    friend bool operator==(const CommentT& lhs, const CommentT& rhs) = default;
   };
 
-  struct Constant {
+  template <class A>
+  struct ConstantT {
     ID id;
     FlowGraphLocation location;
     Literal value;
 
-    friend bool operator==(const Constant&, const Constant&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Constant annotation{};
+
+    friend bool operator==(const ConstantT&, const ConstantT&) = default;
   };
 
-  struct Binary {
+  template <class A>
+  struct BinaryT {
     ID id;
     FlowGraphLocation location;
     ID lhs = 0;
     ID rhs = 0;
     fluir::Operator op;
 
-    friend bool operator==(const Binary&, const Binary&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Binary annotation{};
+
+    friend bool operator==(const BinaryT&, const BinaryT&) = default;
   };
 
-  struct Unary {
+  template <class A>
+  struct UnaryT {
     ID id;
     FlowGraphLocation location;
     ID lhs = 0;
     fluir::Operator op;
 
-    friend bool operator==(const Unary&, const Unary&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Unary annotation{};
+
+    friend bool operator==(const UnaryT&, const UnaryT&) = default;
   };
 
-  struct Call {
-    struct Argument {
-      std::string name;
-      int index;
+  struct CallArgument {
+    std::string name;
+    int index;
 
-      friend bool operator==(const Argument&, const Argument&) = default;
-    };
-    using Arguments = std::vector<Argument>;
-    struct Return {
-      friend bool operator==(const Return&, const Return&) = default;
-    };
+    friend bool operator==(const CallArgument&, const CallArgument&) = default;
+  };
+
+  struct CallReturn {
+    friend bool operator==(const CallReturn&, const CallReturn&) = default;
+  };
+
+  template <class A>
+  struct CallT {
+    using Argument = CallArgument;
+    using Arguments = std::vector<CallArgument>;
+    using Return = CallReturn;
 
     ID id;
     FlowGraphLocation location;
 
     std::string target;
-    std::optional<Return> _return;  // For now, function calls have only one return max
-                                    // TODO: Support multiple return values
+    std::optional<CallReturn> _return;  // For now, function calls have only one return max
+                                        // TODO: Support multiple return values
     Arguments arguments;
 
-    friend bool operator==(const Call&, const Call&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Call annotation{};
+
+    friend bool operator==(const CallT&, const CallT&) = default;
   };
 
-  struct Block;
+  template <class A>
+  struct BlockT;
 
   struct BlockPort {
     ID outerId; /**< Outward-facing ID to bridge data to the outer scope */
@@ -90,7 +139,8 @@ namespace fluir::pt {
 
   using BlockPorts = std::unordered_map<ID, BlockPort>;
 
-  struct Conditional {
+  template <class A>
+  struct ConditionalT {
     ID id;
     FlowGraphLocation location;
 
@@ -98,10 +148,12 @@ namespace fluir::pt {
     BlockPorts inputs;
     BlockPorts outputs;
 
-    xyz::indirect<Block> thenScope;
-    xyz::indirect<Block> elseScope;
+    xyz::indirect<BlockT<A>> thenScope;
+    xyz::indirect<BlockT<A>> elseScope;
 
-    friend bool operator==(const Conditional&, const Conditional&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::Conditional annotation{};
+
+    friend bool operator==(const ConditionalT&, const ConditionalT&) = default;
   };
 
   struct Conduit {
@@ -120,64 +172,74 @@ namespace fluir::pt {
     friend bool operator==(const Conduit&, const Conduit&) = default;
   };
 
-  using Node = std::variant<Binary, Unary, Constant, Call, Comment, Conditional>;
+  template <class A>
+  using NodeT = std::variant<BinaryT<A>, UnaryT<A>, ConstantT<A>, CallT<A>, CommentT<A>, ConditionalT<A>>;
 
-  struct Block {
+  template <class A>
+  struct BlockT {
     //! This should probably be deprecated in favor of Scope above
-    using Nodes = std::unordered_map<ID, Node>;
+    using Nodes = std::unordered_map<ID, NodeT<A>>;
     using Conduits = std::unordered_map<ID, Conduit>;
 
     Nodes nodes;
     Conduits conduits;
 
-    friend bool operator==(const Block&, const Block&) = default;
+    friend bool operator==(const BlockT&, const BlockT&) = default;
   };
 
-  inline const Block EMPTY_BLOCK = {};
+  struct FunctionParameter {
+    ID id;
+    int index;
 
-  struct FunctionDecl {
-    struct Parameter {
-      ID id;
-      int index;
+    std::string name;
+    std::string typeName;
 
-      std::string name;
-      std::string typeName;
+    friend bool operator==(const FunctionParameter&, const FunctionParameter&) = default;
+  };
 
-      friend bool operator==(const Parameter&, const Parameter&) = default;
-    };
+  struct FunctionReturn {
+    ID id;
 
-    struct Return {
-      ID id;
+    std::string typeName;
 
-      std::string typeName;
+    friend bool operator==(const FunctionReturn&, const FunctionReturn&) = default;
+  };
 
-      friend bool operator==(const Return&, const Return&) = default;
-    };
+  struct FunctionInputBlock {
+    std::vector<FunctionParameter> parameters;
 
-    struct InputBlock {
-      std::vector<Parameter> parameters;
+    friend bool operator==(const FunctionInputBlock&, const FunctionInputBlock&) = default;
+  };
 
-      friend bool operator==(const InputBlock&, const InputBlock&) = default;
-    };
+  struct FunctionOutputBlock {
+    std::optional<FunctionReturn> ret;
 
-    struct OutputBlock {
-      std::optional<Return> ret;
+    friend bool operator==(const FunctionOutputBlock&, const FunctionOutputBlock&) = default;
+  };
 
-      friend bool operator==(const OutputBlock&, const OutputBlock&) = default;
-    };
+  template <class A>
+  struct FunctionDeclT {
+    using Parameter = FunctionParameter;
+    using Return = FunctionReturn;
+    using InputBlock = FunctionInputBlock;
+    using OutputBlock = FunctionOutputBlock;
 
     ID id;
     FlowGraphLocation location;
 
     std::string name;
-    Block body;
-    std::optional<InputBlock> input;
-    std::optional<OutputBlock> output;
+    BlockT<A> body;
+    std::optional<FunctionInputBlock> input;
+    std::optional<FunctionOutputBlock> output;
 
-    friend bool operator==(const FunctionDecl&, const FunctionDecl&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::FunctionDecl annotation{};
+
+    friend bool operator==(const FunctionDeclT&, const FunctionDeclT&) = default;
   };
 
-  using Declaration = std::variant<FunctionDecl, Comment>;  // TODO: Support other top-level declarations here
+  // TODO: Support other top-level declarations here
+  template <class A>
+  using DeclarationT = std::variant<FunctionDeclT<A>, CommentT<A>>;
 
   struct Header {
     Version version{.major = 0, .minor = 0, .patch = 0};
@@ -185,12 +247,30 @@ namespace fluir::pt {
     friend bool operator==(const Header&, const Header&) = default;
   };
 
-  struct ParseTree {
+  template <class A>
+  struct ParseTreeT {
     Header header{};
-    std::unordered_map<ID, Declaration> declarations;
+    std::unordered_map<ID, DeclarationT<A>> declarations;
 
-    friend bool operator==(const ParseTree&, const ParseTree&) = default;
+    FLUIR_NO_UNIQUE_ADDRESS typename A::ParseTree annotation{};
+
+    friend bool operator==(const ParseTreeT&, const ParseTreeT&) = default;
   };
+
+  using Comment = CommentT<NoAnnotations>;
+  using Constant = ConstantT<NoAnnotations>;
+  using Binary = BinaryT<NoAnnotations>;
+  using Unary = UnaryT<NoAnnotations>;
+  using Call = CallT<NoAnnotations>;
+  using Conditional = ConditionalT<NoAnnotations>;
+  using Node = NodeT<NoAnnotations>;
+  using Block = BlockT<NoAnnotations>;
+  using FunctionDecl = FunctionDeclT<NoAnnotations>;
+  using Declaration = DeclarationT<NoAnnotations>;
+  using ParseTree = ParseTreeT<NoAnnotations>;
+
+  inline const Block EMPTY_BLOCK = {};
+
 }  // namespace fluir::pt
 
 #endif

@@ -10,6 +10,8 @@ namespace fluir::editor::draw {
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
     // The branch arrow's side, in grid units.
     constexpr double BRANCH_ARROW_UNITS = 3;
+    // A wall port's side, in grid units.
+    constexpr double PORT_UNITS = 3;
 
     // Both tags are the same width, so the arrow sits at one place whichever branch shows.
     static_assert(THEN_TAG.size() == ELSE_TAG.size());
@@ -34,6 +36,16 @@ namespace fluir::editor::draw {
     const double side = BRANCH_ARROW_UNITS * layout.unitPx;
     const Rect tag = splitLabel(header, THEN_TAG, layout).tag;
     return {tag.x + tag.w, header.y + (header.h - side) / 2, side, side};
+  }
+
+  Rect conditionPortRect(const et::Conditional& node, const Rect& frame, const EditorContext::Layout& layout) {
+    const double side = PORT_UNITS * layout.unitPx;
+    return {frame.x - side / 2, frame.y + node.condition.y * layout.unitPx, side, side};
+  }
+
+  void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx) {
+    view.renderer().fillRect(view.toScreen(world), ctx.theme.boolNode);
+    view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
   }
 
   std::string_view branchTag(fluir::ID branchId) { return branchId == ELSE_BRANCH_ID ? ELSE_TAG : THEN_TAG; }

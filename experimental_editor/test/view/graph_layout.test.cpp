@@ -9,6 +9,7 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
 
@@ -630,6 +631,24 @@ TEST(GraphLayout, AHitInTheBodyCarriesTheThenBranchPath) {
   ASSERT_NE(inThen, nullptr);
   EXPECT_EQ(inThen->part, Part::Branch);
   EXPECT_EQ(inThen->path, (FullID{1, 20, THEN_BRANCH_ID}));
+}
+
+// The port straddles the wall, so a click on either side of it lands on the port, owned by its conditional.
+TEST(GraphLayout, ConditionPortIsHittableOnBothSidesOfTheWall) {
+  fluir::editor::et::ParseTree tree = nestedTree();
+  auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20}));
+  conditional.condition.y = 10;  // below the header band, as real conditionals place it
+  const Rect frame{10, 35, 100, 120};
+  const Rect port = fluir::editor::draw::conditionPortRect(conditional, frame, kCtx.layout);
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+
+  const double midY = port.y + port.h / 2;
+  for (const double x : {frame.x - 0.5, frame.x + 0.5}) {
+    const Box* hit = hitAt(boxes, Vec2{x, midY});
+    ASSERT_NE(hit, nullptr);
+    EXPECT_EQ(hit->part, Part::Port);
+    EXPECT_EQ(hit->path, (FullID{1, 20}));
+  }
 }
 
 // The conditional owns its height now: the frame is exactly its own location rect.

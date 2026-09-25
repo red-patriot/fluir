@@ -64,6 +64,11 @@ namespace fluir::editor {
             drawOutline(view, ctx, box.world);
           }
           return;
+        case Part::Port:
+          if (std::get_if<et::Conditional>(nodeAt(tree, box.path)) != nullptr) {
+            draw::drawPort(box.world, view, ctx);
+          }
+          return;
         case Part::Rail:
           if (const et::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
             draw::drawRail(*fn, box.path.back(), box.world, view, ctx);

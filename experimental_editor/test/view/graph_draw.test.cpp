@@ -14,6 +14,7 @@
 #include "editor/core/loader.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
@@ -558,12 +559,11 @@ namespace {
     return tree;
   }
 
-  // Where a fill of `want` first lands in the call list, or calls.size() when it never does.
-  std::size_t firstFillIndex(const std::vector<DrawCall>& calls, Rect want) {
+  // Where an `op` call on `want` first lands in the call list, or calls.size() when it never does.
+  std::size_t firstIndex(const std::vector<DrawCall>& calls, DrawCall::Op op, Rect want) {
     for (std::size_t i = 0; i < calls.size(); ++i) {
-      if (calls[i].op == DrawCall::Op::Fill && std::abs(calls[i].rect.x - want.x) < 1e-6 &&
-          std::abs(calls[i].rect.y - want.y) < 1e-6 && std::abs(calls[i].rect.w - want.w) < 1e-6 &&
-          std::abs(calls[i].rect.h - want.h) < 1e-6) {
+      if (calls[i].op == op && std::abs(calls[i].rect.x - want.x) < 1e-6 && std::abs(calls[i].rect.y - want.y) < 1e-6 &&
+          std::abs(calls[i].rect.w - want.w) < 1e-6 && std::abs(calls[i].rect.h - want.h) < 1e-6) {
         return i;
       }
     }
@@ -606,12 +606,30 @@ TEST(GraphDraw, TheHeaderBandPaintsOverItsNestedNodes) {
   RecordingRenderer r;
   drawTree(kCtx, conditionalTree(), Viewport{}, r);
 
-  const std::size_t node = firstFillIndex(r.calls, Rect{15, 65, 50, 50});
-  const std::size_t header = firstFillIndex(r.calls, Rect{10, 35, 100, 25});
+  const std::size_t node = firstIndex(r.calls, DrawCall::Op::Fill, Rect{15, 65, 50, 50});
+  const std::size_t header = firstIndex(r.calls, DrawCall::Op::Fill, Rect{10, 35, 100, 25});
 
   ASSERT_LT(node, r.calls.size());
   ASSERT_LT(header, r.calls.size());
   EXPECT_LT(node, header);
+}
+
+// The port straddles the wall, so it must cover the border or half of it would hide.
+TEST(GraphDraw, TheConditionPortPaintsOverTheFrameBorder) {
+  const fluir::editor::et::ParseTree tree = conditionalTree();
+  const auto& conditional =
+    std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, fluir::FullID{1, 20}));
+  RecordingRenderer r;
+  drawTree(kCtx, tree, Viewport{}, r);
+
+  const Rect frame{10, 35, 100, 90};
+  const Rect portRect = fluir::editor::draw::conditionPortRect(conditional, frame, kCtx.layout);
+  const std::size_t border = firstIndex(r.calls, DrawCall::Op::Rect, frame);
+  const std::size_t port = firstIndex(r.calls, DrawCall::Op::Fill, portRect);
+
+  ASSERT_LT(border, r.calls.size());
+  ASSERT_LT(port, r.calls.size());
+  EXPECT_LT(border, port);
 }
 
 // A conditional resizes as one rect now, so it carries the two-axis corner icon.

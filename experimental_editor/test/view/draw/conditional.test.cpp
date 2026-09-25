@@ -105,3 +105,36 @@ TEST(DrawConditional, FrameTagsTheBranchTheAnnotationShows) {
   EXPECT_TRUE(hasText(r, fluir::editor::draw::ELSE_TAG));
   EXPECT_FALSE(hasText(r, fluir::editor::draw::THEN_TAG));
 }
+
+// The port sits on the wall, half outside the frame and half in.
+TEST(DrawConditional, ConditionPortStraddlesTheLeftWall) {
+  const Rect frame{10, 35, 100, 90};
+
+  const Rect port = fluir::editor::draw::conditionPortRect(makeConditional(), frame, kCtx.layout);
+
+  EXPECT_DOUBLE_EQ(port.x + port.w / 2, frame.x);
+  EXPECT_GT(port.w, 0);
+  EXPECT_DOUBLE_EQ(port.w, port.h);
+}
+
+// `condition.y` counts grid units from the frame top, header included, to the port's top edge.
+TEST(DrawConditional, ConditionPortTopIsItsYBelowTheFrameTop) {
+  const Rect frame{10, 35, 100, 90};
+  fluir::editor::et::Conditional node = makeConditional();
+  node.condition.y = 4;
+  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  node.condition.y = 7;
+  const Rect lower = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+
+  EXPECT_DOUBLE_EQ(port.y, frame.y + 4 * kCtx.layout.unitPx);
+  EXPECT_DOUBLE_EQ(lower.y - port.y, 3 * kCtx.layout.unitPx);
+}
+
+TEST(DrawConditional, PortFillsItsRect) {
+  RecordingRenderer r;
+  const Viewport viewport;
+
+  fluir::editor::draw::drawPort(Rect{5, 50, 15, 15}, rootView(r, viewport), kCtx);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{5, 50, 15, 15}));
+}

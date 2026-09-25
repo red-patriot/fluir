@@ -13,8 +13,25 @@
 
 namespace fluir::editor {
 
-  /** What a box is. Frame and Wire are not hittable. Header and Label paint nothing; a Label sits over its owner. */
-  enum class Part { Body, Branch, Frame, Header, Rail, Label, Wire, MoveGrip, ResizeX, ResizeY, ResizeXY, Terminal };
+  /**
+   * What a box is. Frame and Wire are not hittable. Header and Label paint nothing; a Label sits over its owner.
+   * A Port sits on a container's wall and carries the container's path.
+   */
+  enum class Part {
+    Body,
+    Branch,
+    Frame,
+    Header,
+    Rail,
+    Label,
+    Wire,
+    MoveGrip,
+    ResizeX,
+    ResizeY,
+    ResizeXY,
+    Terminal,
+    Port
+  };
 
   /** One laid-out piece of the graph, in world space. */
   struct Box {

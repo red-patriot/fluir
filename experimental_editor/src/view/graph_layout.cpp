@@ -94,6 +94,7 @@ namespace fluir::editor {
       // The frame's chrome paints, and so hits, over its branch.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
+      out.push_back({path, Part::Port, draw::conditionPortRect(conditional, frame, layout), clip});
       out.push_back({path, Part::Header, header, clip});
       if (const std::optional<Part> resize = draw::resizePart(conditional)) {
         out.push_back({path, *resize, resizeCorner(frame, unit), clip});

@@ -21,6 +21,12 @@ namespace fluir::editor::draw {
   /** The arrow that switches the shown branch, just right of the header's tag. `header` is the header band. */
   Rect branchArrowRect(const Rect& header, const EditorContext::Layout& layout);
 
+  /** The condition port: a square on the frame's left wall, its top edge `condition.y` units below the frame top. */
+  Rect conditionPortRect(const et::Conditional& node, const Rect& frame, const EditorContext::Layout& layout);
+
+  /** A wall port, filled over the frame border it straddles. */
+  void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx);
+
   /** None yet: a conditional wires through its block terminals, which is Phase 2. */
   TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
 

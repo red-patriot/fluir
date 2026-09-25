@@ -7,7 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/core/tree.hpp"
 
 namespace {
 
@@ -16,7 +16,7 @@ namespace {
   using fluir::editor::literalTypeName;
   using fluir::editor::renderLiteral;
   using fluir::editor::tryParseLiteral;
-  using fluir::pt::Literal;
+  using fluir::editor::et::Literal;
 
   TEST(LiteralText, RendersEachIntegralAlternativeAsTheNodeLabelDoes) {
     EXPECT_EQ(renderLiteral(Literal(std::in_place_type<I8>, -12)), "-12");

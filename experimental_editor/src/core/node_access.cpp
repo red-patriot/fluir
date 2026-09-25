@@ -7,53 +7,53 @@
 
 namespace fluir::editor {
 
-  fluir::ID idOf(const pt::Node& node) {
+  fluir::ID idOf(const et::Node& node) {
     return std::visit([](const auto& n) { return n.id; }, node);
   }
 
-  fluir::ID idOf(const pt::Declaration& decl) {
+  fluir::ID idOf(const et::Declaration& decl) {
     return std::visit([](const auto& d) { return d.id; }, decl);
   }
 
-  const FlowGraphLocation& locationOf(const pt::Node& node) {
+  const FlowGraphLocation& locationOf(const et::Node& node) {
     return std::visit([](const auto& n) -> const FlowGraphLocation& { return n.location; }, node);
   }
 
-  const FlowGraphLocation& locationOf(const pt::Declaration& decl) {
+  const FlowGraphLocation& locationOf(const et::Declaration& decl) {
     return std::visit([](const auto& d) -> const FlowGraphLocation& { return d.location; }, decl);
   }
 
-  std::vector<const pt::Call::Argument*> sortedArguments(const pt::Call& call) {
-    std::vector<const pt::Call::Argument*> args;
+  std::vector<const et::Call::Argument*> sortedArguments(const et::Call& call) {
+    std::vector<const et::Call::Argument*> args;
     for (const auto& arg : call.arguments) {
       args.push_back(&arg);
     }
-    std::ranges::sort(args, {}, &pt::Call::Argument::index);
+    std::ranges::sort(args, {}, &et::Call::Argument::index);
     return args;
   }
 
-  std::vector<const pt::FunctionDecl::Parameter*> sortedParameters(const pt::FunctionDecl& fn) {
-    std::vector<const pt::FunctionDecl::Parameter*> params;
+  std::vector<const et::FunctionDecl::Parameter*> sortedParameters(const et::FunctionDecl& fn) {
+    std::vector<const et::FunctionDecl::Parameter*> params;
     if (fn.input) {
       for (const auto& param : fn.input->parameters) {
         params.push_back(&param);
       }
     }
-    std::ranges::sort(params, {}, &pt::FunctionDecl::Parameter::index);
+    std::ranges::sort(params, {}, &et::FunctionDecl::Parameter::index);
     return params;
   }
 
-  pt::Comment* commentAt(pt::ParseTree& tree, const FullID& path) {
+  et::Comment* commentAt(et::ParseTree& tree, const FullID& path) {
     if (path.size() == 1) {
-      pt::Declaration* decl = declarationAt(tree, path);
-      return decl == nullptr ? nullptr : std::get_if<pt::Comment>(decl);
+      et::Declaration* decl = declarationAt(tree, path);
+      return decl == nullptr ? nullptr : std::get_if<et::Comment>(decl);
     }
-    pt::Node* node = nodeAt(tree, path);
-    return node == nullptr ? nullptr : std::get_if<pt::Comment>(node);
+    et::Node* node = nodeAt(tree, path);
+    return node == nullptr ? nullptr : std::get_if<et::Comment>(node);
   }
 
-  const pt::Comment* commentAt(const pt::ParseTree& tree, const FullID& path) {
-    return commentAt(const_cast<pt::ParseTree&>(tree), path);
+  const et::Comment* commentAt(const et::ParseTree& tree, const FullID& path) {
+    return commentAt(const_cast<et::ParseTree&>(tree), path);
   }
 
 }  // namespace fluir::editor

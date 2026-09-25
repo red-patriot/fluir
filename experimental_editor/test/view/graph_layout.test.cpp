@@ -4,10 +4,10 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
@@ -35,25 +35,25 @@ namespace {
 
   const EditorContext kCtx;
 
-  fluir::pt::Constant makeConstant(ID id,
-                                   FlowGraphLocation loc,
-                                   fluir::literals_types::Literal value = fluir::literals_types::I32{0}) {
-    return fluir::pt::Constant{.id = id, .location = loc, .value = value};
+  fluir::editor::et::Constant makeConstant(ID id,
+                                           FlowGraphLocation loc,
+                                           fluir::literals_types::Literal value = fluir::literals_types::I32{0}) {
+    return fluir::editor::et::Constant{.id = id, .location = loc, .value = value};
   }
 
   // A 100x100-unit function at the origin: frame {0,0,500,500}, body from y 25.
-  fluir::pt::FunctionDecl makeFunction(ID id) {
-    fluir::pt::FunctionDecl fn;
+  fluir::editor::et::FunctionDecl makeFunction(ID id) {
+    fluir::editor::et::FunctionDecl fn;
     fn.id = id;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
     return fn;
   }
 
-  fluir::pt::ParseTree treeOf(std::vector<fluir::pt::FunctionDecl> fns) {
-    fluir::pt::ParseTree tree;
+  fluir::editor::et::ParseTree treeOf(std::vector<fluir::editor::et::FunctionDecl> fns) {
+    fluir::editor::et::ParseTree tree;
     for (auto& fn : fns) {
-      tree.declarations.emplace(fn.id, fluir::pt::Declaration{std::move(fn)});
+      tree.declarations.emplace(fn.id, fluir::editor::et::Declaration{std::move(fn)});
     }
     return tree;
   }
@@ -64,8 +64,8 @@ namespace {
   }
 
   // Node 10 at (1,1) and node 11 at (2,2), both 10x10 units: world {5,30,50,50} and {10,35,50,50}.
-  fluir::pt::ParseTree overlappingNodes(int z10, int z11) {
-    fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::ParseTree overlappingNodes(int z10, int z11) {
+    fluir::editor::et::FunctionDecl fn = makeFunction(1);
     fn.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = 1, .z = z10, .width = 10, .height = 10}));
     fn.body.nodes.emplace(11, makeConstant(11, {.x = 2, .y = 2, .z = z11, .width = 10, .height = 10}));
     return treeOf({fn});
@@ -110,9 +110,9 @@ TEST(GraphLayout, HitOnEmptyFrameAreaIsTheFunction) {
 }
 
 TEST(GraphLayout, NodeIdsAreScopedToTheirFunction) {
-  fluir::pt::FunctionDecl a = makeFunction(1);
+  fluir::editor::et::FunctionDecl a = makeFunction(1);
   a.body.nodes.emplace(2, makeConstant(2, {.x = 1, .y = 1, .z = 1, .width = 10, .height = 10}));
-  fluir::pt::FunctionDecl b = makeFunction(2);
+  fluir::editor::et::FunctionDecl b = makeFunction(2);
   b.location.x = 200;  // world x 1000
   b.body.nodes.emplace(2, makeConstant(2, {.x = 1, .y = 1, .z = 1, .width = 10, .height = 10}));
 
@@ -126,7 +126,7 @@ TEST(GraphLayout, NodeIdsAreScopedToTheirFunction) {
 
 // A node dragged above the body is clipped there: the header beneath wins.
 TEST(GraphLayout, HitRespectsTheBodyClip) {
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   fn.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = -3, .z = 1, .width = 10, .height = 10}));  // world y 10
 
   const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
@@ -139,7 +139,7 @@ TEST(GraphLayout, HitRespectsTheBodyClip) {
 
 // A node dragged past the frame's bottom edge is clipped there, not a header-height lower.
 TEST(GraphLayout, BodyClipEndsAtTheFrameBottom) {
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   fn.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = 94, .z = 1, .width = 10, .height = 10}));  // world y 495
 
   const std::vector<Box> boxes = layoutGraph(treeOf({fn}), kCtx.layout);
@@ -169,7 +169,7 @@ TEST(GraphLayout, NodeGripsAreHittable) {
 }
 
 TEST(GraphLayout, BoolConstantHasNoResizeGrip) {
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   fn.body.nodes.emplace(
     10, makeConstant(10, {.x = 2, .y = 2, .z = 1, .width = 10, .height = 10}, fluir::literals_types::BOOL{true}));
 
@@ -188,7 +188,7 @@ TEST(GraphLayout, BoolConstantHasNoResizeGrip) {
 }
 
 TEST(GraphLayout, FunctionGripsAreHittableAndDrawnOverTheBody) {
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   // A node under the corner grip: the overlay grip still wins.
   fn.body.nodes.emplace(10, makeConstant(10, {.x = 90, .y = 90, .z = 1, .width = 10, .height = 10}));
 
@@ -349,11 +349,11 @@ TEST(GraphLayout, InBodyCommentHasACornerResizeGrip) {
 
 TEST(GraphLayout, TopLevelDeclarationsInterleaveByZ) {
   const auto treeWith = [](int fnZ) {
-    fluir::pt::FunctionDecl fn = makeFunction(1);
+    fluir::editor::et::FunctionDecl fn = makeFunction(1);
     fn.location.z = fnZ;
-    fluir::pt::ParseTree tree = treeOf({fn});
+    fluir::editor::et::ParseTree tree = treeOf({fn});
     tree.declarations.emplace(2,
-                              fluir::pt::Declaration{fluir::pt::Comment{
+                              fluir::editor::et::Declaration{fluir::editor::et::Comment{
                                 .id = 2, .location = {.x = 10, .y = 10, .z = 1, .width = 25, .height = 25}}});
     return tree;
   };
@@ -380,7 +380,7 @@ TEST(GraphLayout, BodyAndTopLevelCommentsAreBothHittable) {
 }
 
 TEST(GraphBounds, EmptyTreeIsZero) {
-  expectRectNear(graphBounds(layoutGraph(fluir::pt::ParseTree{}, kCtx.layout)), Rect{0, 0, 0, 0});
+  expectRectNear(graphBounds(layoutGraph(fluir::editor::et::ParseTree{}, kCtx.layout)), Rect{0, 0, 0, 0});
 }
 
 TEST(GraphBounds, SingleFunctionIsItsFrame) {
@@ -479,12 +479,12 @@ TEST(TerminalAt, MissesAwayFromAnchors) {
 
 // A constant at body units (1,-6) is {5,-5,50,50}: its output (55,20) sits above the body clip at y 25.
 TEST(TerminalAt, HonoursTheBodyClip) {
-  fluir::pt::FunctionDecl hidden = makeFunction(1);
+  fluir::editor::et::FunctionDecl hidden = makeFunction(1);
   hidden.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = -6, .z = 1, .width = 10, .height = 10}));
-  fluir::pt::FunctionDecl shown = makeFunction(1);
+  fluir::editor::et::FunctionDecl shown = makeFunction(1);
   shown.body.nodes.emplace(10, makeConstant(10, {.x = 1, .y = -3, .z = 1, .width = 10, .height = 10}));
-  const fluir::pt::ParseTree hiddenTree = treeOf({hidden});
-  const fluir::pt::ParseTree shownTree = treeOf({shown});
+  const fluir::editor::et::ParseTree hiddenTree = treeOf({hidden});
+  const fluir::editor::et::ParseTree shownTree = treeOf({shown});
 
   EXPECT_FALSE(fluir::editor::terminalAt(hiddenTree, layoutGraph(hiddenTree, kCtx.layout), Vec2{55, 20}, kCtx.layout));
   EXPECT_TRUE(fluir::editor::terminalAt(shownTree, layoutGraph(shownTree, kCtx.layout), Vec2{55, 35}, kCtx.layout));
@@ -505,26 +505,29 @@ namespace {
 
   using fluir::editor::THEN_BRANCH_ID;
 
-  fluir::pt::Conditional makeConditional(ID id, FlowGraphLocation loc, fluir::pt::Block then, fluir::pt::Block else_) {
-    return fluir::pt::Conditional{.id = id,
-                                  .location = loc,
-                                  .condition = {},
-                                  .inputs = {},
-                                  .outputs = {},
-                                  .thenScope = xyz::indirect{std::move(then)},
-                                  .elseScope = xyz::indirect{std::move(else_)}};
+  fluir::editor::et::Conditional makeConditional(ID id,
+                                                 FlowGraphLocation loc,
+                                                 fluir::editor::et::Block then,
+                                                 fluir::editor::et::Block else_) {
+    return fluir::editor::et::Conditional{.id = id,
+                                          .location = loc,
+                                          .condition = {},
+                                          .inputs = {},
+                                          .outputs = {},
+                                          .thenScope = xyz::indirect{std::move(then)},
+                                          .elseScope = xyz::indirect{std::move(else_)}};
   }
 
   // Function 1 (frame {0,0,500,500}, body from y 25) holds conditional 20 at units (2,2) 20 wide
   // and `height` tall. The conditional is one frame with one header band over its then branch:
   //   frame  {10,35,100,120}   then branch {10,60,100,95}   then node 1 {15,65,50,50}
-  fluir::pt::ParseTree nestedTree(int height = 24) {
-    fluir::pt::Block then;
+  fluir::editor::et::ParseTree nestedTree(int height = 24) {
+    fluir::editor::et::Block then;
     then.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10}));
-    fluir::pt::Block else_;
+    fluir::editor::et::Block else_;
     else_.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 4, .height = 4}));
 
-    fluir::pt::FunctionDecl fn = makeFunction(1);
+    fluir::editor::et::FunctionDecl fn = makeFunction(1);
     fn.body.nodes.emplace(
       20,
       makeConditional(20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = height}, std::move(then), std::move(else_)));
@@ -532,6 +535,62 @@ namespace {
   }
 
 }  // namespace
+
+namespace {
+
+  using fluir::editor::ELSE_BRANCH_ID;
+
+  // Which branch the layout walked, read off the boxes it emitted.
+  bool hasBox(const std::vector<Box>& boxes, const FullID& path, Part part) {
+    for (const Box& box : boxes) {
+      if (box.path == path && box.part == part) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void showBranch(fluir::editor::et::ParseTree& tree, const FullID& path, ID branchId) {
+    std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, path)).annotation.shownBranch = branchId;
+  }
+
+}  // namespace
+
+// The annotation arrived with the tree, so layout needs nothing else to lay out the other branch.
+TEST(GraphLayout, ADefaultAnnotationLaysOutTheThenBranch) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 20, THEN_BRANCH_ID}), Part::Branch));
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 20, THEN_BRANCH_ID, 1}), Part::Body));
+  EXPECT_FALSE(hasBox(boxes, (FullID{1, 20, ELSE_BRANCH_ID}), Part::Branch));
+}
+
+TEST(GraphLayout, AShownElseBranchIsTheOneLaidOut) {
+  fluir::editor::et::ParseTree tree = nestedTree();
+  showBranch(tree, FullID{1, 20}, ELSE_BRANCH_ID);
+
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 20, ELSE_BRANCH_ID}), Part::Branch));
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 20, ELSE_BRANCH_ID, 1}), Part::Body));
+  EXPECT_FALSE(hasBox(boxes, (FullID{1, 20, THEN_BRANCH_ID}), Part::Branch));
+  EXPECT_FALSE(hasBox(boxes, (FullID{1, 20, THEN_BRANCH_ID, 1}), Part::Body));
+}
+
+TEST(GraphLayout, ASiblingConditionalKeepsItsOwnShownBranch) {
+  fluir::editor::et::ParseTree tree = nestedTree();
+  fluir::editor::et::Block then;
+  then.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10}));
+  std::get<fluir::editor::et::FunctionDecl>(tree.declarations.at(1))
+    .body.nodes.emplace(21,
+                        makeConditional(21, {.x = 40, .y = 2, .z = 0, .width = 20, .height = 24}, std::move(then), {}));
+  showBranch(tree, FullID{1, 20}, ELSE_BRANCH_ID);
+
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 20, ELSE_BRANCH_ID}), Part::Branch));
+  EXPECT_TRUE(hasBox(boxes, (FullID{1, 21, THEN_BRANCH_ID}), Part::Branch));
+}
 
 TEST(GraphLayout, NestedNodesHitAtTheirDepthFourPaths) {
   const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
@@ -546,9 +605,9 @@ TEST(GraphLayout, NestedNodesHitAtTheirDepthFourPaths) {
 
 // A node dragged above the content area is clipped by it, so the header stays the conditional's.
 TEST(GraphLayout, NestedNodeIsClippedByTheHeaderBand) {
-  fluir::pt::Block then;
+  fluir::editor::et::Block then;
   then.nodes.emplace(1, makeConstant(1, {.x = 1, .y = -3, .z = 0, .width = 10, .height = 10}));  // world y 45
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   fn.body.nodes.emplace(20,
                         makeConditional(20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24}, std::move(then), {}));
 
@@ -615,16 +674,16 @@ TEST(GraphLayout, NestingDoesNotChangeGraphBounds) {
 // Node ids repeat across blocks, so each block resolves its conduits against its own nodes:
 // a dangling endpoint must not latch onto a namesake elsewhere.
 TEST(GraphLayout, ConduitEndpointsResolveWithinTheirOwnBlock) {
-  fluir::pt::Block then;
+  fluir::editor::et::Block then;
   then.nodes.emplace(1, makeConstant(1, {.x = 1, .y = 1, .z = 0, .width = 4, .height = 4}));
   then.nodes.emplace(
     2,
-    fluir::pt::Unary{
+    fluir::editor::et::Unary{
       .id = 2, .location = {.x = 8, .y = 1, .z = 0, .width = 4, .height = 4}, .lhs = 1, .op = fluir::Operator::BANG});
-  then.conduits.emplace(50, fluir::pt::Conduit{.id = 50, .input = 1, .children = {{.target = 2, .index = 0}}});
-  then.conduits.emplace(60, fluir::pt::Conduit{.id = 60, .input = 1, .children = {{.target = 99, .index = 0}}});
+  then.conduits.emplace(50, fluir::editor::et::Conduit{.id = 50, .input = 1, .children = {{.target = 2, .index = 0}}});
+  then.conduits.emplace(60, fluir::editor::et::Conduit{.id = 60, .input = 1, .children = {{.target = 99, .index = 0}}});
 
-  fluir::pt::FunctionDecl fn = makeFunction(1);
+  fluir::editor::et::FunctionDecl fn = makeFunction(1);
   fn.body.nodes.emplace(20,
                         makeConditional(20, {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24}, std::move(then), {}));
 

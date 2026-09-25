@@ -8,8 +8,8 @@
 
 namespace fluir::editor {
 
-  bool RenameTransaction::execute(pt::ParseTree& tree) {
-    pt::FunctionDecl* fn = functionAt(tree, path_);
+  bool RenameTransaction::execute(et::ParseTree& tree) {
+    et::FunctionDecl* fn = functionAt(tree, path_);
     if (fn == nullptr || !isValidIdentifier(name_) || fn->name == name_) {
       return false;
     }

@@ -24,7 +24,7 @@ namespace fluir::editor {
     int z = 0;  // top-level parent
     if (hit != nullptr) {
       // Completions go into a container's body.
-      const pt::ParseTree& tree = state.editor.tree();
+      const et::ParseTree& tree = state.editor.tree();
       // A branch has no geometry of its own: its box is already the content area under its
       // conditional's header, and its z is the conditional's.
       const bool branch = hit->part == Part::Branch;

@@ -139,6 +139,7 @@ target_include_directories(
 )
 
 set(FLUIR_EDITOR_CORE_SOURCES
+    "core/annotate.cpp"
     "core/collecting_sink.cpp"
     "core/fields.cpp"
     "core/identifier.cpp"
@@ -200,6 +201,7 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 
 set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/bool_toggle_tool.cpp"
+    "tools/branch_toggle_tool.cpp"
     "tools/choice_tool.cpp"
     "tools/completion_modal.cpp"
     "tools/completion_tool.cpp"

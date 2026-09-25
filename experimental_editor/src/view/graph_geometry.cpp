@@ -39,20 +39,20 @@ namespace fluir::editor {
 
   }  // namespace
 
-  std::vector<const pt::Declaration*> sortedDeclarations(const pt::ParseTree& tree) {
+  std::vector<const et::Declaration*> sortedDeclarations(const et::ParseTree& tree) {
     return sortedByZThenId(tree.declarations);
   }
 
-  std::vector<const pt::Node*> sortedNodes(const pt::Block& block) { return sortedByZThenId(block.nodes); }
+  std::vector<const et::Node*> sortedNodes(const et::Block& block) { return sortedByZThenId(block.nodes); }
 
-  std::vector<const pt::Conduit*> sortedConduits(const pt::Block& block) {
-    std::vector<const pt::Conduit*> conduits;
+  std::vector<const et::Conduit*> sortedConduits(const et::Block& block) {
+    std::vector<const et::Conduit*> conduits;
     conduits.reserve(block.conduits.size());
     for (const auto& entry : block.conduits) {
       conduits.push_back(&entry.second);
     }
     std::sort(
-      conduits.begin(), conduits.end(), [](const pt::Conduit* a, const pt::Conduit* b) { return a->id < b->id; });
+      conduits.begin(), conduits.end(), [](const et::Conduit* a, const et::Conduit* b) { return a->id < b->id; });
     return conduits;
   }
 

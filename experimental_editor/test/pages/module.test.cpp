@@ -12,13 +12,13 @@
 #include <gtest/gtest.h>
 
 #include "bytecode/version.hpp"
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/components/menu.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
@@ -107,10 +107,10 @@ namespace {
       send({down(at), up(at)});
     }
 
-    const fluir::pt::ParseTree& tree() const { return page->state().editor.tree(); }
+    const fluir::editor::et::ParseTree& tree() const { return page->state().editor.tree(); }
     FlowGraphLocation loc(const FullID& path) const { return *locationAt(tree(), path); }
-    fluir::pt::Literal value(const FullID& path) const {
-      return std::get<fluir::pt::Constant>(*nodeAt(tree(), path)).value;
+    fluir::editor::et::Literal value(const FullID& path) const {
+      return std::get<fluir::editor::et::Constant>(*nodeAt(tree(), path)).value;
     }
   };
 
@@ -169,7 +169,7 @@ TEST(ModulePage, ALeftClickOnANodeDoesNotPan) {
 TEST(ModulePage, AMiddleDragOverANodeStillPans) {
   Harness h{kIntConstants};
   const Vec2 before = h.page->state().view.pan;
-  const fluir::pt::ParseTree tree = h.tree();
+  const fluir::editor::et::ParseTree tree = h.tree();
   const Vec2 at = h.screen(kConstant1Body);
 
   h.send(
@@ -256,7 +256,7 @@ TEST(ModulePage, SaveWritesTheEditedTreeToTheProgram) {
 
 TEST(ModulePage, DeleteWithNoSelectionChangesNothing) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
 
   h.send({key(InputEvent::Key::Delete)});
 
@@ -272,7 +272,7 @@ TEST(ModulePage, DeleteRemovesTheSelectedNodeItsConduitsAndTheSelection) {
 
   h.send({key(InputEvent::Key::Delete)});
 
-  const auto& body = std::get<fluir::pt::FunctionDecl>(h.tree().declarations.at(1)).body;
+  const auto& body = std::get<fluir::editor::et::FunctionDecl>(h.tree().declarations.at(1)).body;
   EXPECT_FALSE(body.nodes.contains(2));
   EXPECT_FALSE(body.conduits.contains(4));
   EXPECT_TRUE(body.conduits.contains(5));
@@ -317,7 +317,7 @@ TEST(ModulePage, DeleteDuringADragCancelsTheDragFirst) {
 
 TEST(ModulePage, UndoMidDragRestoresTheOriginalPosition) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
   h.send({down(h.screen(kBinaryGrip)), move(h.screen(kBinaryGrip + Vec2{kTwoUnits, 0}))});
 
   h.click("Undo");
@@ -333,9 +333,9 @@ TEST(ModulePage, TypingThenReturnCommitsAConstantAsOneUndoableEdit) {
 
   h.send({key(InputEvent::Key::End), text("0"), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-50}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-50}});
   h.click("Undo");
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, APressOnTheHeaderBarCancelsTheOpenEdit) {
@@ -346,7 +346,7 @@ TEST(ModulePage, APressOnTheHeaderBarCancelsTheOpenEdit) {
   const Vec2 emptyBar{h.renderer.outputSize_.x / 2, h.ctx.layout.chromeHeaderPx / 2};
   h.send({down(emptyBar), up(emptyBar), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, AnOpenDraftTakesKeysBeforePageCommands) {
@@ -366,7 +366,7 @@ TEST(ModulePage, ZoomingWhileEditingKeepsTheDraft) {
 
   h.send({wheel(Vec2{400, 300}, 1), key(InputEvent::Key::End), text("0"), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-50}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-50}});
 }
 
 TEST(ModulePage, APressOnAGripMidEditClosesTheDraftAndStartsTheGesture) {
@@ -377,7 +377,7 @@ TEST(ModulePage, APressOnAGripMidEditClosesTheDraftAndStartsTheGesture) {
   h.send({text("0"), key(InputEvent::Key::Return)});
 
   EXPECT_EQ(h.loc(kConstant1).x, 4);
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, DrawShowsTheGraphUnderTheHeaderBar) {
@@ -434,7 +434,7 @@ namespace {
   constexpr Vec2 kBinaryBody{127, 107};
   const FullID kBinary{1, 1};
 
-  fluir::Operator op(const Harness& h) { return std::get<fluir::pt::Binary>(*nodeAt(h.tree(), kBinary)).op; }
+  fluir::Operator op(const Harness& h) { return std::get<fluir::editor::et::Binary>(*nodeAt(h.tree(), kBinary)).op; }
 
   // The screen rect of the open menu's row labeled `label`.
   Rect menuRow(const Harness& h, const std::string& label, Rect worldAnchor = Rect{125, 85, 25, 25}) {
@@ -551,7 +551,7 @@ namespace {
   const Rect kParamATagRect{50, 75, 23.2, 25};  // the menu's anchor: textPad + 3 glyphs at 0.8x
   constexpr Vec2 kParamATag{55, 90};
 
-  const fluir::pt::FunctionDecl::Parameter& paramA(const Harness& h) {
+  const fluir::editor::et::FunctionDecl::Parameter& paramA(const Harness& h) {
     return fluir::editor::functionAt(h.tree(), FullID{1})->input->parameters.at(0);
   }
 
@@ -733,12 +733,12 @@ namespace {
 
 TEST(ModulePage, ATerminalToTerminalDragAddsAConduitAsOneUndoableEdit) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
 
   h.drag(kConstant2Out, kBinaryIn1 - kConstant2Out);
 
   const auto& conduits = fluir::editor::blockOf(h.tree(), FullID{1})->conduits;
-  const std::vector<fluir::pt::Conduit::Output> toIn1{{.target = 1, .index = 1}};
+  const std::vector<fluir::editor::et::Conduit::Output> toIn1{{.target = 1, .index = 1}};
   EXPECT_TRUE(std::ranges::any_of(
     conduits, [&](const auto& entry) { return entry.second.input == 2 && entry.second.children == toIn1; }));
   h.click("Undo");

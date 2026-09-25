@@ -23,7 +23,7 @@ namespace fluir::editor {
   namespace {
 
     // What a press at `world` opens, or nullopt.
-    std::optional<TextEditTool::Target> targetAt(const pt::ParseTree& tree, std::span<const Box> boxes, Vec2 world) {
+    std::optional<TextEditTool::Target> targetAt(const et::ParseTree& tree, std::span<const Box> boxes, Vec2 world) {
       const Box* label = labelAt(boxes, world);
       if (!label || isChoice(label->field->kind) || !fields::read(tree, label->path, *label->field)) {
         return std::nullopt;
@@ -45,14 +45,14 @@ namespace fluir::editor {
     }
 
     // A function's name or parameter sits on header chrome; everything else on its node.
-    Color coverColor(const pt::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
-      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
+    Color coverColor(const et::ParseTree& tree, const FullID& path, const EditorContext::Theme& theme) {
+      if (const et::FunctionDecl* fn = functionAt(tree, path)) {
         return draw::color(*fn, theme);
       }
       if (commentAt(tree, path) != nullptr) {
         return theme.commentNode;
       }
-      const pt::Node* node = nodeAt(tree, path);
+      const et::Node* node = nodeAt(tree, path);
       return node == nullptr ? theme.background : nodeColor(*node, theme);
     }
 
@@ -87,7 +87,7 @@ namespace fluir::editor {
   }
 
   void TextEditTool::onPress(const InputEvent& event, EditorState& state, std::span<const Box> boxes) {
-    const pt::ParseTree& tree = state.editor.tree();
+    const et::ParseTree& tree = state.editor.tree();
     const Vec2 world = state.view.screenToWorld(event.pos);
     // A terminal press starts a conduit, so it only closes the draft.
     if (terminalAt(tree, boxes, world, state.ctx.layout)) {
@@ -152,7 +152,7 @@ namespace fluir::editor {
     if (!field_) {
       return;
     }
-    const pt::ParseTree& tree = state.editor.tree();
+    const et::ParseTree& tree = state.editor.tree();
     const std::optional<Label> label = labelRect(boxes, target_);
     if (!label) {
       return;

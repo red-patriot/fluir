@@ -11,27 +11,27 @@
 
 namespace fluir::editor {
 
-  TerminalSet terminals(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
+  TerminalSet terminals(const et::Node& node, Rect world, const EditorContext::Layout& layout) {
     return std::visit([&](const auto& n) { return draw::anchors(n, world, layout); }, node);
   }
 
-  std::vector<FieldLabel> nodeLabels(const pt::Node& node, Rect world, const EditorContext::Layout& layout) {
+  std::vector<FieldLabel> nodeLabels(const et::Node& node, Rect world, const EditorContext::Layout& layout) {
     return std::visit([&](const auto& n) { return draw::labels(n, world, layout); }, node);
   }
 
-  Limits<Vec2i> nodeSizeLimits(const pt::Node& node) {
+  Limits<Vec2i> nodeSizeLimits(const et::Node& node) {
     return std::visit([](const auto& n) { return draw::sizeLimits(n); }, node);
   }
 
-  std::optional<Part> nodeResizePart(const pt::Node& node) {
+  std::optional<Part> nodeResizePart(const et::Node& node) {
     return std::visit([](const auto& n) { return draw::resizePart(n); }, node);
   }
 
-  Color nodeColor(const pt::Node& node, const EditorContext::Theme& theme) {
+  Color nodeColor(const et::Node& node, const EditorContext::Theme& theme) {
     return std::visit([&](const auto& n) { return draw::color(n, theme); }, node);
   }
 
-  void drawNode(const pt::Node& node, Rect world, const Subview& view, const EditorContext& ctx) {
+  void drawNode(const et::Node& node, Rect world, const Subview& view, const EditorContext& ctx) {
     std::visit([&](const auto& n) { draw::draw(n, world, view, ctx); }, node);
   }
 

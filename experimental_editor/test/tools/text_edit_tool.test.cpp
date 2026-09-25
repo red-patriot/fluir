@@ -9,10 +9,10 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/text_metrics.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/view/graph_draw.hpp"
@@ -79,40 +79,41 @@ namespace {
   constexpr Vec2 kCommentText{220, 230};  // cell column 2 of row 0
   constexpr Vec2 kInnerCommentText{304, 74};
 
-  fluir::pt::Constant constant(ID id, int y, fluir::pt::Literal value) {
+  fluir::editor::et::Constant constant(ID id, int y, fluir::editor::et::Literal value) {
     return {.id = id, .location = FlowGraphLocation{.x = 4, .y = y, .z = 1, .width = 10, .height = 5}, .value = value};
   }
 
-  fluir::pt::ParseTree makeTree() {
-    fluir::pt::FunctionDecl fn;
+  fluir::editor::et::ParseTree makeTree() {
+    fluir::editor::et::FunctionDecl fn;
     fn.id = 1;
     fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
-    fn.input =
-      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 2, .index = 0, .name = "x", .typeName = "i32"},
-                                                         {.id = 3, .index = 1, .name = "y", .typeName = "i32"}}};
-    fn.output =
-      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 4, .typeName = "i32"}};
+    fn.input = fluir::editor::et::FunctionDecl::InputBlock{
+      .parameters = {{.id = 2, .index = 0, .name = "x", .typeName = "i32"},
+                     {.id = 3, .index = 1, .name = "y", .typeName = "i32"}}};
+    fn.output = fluir::editor::et::FunctionDecl::OutputBlock{
+      .ret = fluir::editor::et::FunctionDecl::Return{.id = 4, .typeName = "i32"}};
     fn.body.nodes.emplace(10, constant(10, 4, fluir::literals_types::I32{42}));
     fn.body.nodes.emplace(11, constant(11, 20, fluir::literals_types::F64{1.5}));
     fn.body.nodes.emplace(
       12,
-      fluir::pt::Binary{
+      fluir::editor::et::Binary{
         .id = 12, .location = {.x = 30, .y = 4, .z = 1, .width = 10, .height = 5}, .op = fluir::Operator::PLUS});
     fn.body.nodes.emplace(13, constant(13, 40, fluir::literals_types::I8{42}));
     fn.body.nodes.emplace(14,
-                          fluir::pt::Call{.id = 14,
-                                          .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 15},
-                                          .target = "g",
-                                          .arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}}});
+                          fluir::editor::et::Call{.id = 14,
+                                                  .location = {.x = 30, .y = 20, .z = 1, .width = 10, .height = 15},
+                                                  .target = "g",
+                                                  .arguments = {{.name = "a", .index = 0}, {.name = "b", .index = 1}}});
     fn.body.nodes.emplace(
       16,
-      fluir::pt::Comment{.id = 16, .location = {.x = 60, .y = 4, .z = 1, .width = 20, .height = 10}, .text = "inner"});
-    fluir::pt::ParseTree tree;
-    tree.declarations.emplace(1, fluir::pt::Declaration{fn});
+      fluir::editor::et::Comment{
+        .id = 16, .location = {.x = 60, .y = 4, .z = 1, .width = 20, .height = 10}, .text = "inner"});
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{fn});
     tree.declarations.emplace(
       20,
-      fluir::pt::Declaration{fluir::pt::Comment{
+      fluir::editor::et::Declaration{fluir::editor::et::Comment{
         .id = 20, .location = {.x = 40, .y = 40, .z = 2, .width = 20, .height = 10}, .text = "hi there"}});
     return tree;
   }
@@ -129,14 +130,14 @@ namespace {
 
     bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
 
-    fluir::pt::Literal value(const FullID& path) const {
-      return std::get<fluir::pt::Constant>(*nodeAt(state.editor.tree(), path)).value;
+    fluir::editor::et::Literal value(const FullID& path) const {
+      return std::get<fluir::editor::et::Constant>(*nodeAt(state.editor.tree(), path)).value;
     }
 
     const std::string& fnName() const { return fluir::editor::functionAt(state.editor.tree(), kFn)->name; }
 
     const std::string& callTarget() const {
-      return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).target;
+      return std::get<fluir::editor::et::Call>(*nodeAt(state.editor.tree(), kCall)).target;
     }
 
     // Vector position equals `index` in this tree.
@@ -145,14 +146,14 @@ namespace {
     }
 
     const std::string& argName(std::size_t index) const {
-      return std::get<fluir::pt::Call>(*nodeAt(state.editor.tree(), kCall)).arguments[index].name;
+      return std::get<fluir::editor::et::Call>(*nodeAt(state.editor.tree(), kCall)).arguments[index].name;
     }
 
     const std::string& commentText(const FullID& path) const {
       if (path.size() == 1) {
-        return std::get<fluir::pt::Comment>(state.editor.tree().declarations.at(path[0])).text;
+        return std::get<fluir::editor::et::Comment>(state.editor.tree().declarations.at(path[0])).text;
       }
-      return std::get<fluir::pt::Comment>(*nodeAt(state.editor.tree(), path)).text;
+      return std::get<fluir::editor::et::Comment>(*nodeAt(state.editor.tree(), path)).text;
     }
 
     std::vector<testutil::DrawCall> draw() const {
@@ -238,14 +239,15 @@ TEST(TextEditTool, ReturnAppliesOneUndoableEditAndCloses) {
   Harness h;
   h.send(down(kTextOrigin));
   ASSERT_TRUE(h.send(text("7")));
-  EXPECT_EQ(h.value(kInt), fluir::pt::Literal{fluir::literals_types::I32{42}}) << "typing never touches the tree";
+  EXPECT_EQ(h.value(kInt), fluir::editor::et::Literal{fluir::literals_types::I32{42}})
+    << "typing never touches the tree";
 
   EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
 
   EXPECT_EQ(h.tool.field(), nullptr);
-  EXPECT_EQ(h.value(kInt), fluir::pt::Literal{fluir::literals_types::I32{742}});
+  EXPECT_EQ(h.value(kInt), fluir::editor::et::Literal{fluir::literals_types::I32{742}});
   ASSERT_TRUE(h.state.editor.undo());
-  EXPECT_EQ(h.value(kInt), fluir::pt::Literal{fluir::literals_types::I32{42}});
+  EXPECT_EQ(h.value(kInt), fluir::editor::et::Literal{fluir::literals_types::I32{42}});
 }
 
 TEST(TextEditTool, ARejectedDraftStaysOpenAndInvalid) {
@@ -271,7 +273,7 @@ TEST(TextEditTool, ADraftPastTheTypesRangeIsRejected) {
 
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_TRUE(h.tool.field()->invalid());
-  EXPECT_EQ(h.value(FullID{1, 13}), fluir::pt::Literal{fluir::literals_types::I8{42}});
+  EXPECT_EQ(h.value(FullID{1, 13}), fluir::editor::et::Literal{fluir::literals_types::I8{42}});
 }
 
 TEST(TextEditTool, AnF64ConstantEditsAndUndoes) {
@@ -285,9 +287,9 @@ TEST(TextEditTool, AnF64ConstantEditsAndUndoes) {
   EXPECT_TRUE(h.send(key(InputEvent::Key::Return)));
 
   EXPECT_EQ(h.tool.field(), nullptr);
-  EXPECT_EQ(h.value(path), fluir::pt::Literal{fluir::literals_types::F64{21.5}});
+  EXPECT_EQ(h.value(path), fluir::editor::et::Literal{fluir::literals_types::F64{21.5}});
   ASSERT_TRUE(h.state.editor.undo());
-  EXPECT_EQ(h.value(path), fluir::pt::Literal{fluir::literals_types::F64{1.5}});
+  EXPECT_EQ(h.value(path), fluir::editor::et::Literal{fluir::literals_types::F64{1.5}});
 }
 
 TEST(TextEditTool, AMalformedF64DraftStaysOpenAndInvalid) {
@@ -299,7 +301,7 @@ TEST(TextEditTool, AMalformedF64DraftStaysOpenAndInvalid) {
 
   ASSERT_NE(h.tool.field(), nullptr);
   EXPECT_TRUE(h.tool.field()->invalid());
-  EXPECT_EQ(h.value(FullID{1, 11}), fluir::pt::Literal{fluir::literals_types::F64{1.5}});
+  EXPECT_EQ(h.value(FullID{1, 11}), fluir::editor::et::Literal{fluir::literals_types::F64{1.5}});
 }
 
 TEST(TextEditTool, OtherKeysEditTheDraft) {

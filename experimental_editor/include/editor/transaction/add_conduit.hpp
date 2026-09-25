@@ -5,8 +5,8 @@
 #include <optional>
 #include <utility>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -24,15 +24,15 @@ namespace fluir::editor {
     AddConduit(fluir::FullID parent, fluir::ID newId, Endpoint source, Endpoint target) :
       parent_(std::move(parent)), id_(newId), source_(source), target_(target) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override;
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override;
 
    private:
     fluir::FullID parent_;
     fluir::ID id_;
     Endpoint source_;
     Endpoint target_;
-    std::optional<pt::Conduit> replaced_; /**< the target's old conduit, as it was */
+    std::optional<et::Conduit> replaced_; /**< the target's old conduit, as it was */
   };
 
   std::unique_ptr<Transaction> addConduit(fluir::FullID parent,

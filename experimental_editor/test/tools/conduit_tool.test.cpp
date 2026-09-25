@@ -4,9 +4,9 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/view/graph_layout.hpp"
@@ -69,7 +69,7 @@ namespace {
   };
 
   // Whether a conduit in function 1 carries `source`'s output to `target`'s input `index`.
-  bool connected(const fluir::pt::ParseTree& tree, ID source, ID target, int index) {
+  bool connected(const fluir::editor::et::ParseTree& tree, ID source, ID target, int index) {
     for (const auto& [id, conduit] : blockOf(tree, FullID{1})->conduits) {
       for (const auto& out : conduit.children) {
         if (conduit.input == source && conduit.index == 0 && out.target == target && out.index == index) {
@@ -99,7 +99,7 @@ TEST(ConduitTool, APressOnATerminalClaimsAndCaptures) {
 
 TEST(ConduitTool, DraggingAnOutputToAnInputAddsOneUndoableConduit) {
   Harness h;
-  const fluir::pt::ParseTree before = h.state.editor.tree();
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
 
   EXPECT_TRUE(h.drag(kConstant2Out, kBinaryIn1));
 
@@ -122,7 +122,7 @@ TEST(ConduitTool, DraggingAnInputToAnOutputConnectsTheSameWay) {
 TEST(ConduitTool, AReleaseOffACompatibleTerminalAddsNothing) {
   for (const Vec2 target : {kEmpty, kConstant3Out, kConstant3Body}) {
     Harness h;
-    const fluir::pt::ParseTree before = h.state.editor.tree();
+    const fluir::editor::et::ParseTree before = h.state.editor.tree();
 
     EXPECT_TRUE(h.drag(kConstant2Out, target));
 
@@ -134,7 +134,7 @@ TEST(ConduitTool, AReleaseOffACompatibleTerminalAddsNothing) {
 
 TEST(ConduitTool, EscapeCancelsTheDrag) {
   Harness h;
-  const fluir::pt::ParseTree before = h.state.editor.tree();
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
   ASSERT_TRUE(h.send(down(h.screen(kConstant2Out))));
 
   EXPECT_TRUE(h.send(key(InputEvent::Key::Escape)));
@@ -170,41 +170,42 @@ namespace {
 
   using fluir::editor::THEN_BRANCH_ID;
 
-  fluir::pt::Constant makeConstant(ID id, int x, int y) {
-    return fluir::pt::Constant{.id = id,
-                               .location = {.x = x, .y = y, .z = 0, .width = 10, .height = 10},
-                               .value = fluir::literals_types::I32{0}};
+  fluir::editor::et::Constant makeConstant(ID id, int x, int y) {
+    return fluir::editor::et::Constant{.id = id,
+                                       .location = {.x = x, .y = y, .z = 0, .width = 10, .height = 10},
+                                       .value = fluir::literals_types::I32{0}};
   }
 
-  fluir::pt::Unary makeUnary(ID id, int x, int y) {
-    return fluir::pt::Unary{
+  fluir::editor::et::Unary makeUnary(ID id, int x, int y) {
+    return fluir::editor::et::Unary{
       .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
   }
 
   // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, and unary 3
   // {250,35,40,25} beside it. The conditional's then branch holds a constant 1 and a unary 2.
   //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
-  fluir::pt::ParseTree conditionalTree() {
-    fluir::pt::Block then;
+  fluir::editor::et::ParseTree conditionalTree() {
+    fluir::editor::et::Block then;
     then.nodes.emplace(1, makeConstant(1, 1, 1));
     then.nodes.emplace(2, makeUnary(2, 12, 1));
 
-    fluir::pt::FunctionDecl fn;
+    fluir::editor::et::FunctionDecl fn;
     fn.id = 1;
     fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
     fn.name = "f";
     fn.body.nodes.emplace(3, makeUnary(3, 50, 2));
-    fn.body.nodes.emplace(20,
-                          fluir::pt::Conditional{.id = 20,
-                                                 .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
-                                                 .condition = {},
-                                                 .inputs = {},
-                                                 .outputs = {},
-                                                 .thenScope = xyz::indirect{std::move(then)},
-                                                 .elseScope = xyz::indirect<fluir::pt::Block>{}});
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
 
-    fluir::pt::ParseTree tree;
-    tree.declarations.emplace(1, fluir::pt::Declaration{std::move(fn)});
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
     return tree;
   }
 
@@ -222,7 +223,7 @@ namespace {
       return send(up(state.view.worldToScreen(to)));
     }
 
-    const fluir::pt::Block* branch(const FullID& path) const { return blockOf(state.editor.tree(), path); }
+    const fluir::editor::et::Block* branch(const FullID& path) const { return blockOf(state.editor.tree(), path); }
   };
 
   constexpr Vec2 kThenConstantOut{65, 90};

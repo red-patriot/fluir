@@ -3,7 +3,7 @@
 #include <deque>
 #include <memory>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -12,7 +12,7 @@ namespace fluir::editor {
   class ModuleEditor {
    public:
     /** Replaces the tree and forgets all history. */
-    void load(pt::ParseTree tree);
+    void load(et::ParseTree tree);
 
     /** Executes `edit` and keeps it for undo. False when it changed nothing; it is then dropped. */
     bool apply(std::unique_ptr<Transaction> edit);
@@ -26,15 +26,15 @@ namespace fluir::editor {
     bool canUndo() const { return !undone_.empty(); }
     bool canRedo() const { return !redone_.empty(); }
 
-    pt::ParseTree& tree() { return tree_; }
-    const pt::ParseTree& tree() const { return tree_; }
+    et::ParseTree& tree() { return tree_; }
+    const et::ParseTree& tree() const { return tree_; }
 
     /** Generates a full ID that is unique, for inclusion in `body`. `body` may be empty, which generates a new
      * top-level ID.*/
     fluir::ID generateID(const fluir::FullID& body) const;
 
    private:
-    pt::ParseTree tree_;
+    et::ParseTree tree_;
     std::deque<std::unique_ptr<Transaction>> undone_;
     std::deque<std::unique_ptr<Transaction>> redone_;
   };

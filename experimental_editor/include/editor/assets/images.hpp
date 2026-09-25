@@ -16,6 +16,8 @@ namespace fluir::editor {
     SvgView falseIcon();
     /** Embedded SVG for XY Drag Handle */
     SvgView xyResizeIcon();
+    /** Embedded SVG for the arrow that switches a conditional's shown branch */
+    SvgView branchArrowIcon();
   }  // namespace assets
 }  // namespace fluir::editor
 

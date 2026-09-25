@@ -19,7 +19,7 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  TerminalSet anchors(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+  TerminalSet anchors(const et::Call& call, const Rect& r, const EditorContext::Layout& layout) {
     TerminalSet out;
     const std::size_t count = call.arguments.size();
     for (std::size_t row = 0; row < count; ++row) {
@@ -31,26 +31,26 @@ namespace fluir::editor::draw {
     return out;
   }
 
-  Color color(const pt::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
+  Color color(const et::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
 
-  Limits<Vec2i> sizeLimits(const pt::Call&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const et::Call&) { return SIZE_LIMITS; }
 
-  std::optional<Part> resizePart(const pt::Call&) { return Part::ResizeX; }
+  std::optional<Part> resizePart(const et::Call&) { return Part::ResizeX; }
 
-  std::vector<FieldLabel> labels(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+  std::vector<FieldLabel> labels(const et::Call& call, const Rect& r, const EditorContext::Layout& layout) {
     std::vector<FieldLabel> out{{{Field::Kind::Target}, {r.x, r.y, r.w, std::min(r.h, layout.railStep())}}};
-    const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
+    const std::vector<const et::Call::Argument*> args = sortedArguments(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
       out.push_back({{Field::Kind::Arg, args[row]->index}, {r.x, argRowTop(r, row, layout), r.w, layout.railStep()}});
     }
     return out;
   }
 
-  void draw(const pt::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
+  void draw(const et::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(call, ctx.theme), view, ctx);
     // Rows follow `labels`' order: the target, then each argument by index.
     const std::vector<FieldLabel> rows = labels(call, world, ctx.layout);
-    const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
+    const std::vector<const et::Call::Argument*> args = sortedArguments(call);
     drawTitle(call.target, rows.front().rect, view, ctx);
     for (std::size_t row = 0; row < args.size(); ++row) {
       drawTitle(args[row]->name, rows[row + 1].rect, view, ctx);

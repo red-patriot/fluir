@@ -7,8 +7,8 @@
 
 namespace fluir::editor {
 
-  bool EditCommentTransaction::execute(pt::ParseTree& tree) {
-    pt::Comment* comment = commentAt(tree, path_);
+  bool EditCommentTransaction::execute(et::ParseTree& tree) {
+    et::Comment* comment = commentAt(tree, path_);
     if (comment == nullptr || comment->text == text_) {
       return false;
     }

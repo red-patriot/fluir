@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/field.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/view/draw/binary.hpp"
 #include "editor/view/draw/call.hpp"
@@ -68,22 +68,22 @@ namespace {
       calls, [&](const DrawCall& c) { return c.op == DrawCall::Op::Text && c.text == text && rect.contains(c.a); });
   }
 
-  fluir::pt::Call makeCall() {
-    return fluir::pt::Call{.id = 1,
-                           .location = {},
-                           .target = "foo",
-                           ._return = std::nullopt,
-                           .arguments = {{.name = "b", .index = 1}, {.name = "a", .index = 0}}};
+  fluir::editor::et::Call makeCall() {
+    return fluir::editor::et::Call{.id = 1,
+                                   .location = {},
+                                   .target = "foo",
+                                   ._return = std::nullopt,
+                                   .arguments = {{.name = "b", .index = 1}, {.name = "a", .index = 0}}};
   }
 
-  fluir::pt::FunctionDecl makeFunction() {
-    fluir::pt::FunctionDecl fn;
+  fluir::editor::et::FunctionDecl makeFunction() {
+    fluir::editor::et::FunctionDecl fn;
     fn.id = 1;
     fn.name = "main";
-    fn.input =
-      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}};
-    fn.output =
-      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
+    fn.input = fluir::editor::et::FunctionDecl::InputBlock{
+      .parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}};
+    fn.output = fluir::editor::et::FunctionDecl::OutputBlock{
+      .ret = fluir::editor::et::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
     return fn;
   }
 
@@ -91,9 +91,9 @@ namespace {
 
 TEST(Labels, BinaryAndUnaryLabelTheirOperator) {
   const auto binary =
-    fluir::editor::draw::labels(fluir::pt::Binary{.id = 1, .op = fluir::Operator::PLUS}, kRect, kCtx.layout);
+    fluir::editor::draw::labels(fluir::editor::et::Binary{.id = 1, .op = fluir::Operator::PLUS}, kRect, kCtx.layout);
   const auto unary =
-    fluir::editor::draw::labels(fluir::pt::Unary{.id = 1, .op = fluir::Operator::MINUS}, kRect, kCtx.layout);
+    fluir::editor::draw::labels(fluir::editor::et::Unary{.id = 1, .op = fluir::Operator::MINUS}, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(binary), std::vector<Field>{{Kind::Operator}});
   EXPECT_EQ(fieldsOf(unary), std::vector<Field>{{Kind::Operator}});
@@ -120,7 +120,7 @@ TEST(Labels, CallRowsDoNotOverlap) {
 TEST(Labels, CallDrawsEachValueInsideItsLabel) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::Call call = makeCall();
+  const fluir::editor::et::Call call = makeCall();
   const auto labels = fluir::editor::draw::labels(call, kRect, kCtx.layout);
 
   fluir::editor::draw::draw(call, kRect, rootView(r, viewport), kCtx);
@@ -133,7 +133,7 @@ TEST(Labels, CallDrawsEachValueInsideItsLabel) {
 TEST(Labels, ConstantLabelsItsLiteral) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::I32{7}};
+  const fluir::editor::et::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::I32{7}};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   fluir::editor::draw::draw(constant, kRect, rootView(r, viewport), kCtx);
@@ -146,7 +146,7 @@ TEST(Labels, ConstantLabelsItsLiteral) {
 TEST(Labels, BoolConstantLabelsItsToggle) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
+  const fluir::editor::et::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   fluir::editor::draw::draw(constant, kRect, rootView(r, viewport), kCtx);
@@ -160,7 +160,7 @@ TEST(Labels, BoolConstantLabelsItsToggle) {
 TEST(Labels, CommentLabelsItsTextAndWrapsItThere) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::Comment comment{.id = 1, .location = {}, .text = "note"};
+  const fluir::editor::et::Comment comment{.id = 1, .location = {}, .text = "note"};
   const auto labels = fluir::editor::draw::labels(comment, kRect, kCtx.layout);
 
   fluir::editor::draw::draw(comment, kRect, rootView(r, viewport), kCtx);
@@ -173,13 +173,13 @@ TEST(Labels, CommentLabelsItsTextAndWrapsItThere) {
 }
 
 TEST(Labels, ConditionalHasNoLabels) {
-  const fluir::pt::Conditional conditional{.id = 1,
-                                           .location = {},
-                                           .condition = {},
-                                           .inputs = {},
-                                           .outputs = {},
-                                           .thenScope = xyz::indirect<fluir::pt::Block>{},
-                                           .elseScope = xyz::indirect<fluir::pt::Block>{}};
+  const fluir::editor::et::Conditional conditional{.id = 1,
+                                                   .location = {},
+                                                   .condition = {},
+                                                   .inputs = {},
+                                                   .outputs = {},
+                                                   .thenScope = xyz::indirect<fluir::editor::et::Block>{},
+                                                   .elseScope = xyz::indirect<fluir::editor::et::Block>{}};
 
   EXPECT_TRUE(fluir::editor::draw::labels(conditional, kRect, kCtx.layout).empty());
 }
@@ -187,7 +187,7 @@ TEST(Labels, ConditionalHasNoLabels) {
 TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::FunctionDecl fn = makeFunction();
+  const fluir::editor::et::FunctionDecl fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, kRect, kCtx.layout);
 
   fluir::editor::draw::drawFrame(fn, kRect, rootView(r, viewport), kCtx);
@@ -200,7 +200,7 @@ TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
 TEST(Labels, ParameterRailLabelsItsTypeAndNameByParameterIndex) {
   RecordingRenderer r;
   const Viewport viewport;
-  const fluir::pt::FunctionDecl fn = makeFunction();
+  const fluir::editor::et::FunctionDecl fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
 
   fluir::editor::draw::drawRail(fn, 20, kRect, rootView(r, viewport), kCtx);

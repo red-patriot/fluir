@@ -15,6 +15,7 @@
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/bool_toggle_tool.hpp"
+#include "editor/tools/branch_toggle_tool.hpp"
 #include "editor/tools/choice_tool.hpp"
 #include "editor/tools/completion_tool.hpp"
 #include "editor/tools/conduit_tool.hpp"
@@ -42,6 +43,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<ConduitTool>());
     tools_.add(std::make_unique<ChoiceTool>());
     tools_.add(std::make_unique<BoolToggleTool>());
+    tools_.add(std::make_unique<BranchToggleTool>());
     tools_.add(std::make_unique<ContextMenuTool>(std::vector<MenuProvider>{functionHeaderItems, railItems}));
     tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
@@ -61,7 +63,7 @@ namespace fluir::editor {
 
   int ModulePage::onStart() {
     fluir::Context cctx{.ignoreVersionChecks = true};
-    pt::ParseTree tree;
+    et::ParseTree tree;
     tree.header.version = fluir::CURRENT_VERSION;  // a loaded file overwrites this
     if (ctx_.program) {
       cctx.currentFile = *ctx_.program;

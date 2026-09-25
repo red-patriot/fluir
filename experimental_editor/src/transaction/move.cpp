@@ -7,7 +7,7 @@
 
 namespace fluir::editor {
 
-  bool MoveTransaction::execute(pt::ParseTree& tree) {
+  bool MoveTransaction::execute(et::ParseTree& tree) {
     FlowGraphLocation* location = locationAt(tree, path_);
     if (location == nullptr || (location->x == x_ && location->y == y_)) {
       return false;

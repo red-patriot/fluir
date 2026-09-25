@@ -11,8 +11,8 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/tools/completion_modal.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
@@ -135,9 +135,9 @@ TEST(CompletionTool, PickingAConstantPlacesItAtBodyLocalUnits) {
 
   ASSERT_TRUE(pick(f.state, "F64"));
 
-  const auto& body = std::get<fluir::pt::FunctionDecl>(f.state.editor.tree().declarations.at(1)).body;
+  const auto& body = std::get<fluir::editor::et::FunctionDecl>(f.state.editor.tree().declarations.at(1)).body;
   ASSERT_EQ(body.nodes.size(), 1u);
-  const auto* constant = std::get_if<fluir::pt::Constant>(&body.nodes.begin()->second);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&body.nodes.begin()->second);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->location.x, std::lround(local.x));
   EXPECT_EQ(constant->location.y, std::lround(local.y));
@@ -192,7 +192,7 @@ TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
   const auto& decls = f.state.editor.tree().declarations;
   ASSERT_EQ(decls.size(), before + 1);
   const auto newest = std::ranges::max_element(decls, {}, [](const auto& kv) { return kv.first; });
-  const auto* fn = std::get_if<fluir::pt::FunctionDecl>(&newest->second);
+  const auto* fn = std::get_if<fluir::editor::et::FunctionDecl>(&newest->second);
   ASSERT_NE(fn, nullptr);
   EXPECT_EQ(fn->location.x, std::lround(world.x));
   EXPECT_EQ(fn->location.y, std::lround(world.y));
@@ -203,9 +203,9 @@ TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
 namespace {
   constexpr Vec2 kThenBranch{100, 100};
 
-  const fluir::pt::Conditional& conditionalOf(const EditorState& state) {
-    const auto& body = std::get<fluir::pt::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
-    return std::get<fluir::pt::Conditional>(body.nodes.at(2));
+  const fluir::editor::et::Conditional& conditionalOf(const EditorState& state) {
+    const auto& body = std::get<fluir::editor::et::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
+    return std::get<fluir::editor::et::Conditional>(body.nodes.at(2));
   }
 }  // namespace
 
@@ -236,11 +236,11 @@ TEST(CompletionTool, PickingAConstantInABranchPlacesItAtBranchLocalUnits) {
 
   ASSERT_TRUE(pick(f.state, "F64"));
 
-  const fluir::pt::Conditional& conditional = conditionalOf(f.state);
+  const fluir::editor::et::Conditional& conditional = conditionalOf(f.state);
   EXPECT_TRUE(conditional.elseScope->nodes.empty());
   const auto& thenNodes = conditional.thenScope->nodes;
   ASSERT_EQ(thenNodes.size(), 1u);
-  const auto* constant = std::get_if<fluir::pt::Constant>(&thenNodes.begin()->second);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&thenNodes.begin()->second);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->location.x, 10);
   EXPECT_EQ(constant->location.y, 7);
@@ -255,7 +255,7 @@ TEST(CompletionTool, PickingInABranchHonoursTheViewport) {
 
   const auto& thenNodes = conditionalOf(f.state).thenScope->nodes;
   ASSERT_EQ(thenNodes.size(), 1u);
-  const auto* constant = std::get_if<fluir::pt::Constant>(&thenNodes.begin()->second);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&thenNodes.begin()->second);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->location.x, 10);
   EXPECT_EQ(constant->location.y, 7);

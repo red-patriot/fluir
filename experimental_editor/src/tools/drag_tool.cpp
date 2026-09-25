@@ -15,14 +15,14 @@
 namespace fluir::editor {
   namespace {
     // What the function, top-level comment or node at `path` may be resized to; nullopt when it is gone.
-    std::optional<Limits<Vec2i>> sizeLimitsAt(const pt::ParseTree& tree, const FullID& path) {
-      if (const pt::FunctionDecl* fn = functionAt(tree, path)) {
+    std::optional<Limits<Vec2i>> sizeLimitsAt(const et::ParseTree& tree, const FullID& path) {
+      if (const et::FunctionDecl* fn = functionAt(tree, path)) {
         return draw::sizeLimits(*fn);
       }
-      if (const pt::Comment* comment = commentAt(tree, path)) {
+      if (const et::Comment* comment = commentAt(tree, path)) {
         return draw::sizeLimits(*comment);
       }
-      const pt::Node* node = nodeAt(tree, path);
+      const et::Node* node = nodeAt(tree, path);
       return node == nullptr ? std::nullopt : std::optional{nodeSizeLimits(*node)};
     }
 
@@ -105,7 +105,7 @@ namespace fluir::editor {
   }
 
   void DragTool::reaim(EditorState& state) {
-    pt::ParseTree& tree = state.editor.tree();
+    et::ParseTree& tree = state.editor.tree();
     if (edit_ != nullptr) {
       edit_->unexecute(tree);
       edit_.reset();

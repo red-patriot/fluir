@@ -14,8 +14,8 @@ namespace fluir::editor {
    public:
     MoveTransaction(fluir::FullID path, int x, int y) : path_(std::move(path)), x_(x), y_(y) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     fluir::FullID path_;

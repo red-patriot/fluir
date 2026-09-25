@@ -4,14 +4,14 @@
 #include <optional>
 #include <string_view>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"
+#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
   /** The outcome of loading a fluir file. */
   struct LoadResult {
-    std::optional<pt::ParseTree> tree; /**< std::nullopt => parse failed */
+    std::optional<et::ParseTree> tree; /**< std::nullopt => parse failed */
   };
 
   /** Parses a fluir file at `path`.

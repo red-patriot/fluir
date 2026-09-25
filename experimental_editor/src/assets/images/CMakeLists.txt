@@ -23,3 +23,9 @@ fluir_embed_file(
     "XYResizeHandle.svg"
     fluir::editor::assets::xyResizeIcon
 )
+
+fluir_embed_file(
+    fluir.libeditor
+    "branchArrow.svg"
+    fluir::editor::assets::branchArrowIcon
+)

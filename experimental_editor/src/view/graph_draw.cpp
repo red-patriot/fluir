@@ -23,23 +23,23 @@ namespace fluir::editor {
     }
 
     // What the path names decides the body: a declaration, a node, or a container's branch.
-    void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
-      if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
-        std::visit(util::Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
-                                    [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+    void drawBody(const Subview& view, const et::ParseTree& tree, const Box& box, const EditorContext& ctx) {
+      if (const et::Declaration* decl = declarationAt(tree, box.path)) {
+        std::visit(util::Overloaded{[&](const et::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                                    [&](const et::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
                    *decl);
-      } else if (const pt::Node* node = nodeAt(tree, box.path)) {
+      } else if (const et::Node* node = nodeAt(tree, box.path)) {
         drawNode(*node, box.world, view, ctx);
       }
     }
 
     // A container's selection outline belongs to its frame, which paints over its children.
-    bool framed(const pt::ParseTree& tree, const FullID& path) {
-      return functionAt(tree, path) != nullptr || std::get_if<pt::Conditional>(nodeAt(tree, path)) != nullptr;
+    bool framed(const et::ParseTree& tree, const FullID& path) {
+      return functionAt(tree, path) != nullptr || std::get_if<et::Conditional>(nodeAt(tree, path)) != nullptr;
     }
 
     void drawBox(
-      const Subview& view, const pt::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
+      const Subview& view, const et::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
       Renderer& r = view.renderer();
       switch (box.part) {
         case Part::Body:
@@ -53,9 +53,9 @@ namespace fluir::editor {
         case Part::Label:
           return;  // hit regions only: their owner paints them
         case Part::Frame:
-          if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
+          if (const et::FunctionDecl* fn = functionAt(tree, box.path)) {
             draw::drawFrame(*fn, box.world, view, ctx);
-          } else if (const auto* conditional = std::get_if<pt::Conditional>(nodeAt(tree, box.path))) {
+          } else if (const auto* conditional = std::get_if<et::Conditional>(nodeAt(tree, box.path))) {
             draw::drawFrame(*conditional, box.world, view, ctx);
           } else {
             return;
@@ -65,7 +65,7 @@ namespace fluir::editor {
           }
           return;
         case Part::Rail:
-          if (const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
+          if (const et::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
             draw::drawRail(*fn, box.path.back(), box.world, view, ctx);
           }
           return;
@@ -90,7 +90,7 @@ namespace fluir::editor {
   }  // namespace
 
   void drawGraph(const Subview& view,
-                 const pt::ParseTree& tree,
+                 const et::ParseTree& tree,
                  std::span<const Box> boxes,
                  const std::optional<FullID>& selection,
                  const EditorContext& ctx) {

@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/location.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
@@ -23,13 +23,13 @@ namespace fluir::editor {
   Rect dotRect(Vec2 anchor, double terminalDot);
 
   /** `tree`'s declarations, ordered ascending by (location.z, id). */
-  std::vector<const pt::Declaration*> sortedDeclarations(const pt::ParseTree& tree);
+  std::vector<const et::Declaration*> sortedDeclarations(const et::ParseTree& tree);
 
   /** `block`'s nodes, ordered ascending by (location.z, id). */
-  std::vector<const pt::Node*> sortedNodes(const pt::Block& block);
+  std::vector<const et::Node*> sortedNodes(const et::Block& block);
 
   /** `block`'s conduits, ordered ascending by id. */
-  std::vector<const pt::Conduit*> sortedConduits(const pt::Block& block);
+  std::vector<const et::Conduit*> sortedConduits(const et::Block& block);
 
 }  // namespace fluir::editor
 

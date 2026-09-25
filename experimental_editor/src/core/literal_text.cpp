@@ -18,7 +18,7 @@ namespace fluir::editor {
   // I8 / U8 widen to int
   // so they print as numbers, BOOL prints true/false, and every other
   // arithmetic type goes straight through fmt.
-  std::string renderLiteral(const pt::Literal& value) {
+  std::string renderLiteral(const et::Literal& value) {
     return std::visit(
       [](auto v) -> std::string {
         using T = std::decay_t<decltype(v)>;
@@ -33,14 +33,14 @@ namespace fluir::editor {
       value);
   }
 
-  std::string_view literalTypeName(const pt::Literal& value) {
-    // Indexed in `pt::Literal` alternative order.
-    static constexpr std::array<std::string_view, std::variant_size_v<pt::Literal>> kNames{
+  std::string_view literalTypeName(const et::Literal& value) {
+    // Indexed in `et::Literal` alternative order.
+    static constexpr std::array<std::string_view, std::variant_size_v<et::Literal>> kNames{
       "f64", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "bool"};
     return kNames[value.index()];
   }
 
-  bool isEditableLiteral(const pt::Literal& value) {
+  bool isEditableLiteral(const et::Literal& value) {
     return std::visit(
       [](auto v) {
         using T = std::decay_t<decltype(v)>;
@@ -50,13 +50,13 @@ namespace fluir::editor {
       value);
   }
 
-  std::optional<pt::Literal> tryParseLiteral(const pt::Literal& like, std::string_view text) {
+  std::optional<et::Literal> tryParseLiteral(const et::Literal& like, std::string_view text) {
     return std::visit(
-      [text](auto v) -> std::optional<pt::Literal> {
+      [text](auto v) -> std::optional<et::Literal> {
         using T = std::decay_t<decltype(v)>;
         if constexpr (std::integral<T> && !std::is_same_v<T, bool>) {
           const auto parsed = fe::parseNumber<T>(text);
-          return parsed ? std::optional<pt::Literal>(pt::Literal(std::in_place_type<T>, *parsed)) : std::nullopt;
+          return parsed ? std::optional<et::Literal>(et::Literal(std::in_place_type<T>, *parsed)) : std::nullopt;
         } else if constexpr (std::is_same_v<T, double>) {
           // Whole text must parse; inf/nan/overflow are rejected like integer range errors.
           double d{};
@@ -64,7 +64,7 @@ namespace fluir::editor {
           if (ec != std::errc{} || end != text.data() + text.size() || !std::isfinite(d)) {
             return std::nullopt;
           }
-          return pt::Literal(std::in_place_type<T>, d);
+          return et::Literal(std::in_place_type<T>, d);
         } else {
           return std::nullopt;
         }

@@ -26,19 +26,19 @@ namespace fluir::editor {
 
   namespace draw {
 
-    TerminalSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
+    TerminalSet anchors(const et::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
 
-    Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
+    Color color(const et::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 
-    Limits<Vec2i> sizeLimits(const pt::Comment&) { return SIZE_LIMITS; }
+    Limits<Vec2i> sizeLimits(const et::Comment&) { return SIZE_LIMITS; }
 
-    std::optional<Part> resizePart(const pt::Comment&) { return Part::ResizeXY; }
+    std::optional<Part> resizePart(const et::Comment&) { return Part::ResizeXY; }
 
-    std::vector<FieldLabel> labels(const pt::Comment&, const Rect& world, const EditorContext::Layout& layout) {
+    std::vector<FieldLabel> labels(const et::Comment&, const Rect& world, const EditorContext::Layout& layout) {
       return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
     }
 
-    void draw(const pt::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
+    void draw(const et::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
       drawShell(world, color(comment, ctx.theme), view, ctx);
       drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, ctx);
       if (comment.text.empty()) {

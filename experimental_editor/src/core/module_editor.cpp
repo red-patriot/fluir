@@ -21,7 +21,7 @@ namespace fluir::editor {
 
   }  // namespace
 
-  void ModuleEditor::load(pt::ParseTree tree) {
+  void ModuleEditor::load(et::ParseTree tree) {
     tree_ = std::move(tree);
     undone_.clear();
     redone_.clear();
@@ -81,7 +81,7 @@ namespace fluir::editor {
       }
       return top + 1;
     }
-    const pt::Block* block = blockOf(tree_, body);
+    const et::Block* block = blockOf(tree_, body);
     if (block == nullptr) {
       return INVALID_ID;
     }
@@ -91,9 +91,9 @@ namespace fluir::editor {
     for (const auto& [id, conduit] : block->conduits) {
       top = std::max(top, id);
     }
-    if (const pt::FunctionDecl* fn = functionAt(tree_, body)) {
+    if (const et::FunctionDecl* fn = functionAt(tree_, body)) {
       if (fn->input) {
-        for (const pt::FunctionDecl::Parameter& param : fn->input->parameters) {
+        for (const et::FunctionDecl::Parameter& param : fn->input->parameters) {
           top = std::max(top, param.id);
         }
       }

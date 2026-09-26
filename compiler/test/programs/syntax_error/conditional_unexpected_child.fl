@@ -12,7 +12,7 @@
         <bool>true</bool>
       </constant>
       <conditional id="2" x="10" y="3" z="1" w="500" h="500">
-        <condition outer="3" inner="1" y="10"/>
+        <condition inner="1" y="10"/>
         <input/>
         <output/>
         <then />

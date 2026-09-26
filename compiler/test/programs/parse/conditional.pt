@@ -9,7 +9,7 @@
         2:
             Conditional
             at(x10, y3, z1, w500, h500)
-            Condition: 3->1 at(10)
+            Condition 1 at(10)
             input
             output
             Then

@@ -130,14 +130,13 @@ namespace fluir::pt {
   struct BlockT;
 
   struct BlockPort {
-    ID outerId; /**< Outward-facing ID to bridge data to the outer scope */
     ID innerId; /**< Inward-facing ID to bridge dataflow to the inner scope */
     int y;      /**< Position on the vertical wall where this port lives */
 
     friend bool operator==(const BlockPort&, const BlockPort&) = default;
   };
 
-  using BlockPorts = std::unordered_map<ID, BlockPort>;
+  using BlockPorts = std::vector<BlockPort>;
 
   template <class A>
   struct ConditionalT {

@@ -111,23 +111,19 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Conditional\n") << doPrint(conditional.location);
     const auto& condition = conditional.condition;
-    out_ << formatIndented("Condition: {}->{} at({})\n", condition.outerId, condition.innerId, condition.y);
+    out_ << formatIndented("Condition {} at({})\n", condition.innerId, condition.y);
     {
       out_ << formatIndented("input\n");
       FLUIR_SCOPED_INDENT;
-      auto ports = keyOrder(conditional.inputs);
-      for (const auto& id : ports) {
-        const auto& port = conditional.inputs.at(id);
-        out_ << formatIndented("{}->{} at({})\n", port.outerId, port.innerId, port.y);
+      for (const auto& port : conditional.inputs) {
+        out_ << formatIndented("{} at({})\n", port.innerId, port.y);
       }
     }
     {
       out_ << formatIndented("output\n");
       FLUIR_SCOPED_INDENT;
-      auto ports = keyOrder(conditional.outputs);
-      for (const auto& id : ports) {
-        const auto& port = conditional.outputs.at(id);
-        out_ << formatIndented("{}->{} at({})\n", port.outerId, port.innerId, port.y);
+      for (const auto& port : conditional.outputs) {
+        out_ << formatIndented("{} at({})\n", port.innerId, port.y);
       }
     }
     const auto& then = conditional.thenScope;

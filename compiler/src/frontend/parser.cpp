@@ -345,6 +345,7 @@ namespace fluir {
 
   pt::BlockPorts Parser::parseScopePorts(Element* element) {
     pt::BlockPorts ret;
+    ret.reserve(element->ChildElementCount());
     for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       panicIf(child->Name() != "port"sv,
               child,
@@ -352,8 +353,7 @@ namespace fluir {
               "Unexpected element <{}>. Expected <port>",
               child->Name());
       auto port = parseBlockPort(child);
-      panicIf(ret.contains(port.outerId), child, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-      ret.emplace(port.outerId, port);
+      ret.emplace_back(port);
     }
     return ret;
   }
@@ -698,10 +698,9 @@ namespace fluir {
   }
 
   pt::BlockPort Parser::parseBlockPort(Element* element) {
-    auto outer = parseIdReference(element, "outer");
     auto inner = parseIdReference(element, "inner");
     auto y = static_cast<int>(getInt(element, "y"));
-    return pt::BlockPort{.outerId = outer, .innerId = inner, .y = y};
+    return pt::BlockPort{.innerId = inner, .y = y};
   }
 
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {

@@ -25,7 +25,7 @@ namespace fluir::editor {
   /** The grip that resizes `node`, if any. */
   std::optional<Part> nodeResizePart(const et::Node& node);
 
-  /** Draws `node`'s body at `world`: fill, border, label and terminal dots. */
+  /** Draws `node`'s body at `world`: fill, border and label. */
   void drawNode(const et::Node& node, Rect world, const Subview& view, const EditorContext& ctx);
 
   /** `node`'s fill color. */

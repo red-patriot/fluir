@@ -14,8 +14,7 @@
 namespace fluir::editor {
 
   /**
-   * What a box is. Frame and Wire are not hittable. Header and Label paint nothing; a Label sits over its owner.
-   * A Port sits on a container's wall and carries the container's path.
+   * What part of the diagram a box is.
    */
   enum class Part {
     Body,
@@ -33,6 +32,12 @@ namespace fluir::editor {
     Port
   };
 
+  /** Which terminal a Terminal box is: its side, and its index on that side. */
+  struct BoxTerminal {
+    bool output = false;
+    size_t index = 0;
+  };
+
   /** One laid-out piece of the graph, in world space. */
   struct Box {
     FullID path;
@@ -42,6 +47,8 @@ namespace fluir::editor {
     std::optional<Rect> clip;
     /** A Label's field; its path is the one `core/fields` takes. */
     std::optional<Field> field;
+    /** Set only on a Terminal box, whose path is its endpoint's and whose world is centered on its anchor. */
+    std::optional<BoxTerminal> terminal;
   };
 
   /** Every box `tree` draws as, in paint order. */
@@ -53,7 +60,7 @@ namespace fluir::editor {
   /** The Label at `world` when it is the last-painted hittable box there, or nullptr. */
   const Box* labelAt(std::span<const Box> boxes, Vec2 world);
 
-  /** A terminal: its node or rail `path`, side, and index on that side. */
+  /** A terminal: its endpoint `path` (block path + endpoint id), side, and index on that side. */
   struct TerminalHit {
     FullID path;
     bool output = false;
@@ -61,11 +68,8 @@ namespace fluir::editor {
     Vec2 anchor;
   };
 
-  /** The top-painted terminal whose hit square contains `world`, honouring clips. */
-  std::optional<TerminalHit> terminalAt(const et::ParseTree& tree,
-                                        std::span<const Box> boxes,
-                                        Vec2 world,
-                                        const EditorContext::Layout& layout);
+  /** The last-painted Terminal box containing `world`. */
+  std::optional<TerminalHit> terminalAt(std::span<const Box> boxes, Vec2 world);
 
   /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);

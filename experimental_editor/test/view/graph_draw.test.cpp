@@ -1,6 +1,7 @@
 #include "editor/view/graph_draw.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -445,6 +446,34 @@ TEST(GraphDraw, CallNodeArgsAndReturn) {
 
     EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no terminal dots
     EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
+  }
+}
+
+// Terminal dots come from the layout's Terminal boxes: each one paints a fill centered on its box.
+TEST(GraphDraw, PaintsADotCenteredOnEveryTerminalBox) {
+  for (const char* fixture : {"read/simple_binary_expr.fl", "read/function_with_input_only.fl"}) {
+    const Loaded l = loadFixture(fixture);
+    ASSERT_TRUE(l.result.tree.has_value());
+
+    RecordingRenderer r;
+    drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+    const auto fills = testutil::fillsOf(r.calls);
+    bool any = false;
+    for (const fluir::editor::Box& box : fluir::editor::layoutGraph(*l.result.tree, kCtx.layout)) {
+      if (box.part != fluir::editor::Part::Terminal) {
+        continue;
+      }
+      any = true;
+      const Rect& t = box.world;
+      EXPECT_TRUE(std::ranges::any_of(fills,
+                                      [&](const Rect& f) {
+                                        return std::abs((f.x + f.w / 2) - (t.x + t.w / 2)) < 1e-6 &&
+                                               std::abs((f.y + f.h / 2) - (t.y + t.h / 2)) < 1e-6;
+                                      }))
+        << fixture;
+    }
+    EXPECT_TRUE(any) << fixture;
   }
 }
 

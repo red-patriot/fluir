@@ -79,6 +79,12 @@ namespace fluir::editor {
                      view.toScreen(Vec2{box.world.x + box.world.w, box.world.y + box.world.h}),
                      ctx.theme.conduit);
           return;
+        case Part::Terminal:
+          {
+            const Vec2 anchor{box.world.x + box.world.w / 2, box.world.y + box.world.h / 2};
+            r.fillRect(view.toScreen(dotRect(anchor, ctx.layout.terminalDot)), ctx.theme.border);
+          }
+          return;
         case Part::MoveGrip:
           draw::drawMoveGrip(box.world, view, ctx);
           return;

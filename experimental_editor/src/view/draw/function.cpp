@@ -71,7 +71,6 @@ namespace fluir::editor::draw {
     if (const et::FunctionDecl::Parameter* param = paramOf(fn, railId)) {
       drawTitle(param->name, labels(fn, railId, rail, ctx.layout).back().rect, view, ctx);
     }
-    drawTerminalDots(anchors(fn, railId, rail), view, ctx);
   }
 
   void drawFrame(const et::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx) {

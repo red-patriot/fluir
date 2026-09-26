@@ -44,6 +44,21 @@ namespace fluir::editor {
       }
     }
 
+    // One Terminal box per anchor in `set`, so each dot paints and hits at `path`.
+    void pushTerminals(
+      const FullID& path, const TerminalSet& set, const std::optional<Rect>& clip, double unit, std::vector<Box>& out) {
+      for (const bool output : {false, true}) {
+        const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
+        for (std::size_t i = 0; i < anchors.size(); ++i) {
+          out.push_back({.path = path,
+                         .part = Part::Terminal,
+                         .world = dotRect(anchors[i], PORT_HIT_UNITS * unit),
+                         .clip = clip,
+                         .terminal = BoxTerminal{output, static_cast<int>(i)}});
+        }
+      }
+    }
+
     // A node's body and labels, then its grips over them. `resize` is ResizeX (right edge), ResizeXY (corner) or none.
     void pushNodeBoxes(const FullID& path,
                        const Rect& rect,
@@ -120,7 +135,9 @@ namespace fluir::editor {
         }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
         pushNodeBoxes(path, rect, clip, nodeResizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
-        terminals[idOf(*node)] = editor::terminals(*node, rect, layout);
+        const TerminalSet set = editor::terminals(*node, rect, layout);
+        pushTerminals(path, set, clip, layout.unitPx, out);
+        terminals[idOf(*node)] = set;
       }
 
       // A dangling endpoint is a legitimate authoring state: it just draws no line.
@@ -157,9 +174,11 @@ namespace fluir::editor {
         for (std::size_t row = 0; row < params.size(); ++row) {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
-          out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
+          const FullID railPath = childOf(path, params[row]->id);
+          out.push_back({railPath, Part::Rail, rail, clip});
           pushLabels(path, draw::labels(fn, params[row]->id, rail, layout), clip, out);
           terminals[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
+          pushTerminals(railPath, terminals[params[row]->id], clip, unit, out);
         }
       }
       if (fn.output && fn.output->ret) {
@@ -167,9 +186,11 @@ namespace fluir::editor {
                         origin.y,
                         layout.railStep(),
                         layout.railStep()};
-        out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
+        const FullID railPath = childOf(path, fn.output->ret->id);
+        out.push_back({railPath, Part::Rail, rail, clip});
         pushLabels(path, draw::labels(fn, fn.output->ret->id, rail, layout), clip, out);
         terminals[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
+        pushTerminals(railPath, terminals[fn.output->ret->id], clip, unit, out);
       }
 
       layoutBlock(fn.body, path, origin, clip, layout, std::move(terminals), out);
@@ -183,7 +204,7 @@ namespace fluir::editor {
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), std::nullopt});
     }
 
-    bool hittable(Part part) { return part != Part::Frame && part != Part::Wire; }
+    bool hittable(Part part) { return part != Part::Frame && part != Part::Wire && part != Part::Terminal; }
 
     // The last-painted hittable box containing `world`, Labels included unless `throughLabels`.
     const Box* topAt(std::span<const Box> boxes, Vec2 world, bool throughLabels) {
@@ -194,19 +215,6 @@ namespace fluir::editor {
         }
       }
       return nullptr;
-    }
-
-    // A node's or rail's terminal anchors, given its box.
-    TerminalSet terminalsOf(const et::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
-      if (box.path.size() < 2) {
-        return {};
-      }
-      if (box.part == Part::Body) {
-        const et::Node* node = nodeAt(tree, box.path);
-        return node == nullptr ? TerminalSet{} : terminals(*node, box.world, layout);
-      }
-      const et::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
-      return fn == nullptr ? TerminalSet{} : draw::anchors(*fn, box.path.back(), box.world);
     }
 
   }  // namespace
@@ -237,23 +245,11 @@ namespace fluir::editor {
     return top != nullptr && top->part == Part::Label ? top : nullptr;
   }
 
-  std::optional<TerminalHit> terminalAt(const et::ParseTree& tree,
-                                        std::span<const Box> boxes,
-                                        Vec2 world,
-                                        const EditorContext::Layout& layout) {
-    const double side = PORT_HIT_UNITS * layout.unitPx;
+  std::optional<TerminalHit> terminalAt(std::span<const Box> boxes, Vec2 world) {
     for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (it->clip && !it->clip->contains(world)) {
-        continue;
-      }
-      const TerminalSet set = terminalsOf(tree, *it, layout);
-      for (const bool output : {false, true}) {
-        const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
-        for (std::size_t i = 0; i < anchors.size(); ++i) {
-          if (dotRect(anchors[i], side).contains(world)) {
-            return TerminalHit{it->path, output, static_cast<int>(i), anchors[i]};
-          }
-        }
+      if (it->terminal && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
+        const Vec2 anchor{it->world.x + it->world.w / 2, it->world.y + it->world.h / 2};
+        return TerminalHit{it->path, it->terminal->output, it->terminal->index, anchor};
       }
     }
     return std::nullopt;

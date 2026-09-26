@@ -27,7 +27,6 @@ namespace fluir::editor::draw {
   void draw(const et::Binary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
     drawTitle(stringify(n.op), labels(n, world, ctx.layout).front().rect, view, ctx);
-    drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

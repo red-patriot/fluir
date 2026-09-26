@@ -17,7 +17,7 @@ namespace fluir::editor {
             return false;
           }
           const Vec2 world = state.view.screenToWorld(event.pos);
-          const std::optional<TerminalHit> hit = terminalAt(state.editor.tree(), boxes, world, state.ctx.layout);
+          const std::optional<TerminalHit> hit = terminalAt(boxes, world);
           if (!hit) {
             return false;
           }
@@ -40,8 +40,7 @@ namespace fluir::editor {
             return false;
           }
           active_ = false;
-          const std::optional<TerminalHit> to =
-            terminalAt(state.editor.tree(), boxes, state.view.screenToWorld(event.pos), state.ctx.layout);
+          const std::optional<TerminalHit> to = terminalAt(boxes, state.view.screenToWorld(event.pos));
           if (!to || to->output == from_.output || parentOf(to->path) != parentOf(from_.path)) {
             return true;
           }

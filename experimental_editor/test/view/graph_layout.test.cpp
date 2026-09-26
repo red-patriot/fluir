@@ -424,10 +424,10 @@ TEST(TerminalAt, FindsNodeInputsAndOutputs) {
   ASSERT_TRUE(l.result.tree.has_value());
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
 
-  const auto in0 = fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{126, 86}, kCtx.layout);
-  const auto in1 = fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{124, 111}, kCtx.layout);
-  const auto out = fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{151, 98}, kCtx.layout);
-  const auto constant = fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{84, 97}, kCtx.layout);
+  const auto in0 = fluir::editor::terminalAt(boxes, Vec2{126, 86});
+  const auto in1 = fluir::editor::terminalAt(boxes, Vec2{124, 111});
+  const auto out = fluir::editor::terminalAt(boxes, Vec2{151, 98});
+  const auto constant = fluir::editor::terminalAt(boxes, Vec2{84, 97});
 
   ASSERT_TRUE(in0 && in1 && out && constant);
   EXPECT_EQ(in0->path, (FullID{1, 1}));
@@ -452,10 +452,8 @@ TEST(TerminalAt, FindsFunctionRailTerminals) {
   ASSERT_TRUE(in.result.tree.has_value());
   ASSERT_TRUE(out.result.tree.has_value());
 
-  const auto param =
-    fluir::editor::terminalAt(*in.result.tree, layoutGraph(*in.result.tree, kCtx.layout), Vec2{124, 88}, kCtx.layout);
-  const auto ret =
-    fluir::editor::terminalAt(*out.result.tree, layoutGraph(*out.result.tree, kCtx.layout), Vec2{526, 87}, kCtx.layout);
+  const auto param = fluir::editor::terminalAt(layoutGraph(*in.result.tree, kCtx.layout), Vec2{124, 88});
+  const auto ret = fluir::editor::terminalAt(layoutGraph(*out.result.tree, kCtx.layout), Vec2{526, 87});
 
   ASSERT_TRUE(param && ret);
   EXPECT_EQ(param->path, (FullID{1, 2}));
@@ -473,9 +471,9 @@ TEST(TerminalAt, MissesAwayFromAnchors) {
   ASSERT_TRUE(l.result.tree.has_value());
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
 
-  EXPECT_FALSE(fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{105, 97.5}, kCtx.layout));
-  EXPECT_FALSE(fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{137, 97}, kCtx.layout)) << "binary grip";
-  EXPECT_FALSE(fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{-500, -500}, kCtx.layout));
+  EXPECT_FALSE(fluir::editor::terminalAt(boxes, Vec2{105, 97.5}));
+  EXPECT_FALSE(fluir::editor::terminalAt(boxes, Vec2{137, 97})) << "binary grip";
+  EXPECT_FALSE(fluir::editor::terminalAt(boxes, Vec2{-500, -500}));
 }
 
 // A constant at body units (1,-6) is {5,-5,50,50}: its output (55,20) sits above the body clip at y 25.
@@ -487,8 +485,8 @@ TEST(TerminalAt, HonoursTheBodyClip) {
   const fluir::editor::et::ParseTree hiddenTree = treeOf({hidden});
   const fluir::editor::et::ParseTree shownTree = treeOf({shown});
 
-  EXPECT_FALSE(fluir::editor::terminalAt(hiddenTree, layoutGraph(hiddenTree, kCtx.layout), Vec2{55, 20}, kCtx.layout));
-  EXPECT_TRUE(fluir::editor::terminalAt(shownTree, layoutGraph(shownTree, kCtx.layout), Vec2{55, 35}, kCtx.layout));
+  EXPECT_FALSE(fluir::editor::terminalAt(layoutGraph(hiddenTree, kCtx.layout), Vec2{55, 20}));
+  EXPECT_TRUE(fluir::editor::terminalAt(layoutGraph(shownTree, kCtx.layout), Vec2{55, 35}));
 }
 
 TEST(TerminalAt, ATerminalDoesNotChangeWhatHitAtFinds) {
@@ -496,11 +494,59 @@ TEST(TerminalAt, ATerminalDoesNotChangeWhatHitAtFinds) {
   ASSERT_TRUE(l.result.tree.has_value());
   const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
 
-  ASSERT_TRUE(fluir::editor::terminalAt(*l.result.tree, boxes, Vec2{126, 86}, kCtx.layout));
+  ASSERT_TRUE(fluir::editor::terminalAt(boxes, Vec2{126, 86}));
   const Box* hit = hitAt(boxes, Vec2{126, 86});
   ASSERT_NE(hit, nullptr);
   EXPECT_EQ(hit->part, Part::Body);
   EXPECT_EQ(hit->path, (FullID{1, 1}));
+}
+
+namespace {
+
+  std::vector<Box> terminalBoxes(const std::vector<Box>& boxes) {
+    std::vector<Box> out;
+    for (const Box& box : boxes) {
+      if (box.part == Part::Terminal) {
+        out.push_back(box);
+      }
+    }
+    return out;
+  }
+
+  Vec2 centerOf(const Rect& r) { return Vec2{r.x + r.w / 2, r.y + r.h / 2}; }
+
+}  // namespace
+
+TEST(TerminalBoxes, EachResolvesThroughTerminalAtToItsOwnTerminal) {
+  for (const char* fixture : {"read/simple_binary_expr.fl", "read/function_with_input_only.fl"}) {
+    const testutil::Loaded l = loadFixture(fixture);
+    ASSERT_TRUE(l.result.tree.has_value());
+    const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+    const std::vector<Box> terminals = terminalBoxes(boxes);
+
+    ASSERT_FALSE(terminals.empty()) << fixture;
+    for (const Box& box : terminals) {
+      ASSERT_TRUE(box.terminal.has_value());
+      const auto hit = fluir::editor::terminalAt(boxes, centerOf(box.world));
+      ASSERT_TRUE(hit) << fixture;
+      EXPECT_EQ(hit->path, box.path);
+      EXPECT_EQ(hit->output, box.terminal->output);
+      EXPECT_EQ(hit->index, box.terminal->index);
+      testutil::expectVecNear(hit->anchor, centerOf(box.world));
+    }
+  }
+}
+
+TEST(TerminalBoxes, AreSkippedByHitAt) {
+  const testutil::Loaded l = loadFixture("read/simple_binary_expr.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+  const std::vector<Box> boxes = layoutGraph(*l.result.tree, kCtx.layout);
+
+  for (const Box& box : terminalBoxes(boxes)) {
+    const Box* hit = hitAt(boxes, centerOf(box.world));
+    ASSERT_NE(hit, nullptr);
+    EXPECT_NE(hit->part, Part::Terminal);
+  }
 }
 namespace {
 

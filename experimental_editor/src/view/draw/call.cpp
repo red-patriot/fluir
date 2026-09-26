@@ -55,7 +55,6 @@ namespace fluir::editor::draw {
     for (std::size_t row = 0; row < args.size(); ++row) {
       drawTitle(args[row]->name, rows[row + 1].rect, view, ctx);
     }
-    drawTerminalDots(anchors(call, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

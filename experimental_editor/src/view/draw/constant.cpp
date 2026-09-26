@@ -73,7 +73,6 @@ namespace fluir::editor::draw {
       drawSplitLabel(view, world, literalTypeName(n.value), ctx);
       drawTitle(renderLiteral(n.value), label, view, ctx);
     }
-    drawTerminalDots(anchors(n, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

@@ -55,9 +55,6 @@ namespace fluir::editor {
     /** Fills `world` with `fill`, then draws its border. */
     void drawShell(const Rect& world, Color fill, const Subview& view, const EditorContext& ctx);
 
-    /** A border-colored dot at every input, then every output. */
-    void drawTerminalDots(const TerminalSet& terminalSet, const Subview& view, const EditorContext& ctx);
-
     /** Draws `text` at `world`'s padded top-left; skipped when empty. */
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx);
 

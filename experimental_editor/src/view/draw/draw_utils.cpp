@@ -74,14 +74,6 @@ namespace fluir::editor {
       view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
     }
 
-    void drawTerminalDots(const TerminalSet& terminalSet, const Subview& view, const EditorContext& ctx) {
-      for (const auto* side : {&terminalSet.inputs, &terminalSet.outputs}) {
-        for (const Vec2& anchor : *side) {
-          view.renderer().fillRect(view.toScreen(dotRect(anchor, ctx.layout.terminalDot)), ctx.theme.border);
-        }
-      }
-    }
-
     // Fitting happens after the map to screen space, so a non-uniform view can never squash the icon.
     void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint) {
       Renderer& r = view.renderer();

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include <variant>
 
 #include "editor/core/tree_path.hpp"
 
@@ -90,6 +91,17 @@ namespace fluir::editor {
     }
     for (const auto& [id, conduit] : block->conduits) {
       top = std::max(top, id);
+    }
+    // A branch shares its id space with its conditional's port inner ids.
+    if (isBranchPath(body)) {
+      if (const auto* conditional = std::get_if<et::Conditional>(nodeAt(tree_, parentOf(body)))) {
+        top = std::max(top, conditional->condition.innerId);
+        for (const auto* ports : {&conditional->inputs, &conditional->outputs}) {
+          for (const et::BlockPort& port : *ports) {
+            top = std::max(top, port.innerId);
+          }
+        }
+      }
     }
     if (const et::FunctionDecl* fn = functionAt(tree_, body)) {
       if (fn->input) {

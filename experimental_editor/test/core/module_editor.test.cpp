@@ -231,6 +231,29 @@ TEST(ModuleEditor, GenerateIDInABodyExceedsEveryNodeConduitParamAndReturn) {
   EXPECT_GT(uut.generateID({7}), 40u) << "param is the largest";
 }
 
+// A branch shares its id space with its conditional's port inner ids, so a new id never takes one.
+TEST(ModuleEditor, GenerateIDInABranchExceedsItsConditionalsPortInnerIds) {
+  ModuleEditor uut;
+  uut.load(makeIdTree());
+  idTreeBody(uut).nodes.emplace(60,
+                                fluir::editor::et::Conditional{.id = 60,
+                                                               .location = {},
+                                                               .condition = {.innerId = 9, .y = 0},
+                                                               .inputs = {},
+                                                               .outputs = {},
+                                                               .thenScope = xyz::indirect<fluir::editor::et::Block>{},
+                                                               .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+  auto& conditional = std::get<fluir::editor::et::Conditional>(idTreeBody(uut).nodes.at(60));
+
+  for (const fluir::ID branch : {fluir::editor::THEN_BRANCH_ID, fluir::editor::ELSE_BRANCH_ID}) {
+    EXPECT_GT(uut.generateID({7, 60, branch}), 9u) << "condition";
+  }
+  conditional.inputs.push_back({.innerId = 12, .y = 0});
+  EXPECT_GT(uut.generateID({7, 60, fluir::editor::THEN_BRANCH_ID}), 12u) << "input";
+  conditional.outputs.push_back({.innerId = 15, .y = 0});
+  EXPECT_GT(uut.generateID({7, 60, fluir::editor::ELSE_BRANCH_ID}), 15u) << "output";
+}
+
 TEST(ModuleEditor, GenerateIDForAnUnknownBodyIsInvalid) {
   ModuleEditor uut;
   uut.load(makeIdTree());

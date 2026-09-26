@@ -9,6 +9,13 @@
 #include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
+  namespace {
+    // Both branches start empty, so the condition port's inner id is free in each.
+    constexpr fluir::ID CONDITION_INNER_ID = 1;
+    // The condition port's top, in grid units below the frame top: clear of the header band.
+    constexpr int CONDITION_PORT_Y = 10;
+  }  // namespace
+
   bool AddNode::execute(et::ParseTree& tree) {
     if (id_ == INVALID_ID) {
       return false;
@@ -58,7 +65,7 @@ namespace fluir::editor {
                                     return et::Conditional{
                                       .id = id_,
                                       .location = location_,
-                                      .condition = {},
+                                      .condition = {.innerId = CONDITION_INNER_ID, .y = CONDITION_PORT_Y},
                                       .inputs = {},
                                       .outputs = {},
                                       .thenScope = xyz::indirect<et::Block>{},

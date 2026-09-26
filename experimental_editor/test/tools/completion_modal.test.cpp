@@ -16,7 +16,10 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/tree.hpp"
+#include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/tool.hpp"
+#include "editor/view/draw/conditional.hpp"
+#include "editor/view/graph_layout.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
@@ -616,4 +619,40 @@ TEST(CompletionModal, FilteringResetsTheScroll) {
   const auto rows = drawnRows(uut);
   ASSERT_EQ(rows.size(), 11u) << "Item 1 and Item 10..19";
   EXPECT_NEAR(rows.front().y, uut.searchBar().y + uut.searchBar().h + 4.0, 1e-6);
+}
+
+// simple_binary_expr.fl: constant 2's output sits at (85,97.5), in the body the new conditional joins.
+TEST(CompletionModal, APickedConditionalIsWireableThroughItsConditionPort) {
+  BodyFixture f;
+  const auto* node = f.pick("if-else");
+  ASSERT_NE(node, nullptr);
+  const auto& conditional = std::get<fluir::editor::et::Conditional>(*node);
+  const fluir::FullID path{1, conditional.id};
+  const std::vector<fluir::editor::Box> boxes = fluir::editor::layoutGraph(f.state.editor.tree(), kCtx.layout);
+  const auto frame = std::ranges::find_if(
+    boxes, [&](const fluir::editor::Box& b) { return b.path == path && b.part == fluir::editor::Part::Frame; });
+  ASSERT_NE(frame, boxes.end());
+  const Vec2 outer = fluir::editor::draw::anchors(conditional, frame->world, kCtx.layout).inputs.at(0);
+  const Vec2 inner = fluir::editor::draw::innerAnchors(conditional, frame->world, kCtx.layout)
+                       .at(conditional.condition.innerId)
+                       .outputs.at(0);
+
+  // The port sits below the header band, so its inner side lies in the branch.
+  const auto innerHit = fluir::editor::terminalAt(boxes, inner);
+  ASSERT_TRUE(innerHit);
+  EXPECT_EQ(innerHit->path,
+            (fluir::FullID{1, conditional.id, fluir::editor::THEN_BRANCH_ID, conditional.condition.innerId}));
+
+  fluir::editor::ConduitTool conduits;
+  const fluir::ID condId = conditional.id;
+  testutil::send(conduits, f.state, down(f.state.view.worldToScreen(Vec2{85, 97.5})));
+  testutil::send(conduits, f.state, move(f.state.view.worldToScreen(outer)));
+  testutil::send(conduits, f.state, testutil::up(f.state.view.worldToScreen(outer)));
+
+  EXPECT_TRUE(std::ranges::any_of(f.body().conduits, [&](const auto& entry) {
+    const auto& conduit = entry.second;
+    return conduit.input == 2 && std::ranges::any_of(conduit.children, [&](const auto& out) {
+             return out.target == condId && out.index == 0;
+           });
+  }));
 }

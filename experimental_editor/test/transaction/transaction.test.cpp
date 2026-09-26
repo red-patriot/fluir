@@ -819,6 +819,26 @@ TEST(AddNode, AddsAConstantAndUndoRestoresTheTree) {
     uut, fluir::editor::et::Constant{.id = 50, .location = kNodeLocation, .value = fluir::literals_types::U16{0}});
 }
 
+// A new conditional's condition port is wireable from inside: its inner id is set, and free in both branches.
+TEST(AddNode, AddsAConditionalWithAFreeConditionInnerIdAndUndoRestoresTheTree) {
+  fluir::editor::et::ParseTree tree = makeTree();
+  const fluir::editor::et::ParseTree before = tree;
+  AddNode uut{FullID{1}, 50, kNodeLocation, fluir::editor::ConditionalOption{}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  const auto* conditional = std::get_if<fluir::editor::et::Conditional>(nodeAt(tree, FullID{1, 50}));
+  ASSERT_NE(conditional, nullptr);
+  const fluir::ID innerId = conditional->condition.innerId;
+  EXPECT_NE(innerId, fluir::INVALID_ID);
+  for (const fluir::editor::et::Block* branch : {&*conditional->thenScope, &*conditional->elseScope}) {
+    EXPECT_FALSE(branch->nodes.contains(innerId));
+    EXPECT_FALSE(branch->conduits.contains(innerId));
+  }
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
 TEST(AddNode, TakenOrInvalidIdOrUnresolvedParentOrUnknownOperatorChangeNothing) {
   fluir::editor::et::ParseTree tree = makeTreeWithComment();
   const fluir::editor::et::ParseTree before = tree;
@@ -1115,4 +1135,23 @@ TEST(DeleteTransaction, DeletingAConditionalTakesItsBranchesWithIt) {
 
   ASSERT_TRUE(uut.unexecute(tree));
   EXPECT_TRUE(thenBranch(tree).nodes.contains(1));
+}
+
+// A conduit feeding the conditional's condition lives in the function body; it goes with the conditional.
+TEST(DeleteTransaction, DeletingAConditionalDetachesTheConduitIntoIt) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  fluir::editor::et::Block& body = std::get<fluir::editor::et::FunctionDecl>(tree.declarations.at(1)).body;
+  body.nodes.emplace(30,
+                     fluir::editor::et::Constant{.id = 30,
+                                                 .location = {.x = 40, .y = 2, .z = 0, .width = 10, .height = 10},
+                                                 .value = fluir::literals_types::BOOL{true}});
+  body.conduits.emplace(60, fluir::editor::et::Conduit{.id = 60, .input = 30, .index = 0, .children = {{20, 0}}});
+  const fluir::editor::et::ParseTree before = tree;
+  DeleteTransaction uut{FullID{1, 20}};
+
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_FALSE(blockOf(tree, FullID{1})->conduits.contains(60));
+
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
 }

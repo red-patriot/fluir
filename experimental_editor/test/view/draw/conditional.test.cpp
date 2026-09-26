@@ -58,13 +58,53 @@ TEST(DrawConditional, ColorIsTheConditionalHeaderTheme) {
   EXPECT_EQ(fluir::editor::draw::color(makeConditional(), kCtx.theme), kCtx.theme.conditionalNodeHeader);
 }
 
-// Wiring through block terminals is Phase 2; a conditional has no wall terminals to anchor yet.
-TEST(DrawConditional, AnchorsAreEmpty) {
-  const fluir::editor::TerminalSet terminals =
-    fluir::editor::draw::anchors(makeConditional(), Rect{10, 35, 100, 90}, kCtx.layout);
+namespace {
 
-  EXPECT_TRUE(terminals.inputs.empty());
+  bool inside(fluir::editor::Vec2 p, const Rect& r) {
+    return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+  }
+
+  fluir::editor::et::Conditional withConditionPort(fluir::ID innerId) {
+    fluir::editor::et::Conditional node = makeConditional();
+    node.condition = {.innerId = innerId, .y = 10};
+    return node;
+  }
+
+}  // namespace
+
+// Outside, the condition is the conditional's own input 0, anchored on the port left of the wall.
+TEST(DrawConditional, AnchorsAreTheConditionPortOutsideTheWall) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withConditionPort(5);
+
+  const fluir::editor::TerminalSet terminals = fluir::editor::draw::anchors(node, frame, kCtx.layout);
+
+  ASSERT_EQ(terminals.inputs.size(), 1u);
   EXPECT_TRUE(terminals.outputs.empty());
+  EXPECT_TRUE(inside(terminals.inputs[0], fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout)));
+  EXPECT_LT(terminals.inputs[0].x, frame.x);
+}
+
+// Inside, the condition feeds its branch as an output keyed by the port's inner id, right of the wall.
+TEST(DrawConditional, InnerAnchorsAreTheConditionPortInsideTheWall) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withConditionPort(5);
+
+  const auto inner = fluir::editor::draw::innerAnchors(node, frame, kCtx.layout);
+
+  ASSERT_EQ(inner.size(), 1u);
+  ASSERT_TRUE(inner.contains(5));
+  const fluir::editor::TerminalSet& port = inner.at(5);
+  ASSERT_EQ(port.outputs.size(), 1u);
+  EXPECT_TRUE(port.inputs.empty());
+  EXPECT_TRUE(inside(port.outputs[0], fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout)));
+  EXPECT_GT(port.outputs[0].x, frame.x);
+}
+
+TEST(DrawConditional, AnUnsetInnerIdHasNoInnerAnchors) {
+  EXPECT_TRUE(
+    fluir::editor::draw::innerAnchors(withConditionPort(fluir::INVALID_ID), Rect{10, 35, 100, 90}, kCtx.layout)
+      .empty());
 }
 
 TEST(DrawConditional, BodyFillsItsWholeFrame) {

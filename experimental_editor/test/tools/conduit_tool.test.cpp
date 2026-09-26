@@ -9,6 +9,7 @@
 #include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
@@ -181,6 +182,8 @@ namespace {
       .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
   }
 
+  constexpr ID kInnerId = 5;
+
   // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, and unary 3
   // {250,35,40,25} beside it. The conditional's then branch holds a constant 1 and a unary 2.
   //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
@@ -198,7 +201,7 @@ namespace {
       20,
       fluir::editor::et::Conditional{.id = 20,
                                      .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
-                                     .condition = {},
+                                     .condition = {.innerId = kInnerId, .y = 10},
                                      .inputs = {},
                                      .outputs = {},
                                      .thenScope = xyz::indirect{std::move(then)},
@@ -224,11 +227,43 @@ namespace {
     }
 
     const fluir::editor::et::Block* branch(const FullID& path) const { return blockOf(state.editor.tree(), path); }
+
+    const fluir::editor::et::Conditional& conditional() const {
+      return std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(state.editor.tree(), FullID{1, 20}));
+    }
+
+    Rect frame() const {
+      for (const Box& box : layoutGraph(state.editor.tree(), kCtx.layout)) {
+        if (box.path == FullID{1, 20} && box.part == fluir::editor::Part::Frame) {
+          return box.world;
+        }
+      }
+      return {};
+    }
+
+    Vec2 portOuter() const { return fluir::editor::draw::anchors(conditional(), frame(), kCtx.layout).inputs.at(0); }
+
+    Vec2 portInner() const {
+      return fluir::editor::draw::innerAnchors(conditional(), frame(), kCtx.layout).at(kInnerId).outputs.at(0);
+    }
   };
+
+  // Whether `block` holds a conduit carrying `source`'s output 0 to `target`'s input `index`.
+  bool carries(const fluir::editor::et::Block& block, ID source, ID target, int index) {
+    for (const auto& [id, conduit] : block.conduits) {
+      for (const auto& out : conduit.children) {
+        if (conduit.input == source && conduit.index == 0 && out.target == target && out.index == index) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 
   constexpr Vec2 kThenConstantOut{65, 90};
   constexpr Vec2 kThenUnaryIn{70, 77.5};
   constexpr Vec2 kFunctionUnaryIn{250, 47.5};
+  constexpr Vec2 kFunctionUnaryOut{290, 47.5};
 
 }  // namespace
 
@@ -249,4 +284,33 @@ TEST(ConduitTool, RefusesToWireOutOfItsBranch) {
 
   EXPECT_TRUE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
   EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresAFunctionNodeIntoTheConditionPortsOuterSide) {
+  NestedHarness h;
+
+  h.drag(kFunctionUnaryOut, h.portOuter());
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 3, 20, 0));
+  EXPECT_TRUE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresTheConditionPortsInnerSideIntoABranchNode) {
+  NestedHarness h;
+
+  h.drag(h.portInner(), kThenUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), kInnerId, 2, 0));
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+// Each side of the wall wires only within its own block.
+TEST(ConduitTool, RefusesToWireAcrossTheConditionPortsWall) {
+  NestedHarness h;
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
+
+  h.drag(kThenConstantOut, h.portOuter());
+  h.drag(h.portInner(), kFunctionUnaryIn);
+
+  EXPECT_EQ(h.state.editor.tree(), before);
 }

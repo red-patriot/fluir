@@ -54,7 +54,7 @@ namespace fluir::editor {
                          .part = Part::Terminal,
                          .world = dotRect(anchors[i], PORT_HIT_UNITS * unit),
                          .clip = clip,
-                         .terminal = BoxTerminal{output, static_cast<int>(i)}});
+                         .terminal = BoxTerminal{output, i}});
         }
       }
     }
@@ -99,17 +99,26 @@ namespace fluir::editor {
       const Rect content{frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
       const FullID branchPath = childOf(path, conditional.annotation.shownBranch);
       const et::Block* branch = branchBlock(conditional, conditional.annotation.shownBranch);
-      if (const std::optional<Rect> contentClip = clip ? intersect(*clip, content) : std::optional<Rect>{content}) {
+      const Terminals inner = draw::innerAnchors(conditional, frame, layout);
+      const std::optional<Rect> contentClip = clip ? intersect(*clip, content) : std::optional<Rect>{content};
+      if (contentClip) {
         out.push_back({branchPath, Part::Branch, content, contentClip});
-        if (branch != nullptr) {
-          layoutBlock(*branch, branchPath, origin, *contentClip, layout, Terminals{}, out);
+        if (branch) {
+          layoutBlock(*branch, branchPath, origin, *contentClip, layout, inner, out);
         }
       }
 
-      // The frame's chrome paints, and so hits, over its branch.
+      // The frame's chrome paints, and so hits, over its branch; port terminals paint over their port.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
       out.push_back({path, Part::Port, draw::conditionPortRect(conditional, frame, layout), clip});
+      // TODO: layoutBlock already computed these anchors for wiring; pass them in instead of recomputing.
+      pushTerminals(path, draw::anchors(conditional, frame, layout), clip, unit, out);
+      if (contentClip) {
+        for (const auto& [innerId, set] : inner) {
+          pushTerminals(childOf(branchPath, innerId), set, contentClip, unit, out);
+        }
+      }
       out.push_back({path, Part::Header, header, clip});
       if (const std::optional<Part> resize = draw::resizePart(conditional)) {
         out.push_back({path, *resize, resizeCorner(frame, unit), clip});
@@ -128,15 +137,14 @@ namespace fluir::editor {
                      std::vector<Box>& out) {
       for (const et::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
-        if (const auto* conditional = std::get_if<et::Conditional>(node)) {
-          layoutConditional(
-            *conditional, path, atOrigin(origin, localRect(conditional->location, layout.unitPx)), clip, layout, out);
-          continue;
-        }
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        pushNodeBoxes(path, rect, clip, nodeResizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
         const TerminalSet set = editor::terminals(*node, rect, layout);
-        pushTerminals(path, set, clip, layout.unitPx, out);
+        if (const auto* conditional = std::get_if<et::Conditional>(node)) {
+          layoutConditional(*conditional, path, rect, clip, layout, out);
+        } else {
+          pushNodeBoxes(path, rect, clip, nodeResizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
+          pushTerminals(path, set, clip, layout.unitPx, out);
+        }
         terminals[idOf(*node)] = set;
       }
 
@@ -249,7 +257,7 @@ namespace fluir::editor {
     for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
       if (it->terminal && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
         const Vec2 anchor{it->world.x + it->world.w / 2, it->world.y + it->world.h / 2};
-        return TerminalHit{it->path, it->terminal->output, it->terminal->index, anchor};
+        return TerminalHit{it->path, it->terminal->output, static_cast<int>(it->terminal->index), anchor};
       }
     }
     return std::nullopt;

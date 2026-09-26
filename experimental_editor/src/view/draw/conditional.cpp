@@ -16,9 +16,31 @@ namespace fluir::editor::draw {
     // Both tags are the same width, so the arrow sits at one place whichever branch shows.
     static_assert(THEN_TAG.size() == ELSE_TAG.size());
 
+    // A port's outer and inner anchors: the midpoints of its left and right edges.
+    struct PortAnchors {
+      Vec2 outer;
+      Vec2 inner;
+    };
+
+    PortAnchors portAnchors(const Rect& port) {
+      const double midY = port.y + port.h / 2;
+      return {Vec2{port.x, midY}, Vec2{port.x + port.w, midY}};
+    }
+
   }  // namespace
 
-  TerminalSet anchors(const et::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
+  TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout) {
+    return {.inputs = {portAnchors(conditionPortRect(node, world, layout)).outer}};
+  }
+
+  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const et::Conditional& node,
+                                                          const Rect& frame,
+                                                          const EditorContext::Layout& layout) {
+    if (node.condition.innerId == INVALID_ID) {
+      return {};
+    }
+    return {{node.condition.innerId, {.outputs = {portAnchors(conditionPortRect(node, frame, layout)).inner}}}};
+  }
 
   Color color(const et::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
 

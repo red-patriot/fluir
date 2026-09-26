@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -27,8 +28,13 @@ namespace fluir::editor::draw {
   /** A wall port, filled over the frame border it straddles. */
   void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx);
 
-  /** None yet: a conditional wires through its block terminals, which is Phase 2. */
+  /** The outer side of the conditional ports. */
   TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
+
+  /** The inner side of the conditional ports by inner id. */
+  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const et::Conditional& node,
+                                                          const Rect& frame,
+                                                          const EditorContext::Layout& layout);
 
   Color color(const et::Conditional& node, const EditorContext::Theme& theme);
 

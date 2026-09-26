@@ -197,17 +197,13 @@ namespace fluir::editor {
     blockPort(e, conditional.condition, "condition");
     {
       auto* input = e->InsertNewChildElement("input");
-      auto sorted = sortedIds(conditional.inputs);
-      for (const auto& id : sorted) {
-        const auto& port = conditional.inputs.at(id);
+      for (const auto& port : conditional.inputs) {
         blockPort(input, port);
       }
     }
     {
       auto* output = e->InsertNewChildElement("output");
-      auto sorted = sortedIds(conditional.outputs);
-      for (const auto& id : sorted) {
-        const auto& port = conditional.outputs.at(id);
+      for (const auto& port : conditional.outputs) {
         blockPort(output, port);
       }
     }
@@ -225,7 +221,6 @@ namespace fluir::editor {
 
   void ParseTreeWriter::blockPort(Element* parent, const et::BlockPort& port, std::string_view name) {
     Element* e = parent->InsertNewChildElement(name.data());
-    setIdReference(e, port.outerId, "outer"sv);
     setIdReference(e, port.innerId, "inner"sv);
     setInt(e, "y"sv, port.y);
   }

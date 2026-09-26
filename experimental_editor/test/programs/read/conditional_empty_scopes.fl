@@ -9,7 +9,7 @@
   <function name="main" id="1" x="0" y="0" z="0" w="200" h="200">
     <body>
       <conditional id="2" x="10" y="3" z="1" w="100" h="100">
-        <condition outer="3" inner="1" y="10"/>
+        <condition inner="1" y="10"/>
         <input/>
         <output/>
         <then/>

@@ -24,9 +24,9 @@ namespace {
     pt::ConditionalT<A> conditional;
     conditional.id = id;
     conditional.location = kCondLoc;
-    conditional.condition = pt::BlockPort{.outerId = id + 100, .innerId = id + 101, .y = 10};
-    conditional.inputs.emplace(id + 200, pt::BlockPort{.outerId = id + 200, .innerId = id + 201, .y = 20});
-    conditional.outputs.emplace(id + 300, pt::BlockPort{.outerId = id + 300, .innerId = id + 301, .y = 30});
+    conditional.condition = pt::BlockPort{.innerId = id + 101, .y = 10};
+    conditional.inputs.emplace_back(pt::BlockPort{.innerId = id + 201, .y = 20});
+    conditional.outputs.emplace_back(pt::BlockPort{.innerId = id + 301, .y = 30});
     *conditional.thenScope = std::move(thenScope);
     *conditional.elseScope = std::move(elseScope);
     return conditional;

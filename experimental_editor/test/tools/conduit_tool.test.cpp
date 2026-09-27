@@ -184,9 +184,12 @@ namespace {
   }
 
   constexpr ID kInnerId = 5;
+  constexpr ID kInputInnerId = 6;
+  constexpr ID kOutputInnerId = 7;
 
   // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, and unary 3
   // {250,35,40,25} beside it. The conditional's then branch holds a constant 1 and a unary 2.
+  // Below both nodes: input port 1 (inner 6) on the left wall and output port 0 (inner 7) on the right.
   //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
   fluir::editor::et::ParseTree conditionalTree() {
     fluir::editor::et::Block then;
@@ -203,8 +206,8 @@ namespace {
       fluir::editor::et::Conditional{.id = 20,
                                      .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
                                      .condition = {.innerId = kInnerId, .y = 10},
-                                     .inputs = {},
-                                     .outputs = {},
+                                     .inputs = {{.innerId = kInputInnerId, .y = 20}},
+                                     .outputs = {{.innerId = kOutputInnerId, .y = 18}},
                                      .thenScope = xyz::indirect{std::move(then)},
                                      .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
 
@@ -242,10 +245,16 @@ namespace {
       return {};
     }
 
-    Vec2 portOuter() const { return fluir::editor::draw::anchors(conditional(), frame(), kCtx.layout).inputs.at(0); }
+    Vec2 portOuter() const { return outer().inputs.at(0); }
 
-    Vec2 portInner() const {
-      return fluir::editor::draw::innerAnchors(conditional(), frame(), kCtx.layout).at(kInnerId).outputs.at(0);
+    Vec2 portInner() const { return inner(kInnerId).outputs.at(0); }
+
+    fluir::editor::TerminalSet outer() const {
+      return fluir::editor::draw::anchors(conditional(), frame(), kCtx.layout);
+    }
+
+    fluir::editor::TerminalSet inner(ID innerId) const {
+      return fluir::editor::draw::innerAnchors(conditional(), frame(), kCtx.layout).at(innerId);
     }
   };
 
@@ -314,4 +323,37 @@ TEST(ConduitTool, RefusesToWireAcrossTheConditionPortsWall) {
   h.drag(h.portInner(), kFunctionUnaryIn);
 
   EXPECT_EQ(h.state.editor.tree(), before);
+}
+
+TEST(ConduitTool, WiresAFunctionNodeIntoAnInputPortsOuterSide) {
+  NestedHarness h;
+
+  h.drag(kFunctionUnaryOut, h.outer().inputs.at(1));
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 3, 20, 1));
+}
+
+TEST(ConduitTool, WiresAnInputPortsInnerSideIntoABranchNode) {
+  NestedHarness h;
+
+  h.drag(h.inner(kInputInnerId).outputs.at(0), kThenUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), kInputInnerId, 2, 0));
+}
+
+TEST(ConduitTool, WiresABranchNodeIntoAnOutputPortsInnerSide) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, h.inner(kOutputInnerId).inputs.at(0));
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), 1, kOutputInnerId, 0));
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresAnOutputPortsOuterSideIntoAFunctionNode) {
+  NestedHarness h;
+
+  h.drag(h.outer().outputs.at(0), kFunctionUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 20, 3, 0));
 }

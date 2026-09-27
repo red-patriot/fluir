@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <string>
+#include <vector>
 
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
@@ -37,6 +38,9 @@ namespace fluir::editor {
   /** The port `port` names on `conditional` if it exists, or nullptr. */
   et::BlockPort* portOf(et::Conditional& conditional, PortRef port);
   const et::BlockPort* portOf(const et::Conditional& conditional, PortRef port);
+
+  /** Every port on `conditional`. */
+  std::vector<PortRef> portRefs(const et::Conditional& conditional);
 
   /** The branch block an odd path of depth >= 3 names inside its parent conditional, or nullptr. */
   et::Block* branchAt(et::ParseTree& tree, const FullID& path);

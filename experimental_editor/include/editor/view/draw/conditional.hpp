@@ -8,6 +8,7 @@
 
 #include "compiler/models/id.hpp"
 #include "editor/core/tree.hpp"
+#include "editor/core/tree_path.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/graph_layout.hpp"
 
@@ -22,14 +23,14 @@ namespace fluir::editor::draw {
   /** The arrow that switches the shown branch, just right of the header's tag. `header` is the header band. */
   Rect branchArrowRect(const Rect& header, const EditorContext::Layout& layout);
 
-  /** The condition port: a square on the frame's left wall, its top edge `condition.y` units below the frame top. */
-  Rect conditionPortRect(const et::Conditional& node, const Rect& frame, const EditorContext::Layout& layout);
+  /** Creates a rect for the given `port` */
+  Rect portRect(const et::Conditional& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout);
 
   /** Limits for a port location in grid units. */
   Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout);
 
-  /** A wall port, filled over the frame border it straddles. */
-  void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx);
+  /** Draws the given `port`. */
+  void drawPort(PortRef port, const Rect& world, const Subview& view, const EditorContext& ctx);
 
   /** The outer side of the conditional ports. */
   TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);

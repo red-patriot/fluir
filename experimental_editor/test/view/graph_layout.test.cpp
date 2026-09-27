@@ -686,7 +686,7 @@ TEST(GraphLayout, ConditionPortIsHittableOnBothSidesOfTheWall) {
   auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20}));
   conditional.condition.y = 10;  // below the header band, as real conditionals place it
   const Rect frame{10, 35, 100, 120};
-  const Rect port = fluir::editor::draw::conditionPortRect(conditional, frame, kCtx.layout);
+  const Rect port = fluir::editor::draw::portRect(conditional, {}, frame, kCtx.layout);
   const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
 
   const double midY = port.y + port.h / 2;
@@ -939,4 +939,117 @@ TEST(ConditionPort, WiresRunIntoTheOuterSideAndOutOfTheInnerSide) {
                           centerOf(terminalBoxOf(boxes, FullID{1, 20, THEN_BRANCH_ID, kInnerId}, true).world));
   testutil::expectVecNear(end(innerWire),
                           centerOf(terminalBoxOf(boxes, FullID{1, 20, THEN_BRANCH_ID, 2}, false).world));
+}
+
+namespace {
+
+  constexpr ID kInputInnerId = 6;
+  constexpr ID kOutputInnerId = 7;
+
+  // portTree with one input port (inner 6) and one output port (inner 7) below the condition.
+  fluir::editor::et::ParseTree wallPortTree() {
+    fluir::editor::et::ParseTree tree = portTree();
+    auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20}));
+    conditional.inputs = {{.innerId = kInputInnerId, .y = 15}};
+    conditional.outputs = {{.innerId = kOutputInnerId, .y = 12}};
+    return tree;
+  }
+
+}  // namespace
+
+TEST(WallPort, EveryPortHasABoxCarryingItsRef) {
+  const fluir::editor::et::ParseTree tree = wallPortTree();
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+
+  std::vector<fluir::editor::PortRef> refs;
+  for (const Box& box : boxes) {
+    if (box.part == Part::Port) {
+      EXPECT_EQ(box.path, (FullID{1, 20}));
+      refs.push_back(*box.port);
+    }
+  }
+  EXPECT_EQ(refs, fluir::editor::portRefs(conditionalIn(tree)));
+}
+
+TEST(WallPort, AHitOnAnOutputPortIsThatPort) {
+  const fluir::editor::et::ParseTree tree = wallPortTree();
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+  const Rect frame = boxOf(boxes, FullID{1, 20}, Part::Frame).world;
+  const fluir::editor::PortRef ref{.output = true, .index = 0};
+  const Rect port = fluir::editor::draw::portRect(conditionalIn(tree), ref, frame, kCtx.layout);
+
+  // Clear of the port's terminals
+  const Box* hit = hitAt(boxes, Vec2{port.x + port.w / 2, port.y + port.h / 4});
+
+  ASSERT_NE(hit, nullptr);
+  EXPECT_EQ(hit->part, Part::Port);
+  EXPECT_EQ(*hit->port, ref);
+}
+
+TEST(WallPort, OutsideAnInputPortIsTheConditionalsNextInput) {
+  const fluir::editor::et::ParseTree tree = wallPortTree();
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+  const Rect frame = boxOf(boxes, FullID{1, 20}, Part::Frame).world;
+  const Vec2 outer = fluir::editor::draw::anchors(conditionalIn(tree), frame, kCtx.layout).inputs.at(1);
+
+  const auto hit = fluir::editor::terminalAt(boxes, outer);
+
+  ASSERT_TRUE(hit);
+  EXPECT_EQ(hit->path, (FullID{1, 20}));
+  EXPECT_FALSE(hit->output);
+  EXPECT_EQ(hit->index, 1);
+}
+
+TEST(WallPort, OutsideAnOutputPortIsTheConditionalsOutput) {
+  const fluir::editor::et::ParseTree tree = wallPortTree();
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+  const Rect frame = boxOf(boxes, FullID{1, 20}, Part::Frame).world;
+  const Vec2 outer = fluir::editor::draw::anchors(conditionalIn(tree), frame, kCtx.layout).outputs.at(0);
+
+  const auto hit = fluir::editor::terminalAt(boxes, outer);
+
+  ASSERT_TRUE(hit);
+  EXPECT_GT(hit->anchor.x, frame.x + frame.w);
+  EXPECT_EQ(hit->path, (FullID{1, 20}));
+  EXPECT_TRUE(hit->output);
+  EXPECT_EQ(hit->index, 0);
+}
+
+TEST(WallPort, InsideAnInputPortIsASourceAndInsideAnOutputPortASink) {
+  const fluir::editor::et::ParseTree tree = wallPortTree();
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+  const Rect frame = boxOf(boxes, FullID{1, 20}, Part::Frame).world;
+  const auto inner = fluir::editor::draw::innerAnchors(conditionalIn(tree), frame, kCtx.layout);
+
+  const auto source = fluir::editor::terminalAt(boxes, inner.at(kInputInnerId).outputs.at(0));
+  const auto sink = fluir::editor::terminalAt(boxes, inner.at(kOutputInnerId).inputs.at(0));
+
+  ASSERT_TRUE(source);
+  EXPECT_EQ(source->path, (FullID{1, 20, THEN_BRANCH_ID, kInputInnerId}));
+  EXPECT_TRUE(source->output);
+  ASSERT_TRUE(sink);
+  EXPECT_EQ(sink->path, (FullID{1, 20, THEN_BRANCH_ID, kOutputInnerId}));
+  EXPECT_FALSE(sink->output);
+  EXPECT_LT(sink->anchor.x, frame.x + frame.w);
+}
+
+// A conduit leaves from the output its index names, not the node's first.
+TEST(WallPort, AWireLeavesFromItsSourcesOutputIndex) {
+  fluir::editor::et::ParseTree tree = wallPortTree();
+  auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20}));
+  conditional.outputs.push_back({.innerId = 8, .y = 18});
+  auto& fn = std::get<fluir::editor::et::FunctionDecl>(tree.declarations.at(1));
+  fn.body.nodes.emplace(31,
+                        fluir::editor::et::Unary{.id = 31,
+                                                 .location = {.x = 40, .y = 20, .z = 0, .width = 8, .height = 5},
+                                                 .lhs = 0,
+                                                 .op = fluir::Operator::BANG});
+  fn.body.conduits.emplace(42, fluir::editor::et::Conduit{.id = 42, .input = 20, .index = 1, .children = {{31, 0}}});
+  const std::vector<Box> boxes = layoutGraph(tree, kCtx.layout);
+  const Rect frame = boxOf(boxes, FullID{1, 20}, Part::Frame).world;
+
+  const Box& wire = boxOf(boxes, FullID{1, 42}, Part::Wire);
+
+  testutil::expectVecNear(wire.world.topLeft(),
+                          fluir::editor::draw::anchors(conditionalIn(tree), frame, kCtx.layout).outputs.at(1));
 }

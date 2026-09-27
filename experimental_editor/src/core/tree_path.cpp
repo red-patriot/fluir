@@ -111,6 +111,17 @@ namespace fluir::editor {
     return portOf(const_cast<et::Conditional&>(conditional), port);
   }
 
+  std::vector<PortRef> portRefs(const et::Conditional& conditional) {
+    std::vector<PortRef> refs;
+    for (std::size_t i = 0; i <= conditional.inputs.size(); ++i) {
+      refs.push_back({.output = false, .index = i});
+    }
+    for (std::size_t i = 0; i < conditional.outputs.size(); ++i) {
+      refs.push_back({.output = true, .index = i});
+    }
+    return refs;
+  }
+
   const et::Block* branchAt(const et::ParseTree& tree, const FullID& path) {
     return branchAt(const_cast<et::ParseTree&>(tree), path);
   }

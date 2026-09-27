@@ -19,7 +19,7 @@ namespace fluir::editor::draw {
     // Both tags are the same width, so the arrow sits at one place whichever branch shows.
     static_assert(THEN_TAG.size() == ELSE_TAG.size());
 
-    // A port's outer and inner anchors: the midpoints of its left and right edges.
+    // A port's outer and inner anchors.
     struct PortAnchors {
       Vec2 outer;
       Vec2 inner;
@@ -28,24 +28,41 @@ namespace fluir::editor::draw {
     // A port's side rounded up to whole grid units, so a port on the grid never pokes past one.
     constexpr int PORT_GRID_UNITS = static_cast<int>(std::ceil(PORT_UNITS));
 
-    PortAnchors portAnchors(const Rect& port) {
+    PortAnchors portAnchors(const et::Conditional& node,
+                            PortRef ref,
+                            const Rect& frame,
+                            const EditorContext::Layout& layout) {
+      const Rect port = portRect(node, ref, frame, layout);
       const double midY = port.y + port.h / 2;
-      return {Vec2{port.x, midY}, Vec2{port.x + port.w, midY}};
+      const Vec2 left{port.x, midY};
+      const Vec2 right{port.x + port.w, midY};
+      return ref.output ? PortAnchors{right, left} : PortAnchors{left, right};
     }
 
   }  // namespace
 
   TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout) {
-    return {.inputs = {portAnchors(conditionPortRect(node, world, layout)).outer}};
+    TerminalSet set;
+    for (const PortRef ref : portRefs(node)) {
+      (ref.output ? set.outputs : set.inputs).push_back(portAnchors(node, ref, world, layout).outer);
+    }
+    return set;
   }
 
+  // Inside, an input port is a source for its branch and an output port a sink.
   std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const et::Conditional& node,
                                                           const Rect& frame,
                                                           const EditorContext::Layout& layout) {
-    if (node.condition.innerId == INVALID_ID) {
-      return {};
+    std::unordered_map<fluir::ID, TerminalSet> inner;
+    for (const PortRef ref : portRefs(node)) {
+      const fluir::ID innerId = portOf(node, ref)->innerId;
+      if (innerId == INVALID_ID) {
+        continue;
+      }
+      const Vec2 anchor = portAnchors(node, ref, frame, layout).inner;
+      inner[innerId] = ref.output ? TerminalSet{.inputs = {anchor}} : TerminalSet{.outputs = {anchor}};
     }
-    return {{node.condition.innerId, {.outputs = {portAnchors(conditionPortRect(node, frame, layout)).inner}}}};
+    return inner;
   }
 
   Color color(const et::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
@@ -80,13 +97,15 @@ namespace fluir::editor::draw {
     return {tag.x + tag.w, header.y + (header.h - side) / 2, side, side};
   }
 
-  Rect conditionPortRect(const et::Conditional& node, const Rect& frame, const EditorContext::Layout& layout) {
+  Rect portRect(const et::Conditional& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout) {
     const double side = PORT_UNITS * layout.unitPx;
-    return {frame.x - side / 2, frame.y + node.condition.y * layout.unitPx, side, side};
+    const double wall = port.output ? frame.x + frame.w : frame.x;
+    return {wall - side / 2, frame.y + portOf(node, port)->y * layout.unitPx, side, side};
   }
 
-  void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx) {
-    view.renderer().fillRect(view.toScreen(world), ctx.theme.boolNode);
+  void drawPort(PortRef port, const Rect& world, const Subview& view, const EditorContext& ctx) {
+    const Color fill = port == PortRef{} ? ctx.theme.boolNode : ctx.theme.port;
+    view.renderer().fillRect(view.toScreen(world), fill);
     view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
   }
 

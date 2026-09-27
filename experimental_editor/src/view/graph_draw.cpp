@@ -66,7 +66,7 @@ namespace fluir::editor {
           return;
         case Part::Port:
           if (std::get_if<et::Conditional>(nodeAt(tree, box.path)) != nullptr) {
-            draw::drawPort(box.world, view, ctx);
+            draw::drawPort(*box.port, box.world, view, ctx);
           }
           return;
         case Part::Rail:

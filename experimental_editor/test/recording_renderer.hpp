@@ -23,6 +23,7 @@ namespace testutil {
     std::string text;                    // Text / TextWrapped
     double scale = 1.0;                  // Text / TextWrapped
     const unsigned char* svg = nullptr;  // Icon: the embedded bytes' address, which identifies the icon
+    fluir::editor::Color color;          // Fill
     friend bool operator==(const DrawCall&, const DrawCall&) = default;
   };
 
@@ -39,8 +40,8 @@ namespace testutil {
     void drawRect(fluir::editor::Rect r, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Rect, r, {}, {}, {}});
     }
-    void fillRect(fluir::editor::Rect r, const fluir::editor::Color&) override {
-      calls.push_back({DrawCall::Op::Fill, r, {}, {}, {}});
+    void fillRect(fluir::editor::Rect r, const fluir::editor::Color& color) override {
+      calls.push_back({.op = DrawCall::Op::Fill, .rect = r, .color = color});
     }
     void drawLine(fluir::editor::Vec2 p, fluir::editor::Vec2 q, const fluir::editor::Color&) override {
       calls.push_back({DrawCall::Op::Line, {}, p, q, {}});
@@ -177,6 +178,18 @@ namespace testutil {
   inline bool hasFill(const std::vector<DrawCall>& calls, fluir::editor::Rect want, double tol = 1e-6) {
     for (const auto& r : fillsOf(calls)) {
       if (detail::rectNear(r, want, tol)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  inline bool hasFillColored(const std::vector<DrawCall>& calls,
+                             fluir::editor::Rect want,
+                             const fluir::editor::Color& color,
+                             double tol = 1e-6) {
+    for (const auto& c : opsOf(calls, DrawCall::Op::Fill)) {
+      if (c.color == color && detail::rectNear(c.rect, want, tol)) {
         return true;
       }
     }

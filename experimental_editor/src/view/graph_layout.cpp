@@ -111,11 +111,13 @@ namespace fluir::editor {
       // The frame's chrome paints, and so hits, over its branch; port terminals paint over their port.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
-      out.push_back({.path = path,
-                     .part = Part::Port,
-                     .world = draw::conditionPortRect(conditional, frame, layout),
-                     .clip = clip,
-                     .port = PortRef{.output = false, .index = 0}});
+      for (const PortRef ref : portRefs(conditional)) {
+        out.push_back({.path = path,
+                       .part = Part::Port,
+                       .world = draw::portRect(conditional, ref, frame, layout),
+                       .clip = clip,
+                       .port = ref});
+      }
       // TODO: layoutBlock already computed these anchors for wiring; pass them in instead of recomputing.
       pushTerminals(path, draw::anchors(conditional, frame, layout), clip, unit, out);
       if (contentClip) {
@@ -155,10 +157,11 @@ namespace fluir::editor {
       // A dangling endpoint is a legitimate authoring state: it just draws no line.
       for (const et::Conduit* conduit : sortedConduits(block)) {
         const auto source = terminals.find(conduit->input);
-        if (source == terminals.end() || source->second.outputs.empty()) {
+        if (source == terminals.end() || conduit->index < 0 ||
+            static_cast<std::size_t>(conduit->index) >= source->second.outputs.size()) {
           continue;
         }
-        const Vec2 from = source->second.outputs.front();
+        const Vec2 from = source->second.outputs[static_cast<std::size_t>(conduit->index)];
         for (const et::Conduit::Output& target : conduit->children) {
           const auto sink = terminals.find(target.target);
           if (sink == terminals.end() || target.index < 0 ||

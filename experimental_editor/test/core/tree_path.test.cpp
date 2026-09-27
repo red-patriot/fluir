@@ -3,6 +3,7 @@
 #include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -383,4 +384,15 @@ TEST(TreePath, PortOfMissesOutOfRangeIndices) {
 
   EXPECT_EQ(portOf(conditional, PortRef{.output = false, .index = 3}), nullptr);
   EXPECT_EQ(portOf(conditional, PortRef{.output = true, .index = 1}), nullptr);
+}
+
+TEST(TreePath, PortRefsListsEveryPortInIndexOrder) {
+  using fluir::editor::PortRef;
+  const fluir::editor::et::Conditional conditional = makePortedConditional();
+
+  const std::vector<PortRef> expected{PortRef{.output = false, .index = 0},
+                                      PortRef{.output = false, .index = 1},
+                                      PortRef{.output = false, .index = 2},
+                                      PortRef{.output = true, .index = 0}};
+  EXPECT_EQ(fluir::editor::portRefs(conditional), expected);
 }

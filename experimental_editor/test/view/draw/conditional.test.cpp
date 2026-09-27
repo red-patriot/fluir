@@ -81,7 +81,7 @@ TEST(DrawConditional, AnchorsAreTheConditionPortOutsideTheWall) {
 
   ASSERT_EQ(terminals.inputs.size(), 1u);
   EXPECT_TRUE(terminals.outputs.empty());
-  EXPECT_TRUE(inside(terminals.inputs[0], fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout)));
+  EXPECT_TRUE(inside(terminals.inputs[0], fluir::editor::draw::portRect(node, {}, frame, kCtx.layout)));
   EXPECT_LT(terminals.inputs[0].x, frame.x);
 }
 
@@ -97,7 +97,7 @@ TEST(DrawConditional, InnerAnchorsAreTheConditionPortInsideTheWall) {
   const fluir::editor::TerminalSet& port = inner.at(5);
   ASSERT_EQ(port.outputs.size(), 1u);
   EXPECT_TRUE(port.inputs.empty());
-  EXPECT_TRUE(inside(port.outputs[0], fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout)));
+  EXPECT_TRUE(inside(port.outputs[0], fluir::editor::draw::portRect(node, {}, frame, kCtx.layout)));
   EXPECT_GT(port.outputs[0].x, frame.x);
 }
 
@@ -150,7 +150,7 @@ TEST(DrawConditional, FrameTagsTheBranchTheAnnotationShows) {
 TEST(DrawConditional, ConditionPortStraddlesTheLeftWall) {
   const Rect frame{10, 35, 100, 90};
 
-  const Rect port = fluir::editor::draw::conditionPortRect(makeConditional(), frame, kCtx.layout);
+  const Rect port = fluir::editor::draw::portRect(makeConditional(), {}, frame, kCtx.layout);
 
   EXPECT_DOUBLE_EQ(port.x + port.w / 2, frame.x);
   EXPECT_GT(port.w, 0);
@@ -162,21 +162,124 @@ TEST(DrawConditional, ConditionPortTopIsItsYBelowTheFrameTop) {
   const Rect frame{10, 35, 100, 90};
   fluir::editor::et::Conditional node = makeConditional();
   node.condition.y = 4;
-  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  const Rect port = fluir::editor::draw::portRect(node, {}, frame, kCtx.layout);
   node.condition.y = 7;
-  const Rect lower = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  const Rect lower = fluir::editor::draw::portRect(node, {}, frame, kCtx.layout);
 
   EXPECT_DOUBLE_EQ(port.y, frame.y + 4 * kCtx.layout.unitPx);
   EXPECT_DOUBLE_EQ(lower.y - port.y, 3 * kCtx.layout.unitPx);
 }
 
-TEST(DrawConditional, PortFillsItsRect) {
+// The condition keeps its bool color; every other wall port is neutral.
+TEST(DrawConditional, ConditionPortFillsBoolAndWallPortsFillPort) {
   RecordingRenderer r;
   const Viewport viewport;
+  const Rect world{5, 50, 15, 15};
 
-  fluir::editor::draw::drawPort(Rect{5, 50, 15, 15}, rootView(r, viewport), kCtx);
+  fluir::editor::draw::drawPort({}, world, rootView(r, viewport), kCtx);
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.boolNode));
 
-  EXPECT_TRUE(hasFill(r.calls, Rect{5, 50, 15, 15}));
+  r.calls.clear();
+  fluir::editor::draw::drawPort({.output = false, .index = 1}, world, rootView(r, viewport), kCtx);
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.port));
+
+  r.calls.clear();
+  fluir::editor::draw::drawPort({.output = true, .index = 0}, world, rootView(r, viewport), kCtx);
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.port));
+}
+
+namespace {
+
+  // Condition at 6, inputs at 10 and 14 (inner 2, 3), outputs at 8 and 12 (inner 4, 5).
+  fluir::editor::et::Conditional withWallPorts() {
+    fluir::editor::et::Conditional node = makeConditional();
+    node.condition = {.innerId = 1, .y = 6};
+    node.inputs = {{.innerId = 2, .y = 10}, {.innerId = 3, .y = 14}};
+    node.outputs = {{.innerId = 4, .y = 8}, {.innerId = 5, .y = 12}};
+    return node;
+  }
+
+  bool onLeftEdge(fluir::editor::Vec2 p, const Rect& r) { return p.x == r.x && p.y > r.y && p.y < r.y + r.h; }
+  bool onRightEdge(fluir::editor::Vec2 p, const Rect& r) { return p.x == r.x + r.w && p.y > r.y && p.y < r.y + r.h; }
+
+}  // namespace
+
+// Each port's top edge sits its own `y` units below the frame top, whichever wall it is on.
+TEST(DrawConditional, EveryPortTopIsItsYBelowTheFrameTop) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withWallPorts();
+
+  for (const fluir::editor::PortRef ref : fluir::editor::portRefs(node)) {
+    const Rect port = fluir::editor::draw::portRect(node, ref, frame, kCtx.layout);
+    EXPECT_DOUBLE_EQ(port.y, frame.y + fluir::editor::portOf(node, ref)->y * kCtx.layout.unitPx);
+    EXPECT_GT(port.w, 0);
+    EXPECT_DOUBLE_EQ(port.w, port.h);
+  }
+}
+
+TEST(DrawConditional, InputPortsStraddleTheLeftWallAndOutputPortsTheRight) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withWallPorts();
+
+  const Rect input = fluir::editor::draw::portRect(node, {.output = false, .index = 2}, frame, kCtx.layout);
+  EXPECT_DOUBLE_EQ(input.x + input.w / 2, frame.x);
+  const Rect output = fluir::editor::draw::portRect(node, {.output = true, .index = 1}, frame, kCtx.layout);
+  EXPECT_DOUBLE_EQ(output.x + output.w / 2, frame.x + frame.w);
+}
+
+// Outside, input i+1 anchors on its port's left edge and output i on its port's right edge.
+TEST(DrawConditional, AnchorsAreEveryPortOutsideItsWall) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withWallPorts();
+
+  const fluir::editor::TerminalSet terminals = fluir::editor::draw::anchors(node, frame, kCtx.layout);
+
+  ASSERT_EQ(terminals.inputs.size(), 3u);
+  ASSERT_EQ(terminals.outputs.size(), 2u);
+  for (std::size_t i = 0; i < terminals.inputs.size(); ++i) {
+    const Rect port = fluir::editor::draw::portRect(node, {.output = false, .index = i}, frame, kCtx.layout);
+    EXPECT_TRUE(onLeftEdge(terminals.inputs[i], port));
+  }
+  for (std::size_t i = 0; i < terminals.outputs.size(); ++i) {
+    const Rect port = fluir::editor::draw::portRect(node, {.output = true, .index = i}, frame, kCtx.layout);
+    EXPECT_TRUE(onRightEdge(terminals.outputs[i], port));
+  }
+}
+
+// Inside, an input port is a source in the branch and an output port a sink, each keyed by its inner id.
+TEST(DrawConditional, InnerAnchorsAreEveryPortInsideItsWall) {
+  const Rect frame{10, 35, 100, 90};
+  const fluir::editor::et::Conditional node = withWallPorts();
+
+  const auto inner = fluir::editor::draw::innerAnchors(node, frame, kCtx.layout);
+
+  ASSERT_EQ(inner.size(), 5u);
+  for (const fluir::editor::PortRef ref : fluir::editor::portRefs(node)) {
+    const fluir::ID innerId = fluir::editor::portOf(node, ref)->innerId;
+    ASSERT_TRUE(inner.contains(innerId));
+    const fluir::editor::TerminalSet& set = inner.at(innerId);
+    const Rect port = fluir::editor::draw::portRect(node, ref, frame, kCtx.layout);
+    if (ref.output) {
+      ASSERT_EQ(set.inputs.size(), 1u);
+      EXPECT_TRUE(set.outputs.empty());
+      EXPECT_TRUE(onLeftEdge(set.inputs[0], port));
+    } else {
+      ASSERT_EQ(set.outputs.size(), 1u);
+      EXPECT_TRUE(set.inputs.empty());
+      EXPECT_TRUE(onRightEdge(set.outputs[0], port));
+    }
+  }
+}
+
+TEST(DrawConditional, WallPortsWithAnUnsetInnerIdHaveNoInnerAnchors) {
+  fluir::editor::et::Conditional node = withWallPorts();
+  node.inputs[0].innerId = fluir::INVALID_ID;
+  node.outputs[1].innerId = fluir::INVALID_ID;
+
+  const auto inner = fluir::editor::draw::innerAnchors(node, Rect{10, 35, 100, 90}, kCtx.layout);
+
+  EXPECT_EQ(inner.size(), 3u);
+  EXPECT_FALSE(inner.contains(fluir::INVALID_ID));
 }
 
 namespace {
@@ -194,9 +297,9 @@ TEST(DrawConditional, PortYLimitsKeepThePortBetweenHeaderAndBottom) {
   const auto limits = fluir::editor::draw::portYLimits(node, kCtx.layout);
 
   node.condition.y = limits.lower;
-  EXPECT_DOUBLE_EQ(fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout).y, frame.y + kCtx.layout.headerH());
+  EXPECT_DOUBLE_EQ(fluir::editor::draw::portRect(node, {}, frame, kCtx.layout).y, frame.y + kCtx.layout.headerH());
   node.condition.y = limits.upper;
-  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  const Rect port = fluir::editor::draw::portRect(node, {}, frame, kCtx.layout);
   EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
 }
 
@@ -206,7 +309,7 @@ TEST(DrawConditional, SizeLimitsKeepTheConditionPortInsideTheFrame) {
   node.location.height = fluir::editor::draw::sizeLimits(node).lower.y;
 
   const Rect frame = frameOf(node);
-  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  const Rect port = fluir::editor::draw::portRect(node, {}, frame, kCtx.layout);
   EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
 }
 

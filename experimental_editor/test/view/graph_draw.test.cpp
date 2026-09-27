@@ -652,13 +652,30 @@ TEST(GraphDraw, TheConditionPortPaintsOverTheFrameBorder) {
   drawTree(kCtx, tree, Viewport{}, r);
 
   const Rect frame{10, 35, 100, 90};
-  const Rect portRect = fluir::editor::draw::conditionPortRect(conditional, frame, kCtx.layout);
+  const Rect portRect = fluir::editor::draw::portRect(conditional, {}, frame, kCtx.layout);
   const std::size_t border = firstIndex(r.calls, DrawCall::Op::Rect, frame);
   const std::size_t port = firstIndex(r.calls, DrawCall::Op::Fill, portRect);
 
   ASSERT_LT(border, r.calls.size());
   ASSERT_LT(port, r.calls.size());
   EXPECT_LT(border, port);
+}
+
+TEST(GraphDraw, EachWallPortPaintsInItsColor) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, fluir::FullID{1, 20}));
+  conditional.inputs = {{.innerId = 6, .y = 12}};
+  conditional.outputs = {{.innerId = 7, .y = 8}};
+  RecordingRenderer r;
+  drawTree(kCtx, tree, Viewport{}, r);
+
+  const Rect frame{10, 35, 100, 90};
+  const auto rectOf = [&](fluir::editor::PortRef ref) {
+    return fluir::editor::draw::portRect(conditional, ref, frame, kCtx.layout);
+  };
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({}), kCtx.theme.boolNode));
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({.output = false, .index = 1}), kCtx.theme.port));
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({.output = true, .index = 0}), kCtx.theme.port));
 }
 
 // A conditional resizes as one rect now, so it carries the two-axis corner icon.

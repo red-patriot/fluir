@@ -29,10 +29,12 @@ namespace {
   using testutil::move;
   using testutil::up;
 
-  const EditorContext kCtx;
-  const FullID kConditional{1, 20};
-  constexpr int kStartY = 8;
-  constexpr double kUnit = 5;  // kCtx.layout.unitPx
+  const EditorContext CTX;
+  const FullID CONDITIONAL_ID{1, 20};
+  constexpr int START_Y = 8;
+  constexpr int OUTPUT_START_Y = 12;
+  constexpr fluir::editor::PortRef OUTPUT{.output = true, .index = 0};
+  constexpr double UNIT = 5;
 
   fluir::editor::et::ParseTree conditionalTree() {
     fluir::editor::et::FunctionDecl fn;
@@ -43,9 +45,9 @@ namespace {
       20,
       fluir::editor::et::Conditional{.id = 20,
                                      .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18},
-                                     .condition = {.innerId = 1, .y = kStartY},
+                                     .condition = {.innerId = 1, .y = START_Y},
                                      .inputs = {},
-                                     .outputs = {},
+                                     .outputs = {{.innerId = 2, .y = OUTPUT_START_Y}},
                                      .thenScope = xyz::indirect<fluir::editor::et::Block>{},
                                      .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
 
@@ -55,23 +57,24 @@ namespace {
   }
 
   struct Harness {
-    EditorState state{kCtx};
+    EditorState state{CTX};
     PortDragTool tool;
 
     Harness() { state.editor.load(std::nullopt, conditionalTree()); }
 
     bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
     const fluir::editor::et::Conditional& conditional() const {
-      return std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(state.editor.tree(), kConditional));
+      return std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(state.editor.tree(), CONDITIONAL_ID));
     }
     int portY() const { return conditional().condition.y; }
+    int outputY() const { return conditional().outputs.at(0).y; }
 
     // The port's body, clear of the terminal dots on its edge midpoints.
-    Vec2 grab() const {
-      const auto boxes = fluir::editor::layoutGraph(state.editor.tree(), kCtx.layout);
+    Vec2 grab(fluir::editor::PortRef ref = {}) const {
+      const auto boxes = fluir::editor::layoutGraph(state.editor.tree(), CTX.layout);
       const auto frame = std::ranges::find_if(
-        boxes, [](const auto& b) { return b.path == kConditional && b.part == fluir::editor::Part::Frame; });
-      const Rect port = fluir::editor::draw::conditionPortRect(conditional(), frame->world, kCtx.layout);
+        boxes, [](const auto& b) { return b.path == CONDITIONAL_ID && b.part == fluir::editor::Part::Frame; });
+      const Rect port = fluir::editor::draw::portRect(conditional(), ref, frame->world, CTX.layout);
       return Vec2{port.x + port.w / 2, port.y + 1};
     }
   };
@@ -92,19 +95,19 @@ TEST(PortDragTool, OnlyAPressOnAPortClaimsTheGesture) {
 TEST(PortDragTool, ADragMovesThePortLiveInWholeUnitsAndIgnoresX) {
   Harness h;
   const Vec2 at = h.grab();
-  const FlowGraphLocation before = *fluir::editor::locationAt(h.state.editor.tree(), kConditional);
+  const FlowGraphLocation before = *fluir::editor::locationAt(h.state.editor.tree(), CONDITIONAL_ID);
   ASSERT_TRUE(h.send(down(at)));
 
-  EXPECT_TRUE(h.send(move(at + Vec2{50, 2 * kUnit + 1})));
+  EXPECT_TRUE(h.send(move(at + Vec2{50, 2 * UNIT + 1})));
 
-  EXPECT_EQ(h.portY(), kStartY + 2);
-  EXPECT_EQ(*fluir::editor::locationAt(h.state.editor.tree(), kConditional), before) << "the conditional stays put";
+  EXPECT_EQ(h.portY(), START_Y + 2);
+  EXPECT_EQ(*fluir::editor::locationAt(h.state.editor.tree(), CONDITIONAL_ID), before) << "the conditional stays put";
   EXPECT_FALSE(h.state.editor.canUndo()) << "nothing is recorded until release";
 }
 
 TEST(PortDragTool, ThePortStopsAtTheHeaderBandAndTheBottom) {
   Harness h;
-  const auto limits = fluir::editor::draw::portYLimits(h.conditional(), kCtx.layout);
+  const auto limits = fluir::editor::draw::portYLimits(h.conditional(), CTX.layout);
   const Vec2 at = h.grab();
   ASSERT_TRUE(h.send(down(at)));
 
@@ -119,13 +122,13 @@ TEST(PortDragTool, ReleaseRecordsOneUndoableEdit) {
   const auto before = h.state.editor.tree();
   const Vec2 at = h.grab();
   ASSERT_TRUE(h.send(down(at)));
-  h.send(move(at + Vec2{0, kUnit}));
-  h.send(move(at + Vec2{0, 3 * kUnit}));
+  h.send(move(at + Vec2{0, UNIT}));
+  h.send(move(at + Vec2{0, 3 * UNIT}));
 
-  EXPECT_TRUE(h.send(up(at + Vec2{0, 3 * kUnit})));
+  EXPECT_TRUE(h.send(up(at + Vec2{0, 3 * UNIT})));
 
   EXPECT_FALSE(h.tool.capturing());
-  EXPECT_EQ(h.portY(), kStartY + 3);
+  EXPECT_EQ(h.portY(), START_Y + 3);
   ASSERT_TRUE(h.state.editor.undo());
   EXPECT_EQ(h.state.editor.tree(), before);
   EXPECT_FALSE(h.state.editor.canUndo());
@@ -135,12 +138,12 @@ TEST(PortDragTool, AGestureThatEndsWhereItStartedRecordsNothing) {
   Harness h;
   const Vec2 at = h.grab();
   ASSERT_TRUE(h.send(down(at)));
-  h.send(move(at + Vec2{0, 2 * kUnit}));
+  h.send(move(at + Vec2{0, 2 * UNIT}));
   h.send(move(at));
 
   h.send(up(at));
 
-  EXPECT_EQ(h.portY(), kStartY);
+  EXPECT_EQ(h.portY(), START_Y);
   EXPECT_FALSE(h.state.editor.canUndo());
 }
 
@@ -149,7 +152,7 @@ TEST(PortDragTool, EscapeRestoresThePort) {
   const auto before = h.state.editor.tree();
   const Vec2 at = h.grab();
   ASSERT_TRUE(h.send(down(at)));
-  h.send(move(at + Vec2{0, 2 * kUnit}));
+  h.send(move(at + Vec2{0, 2 * UNIT}));
 
   EXPECT_TRUE(h.send(key(InputEvent::Key::Escape)));
 
@@ -163,11 +166,26 @@ TEST(PortDragTool, ReleaseAfterThePortVanishedRecordsNothing) {
   Harness h;
   const Vec2 at = h.grab();
   ASSERT_TRUE(h.send(down(at)));
-  h.send(move(at + Vec2{0, 2 * kUnit}));
+  h.send(move(at + Vec2{0, 2 * UNIT}));
   h.state.editor.tree().declarations.clear();
 
   h.send(up(at));
 
   EXPECT_FALSE(h.tool.capturing());
   EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+TEST(PortDragTool, AnOutputPortDragsAlongTheRightWallWithinItsLimits) {
+  Harness h;
+  const auto limits = fluir::editor::draw::portYLimits(h.conditional(), CTX.layout);
+  const Vec2 at = h.grab(OUTPUT);
+  ASSERT_TRUE(h.send(down(at)));
+
+  h.send(move(at + Vec2{0, 2 * UNIT + 1}));
+  EXPECT_EQ(h.outputY(), OUTPUT_START_Y + 2);
+  EXPECT_EQ(h.portY(), START_Y) << "only the pressed port moves";
+  h.send(move(at + Vec2{0, 1000}));
+  EXPECT_EQ(h.outputY(), limits.upper);
+  h.send(move(at + Vec2{0, -1000}));
+  EXPECT_EQ(h.outputY(), limits.lower);
 }

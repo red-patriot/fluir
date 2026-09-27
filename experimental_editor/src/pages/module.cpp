@@ -16,6 +16,7 @@
 #include "editor/tools/branch_toggle_tool.hpp"
 #include "editor/tools/choice_tool.hpp"
 #include "editor/tools/completion_tool.hpp"
+#include "editor/tools/conditional_header_menu.hpp"
 #include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/context_menu_tool.hpp"
 #include "editor/tools/drag_tool.hpp"
@@ -44,7 +45,8 @@ namespace fluir::editor {
     tools_.add(std::make_unique<ChoiceTool>());
     tools_.add(std::make_unique<BoolToggleTool>());
     tools_.add(std::make_unique<BranchToggleTool>());
-    tools_.add(std::make_unique<ContextMenuTool>(std::vector<MenuProvider>{functionHeaderItems, railItems}));
+    tools_.add(std::make_unique<ContextMenuTool>(
+      std::vector<MenuProvider>{functionHeaderItems, conditionalHeaderItems, railItems}));
     tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
     tools_.add(std::make_unique<PortDragTool>());

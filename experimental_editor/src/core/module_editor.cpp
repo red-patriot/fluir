@@ -108,15 +108,24 @@ namespace fluir::editor {
     if (block == nullptr) {
       return INVALID_ID;
     }
-    for (const auto& [id, node] : block->nodes) {
-      top = std::max(top, id);
-    }
-    for (const auto& [id, conduit] : block->conduits) {
-      top = std::max(top, id);
-    }
-    // A branch shares its id space with its conditional's port inner ids.
+    const auto scan = [&top](const et::Block& scope) {
+      for (const auto& [id, node] : scope.nodes) {
+        top = std::max(top, id);
+      }
+      for (const auto& [id, conduit] : scope.conduits) {
+        top = std::max(top, id);
+      }
+    };
+    scan(*block);
+
     if (isBranchPath(body)) {
+      // Conditional branches have separate ID spaces, but just use a single set of Ids for simplicity
       if (const auto* conditional = std::get_if<et::Conditional>(nodeAt(tree_, parentOf(body)))) {
+        for (const fluir::ID branch : {THEN_BRANCH_ID, ELSE_BRANCH_ID}) {
+          if (const et::Block* scope = branchBlock(*conditional, branch)) {
+            scan(*scope);
+          }
+        }
         top = std::max(top, conditional->condition.innerId);
         for (const auto* ports : {&conditional->inputs, &conditional->outputs}) {
           for (const et::BlockPort& port : *ports) {

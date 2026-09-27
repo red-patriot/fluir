@@ -264,6 +264,27 @@ TEST(ModuleEditor, GenerateIDInABranchExceedsItsConditionalsPortInnerIds) {
   EXPECT_GT(uut.generateID({7, 60, fluir::editor::ELSE_BRANCH_ID}), 15u) << "output";
 }
 
+// A new port's inner id should be free in both branches.
+TEST(ModuleEditor, GenerateIDInABranchExceedsIdsInItsSiblingBranch) {
+  fluir::editor::et::Block then;
+  then.nodes.emplace(30, fluir::editor::et::Comment{.id = 30, .location = {}, .text = ""});
+  fluir::editor::et::Block otherwise;
+  otherwise.conduits.emplace(40, fluir::editor::et::Conduit{.id = 40});
+  ModuleEditor uut;
+  uut.load(std::nullopt, makeIdTree());
+  idTreeBody(uut).nodes.emplace(60,
+                                fluir::editor::et::Conditional{.id = 60,
+                                                               .location = {},
+                                                               .condition = {.innerId = 1, .y = 0},
+                                                               .inputs = {},
+                                                               .outputs = {},
+                                                               .thenScope = xyz::indirect{std::move(then)},
+                                                               .elseScope = xyz::indirect{std::move(otherwise)}});
+
+  EXPECT_GT(uut.generateID({7, 60, fluir::editor::THEN_BRANCH_ID}), 40u) << "else conduit";
+  EXPECT_GT(uut.generateID({7, 60, fluir::editor::ELSE_BRANCH_ID}), 30u) << "then node";
+}
+
 TEST(ModuleEditor, GenerateIDForAnUnknownBodyIsInvalid) {
   ModuleEditor uut;
   uut.load(std::nullopt, makeIdTree());

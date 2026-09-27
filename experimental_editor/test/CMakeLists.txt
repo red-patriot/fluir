@@ -31,6 +31,7 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/completion_modal.test.cpp
     tools/completion_tool.test.cpp
     tools/conduit_tool.test.cpp
+    tools/conditional_header_menu.test.cpp
     tools/context_menu_tool.test.cpp
     tools/drag_tool.test.cpp
     tools/function_header_menu.test.cpp

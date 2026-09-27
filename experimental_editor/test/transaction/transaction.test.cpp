@@ -15,6 +15,7 @@
 #include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/add_node.hpp"
 #include "editor/transaction/add_parameter.hpp"
+#include "editor/transaction/add_port.hpp"
 #include "editor/transaction/add_return.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
@@ -1203,6 +1204,60 @@ TEST(MovePortTransaction, MissChangesNothingAndReturnsFalse) {
   EXPECT_FALSE((MovePortTransaction{FullID{1, 99}, kCondition, 9}.execute(tree))) << "no such node";
   EXPECT_FALSE((MovePortTransaction{FullID{1, 20, THEN_BRANCH_ID, 1}, kCondition, 9}.execute(tree)));
   EXPECT_FALSE((MovePortTransaction{kConditionalPath, PortRef{.output = true, .index = 0}, 9}.execute(tree)));
+
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  using fluir::editor::AddPort;
+
+  const fluir::editor::et::Conditional& conditionalOf(const fluir::editor::et::ParseTree& tree) {
+    return std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath));
+  }
+
+}  // namespace
+
+TEST(AddPortTransaction, AppendsAnInputAndUndoRemovesIt) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  const fluir::editor::et::ParseTree before = tree;
+
+  AddPort uut{kConditionalPath, false, 60, 7};
+  ASSERT_TRUE(uut.execute(tree));
+  ASSERT_EQ(conditionalOf(tree).inputs.size(), 1u);
+  EXPECT_EQ(conditionalOf(tree).inputs[0].innerId, 60u);
+  EXPECT_EQ(conditionalOf(tree).inputs[0].y, 7);
+  EXPECT_TRUE(conditionalOf(tree).outputs.empty());
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddPortTransaction, AppendsAnOutputAfterTheExistingOnes) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath)).outputs = {{.innerId = 3, .y = 6}};
+  const fluir::editor::et::ParseTree before = tree;
+
+  const auto uut = fluir::editor::addPort(kConditionalPath, true, 61, 9);
+  ASSERT_TRUE(uut->execute(tree));
+  ASSERT_EQ(conditionalOf(tree).outputs.size(), 2u);
+  EXPECT_EQ(conditionalOf(tree).outputs[0].innerId, 3u) << "existing outer indices stay put";
+  EXPECT_EQ(conditionalOf(tree).outputs[1].innerId, 61u);
+  ASSERT_TRUE(uut->unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(AddPortTransaction, BadPathInvalidOrTakenInnerIdChangeNothing) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath)).inputs = {{.innerId = 3, .y = 6}};
+  const fluir::editor::et::ParseTree before = tree;
+
+  EXPECT_FALSE((AddPort{FullID{1, 99}, false, 60, 7}.execute(tree))) << "no such node";
+  EXPECT_FALSE((AddPort{FullID{1, 20, THEN_BRANCH_ID, 1}, false, 60, 7}.execute(tree))) << "not a conditional";
+  EXPECT_FALSE((AddPort{kConditionalPath, false, fluir::INVALID_ID, 7}.execute(tree)));
+  EXPECT_FALSE((AddPort{kConditionalPath, true, 3, 7}.execute(tree))) << "input inner id";
+  EXPECT_FALSE((AddPort{kConditionalPath, true, conditionalOf(tree).condition.innerId, 7}.execute(tree)))
+    << "condition inner id";
+  EXPECT_FALSE((AddPort{kConditionalPath, false, 60, 7}.unexecute(tree))) << "never executed";
 
   EXPECT_EQ(tree, before);
 }

@@ -1,5 +1,7 @@
 #include "editor/tools/select_tool.hpp"
 
+#include <optional>
+
 #include <gtest/gtest.h>
 
 #include "editor/core/editor_context.hpp"
@@ -114,7 +116,7 @@ namespace {
 
 TEST(SelectTool, ANestedNodeSelectsAtItsOwnPath) {
   EditorState state{kCtx};
-  state.editor.load(conditionalTree());
+  state.editor.load(std::nullopt, conditionalTree());
   SelectTool tool;
 
   testutil::send(tool, state, down(Vec2{20, 85}));
@@ -127,7 +129,7 @@ TEST(SelectTool, ANestedNodeSelectsAtItsOwnPath) {
 // the outline it draws is the conditional's.
 TEST(SelectTool, AnEmptyBranchSelectsItsBranchPath) {
   EditorState state{kCtx};
-  state.editor.load(conditionalTree());
+  state.editor.load(std::nullopt, conditionalTree());
   SelectTool tool;
 
   testutil::send(tool, state, down(Vec2{90, 130}));  // clear of the branch's only node

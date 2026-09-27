@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -44,7 +45,7 @@ namespace testutil {
   inline void loadInto(fluir::editor::EditorState& state, const std::string& relPath) {
     const Loaded loaded = loadFixture(relPath);
     ASSERT_TRUE(loaded.result.tree.has_value());
-    state.editor.load(*loaded.result.tree);
+    state.editor.load(std::nullopt, *loaded.result.tree);
   }
 
 }  // namespace testutil

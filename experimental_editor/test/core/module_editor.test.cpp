@@ -1,14 +1,24 @@
 #include "editor/core/module_editor.hpp"
 
+#include <algorithm>
+#include <filesystem>
 #include <memory>
+#include <optional>
+#include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "bytecode/version.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/intelligence.hpp"
 #include "editor/core/tree.hpp"
+#include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/delete.hpp"
 #include "editor/transaction/move.hpp"
+#include "editor/transaction/rename.hpp"
 #include "fixture_loader.hpp"
 
 // The editor's contract is its history: what apply and record keep, what undo
@@ -37,7 +47,7 @@ namespace {
     const testutil::Loaded loaded = loadFixture("read/simple_binary_expr.fl");
     EXPECT_TRUE(loaded.result.tree.has_value());
     ModuleEditor editor;
-    editor.load(loaded.result.tree.value_or(fluir::editor::et::ParseTree{}));
+    editor.load(std::nullopt, loaded.result.tree.value_or(fluir::editor::et::ParseTree{}));
     return editor;
   }
 
@@ -157,7 +167,7 @@ TEST(ModuleEditor, LoadReplacesTheTreeAndForgetsTheHistory) {
   ASSERT_TRUE(uut.apply(moveTo(20, 30)));
   ASSERT_TRUE(uut.undo());
 
-  uut.load(fluir::editor::et::ParseTree{});
+  uut.load(std::nullopt, fluir::editor::et::ParseTree{});
 
   EXPECT_FALSE(uut.canUndo());
   EXPECT_FALSE(uut.canRedo());
@@ -210,14 +220,14 @@ TEST(ModuleEditor, GenerateIDOnAnEmptyTreeIsValid) {
 
 TEST(ModuleEditor, GenerateIDTopLevelExceedsEveryDeclaration) {
   ModuleEditor uut;
-  uut.load(makeIdTree());
+  uut.load(std::nullopt, makeIdTree());
 
   EXPECT_GT(uut.generateID({}), 7u);
 }
 
 TEST(ModuleEditor, GenerateIDInABodyExceedsEveryNodeConduitParamAndReturn) {
   ModuleEditor uut;
-  uut.load(makeIdTree());
+  uut.load(std::nullopt, makeIdTree());
   EXPECT_GT(uut.generateID({7}), 25u) << "return is the largest";
 
   idTreeBody(uut).conduits.emplace(30, fluir::editor::et::Conduit{.id = 30});
@@ -234,7 +244,7 @@ TEST(ModuleEditor, GenerateIDInABodyExceedsEveryNodeConduitParamAndReturn) {
 // A branch shares its id space with its conditional's port inner ids, so a new id never takes one.
 TEST(ModuleEditor, GenerateIDInABranchExceedsItsConditionalsPortInnerIds) {
   ModuleEditor uut;
-  uut.load(makeIdTree());
+  uut.load(std::nullopt, makeIdTree());
   idTreeBody(uut).nodes.emplace(60,
                                 fluir::editor::et::Conditional{.id = 60,
                                                                .location = {},
@@ -256,8 +266,120 @@ TEST(ModuleEditor, GenerateIDInABranchExceedsItsConditionalsPortInnerIds) {
 
 TEST(ModuleEditor, GenerateIDForAnUnknownBodyIsInvalid) {
   ModuleEditor uut;
-  uut.load(makeIdTree());
+  uut.load(std::nullopt, makeIdTree());
 
   EXPECT_EQ(uut.generateID({99}), fluir::INVALID_ID);
   EXPECT_EQ(uut.generateID({3}), fluir::INVALID_ID) << "a comment has no body";
+}
+
+// Intelligence follows the tree: every committed or reversed edit refreshes what a body may call.
+
+namespace {
+
+  const fluir::FullID kFooBody{1};
+  constexpr fluir::ID kNewDecl = 50;
+
+  bool offers(const ModuleEditor& editor, const std::string& label) {
+    const std::vector<fluir::editor::Completion> completions =
+      editor.intelligence().completions(editor.tree(), kFooBody);
+    return std::ranges::any_of(completions, [&](const auto& completion) { return completion.label == label; });
+  }
+
+}  // namespace
+
+TEST(ModuleEditor, LoadKeepsTheProgram) {
+  ModuleEditor uut;
+
+  uut.load(std::filesystem::path{"a.fl"}, fluir::editor::et::ParseTree{});
+
+  EXPECT_EQ(uut.program(), std::filesystem::path{"a.fl"});
+}
+
+TEST(ModuleEditor, SetProgramReplacesTheProgramAndKeepsItsFunctions) {
+  ModuleEditor uut = loadedEditor();
+
+  uut.setProgram("b.fl");
+
+  EXPECT_EQ(uut.program(), std::filesystem::path{"b.fl"});
+  EXPECT_TRUE(offers(uut, "foo (fn)"));
+}
+
+TEST(ModuleEditor, LoadOffersTheTreesFunctions) {
+  const ModuleEditor uut = loadedEditor();
+
+  EXPECT_TRUE(offers(uut, "foo (fn)"));
+}
+
+TEST(ModuleEditor, ApplyingAnAddDeclOffersTheNewFunctionAsACompletion) {
+  ModuleEditor uut = loadedEditor();
+  ASSERT_FALSE(offers(uut, "new_function (fn)"));
+
+  ASSERT_TRUE(uut.apply(fluir::editor::addDecl({}, kNewDecl, {})));
+
+  EXPECT_TRUE(offers(uut, "new_function (fn)"));
+}
+
+TEST(ModuleEditor, UndoOfAnAddDeclWithdrawsItsCompletion) {
+  ModuleEditor uut = loadedEditor();
+  ASSERT_TRUE(uut.apply(fluir::editor::addDecl({}, kNewDecl, {})));
+
+  ASSERT_TRUE(uut.undo());
+
+  EXPECT_FALSE(offers(uut, "new_function (fn)"));
+}
+
+TEST(ModuleEditor, RedoOfAnAddDeclOffersItAgain) {
+  ModuleEditor uut = loadedEditor();
+  ASSERT_TRUE(uut.apply(fluir::editor::addDecl({}, kNewDecl, {})));
+  ASSERT_TRUE(uut.undo());
+
+  ASSERT_TRUE(uut.redo());
+
+  EXPECT_TRUE(offers(uut, "new_function (fn)"));
+}
+
+TEST(ModuleEditor, RenamingAFunctionRenamesItsCompletion) {
+  ModuleEditor uut = loadedEditor();
+
+  ASSERT_TRUE(uut.apply(fluir::editor::renameFunction(kFooBody, "bar")));
+
+  EXPECT_TRUE(offers(uut, "bar (fn)"));
+  EXPECT_FALSE(offers(uut, "foo (fn)"));
+}
+
+TEST(ModuleEditor, RecordRefreshesIntelligence) {
+  ModuleEditor uut = loadedEditor();
+  std::unique_ptr<fluir::editor::Transaction> rename = fluir::editor::renameFunction(kFooBody, "bar");
+  ASSERT_TRUE(rename->execute(uut.tree()));
+
+  uut.record(std::move(rename));
+
+  EXPECT_TRUE(offers(uut, "bar (fn)"));
+  EXPECT_FALSE(offers(uut, "foo (fn)"));
+}
+
+// openModule and newModule build the editor a module page starts from.
+
+TEST(ModuleEditor, OpenModuleLoadsTheFileAndKeepsItsPath) {
+  const std::filesystem::path path = std::filesystem::path(TEST_FOLDER) / "read/simple_binary_expr.fl";
+
+  const std::optional<ModuleEditor> uut = fluir::editor::openModule(path);
+
+  ASSERT_TRUE(uut.has_value());
+  EXPECT_EQ(uut->program(), path);
+  EXPECT_EQ(uut->tree(), *testutil::loadFixture("read/simple_binary_expr.fl").result.tree);
+  EXPECT_TRUE(offers(*uut, "foo (fn)"));
+}
+
+TEST(ModuleEditor, OpenModuleOfAFileThatFailsToLoadIsEmpty) {
+  EXPECT_FALSE(fluir::editor::openModule(std::filesystem::path(TEST_FOLDER) / "load_fails/conduits.fl").has_value());
+}
+
+TEST(ModuleEditor, NewModuleIsUnsavedEmptyAndAtTheCurrentVersion) {
+  const ModuleEditor uut = fluir::editor::newModule();
+
+  EXPECT_FALSE(uut.program().has_value());
+  EXPECT_TRUE(uut.tree().declarations.empty());
+  EXPECT_EQ(uut.tree().header.version, fluir::CURRENT_VERSION);
+  EXPECT_FALSE(uut.canUndo());
 }

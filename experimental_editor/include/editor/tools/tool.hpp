@@ -9,7 +9,6 @@
 
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/core/intelligence.hpp"
 #include "editor/core/module_editor.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
@@ -30,7 +29,6 @@ namespace fluir::editor {
     TextMetrics* text = nullptr;
     /** Where popups fit, in screen px; nullopt means unbounded. */
     std::optional<Rect> screen;
-    Intelligence intelligence;
     /** The open popup; the page draws it last, over everything. PopupTool routes input to it. */
     std::unique_ptr<Popup> popup;
   };

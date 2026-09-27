@@ -128,7 +128,7 @@ namespace {
     BodyFixture() {
       testutil::loadInto(state, "read/simple_binary_expr.fl");
       const fluir::Coordinate where{.x = kWhere.x, .y = kWhere.y, .z = 3};
-      uut.emplace(state.intelligence.completions(state.editor.tree(), fluir::FullID{1}),
+      uut.emplace(state.editor.intelligence().completions(state.editor.tree(), fluir::FullID{1}),
                   kBounds,
                   nullptr,
                   where,

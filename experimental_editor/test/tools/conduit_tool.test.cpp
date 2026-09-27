@@ -1,5 +1,6 @@
 #include "editor/tools/conduit_tool.hpp"
 
+#include <optional>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -216,7 +217,7 @@ namespace {
     EditorState state{kCtx};
     ConduitTool tool;
 
-    NestedHarness() { state.editor.load(conditionalTree()); }
+    NestedHarness() { state.editor.load(std::nullopt, conditionalTree()); }
 
     bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
 

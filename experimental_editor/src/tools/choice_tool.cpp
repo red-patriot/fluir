@@ -20,7 +20,8 @@ namespace fluir::editor {
     if (label == nullptr || !isChoice(label->field->kind)) {
       return false;
     }
-    std::vector<std::string> choices = state.intelligence.choices(state.editor.tree(), label->path, *label->field);
+    std::vector<std::string> choices =
+      state.editor.intelligence().choices(state.editor.tree(), label->path, *label->field);
     if (choices.empty()) {
       return false;
     }

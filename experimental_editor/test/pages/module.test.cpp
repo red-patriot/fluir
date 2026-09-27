@@ -4,8 +4,10 @@
 #include <cmath>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
@@ -18,6 +20,7 @@
 #include "editor/components/menu.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/module_editor.hpp"
 #include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
@@ -80,14 +83,15 @@ namespace {
     std::unique_ptr<ModulePage> page;
 
     explicit Harness(const fs::path& program) {
-      ctx.program = program;
-      page = std::make_unique<ModulePage>(ctx, renderer);
+      std::optional<fluir::editor::ModuleEditor> editor = fluir::editor::openModule(program);
+      EXPECT_TRUE(editor.has_value());
+      page = std::make_unique<ModulePage>(ctx, renderer, std::move(editor).value_or(fluir::editor::newModule()));
       EXPECT_EQ(page->start(), 0);
     }
 
     // A brand-new program: no file, empty tree.
     Harness() {
-      page = std::make_unique<ModulePage>(ctx, renderer);
+      page = std::make_unique<ModulePage>(ctx, renderer, fluir::editor::newModule());
       EXPECT_EQ(page->start(), 0);
     }
 
@@ -248,7 +252,7 @@ TEST(ModulePage, SaveWritesTheEditedTreeToTheProgram) {
 
   h.click("Save");
 
-  const testutil::Loaded reloaded = testutil::loadFixture(h.ctx.program->string());
+  const testutil::Loaded reloaded = testutil::loadFixture(h.page->state().editor.program()->string());
   ASSERT_TRUE(reloaded.result.tree.has_value());
   EXPECT_EQ(*reloaded.result.tree, h.tree());
   EXPECT_EQ(locationAt(*reloaded.result.tree, kConstant1)->x, 4);

@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <filesystem>
-#include <optional>
 
 namespace fluir::editor {
 
@@ -71,7 +69,6 @@ namespace fluir::editor {
     Theme theme;
     Window window;
     bool running = true;
-    std::optional<std::filesystem::path> program;
   };
 
 }  // namespace fluir::editor

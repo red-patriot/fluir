@@ -4,14 +4,12 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fmt/format.h>
 #include <nfd.h>
 
-#include "bytecode/version.hpp"
-#include "compiler/utility/context.hpp"
-#include "editor/core/loader.hpp"
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/pages/splash.hpp"
 #include "editor/tools/bool_toggle_tool.hpp"
@@ -33,7 +31,8 @@
 
 namespace fluir::editor {
 
-  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer) : Page(ctx, renderer), state_{ctx} {
+  ModulePage::ModulePage(EditorContext& ctx, Renderer& renderer, ModuleEditor editor) :
+    Page(ctx, renderer), state_{ctx, std::move(editor)} {
     state_.text = &renderer_;
     // An open popup takes everything, then an open draft takes keys; selection sees a press before a grip claims it.
     tools_.add(std::make_unique<PopupTool>());
@@ -62,20 +61,6 @@ namespace fluir::editor {
   }
 
   int ModulePage::onStart() {
-    fluir::Context cctx{.ignoreVersionChecks = true};
-    et::ParseTree tree;
-    tree.header.version = fluir::CURRENT_VERSION;  // a loaded file overwrites this
-    if (ctx_.program) {
-      cctx.currentFile = *ctx_.program;
-      const auto result = loadFile(cctx, *ctx_.program);
-      if (!result.tree) {
-        fmt::print(stderr, "parse failed: {}\n", ctx_.program->string());
-        return 1;
-      }
-      tree = *result.tree;
-    }
-    state_.editor.load(tree);
-    state_.intelligence.load(ctx_.program, tree);
     fitView();
     return 0;  // Page::start() lays the header out via onResize().
   }
@@ -102,7 +87,8 @@ namespace fluir::editor {
   }
 
   void ModulePage::onResize() {
-    header_.label = ctx_.program ? ctx_.program->filename().string() : std::string{"<new file>"};
+    const auto& program = state_.editor.program();
+    header_.label = program ? program->filename().string() : std::string{"<new file>"};
     headerLayout_ = layoutToolbar(header_, renderer_.outputSize().x, ctx_.layout, renderer_);
     state_.screen = Rect{0, 0, renderer_.outputSize().x, renderer_.outputSize().y};
   }
@@ -122,7 +108,7 @@ namespace fluir::editor {
 
   std::unique_ptr<Page> ModulePage::next() {
     if (shouldClose_) {
-      state_.intelligence.unload(ctx_.program);
+      state_.editor.unload();
       return std::make_unique<SplashPage>(ctx_, renderer_);
     }
     return nullptr;
@@ -157,8 +143,8 @@ namespace fluir::editor {
   }
 
   void ModulePage::onSave() {
-    if (ctx_.program) {
-      saveToPath(*ctx_.program);
+    if (const auto& program = state_.editor.program()) {
+      saveToPath(*program);
     } else {
       onSaveAs();
     }
@@ -176,7 +162,7 @@ namespace fluir::editor {
       }
       NFD_FreePathU8(outPath);
       if (saveToPath(chosen)) {
-        ctx_.program = chosen;
+        state_.editor.setProgram(chosen);
         onResize();  // the bar shows the new filename
       }
     } else if (result == NFD_ERROR) {

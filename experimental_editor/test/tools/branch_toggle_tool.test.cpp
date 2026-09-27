@@ -1,5 +1,6 @@
 #include "editor/tools/branch_toggle_tool.hpp"
 
+#include <optional>
 #include <utility>
 #include <variant>
 
@@ -48,7 +49,7 @@ namespace {
     fn.body.nodes.emplace(3, makeConditional(3, 30));
     et::ParseTree tree;
     tree.declarations.emplace(1, et::Declaration{std::move(fn)});
-    state.editor.load(std::move(tree));
+    state.editor.load(std::nullopt, std::move(tree));
   }
 
   fluir::ID shownBranch(const EditorState& state, const FullID& path) {

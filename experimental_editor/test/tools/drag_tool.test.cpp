@@ -1,6 +1,7 @@
 #include "editor/tools/drag_tool.hpp"
 
 #include <memory>
+#include <optional>
 
 #include <gtest/gtest.h>
 
@@ -319,7 +320,7 @@ namespace {
     EditorState state{kCtx};
     DragTool tool;
 
-    NestedHarness() { state.editor.load(conditionalTree()); }
+    NestedHarness() { state.editor.load(std::nullopt, conditionalTree()); }
 
     bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
     FlowGraphLocation loc(const FullID& path) const { return *locationAt(state.editor.tree(), path); }

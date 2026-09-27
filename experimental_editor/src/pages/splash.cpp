@@ -2,10 +2,13 @@
 
 #include <filesystem>
 #include <memory>
+#include <optional>
+#include <utility>
 
 #include <fmt/format.h>
 #include <nfd.h>
 
+#include "editor/core/module_editor.hpp"
 #include "editor/pages/module.hpp"
 
 namespace fluir::editor {
@@ -43,10 +46,7 @@ namespace fluir::editor {
     drawButton(renderer_, open_, openRect_, ctx_);
   }
 
-  void SplashPage::newFile() {
-    ctx_.program = std::nullopt;
-    next_ = std::make_unique<ModulePage>(ctx_, renderer_);
-  }
+  void SplashPage::newFile() { next_ = std::make_unique<ModulePage>(ctx_, renderer_, newModule()); }
 
   void SplashPage::openFileDialog() {
     nfdu8filteritem_t filter{"Fluir Program", "fl"};
@@ -54,9 +54,14 @@ namespace fluir::editor {
     const nfdresult_t result = NFD_OpenDialogU8(&outPath, &filter, 1, nullptr);
 
     if (result == NFD_OKAY) {
-      ctx_.program = std::filesystem::path(outPath);
+      const std::filesystem::path program(outPath);
       NFD_FreePathU8(outPath);
-      next_ = std::make_unique<ModulePage>(ctx_, renderer_);
+      // A file that fails to load leaves us here to pick another.
+      if (std::optional<ModuleEditor> editor = openModule(program)) {
+        next_ = std::make_unique<ModulePage>(ctx_, renderer_, std::move(*editor));
+      } else {
+        fmt::print(stderr, "parse failed: {}\n", program.string());
+      }
     } else if (result == NFD_ERROR) {
       fmt::print(stderr, "file dialog failed: {}\n", NFD_GetError());
     }

@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -124,7 +125,7 @@ namespace {
     mutable testutil::RecordingRenderer recorder;
 
     Harness() {
-      state.editor.load(makeTree());
+      state.editor.load(std::nullopt, makeTree());
       state.text = &recorder;
     }
 

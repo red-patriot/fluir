@@ -2,10 +2,15 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <filesystem>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <variant>
 
+#include "bytecode/version.hpp"
+#include "compiler/utility/context.hpp"
+#include "editor/core/loader.hpp"
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
@@ -22,10 +27,20 @@ namespace fluir::editor {
 
   }  // namespace
 
-  void ModuleEditor::load(et::ParseTree tree) {
+  void ModuleEditor::load(std::optional<std::filesystem::path> program, et::ParseTree tree) {
+    program_ = std::move(program);
     tree_ = std::move(tree);
     undone_.clear();
     redone_.clear();
+    reload();
+  }
+
+  void ModuleEditor::unload() { intelligence_.unload(program_); }
+
+  void ModuleEditor::setProgram(std::filesystem::path program) {
+    unload();
+    program_ = std::move(program);
+    reload();
   }
 
   bool ModuleEditor::apply(std::unique_ptr<Transaction> edit) {
@@ -39,6 +54,7 @@ namespace fluir::editor {
   void ModuleEditor::record(std::unique_ptr<Transaction> edit) {
     push(undone_, std::move(edit));
     redone_.clear();
+    reload();
   }
 
   bool ModuleEditor::undo() {
@@ -51,9 +67,11 @@ namespace fluir::editor {
     if (!edit->unexecute(tree_)) {
       undone_.clear();
       redone_.clear();
+      reload();
       return false;
     }
     push(redone_, std::move(edit));
+    reload();
     return true;
   }
 
@@ -66,11 +84,15 @@ namespace fluir::editor {
     if (!edit->execute(tree_)) {
       undone_.clear();
       redone_.clear();
+      reload();
       return false;
     }
     push(undone_, std::move(edit));
+    reload();
     return true;
   }
+
+  void ModuleEditor::reload() { intelligence_.load(program_, tree_); }
 
   fluir::ID ModuleEditor::generateID(const fluir::FullID& body) const {
     // Max ID in scope + 1, over the same scope the parser checks for duplicates.
@@ -114,6 +136,25 @@ namespace fluir::editor {
       }
     }
     return top + 1;
+  }
+
+  std::optional<ModuleEditor> openModule(const std::filesystem::path& program) {
+    fluir::Context ctx{.currentFile = program, .ignoreVersionChecks = true};
+    LoadResult result = loadFile(ctx, program);
+    if (!result.tree) {
+      return std::nullopt;
+    }
+    ModuleEditor editor;
+    editor.load(program, std::move(*result.tree));
+    return editor;
+  }
+
+  ModuleEditor newModule() {
+    et::ParseTree tree;
+    tree.header.version = fluir::CURRENT_VERSION;
+    ModuleEditor editor;
+    editor.load(std::nullopt, std::move(tree));
+    return editor;
   }
 
 }  // namespace fluir::editor

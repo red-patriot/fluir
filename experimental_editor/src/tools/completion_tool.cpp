@@ -40,7 +40,7 @@ namespace fluir::editor {
       body = hit->path;
       z = location->z;
     }
-    std::vector<Completion> completions = state.intelligence.completions(state.editor.tree(), body);
+    std::vector<Completion> completions = state.editor.intelligence().completions(state.editor.tree(), body);
     if (completions.empty()) {
       return false;
     }

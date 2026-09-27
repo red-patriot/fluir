@@ -346,3 +346,41 @@ TEST(TreePath, PathKindsFollowDepthParity) {
   EXPECT_FALSE(isBranchPath(FullID{1, 20, 1, 1}));
   EXPECT_TRUE(isBranchPath(FullID{1, 20, 1, 1, 1}));
 }
+
+namespace {
+
+  // Condition y 5, inputs y 8 and 11, output y 14.
+  fluir::editor::et::Conditional makePortedConditional() {
+    return fluir::editor::et::Conditional{.id = 20,
+                                          .location = {},
+                                          .condition = {.innerId = 1, .y = 5},
+                                          .inputs = {{.innerId = 2, .y = 8}, {.innerId = 3, .y = 11}},
+                                          .outputs = {{.innerId = 4, .y = 14}},
+                                          .thenScope = xyz::indirect<fluir::editor::et::Block>{},
+                                          .elseScope = xyz::indirect<fluir::editor::et::Block>{}};
+  }
+
+}  // namespace
+
+// The outer terminal's index space.
+TEST(TreePath, PortOfMapsTheOuterTerminalIndexSpace) {
+  using fluir::editor::portOf;
+  using fluir::editor::PortRef;
+  fluir::editor::et::Conditional conditional = makePortedConditional();
+
+  EXPECT_EQ(portOf(conditional, PortRef{.output = false, .index = 0}), &conditional.condition);
+  EXPECT_EQ(portOf(conditional, PortRef{.output = false, .index = 1}), &conditional.inputs[0]);
+  EXPECT_EQ(portOf(conditional, PortRef{.output = false, .index = 2}), &conditional.inputs[1]);
+  EXPECT_EQ(portOf(conditional, PortRef{.output = true, .index = 0}), &conditional.outputs[0]);
+  const fluir::editor::et::Conditional& constant = conditional;
+  EXPECT_EQ(portOf(constant, PortRef{.output = true, .index = 0}), &conditional.outputs[0]);
+}
+
+TEST(TreePath, PortOfMissesOutOfRangeIndices) {
+  using fluir::editor::portOf;
+  using fluir::editor::PortRef;
+  fluir::editor::et::Conditional conditional = makePortedConditional();
+
+  EXPECT_EQ(portOf(conditional, PortRef{.output = false, .index = 3}), nullptr);
+  EXPECT_EQ(portOf(conditional, PortRef{.output = true, .index = 1}), nullptr);
+}

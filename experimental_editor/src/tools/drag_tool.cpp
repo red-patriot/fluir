@@ -49,8 +49,7 @@ namespace fluir::editor {
           path_ = hit->path;
           part_ = hit->part;
           start_ = *loc;
-          lastWorld_ = world;
-          remainder_ = Vec2{};
+          steps_.start(world);
           delta_ = Vec2i{};
           return true;
         }
@@ -60,13 +59,7 @@ namespace fluir::editor {
           if (!active_) {
             return false;
           }
-          // Sub-unit motion carries over, so slow drags still step.
-          const Vec2 world = state.view.screenToWorld(event.pos);
-          const double unit = state.ctx.layout.unitPx;
-          remainder_ = remainder_ + (world - lastWorld_);
-          lastWorld_ = world;
-          const Vec2i steps{static_cast<int>(remainder_.x / unit), static_cast<int>(remainder_.y / unit)};
-          remainder_ = remainder_ - Vec2{steps.x * unit, steps.y * unit};
+          const Vec2i steps = steps_.advance(state.view.screenToWorld(event.pos), state.ctx.layout.unitPx);
           if (steps != Vec2i{}) {
             delta_ = delta_ + steps;
             reaim(state);

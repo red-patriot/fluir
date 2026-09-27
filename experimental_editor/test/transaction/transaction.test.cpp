@@ -22,6 +22,7 @@
 #include "editor/transaction/edit_comment.hpp"
 #include "editor/transaction/edit_operator.hpp"
 #include "editor/transaction/move.hpp"
+#include "editor/transaction/move_port.hpp"
 #include "editor/transaction/rename.hpp"
 #include "editor/transaction/resize.hpp"
 #include "editor/transaction/set_constant_value.hpp"
@@ -1153,5 +1154,55 @@ TEST(DeleteTransaction, DeletingAConditionalDetachesTheConduitIntoIt) {
   EXPECT_FALSE(blockOf(tree, FullID{1})->conduits.contains(60));
 
   ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  using fluir::editor::MovePortTransaction;
+  using fluir::editor::PortRef;
+
+  const FullID kConditionalPath{1, 20};
+  constexpr PortRef kCondition{.output = false, .index = 0};
+
+  int conditionY(const fluir::editor::et::ParseTree& tree) {
+    return std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath)).condition.y;
+  }
+
+}  // namespace
+
+TEST(MovePortTransaction, RoundTripRestoresTheTree) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  const fluir::editor::et::ParseTree before = tree;
+
+  MovePortTransaction uut{kConditionalPath, kCondition, 9};
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(conditionY(tree), 9);
+  ASSERT_TRUE(uut.unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut.execute(tree));
+  EXPECT_EQ(conditionY(tree), 9) << "redo reaches the same state";
+}
+
+TEST(MovePortTransaction, MovesAWallPortByItsOuterIndex) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  auto& conditional = std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath));
+  conditional.outputs = {{.innerId = 3, .y = 6}};
+
+  ASSERT_TRUE(fluir::editor::movePortTo(kConditionalPath, PortRef{.output = true, .index = 0}, 12)->execute(tree));
+
+  EXPECT_EQ(conditional.outputs[0].y, 12);
+  EXPECT_EQ(conditional.condition.y, 0) << "only the named port moves";
+}
+
+TEST(MovePortTransaction, MissChangesNothingAndReturnsFalse) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  const fluir::editor::et::ParseTree before = tree;
+
+  EXPECT_FALSE((MovePortTransaction{kConditionalPath, kCondition, 0}.execute(tree))) << "same y";
+  EXPECT_FALSE((MovePortTransaction{FullID{1, 99}, kCondition, 9}.execute(tree))) << "no such node";
+  EXPECT_FALSE((MovePortTransaction{FullID{1, 20, THEN_BRANCH_ID, 1}, kCondition, 9}.execute(tree)));
+  EXPECT_FALSE((MovePortTransaction{kConditionalPath, PortRef{.output = true, .index = 0}, 9}.execute(tree)));
+
   EXPECT_EQ(tree, before);
 }

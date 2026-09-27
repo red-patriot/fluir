@@ -765,3 +765,20 @@ TEST(ModulePage, APressOnAParameterTerminalOpensNoNameDraft) {
 
   EXPECT_EQ(paramA(h).name, "a");
 }
+
+// conditional_with_body.fl: conditional 2 frame {50,40,2500,2500}, condition port at y 10 -> {42.5,90,15,15}.
+TEST(ModulePage, DraggingAConditionPortSlidesItAsOneUndoableEdit) {
+  Harness h{fs::path(TEST_FOLDER) / "read/conditional_with_body.fl"};
+  const FullID conditional{1, 2};
+  const auto portY = [&] {
+    return std::get<fluir::editor::et::Conditional>(*nodeAt(h.tree(), conditional)).condition.y;
+  };
+  const FlowGraphLocation before = h.loc(conditional);
+
+  h.drag(Vec2{50, 91}, Vec2{0, kTwoUnits});  // the port's body, above its terminal dots
+
+  EXPECT_EQ(portY(), 12);
+  EXPECT_EQ(h.loc(conditional), before) << "neither DragTool nor ConduitTool took the press";
+  h.click("Undo");
+  EXPECT_EQ(portY(), 10);
+}

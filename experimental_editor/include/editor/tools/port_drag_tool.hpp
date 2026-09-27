@@ -1,17 +1,17 @@
-#ifndef FLUIR_EDITOR_TOOLS_DRAG_TOOL_HPP
-#define FLUIR_EDITOR_TOOLS_DRAG_TOOL_HPP
+#ifndef FLUIR_EDITOR_TOOLS_PORT_DRAG_TOOL_HPP
+#define FLUIR_EDITOR_TOOLS_PORT_DRAG_TOOL_HPP
 
 #include <memory>
 
-#include "compiler/models/location.hpp"
+#include "editor/core/tree_path.hpp"
 #include "editor/tools/grid_steps.hpp"
 #include "editor/tools/tool.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
 
-  /** Left-drag on a grip moves or resizes its owner live, recording one edit on release. */
-  class DragTool : public Tool {
+  /** Drag on a conditional's port slides it up/down its wall. */
+  class PortDragTool : public Tool {
    public:
     bool onEvent(const InputEvent& event, EditorState& state, std::span<const Box> boxes) override;
     bool capturing() const override { return active_; }
@@ -24,10 +24,10 @@ namespace fluir::editor {
 
     bool active_ = false;
     FullID path_;
-    Part part_ = Part::Body;
-    FlowGraphLocation start_{};
+    PortRef port_;
+    int startY_ = 0;
+    int deltaY_ = 0;
     GridSteps steps_;
-    Vec2i delta_;
     std::unique_ptr<Transaction> edit_; /**< executed on the tree while non-null */
   };
 

@@ -1,5 +1,7 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_TREE_PATH_HPP
+#define FLUIR_EDITOR_CORE_TREE_PATH_HPP
 
+#include <cstddef>
 #include <string>
 
 #include "compiler/models/id.hpp"
@@ -23,6 +25,18 @@ namespace fluir::editor {
   /** The block `branchId` names inside `conditional`, or nullptr. The one place a branch index picks a scope. */
   et::Block* branchBlock(et::Conditional& conditional, fluir::ID branchId);
   const et::Block* branchBlock(const et::Conditional& conditional, fluir::ID branchId);
+
+  /** A block port terminal ref. */
+  struct PortRef {
+    bool output = false;
+    std::size_t index = 0;
+
+    friend bool operator==(const PortRef&, const PortRef&) = default;
+  };
+
+  /** The port `port` names on `conditional` if it exists, or nullptr. */
+  et::BlockPort* portOf(et::Conditional& conditional, PortRef port);
+  const et::BlockPort* portOf(const et::Conditional& conditional, PortRef port);
 
   /** The branch block an odd path of depth >= 3 names inside its parent conditional, or nullptr. */
   et::Block* branchAt(et::ParseTree& tree, const FullID& path);
@@ -48,3 +62,5 @@ namespace fluir::editor {
   FullID parentOf(const FullID& path);
 
 }  // namespace fluir::editor
+
+#endif

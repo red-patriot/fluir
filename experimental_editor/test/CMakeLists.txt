@@ -34,9 +34,11 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/context_menu_tool.test.cpp
     tools/drag_tool.test.cpp
     tools/function_header_menu.test.cpp
+    tools/grid_steps.test.cpp
     tools/menu_popup.test.cpp
     tools/pan_zoom_tool.test.cpp
     tools/popup_tool.test.cpp
+    tools/port_drag_tool.test.cpp
     tools/rail_menu.test.cpp
     tools/select_tool.test.cpp
     tools/text_edit_tool.test.cpp

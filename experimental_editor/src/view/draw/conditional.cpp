@@ -1,5 +1,8 @@
 #include "editor/view/draw/conditional.hpp"
 
+#include <algorithm>
+#include <cmath>
+
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 
@@ -21,6 +24,9 @@ namespace fluir::editor::draw {
       Vec2 outer;
       Vec2 inner;
     };
+
+    // A port's side rounded up to whole grid units, so a port on the grid never pokes past one.
+    constexpr int PORT_GRID_UNITS = static_cast<int>(std::ceil(PORT_UNITS));
 
     PortAnchors portAnchors(const Rect& port) {
       const double midY = port.y + port.h / 2;
@@ -44,7 +50,21 @@ namespace fluir::editor::draw {
 
   Color color(const et::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
 
-  Limits<Vec2i> sizeLimits(const et::Conditional&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const et::Conditional& node) {
+    int lowest = node.condition.y;
+    for (const et::BlockPorts* wall : {&node.inputs, &node.outputs}) {
+      for (const et::BlockPort& port : *wall) {
+        lowest = std::max(lowest, port.y);
+      }
+    }
+    Limits<Vec2i> limits = SIZE_LIMITS;
+    limits.lower.y = std::max(limits.lower.y, lowest + PORT_GRID_UNITS);
+    return limits;
+  }
+
+  Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout) {
+    return {.lower = static_cast<int>(std::ceil(layout.headerUnits)), .upper = node.location.height - PORT_GRID_UNITS};
+  }
 
   std::optional<Part> resizePart(const et::Conditional&) { return Part::ResizeXY; }
 

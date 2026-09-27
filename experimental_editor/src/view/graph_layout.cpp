@@ -111,7 +111,11 @@ namespace fluir::editor {
       // The frame's chrome paints, and so hits, over its branch; port terminals paint over their port.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, clip});
-      out.push_back({path, Part::Port, draw::conditionPortRect(conditional, frame, layout), clip});
+      out.push_back({.path = path,
+                     .part = Part::Port,
+                     .world = draw::conditionPortRect(conditional, frame, layout),
+                     .clip = clip,
+                     .port = PortRef{.output = false, .index = 0}});
       // TODO: layoutBlock already computed these anchors for wiring; pass them in instead of recomputing.
       pushTerminals(path, draw::anchors(conditional, frame, layout), clip, unit, out);
       if (contentClip) {

@@ -698,6 +698,16 @@ TEST(GraphLayout, ConditionPortIsHittableOnBothSidesOfTheWall) {
   }
 }
 
+TEST(GraphLayout, ConditionPortBoxCarriesItsPortRef) {
+  const std::vector<Box> boxes = layoutGraph(nestedTree(), kCtx.layout);
+
+  const auto port = std::ranges::find(boxes, Part::Port, &Box::part);
+  ASSERT_NE(port, boxes.end());
+  ASSERT_TRUE(port->port);
+  EXPECT_EQ(*port->port, (fluir::editor::PortRef{.output = false, .index = 0}));
+  EXPECT_FALSE(boxes.front().port) << "only a Port box carries one";
+}
+
 // The conditional owns its height now: the frame is exactly its own location rect.
 TEST(GraphLayout, ConditionalSpansItsOwnLocation) {
   const std::vector<Box> shortBoxes = layoutGraph(nestedTree(10), kCtx.layout);  // frame {10,35,100,50}

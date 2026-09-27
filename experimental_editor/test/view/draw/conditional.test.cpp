@@ -178,3 +178,45 @@ TEST(DrawConditional, PortFillsItsRect) {
 
   EXPECT_TRUE(hasFill(r.calls, Rect{5, 50, 15, 15}));
 }
+
+namespace {
+
+  Rect frameOf(const fluir::editor::et::Conditional& node) {
+    const double unit = kCtx.layout.unitPx;
+    return Rect{0, 0, node.location.width * unit, node.location.height * unit};
+  }
+
+}  // namespace
+
+TEST(DrawConditional, PortYLimitsKeepThePortBetweenHeaderAndBottom) {
+  fluir::editor::et::Conditional node = makeConditional();
+  const Rect frame = frameOf(node);
+  const auto limits = fluir::editor::draw::portYLimits(node, kCtx.layout);
+
+  node.condition.y = limits.lower;
+  EXPECT_DOUBLE_EQ(fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout).y, frame.y + kCtx.layout.headerH());
+  node.condition.y = limits.upper;
+  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
+}
+
+TEST(DrawConditional, SizeLimitsKeepTheConditionPortInsideTheFrame) {
+  fluir::editor::et::Conditional node = makeConditional();
+  node.condition.y = 30;
+  node.location.height = fluir::editor::draw::sizeLimits(node).lower.y;
+
+  const Rect frame = frameOf(node);
+  const Rect port = fluir::editor::draw::conditionPortRect(node, frame, kCtx.layout);
+  EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
+}
+
+TEST(DrawConditional, SizeLimitsFollowTheLowestPortOnAnyWall) {
+  fluir::editor::et::Conditional node = makeConditional();
+  node.condition.y = 30;
+  const int conditionFloor = fluir::editor::draw::sizeLimits(node).lower.y;
+
+  node.inputs = {{.innerId = 2, .y = 34}};
+  EXPECT_EQ(fluir::editor::draw::sizeLimits(node).lower.y, conditionFloor + 4);
+  node.outputs = {{.innerId = 3, .y = 40}};
+  EXPECT_EQ(fluir::editor::draw::sizeLimits(node).lower.y, conditionFloor + 10);
+}

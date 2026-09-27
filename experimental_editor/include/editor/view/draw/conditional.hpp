@@ -25,6 +25,9 @@ namespace fluir::editor::draw {
   /** The condition port: a square on the frame's left wall, its top edge `condition.y` units below the frame top. */
   Rect conditionPortRect(const et::Conditional& node, const Rect& frame, const EditorContext::Layout& layout);
 
+  /** Limits for a port location in grid units. */
+  Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout);
+
   /** A wall port, filled over the frame border it straddles. */
   void drawPort(const Rect& world, const Subview& view, const EditorContext& ctx);
 
@@ -38,7 +41,7 @@ namespace fluir::editor::draw {
 
   Color color(const et::Conditional& node, const EditorContext::Theme& theme);
 
-  /** How far the node may be resized, in grid units. */
+  /** How far the node may be resized in grid units. */
   Limits<Vec2i> sizeLimits(const et::Conditional& node);
 
   /** The grip that resizes the node, if any. */

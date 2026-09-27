@@ -1,7 +1,9 @@
 #include "editor/tools/drag_tool.hpp"
 
+#include <algorithm>
 #include <memory>
 #include <optional>
+#include <variant>
 
 #include <gtest/gtest.h>
 
@@ -375,4 +377,22 @@ TEST(DragTool, AConditionalCannotCollapse) {
 
   EXPECT_GE(h.loc(kConditional).width, 10);
   EXPECT_GE(h.loc(kConditional).height, 10);
+}
+
+// A shrink stops where the lowest port's bottom meets the frame.
+TEST(DragTool, AConditionalCannotShrinkPastItsPort) {
+  NestedHarness h;
+  std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(h.state.editor.tree(), kConditional)).condition.y =
+    14;
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
+
+  h.send(move(kConditionalCorner - Vec2{0, 200}));
+
+  const auto boxes = fluir::editor::layoutGraph(h.state.editor.tree(), kCtx.layout);
+  const auto boxOf = [&](fluir::editor::Part part) {
+    return std::ranges::find_if(boxes, [&](const auto& b) { return b.path == kConditional && b.part == part; })->world;
+  };
+  const fluir::editor::Rect frame = boxOf(fluir::editor::Part::Frame);
+  const fluir::editor::Rect port = boxOf(fluir::editor::Part::Port);
+  EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
 }

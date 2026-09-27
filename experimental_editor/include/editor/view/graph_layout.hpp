@@ -10,6 +10,7 @@
 #include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/tree.hpp"
+#include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
 
@@ -49,6 +50,8 @@ namespace fluir::editor {
     std::optional<Field> field;
     /** Set only on a Terminal box, whose path is its endpoint's and whose world is centered on its anchor. */
     std::optional<BoxTerminal> terminal;
+    /** Set only on a Port box, whose path is its conditional's. */
+    std::optional<PortRef> port;
   };
 
   /** Every box `tree` draws as, in paint order. */

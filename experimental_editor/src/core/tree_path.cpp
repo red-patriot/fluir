@@ -32,6 +32,16 @@ namespace fluir::editor {
     }
   }
 
+  et::BlockPort* portOf(et::Conditional& conditional, PortRef port) {
+    if (port.output) {
+      return port.index < conditional.outputs.size() ? &conditional.outputs[port.index] : nullptr;
+    }
+    if (port.index == 0) {
+      return &conditional.condition;
+    }
+    return port.index <= conditional.inputs.size() ? &conditional.inputs[port.index - 1] : nullptr;
+  }
+
   et::Block* branchAt(et::ParseTree& tree, const FullID& path) {
     if (!isBranchPath(path)) {
       return nullptr;
@@ -95,6 +105,10 @@ namespace fluir::editor {
 
   const et::Block* branchBlock(const et::Conditional& conditional, fluir::ID branchId) {
     return branchBlock(const_cast<et::Conditional&>(conditional), branchId);
+  }
+
+  const et::BlockPort* portOf(const et::Conditional& conditional, PortRef port) {
+    return portOf(const_cast<et::Conditional&>(conditional), port);
   }
 
   const et::Block* branchAt(const et::ParseTree& tree, const FullID& path) {

@@ -22,6 +22,7 @@
 #include "editor/tools/function_header_menu.hpp"
 #include "editor/tools/pan_zoom_tool.hpp"
 #include "editor/tools/popup_tool.hpp"
+#include "editor/tools/port_drag_tool.hpp"
 #include "editor/tools/rail_menu.hpp"
 #include "editor/tools/select_tool.hpp"
 #include "editor/tools/text_edit_tool.hpp"
@@ -46,6 +47,7 @@ namespace fluir::editor {
     tools_.add(std::make_unique<ContextMenuTool>(std::vector<MenuProvider>{functionHeaderItems, railItems}));
     tools_.add(std::make_unique<CompletionTool>());
     tools_.add(std::make_unique<DragTool>());
+    tools_.add(std::make_unique<PortDragTool>());
 
     header_.buttons = {
       Button{.label = "Save", .onClick = [this] { onSave(); }},

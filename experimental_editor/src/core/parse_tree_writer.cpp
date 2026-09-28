@@ -229,6 +229,7 @@ namespace fluir::editor {
     Element* el = parent->InsertNewChildElement("conduit");
     setId(el, value.id);
     el->SetAttribute("input", std::to_string(value.input).c_str());
+    if (value.index != 0) setInt(el, "index", value.index);
     for (const auto& child : value.children)
       conduitOutput(el, child);
   }

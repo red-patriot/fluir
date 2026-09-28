@@ -1,6 +1,5 @@
 #include "editor/core/tree_edit.hpp"
 
-#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -12,7 +11,7 @@
 
 // Tree surgery, asserted against a hand-built et::ParseTree: no page, no
 // renderer, no SDL. Delete is full referential cleanup -- conduits sourced from
-// or targeting the node, plus Binary/Unary operand ids.
+// or targeting the node.
 
 namespace {
 
@@ -20,7 +19,6 @@ namespace {
   using fluir::ID;
   using fluir::Operator;
   using fluir::editor::deleteNode;
-  using fluir::editor::hasOperand;
   using fluir::editor::touches;
 
   fluir::editor::et::FunctionDecl makeFunction(ID id, fluir::editor::et::Block body) {
@@ -48,15 +46,6 @@ namespace {
     binary.rhs = rhs;
     binary.op = Operator::PLUS;
     return binary;
-  }
-
-  fluir::editor::et::Unary makeUnary(ID id, ID lhs) {
-    fluir::editor::et::Unary unary;
-    unary.id = id;
-    unary.location = FlowGraphLocation{.x = 1, .y = 1, .z = 1, .width = 2, .height = 2};
-    unary.lhs = lhs;
-    unary.op = Operator::MINUS;
-    return unary;
   }
 
   fluir::editor::et::Conduit makeConduit(ID id, ID input, std::vector<fluir::editor::et::Conduit::Output> children) {
@@ -149,45 +138,6 @@ TEST(TreeEdit, DeleteNodeKeepsAnAlreadyChildlessConduit) {
   EXPECT_TRUE(fn.body.conduits.contains(100));
 }
 
-TEST(TreeEdit, DeleteNodeResetsBinaryLhsThatReferencedIt) {
-  fluir::editor::et::Block body;
-  body.nodes.emplace(10, makeConstant(10));
-  body.nodes.emplace(11, makeBinary(11, 10, 12));
-  body.nodes.emplace(12, makeConstant(12));
-  fluir::editor::et::FunctionDecl fn = makeFunction(1, std::move(body));
-
-  EXPECT_TRUE(deleteNode(fn.body, 10));
-
-  const auto& binary = std::get<fluir::editor::et::Binary>(fn.body.nodes.at(11));
-  EXPECT_EQ(binary.lhs, fluir::INVALID_ID);
-  EXPECT_EQ(binary.rhs, 12u);  // the untouched operand is left alone
-}
-
-TEST(TreeEdit, DeleteNodeResetsBinaryRhsThatReferencedIt) {
-  fluir::editor::et::Block body;
-  body.nodes.emplace(10, makeConstant(10));
-  body.nodes.emplace(11, makeBinary(11, 12, 10));
-  body.nodes.emplace(12, makeConstant(12));
-  fluir::editor::et::FunctionDecl fn = makeFunction(1, std::move(body));
-
-  EXPECT_TRUE(deleteNode(fn.body, 10));
-
-  const auto& binary = std::get<fluir::editor::et::Binary>(fn.body.nodes.at(11));
-  EXPECT_EQ(binary.rhs, fluir::INVALID_ID);
-  EXPECT_EQ(binary.lhs, 12u);
-}
-
-TEST(TreeEdit, DeleteNodeResetsUnaryLhsThatReferencedIt) {
-  fluir::editor::et::Block body;
-  body.nodes.emplace(10, makeConstant(10));
-  body.nodes.emplace(11, makeUnary(11, 10));
-  fluir::editor::et::FunctionDecl fn = makeFunction(1, std::move(body));
-
-  EXPECT_TRUE(deleteNode(fn.body, 10));
-
-  EXPECT_EQ(std::get<fluir::editor::et::Unary>(fn.body.nodes.at(11)).lhs, fluir::INVALID_ID);
-}
-
 TEST(TreeEdit, DeleteNodeLeavesOtherFunctionsUntouched) {
   // Node ids are body-scoped: two functions may both hold id 10.
   fluir::editor::et::Block bodyA;
@@ -213,12 +163,4 @@ TEST(TreeEdit, TouchesMatchesTheSourceOrAnyTarget) {
   EXPECT_TRUE(touches(conduit, 10));
   EXPECT_TRUE(touches(conduit, 12));
   EXPECT_FALSE(touches(conduit, 13));
-}
-
-TEST(TreeEdit, HasOperandMatchesBinaryAndUnaryOperandsOnly) {
-  EXPECT_TRUE(hasOperand(makeBinary(11, 10, 12), 10));
-  EXPECT_TRUE(hasOperand(makeBinary(11, 12, 10), 10));
-  EXPECT_TRUE(hasOperand(makeUnary(11, 10), 10));
-  EXPECT_FALSE(hasOperand(makeUnary(11, 12), 10));
-  EXPECT_FALSE(hasOperand(makeConstant(10), 10));  // its own id is not an operand
 }

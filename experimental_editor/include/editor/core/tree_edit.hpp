@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_TREE_EDIT_HPP
+#define FLUIR_EDITOR_CORE_TREE_EDIT_HPP
 
 #include "compiler/models/id.hpp"
 #include "editor/core/tree.hpp"
@@ -14,7 +15,6 @@ namespace fluir::editor {
   /** Whether `conduit` is sourced from or lands on `nodeId`. */
   bool touches(const et::Conduit& conduit, fluir::ID nodeId);
 
-  /** Whether `node` names `nodeId` as an operand. */
-  bool hasOperand(const et::Node& node, fluir::ID nodeId);
-
 }  // namespace fluir::editor
+
+#endif

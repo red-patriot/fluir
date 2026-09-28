@@ -5,7 +5,6 @@
 #include <memory>
 #include <utility>
 
-#include "editor/core/node_access.hpp"
 #include "editor/core/tree_edit.hpp"
 #include "editor/core/tree_path.hpp"
 
@@ -41,12 +40,6 @@ namespace fluir::editor {
     const fluir::ID nodeId = path_.back();
     node_ = *node;
     conduits_ = touchedConduits(*block, nodeId);
-    referrers_.clear();
-    for (const auto& [id, other] : block->nodes) {
-      if (hasOperand(other, nodeId)) {
-        referrers_.push_back(other);
-      }
-    }
     return deleteNode(*block, nodeId);
   }
 
@@ -113,11 +106,7 @@ namespace fluir::editor {
     for (et::Conduit& conduit : conduits_) {
       block->conduits.insert_or_assign(conduit.id, std::move(conduit));
     }
-    for (et::Node& referrer : referrers_) {
-      block->nodes.insert_or_assign(idOf(referrer), std::move(referrer));
-    }
     conduits_.clear();
-    referrers_.clear();
     return true;
   }
 

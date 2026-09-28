@@ -1,11 +1,15 @@
 #include "editor/tools/select_tool.hpp"
 
+#include <algorithm>
 #include <optional>
+#include <utility>
+#include <variant>
 
 #include <gtest/gtest.h>
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/graph_layout.hpp"
 #include "tool_harness.hpp"
 
 // simple_binary_expr.fl: function 1 {50,50,500,500}; binary 1 {125,85,25,25} with move grip {130,90,15,15}.
@@ -136,4 +140,24 @@ TEST(SelectTool, AnEmptyBranchSelectsItsBranchPath) {
 
   ASSERT_TRUE(state.selection.has_value());
   EXPECT_EQ(*state.selection, (FullID{1, 20, THEN_BRANCH_ID}));
+}
+
+TEST(SelectTool, APressOnAPortLeavesNoSelection) {
+  EditorState state{kCtx};
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20})).inputs = {
+    {.innerId = 3, .y = 12}};
+  state.editor.load(std::nullopt, std::move(tree));
+  state.selection = FullID{1};
+  SelectTool tool;
+  const auto boxes = fluir::editor::layoutGraph(state.editor.tree(), kCtx.layout);
+  const auto port = std::ranges::find_if(boxes, [&boxes](const fluir::editor::Box& box) {
+    const fluir::editor::Box* hit = fluir::editor::hitAt(boxes, box.world.center());
+    return box.part == fluir::editor::Part::Port && hit && hit->part == fluir::editor::Part::Port;
+  });
+  ASSERT_NE(port, boxes.end());
+
+  EXPECT_FALSE(testutil::send(tool, state, down(port->world.center())));
+
+  EXPECT_EQ(state.selection, std::nullopt);
 }

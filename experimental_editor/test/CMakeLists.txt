@@ -40,6 +40,7 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/pan_zoom_tool.test.cpp
     tools/popup_tool.test.cpp
     tools/port_drag_tool.test.cpp
+    tools/port_menu.test.cpp
     tools/rail_menu.test.cpp
     tools/select_tool.test.cpp
     tools/text_edit_tool.test.cpp

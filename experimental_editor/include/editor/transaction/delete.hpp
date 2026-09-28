@@ -32,7 +32,6 @@ namespace fluir::editor {
     std::size_t paramPos_ = 0; /**< where `param_` sat in its parameter list */
     std::optional<et::FunctionDecl::Return> ret_;
     std::vector<et::Conduit> conduits_; /**< touched conduits, as they were */
-    std::vector<et::Node> referrers_;   /**< nodes whose operands named it, as they were */
   };
 
   std::unique_ptr<Transaction> deleteAt(fluir::FullID path);

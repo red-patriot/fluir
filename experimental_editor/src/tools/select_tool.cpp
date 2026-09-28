@@ -9,7 +9,7 @@ namespace fluir::editor {
       return false;
     }
     const Box* hit = hitAt(boxes, state.view.screenToWorld(event.pos));
-    if (!hit) {
+    if (!hit || hit->part == Part::Port) {
       state.selection = std::nullopt;
     } else {
       // A rail belongs to its function.

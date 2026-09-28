@@ -18,6 +18,7 @@
 #include "editor/transaction/add_port.hpp"
 #include "editor/transaction/add_return.hpp"
 #include "editor/transaction/delete.hpp"
+#include "editor/transaction/delete_port.hpp"
 #include "editor/transaction/edit_call_argument.hpp"
 #include "editor/transaction/edit_call_node.hpp"
 #include "editor/transaction/edit_comment.hpp"
@@ -225,7 +226,7 @@ TEST(ResizeTransaction, ResizeOfAnUnknownPathFails) {
   EXPECT_EQ(tree, before);
 }
 
-TEST(DeleteTransaction, RoundTripRestoresNodeConduitsAndOperands) {
+TEST(DeleteTransaction, RoundTripRestoresNodeAndConduits) {
   fluir::editor::et::ParseTree tree = makeTree();
   const fluir::editor::et::ParseTree before = tree;
 
@@ -238,7 +239,6 @@ TEST(DeleteTransaction, RoundTripRestoresNodeConduitsAndOperands) {
   EXPECT_EQ(body.conduits.count(43), 0u);               // sourced from the node
   EXPECT_EQ(body.conduits.count(42), 1u);               // the control, untouched
   ASSERT_EQ(body.conduits.at(44).children.size(), 1u);  // only the matching target stripped
-  EXPECT_EQ(std::get<fluir::editor::et::Unary>(body.nodes.at(31)).lhs, fluir::INVALID_ID);
 
   ASSERT_TRUE(uut.unexecute(tree));
   EXPECT_EQ(tree, before);
@@ -1258,6 +1258,98 @@ TEST(AddPortTransaction, BadPathInvalidOrTakenInnerIdChangeNothing) {
   EXPECT_FALSE((AddPort{kConditionalPath, true, conditionalOf(tree).condition.innerId, 7}.execute(tree)))
     << "condition inner id";
   EXPECT_FALSE((AddPort{kConditionalPath, false, 60, 7}.unexecute(tree))) << "never executed";
+
+  EXPECT_EQ(tree, before);
+}
+
+namespace {
+
+  using fluir::editor::ELSE_BRANCH_ID;
+
+  fluir::editor::et::Conditional& conditionalIn(fluir::editor::et::ParseTree& tree) {
+    return std::get<fluir::editor::et::Conditional>(*nodeAt(tree, kConditionalPath));
+  }
+
+  fluir::editor::et::Block& bodyIn(fluir::editor::et::ParseTree& tree) { return *blockOf(tree, FullID{1}); }
+
+}  // namespace
+
+TEST(DeletePortTransaction, DeletingAnInputShiftsLaterInputWiresDownAndUndoRestoresTheTree) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  conditionalIn(tree).inputs = {{.innerId = 3, .y = 6}, {.innerId = 4, .y = 8}};
+  bodyIn(tree).nodes.emplace(30, makeConstant(30, 40, 2));
+  bodyIn(tree).nodes.emplace(31, makeConstant(31, 40, 20));
+  bodyIn(tree).conduits.emplace(60, makeConduit(60, 30, {{.target = 20, .index = 1}}));
+  bodyIn(tree).conduits.emplace(61, makeConduit(61, 31, {{.target = 20, .index = 2}}));
+  fluir::editor::et::Block& then = *conditionalIn(tree).thenScope;
+  then.nodes.emplace(7, makeUnary(7, 5, 5, fluir::INVALID_ID));
+  then.conduits.emplace(62, makeConduit(62, 3, {{.target = 7, .index = 0}}));
+  const fluir::editor::et::ParseTree before = tree;
+
+  const auto uut = fluir::editor::deletePort(kConditionalPath, PortRef{.output = false, .index = 1});
+  ASSERT_TRUE(uut->execute(tree));
+
+  ASSERT_EQ(conditionalOf(tree).inputs.size(), 1u);
+  EXPECT_EQ(conditionalOf(tree).inputs[0].innerId, 4u);
+  EXPECT_FALSE(bodyIn(tree).conduits.contains(60)) << "its only target was the deleted port";
+  ASSERT_TRUE(bodyIn(tree).conduits.contains(61));
+  EXPECT_EQ(bodyIn(tree).conduits.at(61).children[0].index, 1) << "the later input shifts down";
+  EXPECT_FALSE(thenBranch(tree).conduits.contains(62));
+
+  const fluir::editor::et::ParseTree afterFirst = tree;
+  ASSERT_TRUE(uut->unexecute(tree));
+  EXPECT_EQ(tree, before);
+  ASSERT_TRUE(uut->execute(tree));
+  EXPECT_EQ(tree, afterFirst) << "redo reaches the same state";
+}
+
+TEST(DeletePortTransaction, DeletingAnOutputDropsItsWiresOutsideAndInBothBranchesAndUndoRestoresTheTree) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  fluir::editor::et::Conditional& conditional = conditionalIn(tree);
+  conditional.outputs = {{.innerId = 5, .y = 6}, {.innerId = 6, .y = 8}};
+  bodyIn(tree).nodes.emplace(31, makeBinary(31, 40, 2, 20, 20));
+  bodyIn(tree).conduits.emplace(70,
+                                fluir::editor::et::Conduit{.id = 70, .input = 20, .index = 0, .children = {{31, 0}}});
+  bodyIn(tree).conduits.emplace(71,
+                                fluir::editor::et::Conduit{.id = 71, .input = 20, .index = 1, .children = {{31, 1}}});
+  conditional.thenScope->conduits.emplace(80, makeConduit(80, 1, {{.target = 5, .index = 0}}));
+  conditional.elseScope->nodes.emplace(8, makeConstant(8, 1, 1));
+  conditional.elseScope->conduits.emplace(81,
+                                          makeConduit(81, 8, {{.target = 5, .index = 0}, {.target = 6, .index = 0}}));
+  const fluir::editor::et::ParseTree before = tree;
+
+  const auto uut = fluir::editor::deletePort(kConditionalPath, PortRef{.output = true, .index = 0});
+  ASSERT_TRUE(uut->execute(tree));
+
+  ASSERT_EQ(conditionalOf(tree).outputs.size(), 1u);
+  EXPECT_EQ(conditionalOf(tree).outputs[0].innerId, 6u);
+  EXPECT_FALSE(bodyIn(tree).conduits.contains(70));
+  ASSERT_TRUE(bodyIn(tree).conduits.contains(71));
+  EXPECT_EQ(bodyIn(tree).conduits.at(71).index, 0) << "the later output shifts down";
+  EXPECT_FALSE(thenBranch(tree).conduits.contains(80));
+  const fluir::editor::et::Block& otherwise = *conditionalOf(tree).elseScope;
+  ASSERT_TRUE(otherwise.conduits.contains(81));
+  ASSERT_EQ(otherwise.conduits.at(81).children.size(), 1u);
+  EXPECT_EQ(otherwise.conduits.at(81).children[0].target, 6u) << "only the deleted port's target goes";
+
+  ASSERT_TRUE(uut->unexecute(tree));
+  EXPECT_EQ(tree, before);
+}
+
+TEST(DeletePortTransaction, ConditionBadPathOrMissingPortChangeNothing) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  conditionalIn(tree).inputs = {{.innerId = 3, .y = 6}};
+  const fluir::editor::et::ParseTree before = tree;
+
+  EXPECT_FALSE(fluir::editor::deletePort(kConditionalPath, kCondition)->execute(tree)) << "condition";
+  EXPECT_FALSE(fluir::editor::deletePort(FullID{1, 99}, PortRef{.output = false, .index = 1})->execute(tree));
+  EXPECT_FALSE(
+    fluir::editor::deletePort(FullID{1, 20, THEN_BRANCH_ID, 1}, PortRef{.output = false, .index = 1})->execute(tree))
+    << "not a conditional";
+  EXPECT_FALSE(fluir::editor::deletePort(kConditionalPath, PortRef{.output = false, .index = 2})->execute(tree));
+  EXPECT_FALSE(fluir::editor::deletePort(kConditionalPath, PortRef{.output = true, .index = 0})->execute(tree));
+  EXPECT_FALSE(fluir::editor::deletePort(kConditionalPath, PortRef{.output = false, .index = 1})->unexecute(tree))
+    << "never executed";
 
   EXPECT_EQ(tree, before);
 }

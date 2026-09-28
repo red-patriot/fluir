@@ -2,8 +2,10 @@ find_package(GTest REQUIRED)
 
 add_executable(fluir.editor.test)
 
-set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
-                                         components/text_field.test.cpp
+set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES
+    components/button.test.cpp
+    components/menu.test.cpp
+    components/text_field.test.cpp
 )
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES

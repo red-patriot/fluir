@@ -182,8 +182,10 @@ set(FLUIR_EDITOR_PAGE_SOURCES
     "pages/splash.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
-                                   "components/text_field.cpp"
+set(FLUIR_EDITOR_COMPONENT_SOURCES
+    "components/button.cpp"
+    "components/menu.cpp"
+    "components/text_field.cpp"
 )
 
 set(FLUIR_EDITOR_VIEW_SOURCES

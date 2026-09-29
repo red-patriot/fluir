@@ -13,7 +13,7 @@
 
 namespace {
 
-  using fluir::editor::Button;
+  using fluir::editor::ButtonComp;
   using fluir::editor::ButtonOptions;
   using fluir::editor::EditorContext;
   using fluir::editor::InputEvent;
@@ -39,7 +39,7 @@ namespace {
   struct Fixture {
     int clicks = 0;
     bool is_on = true;
-    Button uut{
+    ButtonComp uut{
       ButtonOptions{.label = "Open", .onClick = [this]() { ++clicks; }, .enabled = [this]() { return is_on; }}};
 
     Fixture() { uut.place(BUTTON_RECT); }
@@ -48,7 +48,7 @@ namespace {
 }  // namespace
 
 TEST(Button, IsEnabledIfUnspecified) {
-  const Button uut{ButtonOptions{.label = "Save"}};
+  const ButtonComp uut{ButtonOptions{.label = "Save"}};
 
   EXPECT_TRUE(uut.enabled());
 }
@@ -62,7 +62,7 @@ TEST(Button, IsEnabledFollowsPredicate) {
 }
 
 TEST(Button, CanSpecifyRect) {
-  Button uut{ButtonOptions{.label = "Save"}};
+  ButtonComp uut{ButtonOptions{.label = "Save"}};
 
   uut.place(BUTTON_RECT);
 
@@ -71,7 +71,7 @@ TEST(Button, CanSpecifyRect) {
 
 TEST(Button, IgnoresPressesIfUnplaced) {
   int clicks = 0;
-  Button uut{ButtonOptions{.label = "Save", .onClick = [&] { ++clicks; }}};
+  ButtonComp uut{ButtonOptions{.label = "Save", .onClick = [&] { ++clicks; }}};
 
   EXPECT_FALSE(uut.handle(down({0, 0})));
   EXPECT_FALSE(uut.handle(up({0, 0})));
@@ -92,7 +92,7 @@ TEST(Button, RePlacingMovesHitArea) {
 
 TEST(Button, PreferredSizeFitsTheLabel) {
   RecordingRenderer renderer;
-  const Button uut{ButtonOptions{.label = "Save"}};
+  const ButtonComp uut{ButtonOptions{.label = "Save"}};
 
   const Vec2 size = uut.preferredSize(ctx.layout.textPad, renderer);
   const Vec2 text = renderer.measureText("Save");
@@ -103,8 +103,8 @@ TEST(Button, PreferredSizeFitsTheLabel) {
 
 TEST(Button, LongerLabelIsWider) {
   RecordingRenderer renderer;
-  const Button shortLabel{ButtonOptions{.label = "Go"}};
-  const Button longLabel{ButtonOptions{.label = "Go somewhere else"}};
+  const ButtonComp shortLabel{ButtonOptions{.label = "Go"}};
+  const ButtonComp longLabel{ButtonOptions{.label = "Go somewhere else"}};
 
   EXPECT_GT(longLabel.preferredSize(ctx.layout.textPad, renderer).x,
             shortLabel.preferredSize(ctx.layout.textPad, renderer).x);
@@ -112,7 +112,7 @@ TEST(Button, LongerLabelIsWider) {
 
 TEST(Button, MorePaddingIsLarger) {
   RecordingRenderer renderer;
-  const Button uut{ButtonOptions{.label = "Save"}};
+  const ButtonComp uut{ButtonOptions{.label = "Save"}};
   const double pad = ctx.layout.textPad;
 
   const Vec2 small = uut.preferredSize(pad, renderer);
@@ -185,7 +185,7 @@ TEST(Button, MovesAndKeysAreIgnored) {
 }
 
 TEST(Button, EmptyOnClickIsANoOp) {
-  Button uut{ButtonOptions{.label = "Save"}};
+  ButtonComp uut{ButtonOptions{.label = "Save"}};
   uut.place(BUTTON_RECT);
 
   EXPECT_TRUE(uut.handle(down(INSIDE)));

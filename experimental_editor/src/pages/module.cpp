@@ -52,17 +52,17 @@ namespace fluir::editor {
     tools_.add(std::make_unique<DragTool>());
     tools_.add(std::make_unique<PortDragTool>());
 
-    header_.buttons = {
-      Button{.label = "Save", .onClick = [this] { onSave(); }},
-      Button{.label = "Save As", .onClick = [this] { onSaveAs(); }},
-      Button{.label = "Undo",
-             .onClick = [this] { state_.editor.undo(); },
-             .enabled = [this] { return state_.editor.canUndo(); }},
-      Button{.label = "Redo",
-             .onClick = [this] { state_.editor.redo(); },
-             .enabled = [this] { return state_.editor.canRedo(); }},
-      Button{.label = "Exit", .onClick = [this] { shouldClose_ = true; }, .align = Button::Align::Right},
+    header_.left = {
+      Button{ButtonOptions{.label = "Save", .onClick = [this] { onSave(); }}},
+      Button{ButtonOptions{.label = "Save As", .onClick = [this] { onSaveAs(); }}},
+      Button{ButtonOptions{.label = "Undo",
+                           .onClick = [this] { state_.editor.undo(); },
+                           .enabled = [this] { return state_.editor.canUndo(); }}},
+      Button{ButtonOptions{.label = "Redo",
+                           .onClick = [this] { state_.editor.redo(); },
+                           .enabled = [this] { return state_.editor.canRedo(); }}},
     };
+    header_.right = {Button{ButtonOptions{.label = "Exit", .onClick = [this] { shouldClose_ = true; }}}};
   }
 
   int ModulePage::onStart() {
@@ -75,9 +75,11 @@ namespace fluir::editor {
     // run under a live gesture or draft.
     if (event.type == InputEvent::Type::MouseDown && headerLayout_.bar.contains(event.pos)) {
       tools_.cancel(state_);
-      if (const auto index = buttonAt(headerLayout_, event.pos)) {
-        header_.buttons[*index].onClick();
-      }
+      handleToolbar(header_, event);
+      return;
+    }
+    // A header button pressed above fires on release.
+    if (event.type == InputEvent::Type::MouseUp && handleToolbar(header_, event)) {
       return;
     }
     const std::vector<Box> boxes = layoutGraph(state_.editor.tree(), ctx_.layout);

@@ -17,9 +17,9 @@ namespace fluir::editor {
   };
 
   /** A generic button */
-  class ButtonComp {
+  class Button {
    public:
-    explicit ButtonComp(ButtonOptions options);
+    explicit Button(ButtonOptions options);
 
     /** Places the button at the given Rect in screen pixels */
     void place(Rect rect) { rect_ = rect; }

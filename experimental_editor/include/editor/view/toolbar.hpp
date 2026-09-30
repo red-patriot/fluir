@@ -15,8 +15,8 @@ namespace fluir::editor {
 
   /** A bar of self-sizing buttons plus an optional label after the left ones. */
   struct Toolbar {
-    std::vector<ButtonComp> left;  /**< Buttons aligned to the left edge, in order */
-    std::vector<ButtonComp> right; /**< Buttons aligned to the right edge, in order */
+    std::vector<Button> left;  /**< Buttons aligned to the left edge, in order */
+    std::vector<Button> right; /**< Buttons aligned to the right edge, in order */
     std::string label;
   };
 

@@ -17,7 +17,7 @@
 
 namespace {
 
-  using fluir::editor::ButtonComp;
+  using fluir::editor::Button;
   using fluir::editor::ButtonOptions;
   using fluir::editor::drawToolbar;
   using fluir::editor::EditorContext;
@@ -37,8 +37,8 @@ namespace {
   constexpr double kWidth = 800;
   const EditorContext kCtx;
 
-  ButtonComp button(std::string label, std::function<void()> onClick = [] {}) {
-    return ButtonComp{ButtonOptions{.label = std::move(label), .onClick = std::move(onClick)}};
+  Button button(std::string label, std::function<void()> onClick = [] {}) {
+    return Button{ButtonOptions{.label = std::move(label), .onClick = std::move(onClick)}};
   }
 
   // Save, Save As, Undo left; Exit right.

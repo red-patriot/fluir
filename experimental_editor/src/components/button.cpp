@@ -3,17 +3,17 @@
 #include <utility>
 
 namespace fluir::editor {
-  ButtonComp::ButtonComp(ButtonOptions options) : options_(std::move(options)) { }
+  Button::Button(ButtonOptions options) : options_(std::move(options)) { }
 
-  Vec2 ButtonComp::preferredSize(double textPad, TextMetrics& metrics) const {
+  Vec2 Button::preferredSize(double textPad, TextMetrics& metrics) const {
     const auto textSize = metrics.measureText(options_.label);
 
     return Vec2{.x = textSize.x + textPad * 2, .y = textSize.y + textPad * 2};
   }
 
-  bool ButtonComp::enabled() const { return !options_.enabled || options_.enabled(); }
+  bool Button::enabled() const { return !options_.enabled || options_.enabled(); }
 
-  bool ButtonComp::handle(const InputEvent& event) {
+  bool Button::handle(const InputEvent& event) {
     if (!event.button) {
       return false;
     }
@@ -42,7 +42,7 @@ namespace fluir::editor {
     return false;
   }
 
-  void ButtonComp::draw(Renderer& renderer, const EditorContext::Theme& theme) const {
+  void Button::draw(Renderer& renderer, const EditorContext::Theme& theme) const {
     if (rect_.w == 0 || rect_.h == 0) {
       return;
     }
@@ -51,7 +51,7 @@ namespace fluir::editor {
     renderer.drawRect(rect_, theme.border);
   }
 
-  void ButtonComp::drawCenteredLabel(Renderer& renderer, const EditorContext::Theme& theme) const {
+  void Button::drawCenteredLabel(Renderer& renderer, const EditorContext::Theme& theme) const {
     const auto textSize = renderer.measureText(options_.label);
     const auto center = rect_.center();
     const auto topLeft = center - textSize / 2;

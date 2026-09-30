@@ -53,16 +53,16 @@ namespace fluir::editor {
     tools_.add(std::make_unique<PortDragTool>());
 
     header_.left = {
-      ButtonComp{ButtonOptions{.label = "Save", .onClick = [this] { onSave(); }}},
-      ButtonComp{ButtonOptions{.label = "Save As", .onClick = [this] { onSaveAs(); }}},
-      ButtonComp{ButtonOptions{.label = "Undo",
-                               .onClick = [this] { state_.editor.undo(); },
-                               .enabled = [this] { return state_.editor.canUndo(); }}},
-      ButtonComp{ButtonOptions{.label = "Redo",
-                               .onClick = [this] { state_.editor.redo(); },
-                               .enabled = [this] { return state_.editor.canRedo(); }}},
+      Button{ButtonOptions{.label = "Save", .onClick = [this] { onSave(); }}},
+      Button{ButtonOptions{.label = "Save As", .onClick = [this] { onSaveAs(); }}},
+      Button{ButtonOptions{.label = "Undo",
+                           .onClick = [this] { state_.editor.undo(); },
+                           .enabled = [this] { return state_.editor.canUndo(); }}},
+      Button{ButtonOptions{.label = "Redo",
+                           .onClick = [this] { state_.editor.redo(); },
+                           .enabled = [this] { return state_.editor.canRedo(); }}},
     };
-    header_.right = {ButtonComp{ButtonOptions{.label = "Exit", .onClick = [this] { shouldClose_ = true; }}}};
+    header_.right = {Button{ButtonOptions{.label = "Exit", .onClick = [this] { shouldClose_ = true; }}}};
   }
 
   int ModulePage::onStart() {

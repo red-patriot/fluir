@@ -22,7 +22,7 @@ namespace fluir::editor {
     void onDraw() override;
 
    private:
-    std::vector<ButtonComp> buttons_; /**< The list of buttons from top-down */
+    std::vector<Button> buttons_; /**< The list of buttons from top-down */
     std::unique_ptr<Page> next_;
 
     void newFile();

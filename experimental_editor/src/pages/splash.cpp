@@ -19,8 +19,8 @@ namespace fluir::editor {
 
   SplashPage::SplashPage(EditorContext& ctx, Renderer& renderer) :
     Page(ctx, renderer),
-    buttons_{ButtonComp{ButtonOptions{.label = "New", .onClick = [this]() { newFile(); }}},
-             ButtonComp{ButtonOptions{.label = "Open", .onClick = [this]() { openFileDialog(); }}}} { }
+    buttons_{Button{ButtonOptions{.label = "New", .onClick = [this]() { newFile(); }}},
+             Button{ButtonOptions{.label = "Open", .onClick = [this]() { openFileDialog(); }}}} { }
 
   void SplashPage::onEvent(const InputEvent& event) {
     for (auto& button : buttons_) {

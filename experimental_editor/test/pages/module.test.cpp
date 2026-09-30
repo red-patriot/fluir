@@ -105,7 +105,7 @@ namespace {
 
     Vec2 headerButton(std::string_view label) const {
       for (const auto* buttons : {&page->header().left, &page->header().right}) {
-        const auto it = std::ranges::find(*buttons, label, &fluir::editor::ButtonComp::label);
+        const auto it = std::ranges::find(*buttons, label, &fluir::editor::Button::label);
         if (it != buttons->end()) {
           return it->rect().center();
         }

@@ -13,7 +13,6 @@
     </input>
     <output>
       <return id="3" type="F64"/>
-      <return id="4" type="I32"/>
     </output>
     <body/>
   </function>

@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/core/module_editor.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/input.hpp"
 #include "editor/pages/page.hpp"
@@ -15,7 +16,7 @@ namespace fluir::editor {
   /** The page to display an open module and edit it. */
   class ModulePage : public Page {
    public:
-    ModulePage(EditorContext& ctx, Renderer& renderer);
+    ModulePage(EditorContext& ctx, Renderer& renderer, ModuleEditor editor);
 
     std::unique_ptr<Page> next() override;
 

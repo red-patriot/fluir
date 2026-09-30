@@ -10,13 +10,16 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
+#include "editor/tools/conduit_tool.hpp"
 #include "editor/tools/tool.hpp"
+#include "editor/view/draw/conditional.hpp"
+#include "editor/view/graph_layout.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
@@ -125,19 +128,19 @@ namespace {
     BodyFixture() {
       testutil::loadInto(state, "read/simple_binary_expr.fl");
       const fluir::Coordinate where{.x = kWhere.x, .y = kWhere.y, .z = 3};
-      uut.emplace(state.intelligence.completions(state.editor.tree(), fluir::FullID{1}),
+      uut.emplace(state.editor.intelligence().completions(state.editor.tree(), fluir::FullID{1}),
                   kBounds,
                   nullptr,
                   where,
                   fluir::FullID{1});
     }
 
-    const fluir::pt::Block& body() const {
-      return std::get<fluir::pt::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
+    const fluir::editor::et::Block& body() const {
+      return std::get<fluir::editor::et::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
     }
 
     // Picks `label` and returns the single node it added.
-    const fluir::pt::Node* pick(std::string_view label) {
+    const fluir::editor::et::Node* pick(std::string_view label) {
       const auto row = scrollTo(*uut, state, label);
       if (!row) {
         return nullptr;
@@ -268,7 +271,7 @@ TEST(CompletionModal, ALeftPressOnFunctionAddsAFunctionAtThePointAndCloses) {
 
   const auto& decls = f.state.editor.tree().declarations;
   ASSERT_EQ(decls.size(), 1u);
-  const auto* fn = std::get_if<fluir::pt::FunctionDecl>(&decls.begin()->second);
+  const auto* fn = std::get_if<fluir::editor::et::FunctionDecl>(&decls.begin()->second);
   ASSERT_NE(fn, nullptr);
   EXPECT_EQ(fn->location.x, kWhere.x);
   EXPECT_EQ(fn->location.y, kWhere.y);
@@ -285,7 +288,7 @@ TEST(CompletionModal, ALeftPressOnCommentAddsACommentAtThePointAndCloses) {
 
   const auto& decls = f.state.editor.tree().declarations;
   ASSERT_EQ(decls.size(), 1u);
-  const auto* comment = std::get_if<fluir::pt::Comment>(&decls.begin()->second);
+  const auto* comment = std::get_if<fluir::editor::et::Comment>(&decls.begin()->second);
   ASSERT_NE(comment, nullptr);
   EXPECT_EQ(comment->location.x, kWhere.x);
   EXPECT_EQ(comment->location.y, kWhere.y);
@@ -415,7 +418,7 @@ TEST(CompletionModal, PickingABinaryOperatorAddsItInTheBodyAtThePoint) {
   const auto* node = f.pick("* (binary)");
 
   ASSERT_NE(node, nullptr);
-  const auto* binary = std::get_if<fluir::pt::Binary>(node);
+  const auto* binary = std::get_if<fluir::editor::et::Binary>(node);
   ASSERT_NE(binary, nullptr);
   EXPECT_EQ(binary->op, fluir::Operator::STAR);
   EXPECT_EQ(binary->location, (fluir::FlowGraphLocation{.x = 12, .y = 34, .z = 4, .width = 8, .height = 5}));
@@ -429,7 +432,7 @@ TEST(CompletionModal, PickingAUnaryOperatorAddsItInTheBody) {
   const auto* node = f.pick("! (unary)");
 
   ASSERT_NE(node, nullptr);
-  const auto* unary = std::get_if<fluir::pt::Unary>(node);
+  const auto* unary = std::get_if<fluir::editor::et::Unary>(node);
   ASSERT_NE(unary, nullptr);
   EXPECT_EQ(unary->op, fluir::Operator::BANG);
   EXPECT_EQ(unary->location.x, kWhere.x);
@@ -441,7 +444,7 @@ TEST(CompletionModal, PickingAConstantAddsADefaultValueSizedForItsType) {
 
   const auto* i32 = f.pick("I32");
   ASSERT_NE(i32, nullptr);
-  const auto* constant = std::get_if<fluir::pt::Constant>(i32);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(i32);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->value, (fluir::literals_types::Literal{fluir::literals_types::I32{0}}));
   EXPECT_EQ(constant->location, (fluir::FlowGraphLocation{.x = 12, .y = 34, .z = 4, .width = 12, .height = 5}));
@@ -455,7 +458,7 @@ TEST(CompletionModal, ABoolConstantIsNarrower) {
   const auto* node = f.pick("BOOL");
 
   ASSERT_NE(node, nullptr);
-  const auto* constant = std::get_if<fluir::pt::Constant>(node);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(node);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->value, (fluir::literals_types::Literal{false}));
   EXPECT_EQ(constant->location.width, 8);
@@ -468,7 +471,7 @@ TEST(CompletionModal, PickingCommentInABodyAddsABodyComment) {
   const auto* node = f.pick("Comment");
 
   ASSERT_NE(node, nullptr);
-  EXPECT_TRUE(std::holds_alternative<fluir::pt::Comment>(*node));
+  EXPECT_TRUE(std::holds_alternative<fluir::editor::et::Comment>(*node));
 }
 
 TEST(CompletionModal, ALongListShowsAtMostTenRows) {
@@ -587,10 +590,10 @@ TEST(CompletionModal, PickingAFilteredRowAddsThatOption) {
 
   EXPECT_FALSE(f.uut->onEvent(down(rows[0].center()), f.state));
 
-  const fluir::pt::Binary* binary = nullptr;
+  const fluir::editor::et::Binary* binary = nullptr;
   for (const auto& [id, node] : f.body().nodes) {
     if (!before.contains(id)) {
-      binary = std::get_if<fluir::pt::Binary>(&node);
+      binary = std::get_if<fluir::editor::et::Binary>(&node);
     }
   }
   ASSERT_NE(binary, nullptr);
@@ -616,4 +619,40 @@ TEST(CompletionModal, FilteringResetsTheScroll) {
   const auto rows = drawnRows(uut);
   ASSERT_EQ(rows.size(), 11u) << "Item 1 and Item 10..19";
   EXPECT_NEAR(rows.front().y, uut.searchBar().y + uut.searchBar().h + 4.0, 1e-6);
+}
+
+// simple_binary_expr.fl: constant 2's output sits at (85,97.5), in the body the new conditional joins.
+TEST(CompletionModal, APickedConditionalIsWireableThroughItsConditionPort) {
+  BodyFixture f;
+  const auto* node = f.pick("if-else");
+  ASSERT_NE(node, nullptr);
+  const auto& conditional = std::get<fluir::editor::et::Conditional>(*node);
+  const fluir::FullID path{1, conditional.id};
+  const std::vector<fluir::editor::Box> boxes = fluir::editor::layoutGraph(f.state.editor.tree(), kCtx.layout);
+  const auto frame = std::ranges::find_if(
+    boxes, [&](const fluir::editor::Box& b) { return b.path == path && b.part == fluir::editor::Part::Frame; });
+  ASSERT_NE(frame, boxes.end());
+  const Vec2 outer = fluir::editor::draw::anchors(conditional, frame->world, kCtx.layout).inputs.at(0);
+  const Vec2 inner = fluir::editor::draw::innerAnchors(conditional, frame->world, kCtx.layout)
+                       .at(conditional.condition.innerId)
+                       .outputs.at(0);
+
+  // The port sits below the header band, so its inner side lies in the branch.
+  const auto innerHit = fluir::editor::terminalAt(boxes, inner);
+  ASSERT_TRUE(innerHit);
+  EXPECT_EQ(innerHit->path,
+            (fluir::FullID{1, conditional.id, fluir::editor::THEN_BRANCH_ID, conditional.condition.innerId}));
+
+  fluir::editor::ConduitTool conduits;
+  const fluir::ID condId = conditional.id;
+  testutil::send(conduits, f.state, down(f.state.view.worldToScreen(Vec2{85, 97.5})));
+  testutil::send(conduits, f.state, move(f.state.view.worldToScreen(outer)));
+  testutil::send(conduits, f.state, testutil::up(f.state.view.worldToScreen(outer)));
+
+  EXPECT_TRUE(std::ranges::any_of(f.body().conduits, [&](const auto& entry) {
+    const auto& conduit = entry.second;
+    return conduit.input == 2 && std::ranges::any_of(conduit.children, [&](const auto& out) {
+             return out.target == condId && out.index == 0;
+           });
+  }));
 }

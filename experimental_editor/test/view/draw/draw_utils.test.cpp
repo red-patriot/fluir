@@ -20,6 +20,23 @@ namespace {
   // Any bytes will do: an icon is identified downstream by its span's address.
   constexpr std::array<unsigned char, 4> kSvgBytes{'a', 'b', 'c', 'd'};
 
+  TEST(Grips, MoveGripSitsInsideTheTopRightCorner) {
+    const Rect frame{10, 20, 100, 50};
+    const Rect grip = fluir::editor::moveGrip(frame, 5.0);
+    EXPECT_TRUE(frame.contains(grip.topLeft()));
+    EXPECT_LE(grip.x + grip.w, frame.x + frame.w);
+    EXPECT_LT(grip.y + grip.h, frame.y + frame.h / 2);
+    EXPECT_GT(grip.x, frame.x + frame.w / 2);
+  }
+
+  TEST(Grips, ResizeCornerHugsTheBottomRightCorner) {
+    const Rect frame{10, 20, 100, 50};
+    const Rect corner = fluir::editor::resizeCorner(frame, 5.0);
+    EXPECT_DOUBLE_EQ(corner.x + corner.w, frame.x + frame.w);
+    EXPECT_DOUBLE_EQ(corner.y + corner.h, frame.y + frame.h);
+    EXPECT_GT(corner.w, 0.0);
+  }
+
   TEST(FitInto, WiderThanTargetPillarboxesVertically) {
     // 2:1 into a square: full width, half height, centred.
     expectRectNear(fitInto(Rect{10, 20, 100, 100}, Vec2{200, 100}), Rect{10, 45, 100, 50});

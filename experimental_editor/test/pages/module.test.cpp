@@ -4,21 +4,24 @@
 #include <cmath>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "bytecode/version.hpp"
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/components/menu.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/module_editor.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
 #include "editor/input.hpp"
@@ -61,7 +64,7 @@ namespace {
   const FullID kConstant1{1, 1};
   constexpr Vec2 kConstant1Body{62, 197};
   constexpr Vec2 kConstant1Grip{72.5, 187.5};
-  constexpr Vec2 kConstant1Text{79, 177};  // value region after "i8"'s world-px tag, clear of the grip and port
+  constexpr Vec2 kConstant1Text{79, 177};  // value region after "i8"'s world-px tag, clear of the grip and terminal
   constexpr Vec2 kEmptyFrame{400, 400};
   constexpr Vec2 kBackground{-1000, -1000};
   constexpr Vec2 kHeaderGrip{537.5, 62.5};
@@ -80,14 +83,15 @@ namespace {
     std::unique_ptr<ModulePage> page;
 
     explicit Harness(const fs::path& program) {
-      ctx.program = program;
-      page = std::make_unique<ModulePage>(ctx, renderer);
+      std::optional<fluir::editor::ModuleEditor> editor = fluir::editor::openModule(program);
+      EXPECT_TRUE(editor.has_value());
+      page = std::make_unique<ModulePage>(ctx, renderer, std::move(editor).value_or(fluir::editor::newModule()));
       EXPECT_EQ(page->start(), 0);
     }
 
     // A brand-new program: no file, empty tree.
     Harness() {
-      page = std::make_unique<ModulePage>(ctx, renderer);
+      page = std::make_unique<ModulePage>(ctx, renderer, fluir::editor::newModule());
       EXPECT_EQ(page->start(), 0);
     }
 
@@ -107,10 +111,10 @@ namespace {
       send({down(at), up(at)});
     }
 
-    const fluir::pt::ParseTree& tree() const { return page->state().editor.tree(); }
+    const fluir::editor::et::ParseTree& tree() const { return page->state().editor.tree(); }
     FlowGraphLocation loc(const FullID& path) const { return *locationAt(tree(), path); }
-    fluir::pt::Literal value(const FullID& path) const {
-      return std::get<fluir::pt::Constant>(*nodeAt(tree(), path)).value;
+    fluir::editor::et::Literal value(const FullID& path) const {
+      return std::get<fluir::editor::et::Constant>(*nodeAt(tree(), path)).value;
     }
   };
 
@@ -169,7 +173,7 @@ TEST(ModulePage, ALeftClickOnANodeDoesNotPan) {
 TEST(ModulePage, AMiddleDragOverANodeStillPans) {
   Harness h{kIntConstants};
   const Vec2 before = h.page->state().view.pan;
-  const fluir::pt::ParseTree tree = h.tree();
+  const fluir::editor::et::ParseTree tree = h.tree();
   const Vec2 at = h.screen(kConstant1Body);
 
   h.send(
@@ -248,7 +252,7 @@ TEST(ModulePage, SaveWritesTheEditedTreeToTheProgram) {
 
   h.click("Save");
 
-  const testutil::Loaded reloaded = testutil::loadFixture(h.ctx.program->string());
+  const testutil::Loaded reloaded = testutil::loadFixture(h.page->state().editor.program()->string());
   ASSERT_TRUE(reloaded.result.tree.has_value());
   EXPECT_EQ(*reloaded.result.tree, h.tree());
   EXPECT_EQ(locationAt(*reloaded.result.tree, kConstant1)->x, 4);
@@ -256,7 +260,7 @@ TEST(ModulePage, SaveWritesTheEditedTreeToTheProgram) {
 
 TEST(ModulePage, DeleteWithNoSelectionChangesNothing) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
 
   h.send({key(InputEvent::Key::Delete)});
 
@@ -272,7 +276,7 @@ TEST(ModulePage, DeleteRemovesTheSelectedNodeItsConduitsAndTheSelection) {
 
   h.send({key(InputEvent::Key::Delete)});
 
-  const auto& body = std::get<fluir::pt::FunctionDecl>(h.tree().declarations.at(1)).body;
+  const auto& body = std::get<fluir::editor::et::FunctionDecl>(h.tree().declarations.at(1)).body;
   EXPECT_FALSE(body.nodes.contains(2));
   EXPECT_FALSE(body.conduits.contains(4));
   EXPECT_TRUE(body.conduits.contains(5));
@@ -317,7 +321,7 @@ TEST(ModulePage, DeleteDuringADragCancelsTheDragFirst) {
 
 TEST(ModulePage, UndoMidDragRestoresTheOriginalPosition) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
   h.send({down(h.screen(kBinaryGrip)), move(h.screen(kBinaryGrip + Vec2{kTwoUnits, 0}))});
 
   h.click("Undo");
@@ -333,9 +337,9 @@ TEST(ModulePage, TypingThenReturnCommitsAConstantAsOneUndoableEdit) {
 
   h.send({key(InputEvent::Key::End), text("0"), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-50}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-50}});
   h.click("Undo");
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, APressOnTheHeaderBarCancelsTheOpenEdit) {
@@ -346,7 +350,7 @@ TEST(ModulePage, APressOnTheHeaderBarCancelsTheOpenEdit) {
   const Vec2 emptyBar{h.renderer.outputSize_.x / 2, h.ctx.layout.chromeHeaderPx / 2};
   h.send({down(emptyBar), up(emptyBar), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, AnOpenDraftTakesKeysBeforePageCommands) {
@@ -366,7 +370,7 @@ TEST(ModulePage, ZoomingWhileEditingKeepsTheDraft) {
 
   h.send({wheel(Vec2{400, 300}, 1), key(InputEvent::Key::End), text("0"), key(InputEvent::Key::Return)});
 
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-50}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-50}});
 }
 
 TEST(ModulePage, APressOnAGripMidEditClosesTheDraftAndStartsTheGesture) {
@@ -377,7 +381,7 @@ TEST(ModulePage, APressOnAGripMidEditClosesTheDraftAndStartsTheGesture) {
   h.send({text("0"), key(InputEvent::Key::Return)});
 
   EXPECT_EQ(h.loc(kConstant1).x, 4);
-  EXPECT_EQ(h.value(kConstant1), fluir::pt::Literal{fluir::literals_types::I8{-5}});
+  EXPECT_EQ(h.value(kConstant1), fluir::editor::et::Literal{fluir::literals_types::I8{-5}});
 }
 
 TEST(ModulePage, DrawShowsTheGraphUnderTheHeaderBar) {
@@ -434,7 +438,7 @@ namespace {
   constexpr Vec2 kBinaryBody{127, 107};
   const FullID kBinary{1, 1};
 
-  fluir::Operator op(const Harness& h) { return std::get<fluir::pt::Binary>(*nodeAt(h.tree(), kBinary)).op; }
+  fluir::Operator op(const Harness& h) { return std::get<fluir::editor::et::Binary>(*nodeAt(h.tree(), kBinary)).op; }
 
   // The screen rect of the open menu's row labeled `label`.
   Rect menuRow(const Harness& h, const std::string& label, Rect worldAnchor = Rect{125, 85, 25, 25}) {
@@ -548,9 +552,10 @@ namespace {
   // function_with_input_only.fl: param a (id 2, I32) rail {50,75,75,25}; its tag, then its name.
   const fs::path kInputOnly = fs::path(TEST_FOLDER) / "read/function_with_input_only.fl";
   const Rect kParamARail{50, 75, 75, 25};
+  const Rect kParamATagRect{50, 75, 23.2, 25};  // the menu's anchor: textPad + 3 glyphs at 0.8x
   constexpr Vec2 kParamATag{55, 90};
 
-  const fluir::pt::FunctionDecl::Parameter& paramA(const Harness& h) {
+  const fluir::editor::et::FunctionDecl::Parameter& paramA(const Harness& h) {
     return fluir::editor::functionAt(h.tree(), FullID{1})->input->parameters.at(0);
   }
 
@@ -560,7 +565,7 @@ TEST(ModulePage, PickingFromTheTypeMenuIsOneUndoableEdit) {
   Harness h{kInputOnly};
   h.press(kParamATag);
 
-  const Vec2 f64 = menuRow(h, "F64", kParamARail).center();
+  const Vec2 f64 = menuRow(h, "F64", kParamATagRect).center();
   h.send({move(f64), down(f64), up(f64)});
 
   EXPECT_EQ(paramA(h).typeName, "F64");
@@ -721,30 +726,30 @@ TEST(ModulePage, TheCompletionModalPaintsCenteredOverEverythingUnclipped) {
 
 namespace {
 
-  // simple_binary_expr.fl: constant 2's output port, binary 1's input ports.
+  // simple_binary_expr.fl: constant 2's output terminal, binary 1's input terminals.
   constexpr Vec2 kConstant2Out{85, 97.5};
   constexpr Vec2 kBinaryIn0{125, 86};
   constexpr Vec2 kBinaryIn1{125, 110};
-  // function_with_input_only.fl: param a's port, inside its name label.
-  constexpr Vec2 kParamAPort{124, 87.5};
+  // function_with_input_only.fl: param a's terminal, inside its name label.
+  constexpr Vec2 kParamATerminal{124, 87.5};
 
 }  // namespace
 
-TEST(ModulePage, APortToPortDragAddsAConduitAsOneUndoableEdit) {
+TEST(ModulePage, ATerminalToTerminalDragAddsAConduitAsOneUndoableEdit) {
   Harness h{kSimpleBinary};
-  const fluir::pt::ParseTree before = h.tree();
+  const fluir::editor::et::ParseTree before = h.tree();
 
   h.drag(kConstant2Out, kBinaryIn1 - kConstant2Out);
 
   const auto& conduits = fluir::editor::blockOf(h.tree(), FullID{1})->conduits;
-  const std::vector<fluir::pt::Conduit::Output> toIn1{{.target = 1, .index = 1}};
+  const std::vector<fluir::editor::et::Conduit::Output> toIn1{{.target = 1, .index = 1}};
   EXPECT_TRUE(std::ranges::any_of(
     conduits, [&](const auto& entry) { return entry.second.input == 2 && entry.second.children == toIn1; }));
   h.click("Undo");
   EXPECT_EQ(h.tree(), before);
 }
 
-TEST(ModulePage, APressOnAPortOpensNoOperatorMenu) {
+TEST(ModulePage, APressOnATerminalOpensNoOperatorMenu) {
   Harness h{kSimpleBinary};
 
   h.press(kBinaryIn0);
@@ -752,11 +757,28 @@ TEST(ModulePage, APressOnAPortOpensNoOperatorMenu) {
   EXPECT_EQ(h.page->state().popup, nullptr);
 }
 
-TEST(ModulePage, APressOnAParameterPortOpensNoNameDraft) {
+TEST(ModulePage, APressOnAParameterTerminalOpensNoNameDraft) {
   Harness h{kInputOnly};
 
-  h.press(kParamAPort);
+  h.press(kParamATerminal);
   h.send({text("x"), key(InputEvent::Key::Return)});
 
   EXPECT_EQ(paramA(h).name, "a");
+}
+
+// conditional_with_body.fl: conditional 2 frame {50,40,2500,2500}, condition port at y 10 -> {42.5,90,15,15}.
+TEST(ModulePage, DraggingAConditionPortSlidesItAsOneUndoableEdit) {
+  Harness h{fs::path(TEST_FOLDER) / "read/conditional_with_body.fl"};
+  const FullID conditional{1, 2};
+  const auto portY = [&] {
+    return std::get<fluir::editor::et::Conditional>(*nodeAt(h.tree(), conditional)).condition.y;
+  };
+  const FlowGraphLocation before = h.loc(conditional);
+
+  h.drag(Vec2{50, 91}, Vec2{0, kTwoUnits});  // the port's body, above its terminal dots
+
+  EXPECT_EQ(portY(), 12);
+  EXPECT_EQ(h.loc(conditional), before) << "neither DragTool nor ConduitTool took the press";
+  h.click("Undo");
+  EXPECT_EQ(portY(), 10);
 }

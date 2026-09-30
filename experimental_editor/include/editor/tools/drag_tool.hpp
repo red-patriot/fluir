@@ -1,8 +1,10 @@
-#pragma once
+#ifndef FLUIR_EDITOR_TOOLS_DRAG_TOOL_HPP
+#define FLUIR_EDITOR_TOOLS_DRAG_TOOL_HPP
 
 #include <memory>
 
 #include "compiler/models/location.hpp"
+#include "editor/tools/grid_steps.hpp"
 #include "editor/tools/tool.hpp"
 #include "editor/transaction/transaction.hpp"
 
@@ -24,10 +26,11 @@ namespace fluir::editor {
     FullID path_;
     Part part_ = Part::Body;
     FlowGraphLocation start_{};
-    Vec2 lastWorld_;
-    Vec2 remainder_;
+    GridSteps steps_;
     Vec2i delta_;
     std::unique_ptr<Transaction> edit_; /**< executed on the tree while non-null */
   };
 
 }  // namespace fluir::editor
+
+#endif

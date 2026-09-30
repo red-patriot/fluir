@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_RESIZE_HPP
 #define FLUIR_EDITOR_TRANSACTION_RESIZE_HPP
 
+#include <memory>
 #include <utility>
 
 #include "compiler/models/id.hpp"
@@ -14,14 +15,16 @@ namespace fluir::editor {
     ResizeTransaction(fluir::FullID path, int width, int height) :
       path_(std::move(path)), width_(width), height_(height) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     fluir::FullID path_;
     int width_;
     int height_;
   };
+
+  std::unique_ptr<Transaction> resizeTo(fluir::FullID path, int width, int height);
 
 }  // namespace fluir::editor
 

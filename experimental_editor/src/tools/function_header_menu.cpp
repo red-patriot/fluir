@@ -2,29 +2,26 @@
 
 #include <memory>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/add_parameter.hpp"
 #include "editor/transaction/add_return.hpp"
 
 namespace fluir::editor {
 
-  std::vector<MenuItem> functionHeaderItems(const Box& hit, Vec2 world, const EditorState& state) {
-    const pt::FunctionDecl* fn = hit.path.size() == 1 ? functionAt(state.editor.tree(), hit.path) : nullptr;
-    const EditorContext::Layout& layout = state.ctx.layout;
-    if (fn == nullptr || world.y >= localRect(fn->location, layout.unitPx).y + layout.headerH()) {
+  std::vector<MenuItem> functionHeaderItems(const Box& hit, const EditorState& state) {
+    // A function's move grip sits in its header.
+    const bool header = hit.part == Part::Header || hit.part == Part::MoveGrip;
+    const et::FunctionDecl* fn = header ? functionAt(state.editor.tree(), hit.path) : nullptr;
+    if (!fn) {
       return {};
     }
     return {
       MenuItem{.label = "Add parameter",
                .onClick =
-                 [path = hit.path](EditorState& s) {
-                   s.editor.apply(std::make_unique<AddParameter>(path, s.editor.generateID(path)));
-                 }},
+                 [path = hit.path](EditorState& s) { s.editor.apply(addParameter(path, s.editor.generateID(path))); }},
       MenuItem{
         .label = "Add return",
-        .onClick = [path = hit.path](
-                     EditorState& s) { s.editor.apply(std::make_unique<AddReturn>(path, s.editor.generateID(path))); },
+        .onClick = [path = hit.path](EditorState& s) { s.editor.apply(addReturn(path, s.editor.generateID(path))); },
         .enabled = !(fn->output && fn->output->ret)},
     };
   }

@@ -6,36 +6,27 @@
 #include <unordered_map>
 #include <variant>
 
-#include "editor/constants.hpp"
-#include "editor/core/graph_geometry.hpp"
+#include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/conditional.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/draw/function.hpp"
+#include "editor/view/graph_geometry.hpp"
 #include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
   namespace {
-    // Grip sizes, in grid units.
-    constexpr double DRAG_SIZE = 3;
-    constexpr double DRAG_INSET = 1;
-    constexpr double RESIZE_BAR_WIDTH = 1;
-    constexpr double RESIZE_CORNER_SIZE = 3;
-    // A port's hit square side, in grid units.
+    // A resize edge's thickness, in grid units.
+    constexpr double GRIP_THICKNESS = 0.8;
+    // A terminal's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
 
-    using Ports = std::unordered_map<fluir::ID, PortSet>;
+    using Terminals = std::unordered_map<fluir::ID, TerminalSet>;
 
-    Rect resizeBar(const Rect& r, double unit) {
-      return {
-        .x = r.x + r.w - RESIZE_BAR_WIDTH * unit,
-        .y = r.y,
-        .w = RESIZE_BAR_WIDTH * unit,
-        .h = NODE_H * unit,  // Take up 1 row of a node
-      };
-    }
-
-    Rect resizeCorner(const Rect& r, double unit) {
-      const double size = RESIZE_CORNER_SIZE * unit;
-      return {r.x + r.w - size, r.y + r.h - size, size, size};
+    // A draggable edge is a thick line lying just inside the rect's border; the whole line is the grip.
+    Rect resizeEdgeX(const Rect& r, double unit) {
+      return {r.x + r.w - GRIP_THICKNESS * unit, r.y, GRIP_THICKNESS * unit, r.h};
     }
 
     FullID childOf(const FullID& parent, fluir::ID id) {
@@ -44,67 +35,136 @@ namespace fluir::editor {
       return out;
     }
 
-    const FlowGraphLocation& locationOf(const pt::Node& node) {
-      return std::visit([](const auto& n) -> const FlowGraphLocation& { return n.location; }, node);
-    }
-
-    fluir::ID idOf(const pt::Node& node) {
-      return std::visit([](const auto& n) { return n.id; }, node);
-    }
-
-    // A bool constant draws a fixed-size toggle square, so there is nothing to widen: no resize grip.
-    std::optional<Part> resizePart(const pt::Node& node) {
-      if (std::holds_alternative<pt::Comment>(node)) {
-        return Part::ResizeXY;
+    void pushLabels(const FullID& path,
+                    const std::vector<FieldLabel>& labels,
+                    const std::optional<Rect>& clip,
+                    std::vector<Box>& out) {
+      for (const FieldLabel& label : labels) {
+        out.push_back({path, Part::Label, label.rect, clip, label.field});
       }
-      const auto* c = std::get_if<pt::Constant>(&node);
-      if (c != nullptr && std::holds_alternative<literals_types::BOOL>(c->value)) {
-        return std::nullopt;
-      }
-      return Part::ResizeX;
     }
 
-    // A node's body, then its grips over it. `resize` is ResizeX (right bar), ResizeXY (corner) or none.
+    // One Terminal box per anchor in `set`, so each dot paints and hits at `path`.
+    void pushTerminals(
+      const FullID& path, const TerminalSet& set, const std::optional<Rect>& clip, double unit, std::vector<Box>& out) {
+      for (const bool output : {false, true}) {
+        const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
+        for (std::size_t i = 0; i < anchors.size(); ++i) {
+          out.push_back({.path = path,
+                         .part = Part::Terminal,
+                         .world = dotRect(anchors[i], PORT_HIT_UNITS * unit),
+                         .clip = clip,
+                         .terminal = BoxTerminal{output, i}});
+        }
+      }
+    }
+
+    // A node's body and labels, then its grips over them. `resize` is ResizeX (right edge), ResizeXY (corner) or none.
     void pushNodeBoxes(const FullID& path,
                        const Rect& rect,
                        const std::optional<Rect>& clip,
                        std::optional<Part> resize,
+                       const std::vector<FieldLabel>& labels,
                        double unit,
                        std::vector<Box>& out) {
       out.push_back({path, Part::Body, rect, clip});
+      pushLabels(path, labels, clip, out);
       if (resize) {
-        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeBar(rect, unit);
+        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeEdgeX(rect, unit);
         out.push_back({path, *resize, grip, clip});
       }
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
     }
 
-    // Nodes paint in (z, id) order with their grips; conduits paint after, from ports resolved by id.
-    // A container node lays out its own blocks here once one exists.
-    void layoutBlock(const pt::Block& block,
+    void layoutBlock(const et::Block& block,
                      const FullID& parent,
                      Vec2 origin,
                      const Rect& clip,
                      const EditorContext::Layout& layout,
-                     Ports& ports,
+                     Terminals terminals,
+                     std::vector<Box>& out);
+
+    // The conditional's body, its visible branch's nodes, then its chrome over them.
+    void layoutConditional(const et::Conditional& conditional,
+                           const FullID& path,
+                           const Rect& frame,
+                           const std::optional<Rect>& clip,
+                           const EditorContext::Layout& layout,
+                           std::vector<Box>& out) {
+      const double unit = layout.unitPx;
+      out.push_back({path, Part::Body, frame, clip});
+
+      // One frame, one header band, one visible branch: the branch is the frame under its header.
+      const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
+      const Rect content{frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
+      const FullID branchPath = childOf(path, conditional.annotation.shownBranch);
+      const et::Block* branch = branchBlock(conditional, conditional.annotation.shownBranch);
+      const Terminals inner = draw::innerAnchors(conditional, frame, layout);
+      const std::optional<Rect> contentClip = clip ? intersect(*clip, content) : std::optional<Rect>{content};
+      if (contentClip) {
+        out.push_back({branchPath, Part::Branch, content, contentClip});
+        if (branch) {
+          layoutBlock(*branch, branchPath, origin, *contentClip, layout, inner, out);
+        }
+      }
+
+      // The frame's chrome paints, and so hits, over its branch; port terminals paint over their port.
+      const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
+      out.push_back({path, Part::Frame, frame, clip});
+      for (const PortRef ref : portRefs(conditional)) {
+        out.push_back({.path = path,
+                       .part = Part::Port,
+                       .world = draw::portRect(conditional, ref, frame, layout),
+                       .clip = clip,
+                       .port = ref});
+      }
+      // TODO: layoutBlock already computed these anchors for wiring; pass them in instead of recomputing.
+      pushTerminals(path, draw::anchors(conditional, frame, layout), clip, unit, out);
+      if (contentClip) {
+        for (const auto& [innerId, set] : inner) {
+          pushTerminals(childOf(branchPath, innerId), set, contentClip, unit, out);
+        }
+      }
+      out.push_back({path, Part::Header, header, clip});
+      if (const std::optional<Part> resize = draw::resizePart(conditional)) {
+        out.push_back({path, *resize, resizeCorner(frame, unit), clip});
+      }
+      out.push_back({path, Part::MoveGrip, moveGrip(header, unit), clip});
+    }
+
+    // Nodes paint in (z, id) order with their grips; conduits paint after, from terminals resolved by id.
+    // `terminals` is per block: node ids repeat across sibling blocks.
+    void layoutBlock(const et::Block& block,
+                     const FullID& parent,
+                     Vec2 origin,
+                     const Rect& clip,
+                     const EditorContext::Layout& layout,
+                     Terminals terminals,
                      std::vector<Box>& out) {
-      for (const pt::Node* node : sortedNodes(block)) {
+      for (const et::Node* node : sortedNodes(block)) {
         const FullID path = childOf(parent, idOf(*node));
         const Rect rect = atOrigin(origin, localRect(locationOf(*node), layout.unitPx));
-        pushNodeBoxes(path, rect, clip, resizePart(*node), layout.unitPx, out);
-        ports[idOf(*node)] = editor::ports(*node, rect, layout);
+        const TerminalSet set = editor::terminals(*node, rect, layout);
+        if (const auto* conditional = std::get_if<et::Conditional>(node)) {
+          layoutConditional(*conditional, path, rect, clip, layout, out);
+        } else {
+          pushNodeBoxes(path, rect, clip, nodeResizePart(*node), nodeLabels(*node, rect, layout), layout.unitPx, out);
+          pushTerminals(path, set, clip, layout.unitPx, out);
+        }
+        terminals[idOf(*node)] = set;
       }
 
       // A dangling endpoint is a legitimate authoring state: it just draws no line.
-      for (const pt::Conduit* conduit : sortedConduits(block)) {
-        const auto source = ports.find(conduit->input);
-        if (source == ports.end() || source->second.outputs.empty()) {
+      for (const et::Conduit* conduit : sortedConduits(block)) {
+        const auto source = terminals.find(conduit->input);
+        if (source == terminals.end() || conduit->index < 0 ||
+            static_cast<std::size_t>(conduit->index) >= source->second.outputs.size()) {
           continue;
         }
-        const Vec2 from = source->second.outputs.front();
-        for (const pt::Conduit::Output& target : conduit->children) {
-          const auto sink = ports.find(target.target);
-          if (sink == ports.end() || target.index < 0 ||
+        const Vec2 from = source->second.outputs[static_cast<std::size_t>(conduit->index)];
+        for (const et::Conduit::Output& target : conduit->children) {
+          const auto sink = terminals.find(target.target);
+          if (sink == terminals.end() || target.index < 0 ||
               static_cast<std::size_t>(target.index) >= sink->second.inputs.size()) {
             continue;
           }
@@ -115,7 +175,7 @@ namespace fluir::editor {
       }
     }
 
-    void layoutFunction(const pt::FunctionDecl& fn, const EditorContext::Layout& layout, std::vector<Box>& out) {
+    void layoutFunction(const et::FunctionDecl& fn, const EditorContext::Layout& layout, std::vector<Box>& out) {
       const FullID path{fn.id};
       const double unit = layout.unitPx;
       const Rect frame = localRect(fn.location, unit);
@@ -123,18 +183,17 @@ namespace fluir::editor {
       const Rect clip{frame.x, origin.y, frame.w, frame.h - layout.headerH()};
       out.push_back({path, Part::Body, frame, std::nullopt});
 
-      Ports ports;
+      Terminals terminals;
       if (fn.input) {
-        std::vector<const pt::FunctionDecl::Parameter*> params;
-        for (const auto& param : fn.input->parameters) {
-          params.push_back(&param);
-        }
-        std::ranges::sort(params, {}, &pt::FunctionDecl::Parameter::index);
+        const std::vector<const et::FunctionDecl::Parameter*> params = sortedParameters(fn);
         for (std::size_t row = 0; row < params.size(); ++row) {
           const Rect rail{
             origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
-          out.push_back({childOf(path, params[row]->id), Part::Rail, rail, clip});
-          ports[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
+          const FullID railPath = childOf(path, params[row]->id);
+          out.push_back({railPath, Part::Rail, rail, clip});
+          pushLabels(path, draw::labels(fn, params[row]->id, rail, layout), clip, out);
+          terminals[params[row]->id] = draw::anchors(fn, params[row]->id, rail);
+          pushTerminals(railPath, terminals[params[row]->id], clip, unit, out);
         }
       }
       if (fn.output && fn.output->ret) {
@@ -142,53 +201,51 @@ namespace fluir::editor {
                         origin.y,
                         layout.railStep(),
                         layout.railStep()};
-        out.push_back({childOf(path, fn.output->ret->id), Part::Rail, rail, clip});
-        ports[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
+        const FullID railPath = childOf(path, fn.output->ret->id);
+        out.push_back({railPath, Part::Rail, rail, clip});
+        pushLabels(path, draw::labels(fn, fn.output->ret->id, rail, layout), clip, out);
+        terminals[fn.output->ret->id] = draw::anchors(fn, fn.output->ret->id, rail);
+        pushTerminals(railPath, terminals[fn.output->ret->id], clip, unit, out);
       }
 
-      layoutBlock(fn.body, path, origin, clip, layout, ports, out);
+      layoutBlock(fn.body, path, origin, clip, layout, std::move(terminals), out);
 
       // The frame's chrome paints, and so hits, over its body.
       const Rect header{frame.x, frame.y, frame.w, layout.headerH()};
       out.push_back({path, Part::Frame, frame, std::nullopt});
+      out.push_back({path, Part::Header, header, std::nullopt});
+      pushLabels(path, draw::labels(fn, frame, layout), std::nullopt, out);
       out.push_back({path, Part::ResizeXY, resizeCorner(frame, unit), std::nullopt});
       out.push_back({path, Part::MoveGrip, moveGrip(header, unit), std::nullopt});
     }
 
-    bool hittable(Part part) { return part != Part::Frame && part != Part::Rail && part != Part::Wire; }
+    bool hittable(Part part) { return part != Part::Frame && part != Part::Wire && part != Part::Terminal; }
 
-    // A node's or rail's port anchors, given its box.
-    PortSet portsOf(const pt::ParseTree& tree, const Box& box, const EditorContext::Layout& layout) {
-      if (box.path.size() < 2) {
-        return {};
+    // The last-painted hittable box containing `world`, Labels included unless `throughLabels`.
+    const Box* topAt(std::span<const Box> boxes, Vec2 world, bool throughLabels) {
+      for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
+        if (hittable(it->part) && !(throughLabels && it->part == Part::Label) &&
+            (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
+          return &*it;
+        }
       }
-      if (box.part == Part::Body) {
-        const pt::Node* node = nodeAt(tree, box.path);
-        return node == nullptr ? PortSet{} : ports(*node, box.world, layout);
-      }
-      const pt::FunctionDecl* fn = box.part == Part::Rail ? functionAt(tree, parentOf(box.path)) : nullptr;
-      return fn == nullptr ? PortSet{} : draw::anchors(*fn, box.path.back(), box.world);
+      return nullptr;
     }
 
   }  // namespace
 
-  Rect moveGrip(const Rect& frame, double unit) {
-    return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
-            frame.y + DRAG_INSET * unit,
-            DRAG_SIZE * unit,
-            DRAG_SIZE * unit};
-  }
-
-  std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout) {
+  std::vector<Box> layoutGraph(const et::ParseTree& tree, const EditorContext::Layout& layout) {
     std::vector<Box> out;
-    for (const pt::Declaration* decl : sortedDeclarations(tree)) {
-      if (const auto* fn = std::get_if<pt::FunctionDecl>(decl)) {
+    for (const et::Declaration* decl : sortedDeclarations(tree)) {
+      if (const auto* fn = std::get_if<et::FunctionDecl>(decl)) {
         layoutFunction(*fn, layout, out);
-      } else if (const auto* comment = std::get_if<pt::Comment>(decl)) {
+      } else if (const auto* comment = std::get_if<et::Comment>(decl)) {
+        const Rect rect = localRect(comment->location, layout.unitPx);
         pushNodeBoxes(FullID{comment->id},
-                      localRect(comment->location, layout.unitPx),
+                      rect,
                       std::nullopt,
-                      Part::ResizeXY,
+                      draw::resizePart(*comment),
+                      draw::labels(*comment, rect, layout),
                       layout.unitPx,
                       out);
       }
@@ -196,42 +253,18 @@ namespace fluir::editor {
     return out;
   }
 
-  const Box* hitAt(std::span<const Box> boxes, Vec2 world) {
-    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (hittable(it->part) && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
-        return &*it;
-      }
-    }
-    return nullptr;
+  const Box* hitAt(std::span<const Box> boxes, Vec2 world) { return topAt(boxes, world, true); }
+
+  const Box* labelAt(std::span<const Box> boxes, Vec2 world) {
+    const Box* top = topAt(boxes, world, false);
+    return top != nullptr && top->part == Part::Label ? top : nullptr;
   }
 
-  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world) {
+  std::optional<TerminalHit> terminalAt(std::span<const Box> boxes, Vec2 world) {
     for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (it->part == Part::Rail && parentOf(it->path) == fnPath && (!it->clip || it->clip->contains(world)) &&
-          it->world.contains(world)) {
-        return &*it;
-      }
-    }
-    return nullptr;
-  }
-
-  std::optional<PortHit> portAt(const pt::ParseTree& tree,
-                                std::span<const Box> boxes,
-                                Vec2 world,
-                                const EditorContext::Layout& layout) {
-    const double side = PORT_HIT_UNITS * layout.unitPx;
-    for (auto it = boxes.rbegin(); it != boxes.rend(); ++it) {
-      if (it->clip && !it->clip->contains(world)) {
-        continue;
-      }
-      const PortSet set = portsOf(tree, *it, layout);
-      for (const bool output : {false, true}) {
-        const std::vector<Vec2>& anchors = output ? set.outputs : set.inputs;
-        for (std::size_t i = 0; i < anchors.size(); ++i) {
-          if (dotRect(anchors[i], side).contains(world)) {
-            return PortHit{it->path, output, static_cast<int>(i), anchors[i]};
-          }
-        }
+      if (it->terminal && (!it->clip || it->clip->contains(world)) && it->world.contains(world)) {
+        const Vec2 anchor{it->world.x + it->world.w / 2, it->world.y + it->world.h / 2};
+        return TerminalHit{it->path, it->terminal->output, static_cast<int>(it->terminal->index), anchor};
       }
     }
     return std::nullopt;

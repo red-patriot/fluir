@@ -9,12 +9,12 @@
 #include <utility>
 #include <variant>
 
-#include "editor/constants.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/tools/tool.hpp"
 #include "editor/transaction/add_comment.hpp"
 #include "editor/transaction/add_decl.hpp"
 #include "editor/transaction/add_node.hpp"
+#include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -25,11 +25,18 @@ namespace fluir::editor {
     constexpr double ROW_PAD_PX = 6.0;
     constexpr double CARET_W_PX = 1.0;
     constexpr std::size_t MAX_VISIBLE_ROWS = 10;
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
+    // Default sizes for a picked option, in grid units.
+    constexpr int FUNCTION_W = 40;
+    constexpr int FUNCTION_H = 30;
+    constexpr int COMMENT_W = 10;
+    constexpr int COMMENT_H = 10;
+    constexpr int OPERATOR_W = 8;
+    constexpr int CONSTANT_W = 12;
+    constexpr int CALL_W = 14;
+    constexpr int BOOL_CONSTANT_W = 8;
+    constexpr int NODE_H = 5;
+    constexpr int CONDITIONAL_H = 40;
+    constexpr int CONDITIONAL_W = 30;
 
     FlowGraphLocation placed(Coordinate where, int w, int h) {
       return FlowGraphLocation{.x = where.x, .y = where.y, .z = where.z + 1, .width = w, .height = h};
@@ -53,7 +60,7 @@ namespace fluir::editor {
   }  // namespace
 
   CompletionModal::CompletionModal(
-    std::vector<Completion> completions, Rect bounds, Renderer* text, Coordinate where, FullID body) :
+    std::vector<Completion> completions, Rect bounds, TextMetrics* text, Coordinate where, FullID body) :
     completions_(std::move(completions)), bounds_(bounds), where_(where), body_(std::move(body)) {
     for (const Completion& completion : completions_) {
       labels_.emplace_back(completion.label);
@@ -179,24 +186,27 @@ namespace fluir::editor {
   void CompletionModal::selectVisible(size_t idx, EditorState& state) {
     const fluir::ID id = state.editor.generateID(body_);
     std::unique_ptr<Transaction> edit = std::visit(
-      Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddDecl>(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
-                 },
-                 [&](const CommentOption&) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddComment>(body_, id, placed(where_, COMMENT_W, COMMENT_H));
-                 },
-                 [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
-                   return std::make_unique<AddNode>(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
-                 },
-                 [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
-                   const int w =
-                     std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
-                   return std::make_unique<AddNode>(body_, id, placed(where_, w, NODE_H), constant);
-                 },
-                 [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
-                   auto [w, h] = callSize(call);
-                   return std::make_unique<AddNode>(body_, id, placed(where_, w, h), call);
-                 }},
+      util::Overloaded{[&](const FunctionDefOption&) -> std::unique_ptr<Transaction> {
+                         return addDecl(body_, id, placed(where_, FUNCTION_W, FUNCTION_H));
+                       },
+                       [&](const CommentOption&) -> std::unique_ptr<Transaction> {
+                         return addComment(body_, id, placed(where_, COMMENT_W, COMMENT_H));
+                       },
+                       [&](const OperatorOption& op) -> std::unique_ptr<Transaction> {
+                         return addNode(body_, id, placed(where_, OPERATOR_W, NODE_H), op);
+                       },
+                       [&](const ConstantOption& constant) -> std::unique_ptr<Transaction> {
+                         const int w =
+                           std::holds_alternative<literals_types::BOOL>(constant.value) ? BOOL_CONSTANT_W : CONSTANT_W;
+                         return addNode(body_, id, placed(where_, w, NODE_H), constant);
+                       },
+                       [&](const CallFunctionOption& call) -> std::unique_ptr<Transaction> {
+                         auto [w, h] = callSize(call);
+                         return addNode(body_, id, placed(where_, w, h), call);
+                       },
+                       [&](const ConditionalOption& conditional) -> std::unique_ptr<Transaction> {
+                         return addNode(body_, id, placed(where_, CONDITIONAL_W, CONDITIONAL_H), conditional);
+                       }},
       completions_[visible_[idx]].option);
     state.editor.apply(std::move(edit));
   }

@@ -1,18 +1,43 @@
-#pragma once
+#ifndef FLUIR_EDITOR_VIEW_GRAPH_LAYOUT_HPP
+#define FLUIR_EDITOR_VIEW_GRAPH_LAYOUT_HPP
 
 #include <optional>
 #include <span>
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/core/tree.hpp"
+#include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
 
-  /** What a box is. Only Body and the grips are hittable. */
-  enum class Part { Body, Frame, Rail, Wire, MoveGrip, ResizeX, ResizeXY };
+  /**
+   * What part of the diagram a box is.
+   */
+  enum class Part {
+    Body,
+    Branch,
+    Frame,
+    Header,
+    Rail,
+    Label,
+    Wire,
+    MoveGrip,
+    ResizeX,
+    ResizeY,
+    ResizeXY,
+    Terminal,
+    Port
+  };
+
+  /** Which terminal a Terminal box is: its side, and its index on that side. */
+  struct BoxTerminal {
+    bool output = false;
+    size_t index = 0;
+  };
 
   /** One laid-out piece of the graph, in world space. */
   struct Box {
@@ -21,35 +46,37 @@ namespace fluir::editor {
     /** A Wire runs from this rect's top-left to its (x + w, y + h) corner. */
     Rect world;
     std::optional<Rect> clip;
+    /** A Label's field; its path is the one `core/fields` takes. */
+    std::optional<Field> field;
+    /** Set only on a Terminal box, whose path is its endpoint's and whose world is centered on its anchor. */
+    std::optional<BoxTerminal> terminal;
+    /** Set only on a Port box, whose path is its conditional's. */
+    std::optional<PortRef> port;
   };
 
-  /** The move grip over `frame`'s top-right corner, in the same space. */
-  Rect moveGrip(const Rect& frame, double unit);
-
   /** Every box `tree` draws as, in paint order. */
-  std::vector<Box> layoutGraph(const pt::ParseTree& tree, const EditorContext::Layout& layout);
+  std::vector<Box> layoutGraph(const et::ParseTree& tree, const EditorContext::Layout& layout);
 
-  /** The last-painted hittable box containing `world`, or nullptr. */
+  /** The last-painted hittable box containing `world`, looking through Labels, or nullptr. */
   const Box* hitAt(std::span<const Box> boxes, Vec2 world);
 
-  /** The rail box of function `fnPath` containing `world`, honouring its clip, or nullptr. */
-  const Box* railAt(std::span<const Box> boxes, const FullID& fnPath, Vec2 world);
+  /** The Label at `world` when it is the last-painted hittable box there, or nullptr. */
+  const Box* labelAt(std::span<const Box> boxes, Vec2 world);
 
-  /** A port: its node or rail `path`, side, and index on that side. */
-  struct PortHit {
+  /** A terminal: its endpoint `path` (block path + endpoint id), side, and index on that side. */
+  struct TerminalHit {
     FullID path;
     bool output = false;
     int index = 0;
     Vec2 anchor;
   };
 
-  /** The top-painted port whose hit square contains `world`, honouring clips. */
-  std::optional<PortHit> portAt(const pt::ParseTree& tree,
-                                std::span<const Box> boxes,
-                                Vec2 world,
-                                const EditorContext::Layout& layout);
+  /** The last-painted Terminal box containing `world`. */
+  std::optional<TerminalHit> terminalAt(std::span<const Box> boxes, Vec2 world);
 
   /** Union of the top-level declarations' bodies; {0,0,0,0} when there are none. */
   Rect graphBounds(std::span<const Box> boxes);
 
 }  // namespace fluir::editor
+
+#endif

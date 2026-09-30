@@ -6,11 +6,13 @@
 #include "editor/assets/images.hpp"
 #include "editor/core/literal_text.hpp"
 #include "editor/core/renderer.hpp"
-#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
   namespace {
     using namespace ::fluir::literals_types;
+
+    // In grid units. A node's height follows its content, so it is unbounded below.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
 
     // Gap between the bool square and the node's edges, in world px.
     constexpr double TOGGLE_PAD = 4.0;
@@ -37,26 +39,40 @@ namespace fluir::editor::draw {
     return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
   }
 
-  PortSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
+  std::vector<FieldLabel> labels(const et::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
+    if (std::holds_alternative<BOOL>(n.value)) {
+      return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
+    }
+    return {{{Field::Kind::Literal}, splitLabel(world, literalTypeName(n.value), layout).text}};
+  }
+
+  Limits<Vec2i> sizeLimits(const et::Constant&) { return SIZE_LIMITS; }
+
+  // A bool draws a fixed-size toggle square, so there is nothing to widen.
+  std::optional<Part> resizePart(const et::Constant& c) {
+    return std::holds_alternative<BOOL>(c.value) ? std::nullopt : std::optional{Part::ResizeX};
+  }
+
+  TerminalSet anchors(const et::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const pt::Constant& c, const EditorContext::Theme& theme) {
+  Color color(const et::Constant& c, const EditorContext::Theme& theme) {
     return std::visit(LiteralColor{theme}, c.value);
   }
 
-  void draw(const pt::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
+  void draw(const et::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
     drawShell(world, color(n, ctx.theme), view, ctx);
     // A bool shows its value as a checkbox instead of a label: outlined when false, filled when true.
+    const Rect label = labels(n, world, ctx.layout).front().rect;
     if (const auto* flag = std::get_if<BOOL>(&n.value)) {
-      const Rect square = boolToggleRect(world, ctx.layout);
       view.renderer().drawIcon(
-        view.toScreen(square), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
+        view.toScreen(label), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
 
     } else {
-      drawSplitLabel(view, world, literalTypeName(n.value), renderLiteral(n.value), ctx);
+      drawSplitLabel(view, world, literalTypeName(n.value), ctx);
+      drawTitle(renderLiteral(n.value), label, view, ctx);
     }
-    drawPortDots(anchors(n, world, ctx.layout), view, ctx);
   }
 
 }  // namespace fluir::editor::draw

@@ -1,8 +1,15 @@
 #include "editor/tools/select_tool.hpp"
 
+#include <algorithm>
+#include <optional>
+#include <utility>
+#include <variant>
+
 #include <gtest/gtest.h>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree_path.hpp"
+#include "editor/view/graph_layout.hpp"
 #include "tool_harness.hpp"
 
 // simple_binary_expr.fl: function 1 {50,50,500,500}; binary 1 {125,85,25,25} with move grip {130,90,15,15}.
@@ -75,4 +82,82 @@ TEST(SelectTool, SelectionHonoursTheViewport) {
   send(uut, state, down(Vec2{227, 107}));  // world (127,107)
 
   EXPECT_EQ(state.selection, (FullID{1, 1}));
+}
+
+namespace {
+
+  using fluir::editor::THEN_BRANCH_ID;
+
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, its then branch's
+  // content from y 60 with constant 1 at {15,65,50,50}.
+  fluir::editor::et::ParseTree conditionalTree() {
+    fluir::editor::et::Block then;
+    then.nodes.emplace(1,
+                       fluir::editor::et::Constant{.id = 1,
+                                                   .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                   .value = fluir::literals_types::I32{0}});
+
+    fluir::editor::et::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
+    return tree;
+  }
+
+}  // namespace
+
+TEST(SelectTool, ANestedNodeSelectsAtItsOwnPath) {
+  EditorState state{kCtx};
+  state.editor.load(std::nullopt, conditionalTree());
+  SelectTool tool;
+
+  testutil::send(tool, state, down(Vec2{20, 85}));
+
+  ASSERT_TRUE(state.selection.has_value());
+  EXPECT_EQ(*state.selection, (FullID{1, 20, THEN_BRANCH_ID, 1}));
+}
+
+// A press on empty branch space names the branch, which is what a later completion needs;
+// the outline it draws is the conditional's.
+TEST(SelectTool, AnEmptyBranchSelectsItsBranchPath) {
+  EditorState state{kCtx};
+  state.editor.load(std::nullopt, conditionalTree());
+  SelectTool tool;
+
+  testutil::send(tool, state, down(Vec2{90, 130}));  // clear of the branch's only node
+
+  ASSERT_TRUE(state.selection.has_value());
+  EXPECT_EQ(*state.selection, (FullID{1, 20, THEN_BRANCH_ID}));
+}
+
+TEST(SelectTool, APressOnAPortLeavesNoSelection) {
+  EditorState state{kCtx};
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, FullID{1, 20})).inputs = {
+    {.innerId = 3, .y = 12}};
+  state.editor.load(std::nullopt, std::move(tree));
+  state.selection = FullID{1};
+  SelectTool tool;
+  const auto boxes = fluir::editor::layoutGraph(state.editor.tree(), kCtx.layout);
+  const auto port = std::ranges::find_if(boxes, [&boxes](const fluir::editor::Box& box) {
+    const fluir::editor::Box* hit = fluir::editor::hitAt(boxes, box.world.center());
+    return box.part == fluir::editor::Part::Port && hit && hit->part == fluir::editor::Part::Port;
+  });
+  ASSERT_NE(port, boxes.end());
+
+  EXPECT_FALSE(testutil::send(tool, state, down(port->world.center())));
+
+  EXPECT_EQ(state.selection, std::nullopt);
 }

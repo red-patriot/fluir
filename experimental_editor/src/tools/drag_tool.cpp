@@ -2,28 +2,33 @@
 
 #include <algorithm>
 #include <memory>
-#include <variant>
+#include <optional>
 
+#include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/move.hpp"
 #include "editor/transaction/resize.hpp"
+#include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/function.hpp"
+#include "editor/view/node_view.hpp"
 
 namespace fluir::editor {
   namespace {
-    // Size limits in grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> NODE_SIZE{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
-    constexpr Limits<Vec2i> FUNCTION_SIZE{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
-    // Tall enough that the corner grip never overlaps the move grip.
-    constexpr Limits<Vec2i> COMMENT_SIZE{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
-
-    bool isComment(const pt::ParseTree& tree, const FullID& path) {
-      const pt::Declaration* decl = declarationAt(tree, path);
-      const pt::Node* node = nodeAt(tree, path);
-      return (decl != nullptr && std::holds_alternative<pt::Comment>(*decl)) ||
-             (node != nullptr && std::holds_alternative<pt::Comment>(*node));
+    // What the function, top-level comment or node at `path` may be resized to; nullopt when it is gone.
+    std::optional<Limits<Vec2i>> sizeLimitsAt(const et::ParseTree& tree, const FullID& path) {
+      if (const et::FunctionDecl* fn = functionAt(tree, path)) {
+        return draw::sizeLimits(*fn);
+      }
+      if (const et::Comment* comment = commentAt(tree, path)) {
+        return draw::sizeLimits(*comment);
+      }
+      const et::Node* node = nodeAt(tree, path);
+      return node == nullptr ? std::nullopt : std::optional{nodeSizeLimits(*node)};
     }
 
-    bool isGrip(Part part) { return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeXY; }
+    bool isGrip(Part part) {
+      return part == Part::MoveGrip || part == Part::ResizeX || part == Part::ResizeY || part == Part::ResizeXY;
+    }
 
   }  // namespace
 
@@ -44,8 +49,7 @@ namespace fluir::editor {
           path_ = hit->path;
           part_ = hit->part;
           start_ = *loc;
-          lastWorld_ = world;
-          remainder_ = Vec2{};
+          steps_.start(world);
           delta_ = Vec2i{};
           return true;
         }
@@ -55,13 +59,7 @@ namespace fluir::editor {
           if (!active_) {
             return false;
           }
-          // Sub-unit motion carries over, so slow drags still step.
-          const Vec2 world = state.view.screenToWorld(event.pos);
-          const double unit = state.ctx.layout.unitPx;
-          remainder_ = remainder_ + (world - lastWorld_);
-          lastWorld_ = world;
-          const Vec2i steps{static_cast<int>(remainder_.x / unit), static_cast<int>(remainder_.y / unit)};
-          remainder_ = remainder_ - Vec2{steps.x * unit, steps.y * unit};
+          const Vec2i steps = steps_.advance(state.view.screenToWorld(event.pos), state.ctx.layout.unitPx);
           if (steps != Vec2i{}) {
             delta_ = delta_ + steps;
             reaim(state);
@@ -100,24 +98,28 @@ namespace fluir::editor {
   }
 
   void DragTool::reaim(EditorState& state) {
-    pt::ParseTree& tree = state.editor.tree();
+    et::ParseTree& tree = state.editor.tree();
     if (edit_ != nullptr) {
       edit_->unexecute(tree);
       edit_.reset();
     }
-    const Limits<Vec2i>& size = functionAt(tree, path_) != nullptr ? FUNCTION_SIZE :
-                                isComment(tree, path_)             ? COMMENT_SIZE :
-                                                                     NODE_SIZE;
+    const std::optional<Limits<Vec2i>> limits = sizeLimitsAt(tree, path_);
+    if (!limits) {
+      return;
+    }
+    const Limits<Vec2i>& size = *limits;
     const int width = std::clamp(start_.width + delta_.x, size.lower.x, size.upper.x);
     const int height = std::clamp(start_.height + delta_.y, size.lower.y, size.upper.y);
 
     std::unique_ptr<Transaction> next;
     if (part_ == Part::MoveGrip) {
-      next = std::make_unique<MoveTransaction>(path_, start_.x + delta_.x, start_.y + delta_.y);
+      next = moveTo(path_, start_.x + delta_.x, start_.y + delta_.y);
     } else if (part_ == Part::ResizeX) {
-      next = std::make_unique<ResizeTransaction>(path_, width, start_.height);
+      next = resizeTo(path_, width, start_.height);
+    } else if (part_ == Part::ResizeY) {
+      next = resizeTo(path_, start_.width, height);
     } else {
-      next = std::make_unique<ResizeTransaction>(path_, width, height);
+      next = resizeTo(path_, width, height);
     }
     // Back at the start is a no-op, so there is then no live edit.
     if (next->execute(tree)) {

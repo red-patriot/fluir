@@ -2,12 +2,13 @@
 #define FLUIR_EDITOR_TRANSACTION_DELETE_HPP
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <utility>
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -18,21 +19,22 @@ namespace fluir::editor {
    public:
     explicit DeleteTransaction(fluir::FullID path) : path_(std::move(path)) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override;
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override;
 
    private:
-    bool executeRail(pt::ParseTree& tree);
+    bool executeRail(et::ParseTree& tree);
 
     fluir::FullID path_;
-    std::optional<pt::Declaration> declaration_;
-    std::optional<pt::Node> node_;
-    std::optional<pt::FunctionDecl::Parameter> param_;
+    std::optional<et::Declaration> declaration_;
+    std::optional<et::Node> node_;
+    std::optional<et::FunctionDecl::Parameter> param_;
     std::size_t paramPos_ = 0; /**< where `param_` sat in its parameter list */
-    std::optional<pt::FunctionDecl::Return> ret_;
-    std::vector<pt::Conduit> conduits_; /**< touched conduits, as they were */
-    std::vector<pt::Node> referrers_;   /**< nodes whose operands named it, as they were */
+    std::optional<et::FunctionDecl::Return> ret_;
+    std::vector<et::Conduit> conduits_; /**< touched conduits, as they were */
   };
+
+  std::unique_ptr<Transaction> deleteAt(fluir::FullID path);
 
 }  // namespace fluir::editor
 

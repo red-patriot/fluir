@@ -3,21 +3,37 @@
 #include <algorithm>
 
 #include "editor/assets/images.hpp"
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor {
   namespace {
 
     // Split-label tags draw smaller than their text.
     constexpr double kTagScale = 0.8;
+    // Grip sizes, in grid units.
+    constexpr double DRAG_SIZE = 3;
+    constexpr double DRAG_INSET = 1;
+    constexpr double RESIZE_CORNER_SIZE = 3;
 
-    // A lone port sits at the centre; more spread top-to-bottom down the edge.
-    double portFraction(int count, int index) {
+    // A lone terminal sits at the centre; more spread top-to-bottom down the edge.
+    double terminalFraction(int count, int index) {
       return count <= 1 ? 0.5 : static_cast<double>(index) / (static_cast<double>(count) - 1.0);
     }
 
   }  // namespace
+
+  Rect moveGrip(const Rect& frame, double unit) {
+    return {frame.x + frame.w - (DRAG_SIZE + DRAG_INSET) * unit,
+            frame.y + DRAG_INSET * unit,
+            DRAG_SIZE * unit,
+            DRAG_SIZE * unit};
+  }
+
+  Rect resizeCorner(const Rect& frame, double unit) {
+    const double size = RESIZE_CORNER_SIZE * unit;
+    return {frame.x + frame.w - size, frame.y + frame.h - size, size, size};
+  }
 
   Rect fitInto(Rect target, Vec2 intrinsic) {
     if (intrinsic.x <= 0.0 || intrinsic.y <= 0.0 || target.w <= 0.0 || target.h <= 0.0) {
@@ -33,8 +49,7 @@ namespace fluir::editor {
     return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
   }
 
-  void drawSplitLabel(
-    const Subview& view, Rect box, std::string_view tag, std::string_view text, const EditorContext& ctx) {
+  void drawSplitLabel(const Subview& view, Rect box, std::string_view tag, const EditorContext& ctx) {
     Renderer& r = view.renderer();
     const double pad = ctx.layout.textPad;
     const double s = view.composed().scale;
@@ -42,10 +57,6 @@ namespace fluir::editor {
     // `measureText` reports unscaled px, so the baseline lift scales with the tag.
     r.drawText(
       Vec2{tagBottom.x, tagBottom.y - r.measureText(tag).y * kTagScale * s}, tag, ctx.theme.text, kTagScale * s);
-    if (!text.empty()) {
-      const Rect textRect = splitLabel(box, tag, ctx.layout).text;
-      r.drawText(view.toScreen(Vec2{textRect.x + pad, box.y + pad}), text, ctx.theme.text, s);
-    }
   }
 
   namespace draw {
@@ -53,7 +64,7 @@ namespace fluir::editor {
     std::vector<Vec2> edgeAnchors(double edgeX, const Rect& rect, int count) {
       std::vector<Vec2> out;
       for (int i = 0; i < count; ++i) {
-        out.push_back(Vec2{edgeX, rect.y + portFraction(count, i) * rect.h});
+        out.push_back(Vec2{edgeX, rect.y + terminalFraction(count, i) * rect.h});
       }
       return out;
     }
@@ -61,14 +72,6 @@ namespace fluir::editor {
     void drawShell(const Rect& world, Color fill, const Subview& view, const EditorContext& ctx) {
       view.renderer().fillRect(view.toScreen(world), fill);
       view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
-    }
-
-    void drawPortDots(const PortSet& portSet, const Subview& view, const EditorContext& ctx) {
-      for (const auto* side : {&portSet.inputs, &portSet.outputs}) {
-        for (const Vec2& anchor : *side) {
-          view.renderer().fillRect(view.toScreen(dotRect(anchor, ctx.layout.portDot)), ctx.theme.border);
-        }
-      }
     }
 
     // Fitting happens after the map to screen space, so a non-uniform view can never squash the icon.
@@ -86,8 +89,8 @@ namespace fluir::editor {
       drawImage(assets::xyResizeIcon(), rect, view, ctx.theme.border);
     }
 
-    void drawHResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx) {
-      drawImage(assets::horizontalResizeIcon(), rect, view, ctx.theme.border);
+    void drawResizeEdge(const Rect& rect, const Subview& view, const EditorContext& ctx) {
+      view.renderer().fillRect(view.toScreen(rect), ctx.theme.border);
     }
 
     void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {

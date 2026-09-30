@@ -1,14 +1,16 @@
 #include "editor/tools/conduit_tool.hpp"
 
+#include <optional>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
@@ -69,7 +71,7 @@ namespace {
   };
 
   // Whether a conduit in function 1 carries `source`'s output to `target`'s input `index`.
-  bool connected(const fluir::pt::ParseTree& tree, ID source, ID target, int index) {
+  bool connected(const fluir::editor::et::ParseTree& tree, ID source, ID target, int index) {
     for (const auto& [id, conduit] : blockOf(tree, FullID{1})->conduits) {
       for (const auto& out : conduit.children) {
         if (conduit.input == source && conduit.index == 0 && out.target == target && out.index == index) {
@@ -82,7 +84,7 @@ namespace {
 
 }  // namespace
 
-TEST(ConduitTool, APressOffAPortIsNotClaimed) {
+TEST(ConduitTool, APressOffATerminalIsNotClaimed) {
   Harness h;
 
   EXPECT_FALSE(h.send(down(h.screen(kEmpty))));
@@ -90,7 +92,7 @@ TEST(ConduitTool, APressOffAPortIsNotClaimed) {
   EXPECT_FALSE(h.tool.capturing());
 }
 
-TEST(ConduitTool, APressOnAPortClaimsAndCaptures) {
+TEST(ConduitTool, APressOnATerminalClaimsAndCaptures) {
   Harness h;
 
   EXPECT_TRUE(h.send(down(h.screen(kConstant2Out))));
@@ -99,7 +101,7 @@ TEST(ConduitTool, APressOnAPortClaimsAndCaptures) {
 
 TEST(ConduitTool, DraggingAnOutputToAnInputAddsOneUndoableConduit) {
   Harness h;
-  const fluir::pt::ParseTree before = h.state.editor.tree();
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
 
   EXPECT_TRUE(h.drag(kConstant2Out, kBinaryIn1));
 
@@ -119,10 +121,10 @@ TEST(ConduitTool, DraggingAnInputToAnOutputConnectsTheSameWay) {
   EXPECT_TRUE(connected(h.state.editor.tree(), 2, 1, 1));
 }
 
-TEST(ConduitTool, AReleaseOffACompatiblePortAddsNothing) {
+TEST(ConduitTool, AReleaseOffACompatibleTerminalAddsNothing) {
   for (const Vec2 target : {kEmpty, kConstant3Out, kConstant3Body}) {
     Harness h;
-    const fluir::pt::ParseTree before = h.state.editor.tree();
+    const fluir::editor::et::ParseTree before = h.state.editor.tree();
 
     EXPECT_TRUE(h.drag(kConstant2Out, target));
 
@@ -134,7 +136,7 @@ TEST(ConduitTool, AReleaseOffACompatiblePortAddsNothing) {
 
 TEST(ConduitTool, EscapeCancelsTheDrag) {
   Harness h;
-  const fluir::pt::ParseTree before = h.state.editor.tree();
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
   ASSERT_TRUE(h.send(down(h.screen(kConstant2Out))));
 
   EXPECT_TRUE(h.send(key(InputEvent::Key::Escape)));
@@ -144,7 +146,7 @@ TEST(ConduitTool, EscapeCancelsTheDrag) {
   EXPECT_EQ(h.state.editor.tree(), before);
 }
 
-TEST(ConduitTool, DrawsALineFromThePortToTheCursorOnlyWhileDragging) {
+TEST(ConduitTool, DrawsALineFromTheTerminalToTheCursorOnlyWhileDragging) {
   Harness h;
   EXPECT_EQ(testutil::countOf(h.draw(), testutil::DrawCall::Op::Line), 0u);
   ASSERT_TRUE(h.send(down(h.screen(kConstant2Out))));
@@ -156,7 +158,7 @@ TEST(ConduitTool, DrawsALineFromThePortToTheCursorOnlyWhileDragging) {
   EXPECT_EQ(testutil::countOf(h.draw(), testutil::DrawCall::Op::Line), 0u);
 }
 
-TEST(ConduitTool, PortsAreFoundThroughThePannedAndZoomedView) {
+TEST(ConduitTool, TerminalsAreFoundThroughThePannedAndZoomedView) {
   Harness h;
   h.state.view.scale = 2.0;
   h.state.view.pan = Vec2{30, -10};
@@ -164,4 +166,194 @@ TEST(ConduitTool, PortsAreFoundThroughThePannedAndZoomedView) {
   EXPECT_TRUE(h.drag(kConstant2Out, kBinaryIn1));
 
   EXPECT_TRUE(connected(h.state.editor.tree(), 2, 1, 1));
+}
+
+namespace {
+
+  using fluir::editor::THEN_BRANCH_ID;
+
+  fluir::editor::et::Constant makeConstant(ID id, int x, int y) {
+    return fluir::editor::et::Constant{.id = id,
+                                       .location = {.x = x, .y = y, .z = 0, .width = 10, .height = 10},
+                                       .value = fluir::literals_types::I32{0}};
+  }
+
+  fluir::editor::et::Unary makeUnary(ID id, int x, int y) {
+    return fluir::editor::et::Unary{
+      .id = id, .location = {.x = x, .y = y, .z = 0, .width = 8, .height = 5}, .lhs = 0, .op = fluir::Operator::BANG};
+  }
+
+  constexpr ID kInnerId = 5;
+  constexpr ID kInputInnerId = 6;
+  constexpr ID kOutputInnerId = 7;
+
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,120}, and unary 3
+  // {250,35,40,25} beside it. The conditional's then branch holds a constant 1 and a unary 2.
+  // Below both nodes: input port 1 (inner 6) on the left wall and output port 0 (inner 7) on the right.
+  //   then content from y 60: constant 1 {15,65,50,50}, unary 2 {70,65,40,25}
+  fluir::editor::et::ParseTree conditionalTree() {
+    fluir::editor::et::Block then;
+    then.nodes.emplace(1, makeConstant(1, 1, 1));
+    then.nodes.emplace(2, makeUnary(2, 12, 1));
+
+    fluir::editor::et::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = fluir::FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(3, makeUnary(3, 50, 2));
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 24},
+                                     .condition = {.innerId = kInnerId, .y = 10},
+                                     .inputs = {{.innerId = kInputInnerId, .y = 20}},
+                                     .outputs = {{.innerId = kOutputInnerId, .y = 18}},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  struct NestedHarness {
+    EditorState state{kCtx};
+    ConduitTool tool;
+
+    NestedHarness() { state.editor.load(std::nullopt, conditionalTree()); }
+
+    bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
+
+    bool drag(Vec2 from, Vec2 to) {
+      send(down(state.view.worldToScreen(from)));
+      send(move(state.view.worldToScreen(to)));
+      return send(up(state.view.worldToScreen(to)));
+    }
+
+    const fluir::editor::et::Block* branch(const FullID& path) const { return blockOf(state.editor.tree(), path); }
+
+    const fluir::editor::et::Conditional& conditional() const {
+      return std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(state.editor.tree(), FullID{1, 20}));
+    }
+
+    Rect frame() const {
+      for (const Box& box : layoutGraph(state.editor.tree(), kCtx.layout)) {
+        if (box.path == FullID{1, 20} && box.part == fluir::editor::Part::Frame) {
+          return box.world;
+        }
+      }
+      return {};
+    }
+
+    Vec2 portOuter() const { return outer().inputs.at(0); }
+
+    Vec2 portInner() const { return inner(kInnerId).outputs.at(0); }
+
+    fluir::editor::TerminalSet outer() const {
+      return fluir::editor::draw::anchors(conditional(), frame(), kCtx.layout);
+    }
+
+    fluir::editor::TerminalSet inner(ID innerId) const {
+      return fluir::editor::draw::innerAnchors(conditional(), frame(), kCtx.layout).at(innerId);
+    }
+  };
+
+  // Whether `block` holds a conduit carrying `source`'s output 0 to `target`'s input `index`.
+  bool carries(const fluir::editor::et::Block& block, ID source, ID target, int index) {
+    for (const auto& [id, conduit] : block.conduits) {
+      for (const auto& out : conduit.children) {
+        if (conduit.input == source && conduit.index == 0 && out.target == target && out.index == index) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  constexpr Vec2 kThenConstantOut{65, 90};
+  constexpr Vec2 kThenUnaryIn{70, 77.5};
+  constexpr Vec2 kFunctionUnaryIn{250, 47.5};
+  constexpr Vec2 kFunctionUnaryOut{290, 47.5};
+
+}  // namespace
+
+TEST(ConduitTool, WiresWithinOneBranch) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, kThenUnaryIn);
+
+  EXPECT_FALSE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+// A conduit lives in one block: a branch's node cannot reach out to its function's body.
+TEST(ConduitTool, RefusesToWireOutOfItsBranch) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, kFunctionUnaryIn);
+
+  EXPECT_TRUE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresAFunctionNodeIntoTheConditionPortsOuterSide) {
+  NestedHarness h;
+
+  h.drag(kFunctionUnaryOut, h.portOuter());
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 3, 20, 0));
+  EXPECT_TRUE(h.branch(FullID{1, 20, THEN_BRANCH_ID})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresTheConditionPortsInnerSideIntoABranchNode) {
+  NestedHarness h;
+
+  h.drag(h.portInner(), kThenUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), kInnerId, 2, 0));
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+// Each side of the wall wires only within its own block.
+TEST(ConduitTool, RefusesToWireAcrossTheConditionPortsWall) {
+  NestedHarness h;
+  const fluir::editor::et::ParseTree before = h.state.editor.tree();
+
+  h.drag(kThenConstantOut, h.portOuter());
+  h.drag(h.portInner(), kFunctionUnaryIn);
+
+  EXPECT_EQ(h.state.editor.tree(), before);
+}
+
+TEST(ConduitTool, WiresAFunctionNodeIntoAnInputPortsOuterSide) {
+  NestedHarness h;
+
+  h.drag(kFunctionUnaryOut, h.outer().inputs.at(1));
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 3, 20, 1));
+}
+
+TEST(ConduitTool, WiresAnInputPortsInnerSideIntoABranchNode) {
+  NestedHarness h;
+
+  h.drag(h.inner(kInputInnerId).outputs.at(0), kThenUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), kInputInnerId, 2, 0));
+}
+
+TEST(ConduitTool, WiresABranchNodeIntoAnOutputPortsInnerSide) {
+  NestedHarness h;
+
+  h.drag(kThenConstantOut, h.inner(kOutputInnerId).inputs.at(0));
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1, 20, THEN_BRANCH_ID}), 1, kOutputInnerId, 0));
+  EXPECT_TRUE(h.branch(FullID{1})->conduits.empty());
+}
+
+TEST(ConduitTool, WiresAnOutputPortsOuterSideIntoAFunctionNode) {
+  NestedHarness h;
+
+  h.drag(h.outer().outputs.at(0), kFunctionUnaryIn);
+
+  EXPECT_TRUE(carries(*h.branch(FullID{1}), 20, 3, 0));
 }

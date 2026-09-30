@@ -11,8 +11,8 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/tools/completion_modal.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
@@ -43,6 +43,7 @@ namespace {
 
     explicit Fixture(const std::string& file = "read/single_empty_function.fl") {
       state.text = &renderer;
+      state.screen = fluir::editor::Rect{0, 0, renderer.outputSize_.x, renderer.outputSize_.y};
       testutil::loadInto(state, file);
     }
   };
@@ -134,9 +135,9 @@ TEST(CompletionTool, PickingAConstantPlacesItAtBodyLocalUnits) {
 
   ASSERT_TRUE(pick(f.state, "F64"));
 
-  const auto& body = std::get<fluir::pt::FunctionDecl>(f.state.editor.tree().declarations.at(1)).body;
+  const auto& body = std::get<fluir::editor::et::FunctionDecl>(f.state.editor.tree().declarations.at(1)).body;
   ASSERT_EQ(body.nodes.size(), 1u);
-  const auto* constant = std::get_if<fluir::pt::Constant>(&body.nodes.begin()->second);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&body.nodes.begin()->second);
   ASSERT_NE(constant, nullptr);
   EXPECT_EQ(constant->location.x, std::lround(local.x));
   EXPECT_EQ(constant->location.y, std::lround(local.y));
@@ -191,8 +192,71 @@ TEST(CompletionTool, PickingFunctionPlacesItAtTheRightPressWorldPoint) {
   const auto& decls = f.state.editor.tree().declarations;
   ASSERT_EQ(decls.size(), before + 1);
   const auto newest = std::ranges::max_element(decls, {}, [](const auto& kv) { return kv.first; });
-  const auto* fn = std::get_if<fluir::pt::FunctionDecl>(&newest->second);
+  const auto* fn = std::get_if<fluir::editor::et::FunctionDecl>(&newest->second);
   ASSERT_NE(fn, nullptr);
   EXPECT_EQ(fn->location.x, std::lround(world.x));
   EXPECT_EQ(fn->location.y, std::lround(world.y));
+}
+
+// conditional_empty_scopes.fl: function 1 body origin {0,25}; conditional 2 frame {50,40,500,500},
+// its then branch the content under the header band: {50,65,500,475}, origin {50,65}.
+namespace {
+  constexpr Vec2 kThenBranch{100, 100};
+
+  const fluir::editor::et::Conditional& conditionalOf(const EditorState& state) {
+    const auto& body = std::get<fluir::editor::et::FunctionDecl>(state.editor.tree().declarations.at(1)).body;
+    return std::get<fluir::editor::et::Conditional>(body.nodes.at(2));
+  }
+}  // namespace
+
+TEST(CompletionTool, ARightPressInAThenBranchOpensTheBodyModal) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(kThenBranch, InputEvent::Button::Right)));
+
+  const auto* modal = modalOf(f.state);
+  ASSERT_NE(modal, nullptr);
+  const auto& labels = modal->labels();
+  EXPECT_NE(std::ranges::find(labels, "+ (binary)"), labels.end());
+  EXPECT_NE(std::ranges::find(labels, "Comment"), labels.end());
+  EXPECT_EQ(std::ranges::find(labels, "Function"), labels.end());
+}
+
+TEST(CompletionTool, ARightPressOnAConditionalHeaderOpensNothing) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+
+  EXPECT_FALSE(send(f.uut, f.state, down(Vec2{100, 50}, InputEvent::Button::Right)));
+
+  EXPECT_EQ(f.state.popup, nullptr);
+}
+
+TEST(CompletionTool, PickingAConstantInABranchPlacesItAtBranchLocalUnits) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+  send(f.uut, f.state, down(kThenBranch, InputEvent::Button::Right));
+
+  ASSERT_TRUE(pick(f.state, "F64"));
+
+  const fluir::editor::et::Conditional& conditional = conditionalOf(f.state);
+  EXPECT_TRUE(conditional.elseScope->nodes.empty());
+  const auto& thenNodes = conditional.thenScope->nodes;
+  ASSERT_EQ(thenNodes.size(), 1u);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&thenNodes.begin()->second);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->location.x, 10);
+  EXPECT_EQ(constant->location.y, 7);
+}
+
+TEST(CompletionTool, PickingInABranchHonoursTheViewport) {
+  Fixture f{"read/conditional_empty_scopes.fl"};
+  f.state.view.pan = Vec2{20, 10};
+  send(f.uut, f.state, down(kThenBranch + Vec2{20, 10}, InputEvent::Button::Right));
+
+  ASSERT_TRUE(pick(f.state, "F64"));
+
+  const auto& thenNodes = conditionalOf(f.state).thenScope->nodes;
+  ASSERT_EQ(thenNodes.size(), 1u);
+  const auto* constant = std::get_if<fluir::editor::et::Constant>(&thenNodes.begin()->second);
+  ASSERT_NE(constant, nullptr);
+  EXPECT_EQ(constant->location.x, 10);
+  EXPECT_EQ(constant->location.y, 7);
 }

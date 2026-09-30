@@ -1,11 +1,12 @@
 #ifndef FLUIR_EDITOR_TRANSACTION_EDIT_CALL_ARGUMENT_HPP
 #define FLUIR_EDITOR_TRANSACTION_EDIT_CALL_ARGUMENT_HPP
 
+#include <memory>
 #include <string>
 #include <utility>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -16,14 +17,16 @@ namespace fluir::editor {
     EditCallArgumentTransaction(fluir::FullID path, int index, std::string name) :
       path_(std::move(path)), index_(index), name_(std::move(name)) { }
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     fluir::FullID path_;
     int index_;
     std::string name_;
   };
+
+  std::unique_ptr<Transaction> renameCallArgument(fluir::FullID path, int index, std::string name);
 
 }  // namespace fluir::editor
 

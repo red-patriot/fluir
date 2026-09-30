@@ -26,6 +26,6 @@ fluir_embed_file(
 
 fluir_embed_file(
     fluir.libeditor
-    "HorizResizeHandle.svg"
-    fluir::editor::assets::horizontalResizeIcon
+    "branchArrow.svg"
+    fluir::editor::assets::branchArrowIcon
 )

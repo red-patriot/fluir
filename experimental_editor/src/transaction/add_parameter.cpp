@@ -2,16 +2,18 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
 
-  bool AddParameter::execute(pt::ParseTree& tree) {
-    pt::FunctionDecl* fn = functionAt(tree, path_);
+  bool AddParameter::execute(et::ParseTree& tree) {
+    et::FunctionDecl* fn = functionAt(tree, path_);
     if (fn == nullptr || id_ == INVALID_ID || railTypeAt(*fn, id_) != nullptr) {
       return false;
     }
@@ -19,9 +21,9 @@ namespace fluir::editor {
     if (createdInput_) {
       fn->input.emplace();
     }
-    std::vector<pt::FunctionDecl::Parameter>& params = fn->input->parameters;
+    std::vector<et::FunctionDecl::Parameter>& params = fn->input->parameters;
     int index = 0;
-    for (const pt::FunctionDecl::Parameter& param : params) {
+    for (const et::FunctionDecl::Parameter& param : params) {
       index = std::max(index, param.index + 1);
     }
     // A deleted parameter can leave param{size + 1} taken; bump past it.
@@ -33,8 +35,8 @@ namespace fluir::editor {
     return true;
   }
 
-  bool AddParameter::unexecute(pt::ParseTree& tree) {
-    pt::FunctionDecl* fn = functionAt(tree, path_);
+  bool AddParameter::unexecute(et::ParseTree& tree) {
+    et::FunctionDecl* fn = functionAt(tree, path_);
     if (fn == nullptr || !fn->input) {
       return false;
     }
@@ -45,6 +47,10 @@ namespace fluir::editor {
       fn->input = std::nullopt;
     }
     return true;
+  }
+
+  std::unique_ptr<Transaction> addParameter(fluir::FullID path, fluir::ID newId) {
+    return std::make_unique<AddParameter>(std::move(path), newId);
   }
 
 }  // namespace fluir::editor

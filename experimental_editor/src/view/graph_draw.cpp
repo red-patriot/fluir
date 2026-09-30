@@ -2,20 +2,17 @@
 
 #include <variant>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/view/draw/comment.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/draw/function.hpp"
+#include "editor/view/graph_geometry.hpp"
 #include "editor/view/node_view.hpp"
+#include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
   namespace {
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
 
     // Renderer::drawRect has no thickness, so two concentric rects stand in for a 2px outline.
     void drawOutline(const Subview& view, const EditorContext& ctx, const Rect& r) {
@@ -25,39 +22,55 @@ namespace fluir::editor {
       }
     }
 
-    // A top-level declaration draws its own body; a deeper path is a node.
-    void drawBody(const Subview& view, const pt::ParseTree& tree, const Box& box, const EditorContext& ctx) {
-      if (box.path.size() == 1) {
-        if (const pt::Declaration* decl = declarationAt(tree, box.path)) {
-          std::visit(Overloaded{[&](const pt::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
-                                [&](const pt::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
-                     *decl);
-        }
-      } else if (const pt::Node* node = nodeAt(tree, box.path)) {
+    // What the path names decides the body: a declaration, a node, or a container's branch.
+    void drawBody(const Subview& view, const et::ParseTree& tree, const Box& box, const EditorContext& ctx) {
+      if (const et::Declaration* decl = declarationAt(tree, box.path)) {
+        std::visit(util::Overloaded{[&](const et::FunctionDecl& fn) { draw::drawBody(fn, box.world, view, ctx); },
+                                    [&](const et::Comment& comment) { draw::draw(comment, box.world, view, ctx); }},
+                   *decl);
+      } else if (const et::Node* node = nodeAt(tree, box.path)) {
         drawNode(*node, box.world, view, ctx);
       }
     }
 
+    // A container's selection outline belongs to its frame, which paints over its children.
+    bool framed(const et::ParseTree& tree, const FullID& path) {
+      return functionAt(tree, path) != nullptr || std::get_if<et::Conditional>(nodeAt(tree, path)) != nullptr;
+    }
+
     void drawBox(
-      const Subview& view, const pt::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
+      const Subview& view, const et::ParseTree& tree, const Box& box, bool selected, const EditorContext& ctx) {
       Renderer& r = view.renderer();
       switch (box.part) {
         case Part::Body:
           drawBody(view, tree, box, ctx);
-          if (selected && functionAt(tree, box.path) == nullptr) {
+          if (selected && !framed(tree, box.path)) {
             drawOutline(view, ctx, box.world);
           }
           return;
+        case Part::Branch:
+        case Part::Header:
+        case Part::Label:
+          return;  // hit regions only: their owner paints them
         case Part::Frame:
-          if (const pt::FunctionDecl* fn = functionAt(tree, box.path)) {
+          if (const et::FunctionDecl* fn = functionAt(tree, box.path)) {
             draw::drawFrame(*fn, box.world, view, ctx);
-            if (selected) {
-              drawOutline(view, ctx, box.world);
-            }
+          } else if (const auto* conditional = std::get_if<et::Conditional>(nodeAt(tree, box.path))) {
+            draw::drawFrame(*conditional, box.world, view, ctx);
+          } else {
+            return;
+          }
+          if (selected) {
+            drawOutline(view, ctx, box.world);
+          }
+          return;
+        case Part::Port:
+          if (std::get_if<et::Conditional>(nodeAt(tree, box.path)) != nullptr) {
+            draw::drawPort(*box.port, box.world, view, ctx);
           }
           return;
         case Part::Rail:
-          if (const pt::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
+          if (const et::FunctionDecl* fn = functionAt(tree, parentOf(box.path))) {
             draw::drawRail(*fn, box.path.back(), box.world, view, ctx);
           }
           return;
@@ -66,11 +79,18 @@ namespace fluir::editor {
                      view.toScreen(Vec2{box.world.x + box.world.w, box.world.y + box.world.h}),
                      ctx.theme.conduit);
           return;
+        case Part::Terminal:
+          {
+            const Vec2 anchor{box.world.x + box.world.w / 2, box.world.y + box.world.h / 2};
+            r.fillRect(view.toScreen(dotRect(anchor, ctx.layout.terminalDot)), ctx.theme.border);
+          }
+          return;
         case Part::MoveGrip:
           draw::drawMoveGrip(box.world, view, ctx);
           return;
         case Part::ResizeX:
-          draw::drawHResizeHandle(box.world, view, ctx);
+        case Part::ResizeY:
+          draw::drawResizeEdge(box.world, view, ctx);
           return;
         case Part::ResizeXY:
           draw::drawXyResizeHandle(box.world, view, ctx);
@@ -81,15 +101,18 @@ namespace fluir::editor {
   }  // namespace
 
   void drawGraph(const Subview& view,
-                 const pt::ParseTree& tree,
+                 const et::ParseTree& tree,
                  std::span<const Box> boxes,
                  const std::optional<FullID>& selection,
                  const EditorContext& ctx) {
+    // A branch has no outline of its own: selecting one outlines the container it belongs to.
+    const std::optional<FullID> outlined =
+      selection && isBranchPath(*selection) ? std::optional<FullID>{parentOf(*selection)} : selection;
     for (const Box& box : boxes) {
       if (box.clip) {
         view.renderer().pushClip(view.toScreen(*box.clip));
       }
-      drawBox(view, tree, box, selection == box.path, ctx);
+      drawBox(view, tree, box, outlined == box.path, ctx);
       if (box.clip) {
         view.renderer().popClip();
       }

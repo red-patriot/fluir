@@ -46,11 +46,13 @@ namespace fluir {
     pt::FunctionDecl::Return funcReturn(Element* element);
 
     pt::Block block(Element* element);
+    pt::BlockPorts parseScopePorts(Element* element);
     std::optional<WithID<pt::Node>> node(Element* element);
     WithID<pt::Node> constant(Element* element);
     WithID<pt::Node> binary(Element* element);
     WithID<pt::Node> unary(Element* element);
     WithID<pt::Node> call(Element* element);
+    WithID<pt::Node> conditional(Element* element);
 
     WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);
@@ -67,10 +69,13 @@ namespace fluir {
     pt::U64 u64(Element* element);
     pt::BOOL boolean(Element* element);
 
+    pt::BlockPort parseBlockPort(Element* element);
+
     std::string_view getAttribute(Element* element, std::string_view attribute);
     std::string_view getOptionalAttribute(Element* element,
                                           std::string_view attribute,
                                           std::string_view defaultValue = "");
+    int64_t getInt(Element* element, std::string_view attribute);
     ID parseId(Element* element);
     ID parseIdReference(Element* element, std::string_view attribute);
     ID parseOptionalIdReference(Element* element, std::string_view attribute);

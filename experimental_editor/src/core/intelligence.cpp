@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 
+#include "editor/core/fields.hpp"
 #include "editor/core/tree_path.hpp"
 
 namespace fluir::editor {
@@ -43,11 +44,11 @@ namespace fluir::editor {
 
   }  // namespace
 
-  bool Intelligence::load(std::optional<std::filesystem::path>, const pt::ParseTree& tree) {
+  bool Intelligence::load(std::optional<std::filesystem::path>, const et::ParseTree& tree) {
     // TODO: Load other information about a module, for now just add parse its decls as available
     module_.functions.clear();
     for (const auto& [id, decl] : tree.declarations) {
-      if (const auto* func = std::get_if<pt::FunctionDecl>(&decl); func) {
+      if (const auto* func = std::get_if<et::FunctionDecl>(&decl); func) {
         intelligence::FunctionDecl functionInfo;
         functionInfo.name = func->name;
         if (func->output && func->output->ret) {
@@ -72,29 +73,29 @@ namespace fluir::editor {
     return true;
   }
 
-  std::vector<fluir::Operator> Intelligence::operators(const pt::ParseTree& tree, const FullID& path) const {
-    const pt::Node* node = nodeAt(tree, path);
-    if (node == nullptr) {
+  std::vector<std::string> Intelligence::choices(const et::ParseTree& tree, const FullID& path, Field field) const {
+    if (!fields::read(tree, path, field)) {
       return {};
     }
-    if (std::holds_alternative<pt::Unary>(*node)) {
-      return UNARY_OPERATORS;
+    switch (field.kind) {
+      case Field::Kind::Operator:
+        {
+          const bool unary = std::holds_alternative<et::Unary>(*nodeAt(tree, path));
+          std::vector<std::string> out;
+          for (const fluir::Operator op : unary ? UNARY_OPERATORS : BINARY_OPERATORS) {
+            out.emplace_back(stringify(op));
+          }
+          return out;
+        }
+      case Field::Kind::ParamType:
+      case Field::Kind::ReturnType:
+        return {BUILTIN_TYPES.begin(), BUILTIN_TYPES.end()};
+      default:
+        return {};
     }
-    if (std::holds_alternative<pt::Binary>(*node)) {
-      return BINARY_OPERATORS;
-    }
-    return {};
   }
 
-  std::vector<std::string_view> Intelligence::types(const pt::ParseTree& tree, const FullID& path) const {
-    if (path.empty()) {
-      return {};
-    }
-    const pt::FunctionDecl* fn = functionAt(tree, parentOf(path));
-    return fn && railTypeAt(*fn, path.back()) ? BUILTIN_TYPES : std::vector<std::string_view>{};
-  }
-
-  std::vector<Completion> Intelligence::completions(const pt::ParseTree& tree, const FullID& body) const {
+  std::vector<Completion> Intelligence::completions(const et::ParseTree& tree, const FullID& body) const {
     if (body.empty()) {
       return TOP_LEVEL_COMPLETIONS;
     }
@@ -102,7 +103,7 @@ namespace fluir::editor {
     return block ? completionsAt(*block) : std::vector<Completion>{};
   }
 
-  std::vector<Completion> Intelligence::completionsAt(const pt::Block&) const {
+  std::vector<Completion> Intelligence::completionsAt(const et::Block&) const {
     auto options = bodyBuiltins();
 
     options.reserve(options.size() + module_.functions.size());
@@ -145,6 +146,7 @@ namespace fluir::editor {
         out.push_back({std::string{BUILTIN_TYPES[i]}, ConstantOption{defaults.at(i)}});
       }
       out.push_back({"Comment", CommentOption{}});
+      out.push_back({"if-else", ConditionalOption{}});
       out.push_back({"print",
                      CallFunctionOption{.target = "print",
                                         .parameters = {intelligence::ParamInfo{.name = "object", .typeName = "ANY"}},

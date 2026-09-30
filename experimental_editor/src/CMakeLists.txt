@@ -139,11 +139,13 @@ target_include_directories(
 )
 
 set(FLUIR_EDITOR_CORE_SOURCES
+    "core/annotate.cpp"
     "core/collecting_sink.cpp"
-    "core/graph_geometry.cpp"
+    "core/fields.cpp"
     "core/identifier.cpp"
     "core/intelligence.cpp"
     "core/literal_text.cpp"
+    "core/node_access.cpp"
     "core/loader.cpp"
     "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
@@ -158,13 +160,16 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/add_decl.cpp"
     "transaction/add_node.cpp"
     "transaction/add_parameter.cpp"
+    "transaction/add_port.cpp"
     "transaction/add_return.cpp"
     "transaction/delete.cpp"
+    "transaction/delete_port.cpp"
     "transaction/edit_call_argument.cpp"
     "transaction/edit_call_node.cpp"
     "transaction/edit_comment.cpp"
     "transaction/edit_operator.cpp"
     "transaction/move.cpp"
+    "transaction/move_port.cpp"
     "transaction/rename.cpp"
     "transaction/resize.cpp"
     "transaction/set_constant_value.cpp"
@@ -183,10 +188,12 @@ set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
 
 set(FLUIR_EDITOR_VIEW_SOURCES
     "view/graph_draw.cpp"
+    "view/graph_geometry.cpp"
     "view/graph_layout.cpp"
     "view/draw/binary.cpp"
     "view/draw/call.cpp"
     "view/draw/comment.cpp"
+    "view/draw/conditional.cpp"
     "view/draw/constant.cpp"
     "view/draw/draw_utils.cpp"
     "view/draw/function.cpp"
@@ -197,20 +204,24 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 
 set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/bool_toggle_tool.cpp"
+    "tools/branch_toggle_tool.cpp"
+    "tools/choice_tool.cpp"
     "tools/completion_modal.cpp"
     "tools/completion_tool.cpp"
+    "tools/conditional_header_menu.cpp"
     "tools/context_menu_tool.cpp"
     "tools/conduit_tool.cpp"
     "tools/drag_tool.cpp"
     "tools/function_header_menu.cpp"
+    "tools/grid_steps.cpp"
     "tools/menu_popup.cpp"
-    "tools/operator_tool.cpp"
     "tools/pan_zoom_tool.cpp"
     "tools/popup_tool.cpp"
+    "tools/port_drag_tool.cpp"
+    "tools/port_menu.cpp"
     "tools/rail_menu.cpp"
     "tools/select_tool.cpp"
     "tools/text_edit_tool.cpp"
-    "tools/type_tool.cpp"
     "tools/tool.cpp"
 )
 
@@ -238,6 +249,7 @@ target_link_libraries(
            nfd
            plutosvg
            fluir::compiler
+           fluir::utility
 )
 
 add_executable(fluir.editor "main.cpp")

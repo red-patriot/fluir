@@ -1,13 +1,16 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_INTELLIGENCE_HPP
+#define FLUIR_EDITOR_CORE_INTELLIGENCE_HPP
 
 #include <filesystem>
 #include <optional>
+#include <string>
 #include <string_view>
 #include <vector>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "compiler/models/operator.hpp"
+#include "editor/core/field.hpp"
+#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
   namespace intelligence {
@@ -41,9 +44,10 @@ namespace fluir::editor {
     std::vector<intelligence::ParamInfo> parameters;
     std::optional<std::string_view> returnType;
   };
+  struct ConditionalOption { };
 
-  using CompletionOption =
-    std::variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption, CallFunctionOption>;
+  using CompletionOption = std::
+    variant<FunctionDefOption, CommentOption, OperatorOption, ConstantOption, CallFunctionOption, ConditionalOption>;
 
   struct Completion {
     std::string label;
@@ -56,22 +60,19 @@ namespace fluir::editor {
     /** Loads a module into memory, parsing its information for intelligence.
      * \return true if the module was loaded successfully, false on error
      */
-    bool load(std::optional<std::filesystem::path> programPath, const pt::ParseTree& tree);
+    bool load(std::optional<std::filesystem::path> programPath, const et::ParseTree& tree);
 
     /** Erases a loaded module from memory. No op if the module has not been loaded.
      * \return true if the module was erased, false on error (or not previously loaded)
      */
     bool unload(std::optional<std::filesystem::path> programPath);
 
-    /** Operators the operator node at `path` may take; empty for anything else. */
-    std::vector<fluir::Operator> operators(const pt::ParseTree& tree, const FullID& path) const;
-
-    /** Type names the param or return rail at `path` ([fn, railId]) may take; empty for anything else. */
-    std::vector<std::string_view> types(const pt::ParseTree& tree, const FullID& path) const;
+    /** What `field` at `path` may be picked from; empty for a typed field or a missing one. */
+    std::vector<std::string> choices(const et::ParseTree& tree, const FullID& path, Field field) const;
 
     /** Completions available inside `body`. Empty `body` indicates a top-level addition, otherwise completions will be
      * applied inside `body`. */
-    std::vector<Completion> completions(const pt::ParseTree& tree, const FullID& body) const;
+    std::vector<Completion> completions(const et::ParseTree& tree, const FullID& body) const;
 
    private:
     // TODO: Allow for multiple modules to be open
@@ -80,7 +81,9 @@ namespace fluir::editor {
     /** Returns a vector of builtin operations available in a decl body (operators, functions, etc). */
     static const std::vector<Completion>& bodyBuiltins();
     /** Returns completions available at the given body location (functions to call, etc). */
-    std::vector<Completion> completionsAt(const pt::Block& body) const;
+    std::vector<Completion> completionsAt(const et::Block& body) const;
   };
 
 }  // namespace fluir::editor
+
+#endif

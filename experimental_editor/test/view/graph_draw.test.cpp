@@ -1,6 +1,7 @@
 #include "editor/view/graph_draw.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <optional>
 #include <string>
@@ -12,7 +13,9 @@
 #include "editor/assets/images.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
+#include "editor/core/tree_path.hpp"
 #include "editor/core/viewport.hpp"
+#include "editor/view/draw/conditional.hpp"
 #include "editor/view/graph_layout.hpp"
 #include "fixture_loader.hpp"
 #include "recording_renderer.hpp"
@@ -59,7 +62,7 @@ namespace {
 
   // Lays `tree` out and draws it into one root view, exactly as ModulePage does.
   void drawTree(const fluir::editor::EditorContext& ctx,
-                const fluir::pt::ParseTree& tree,
+                const fluir::editor::et::ParseTree& tree,
                 const Viewport& viewport,
                 RecordingRenderer& r,
                 const std::optional<fluir::FullID>& selection = std::nullopt) {
@@ -72,7 +75,7 @@ namespace {
 
 TEST(GraphDraw, EmptyTreeDrawsNothing) {
   RecordingRenderer r;
-  drawTree(kCtx, fluir::pt::ParseTree{}, Viewport{}, r);
+  drawTree(kCtx, fluir::editor::et::ParseTree{}, Viewport{}, r);
 
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Rect), 0u);
   EXPECT_EQ(countOf(r.calls, DrawCall::Op::Fill), 0u);
@@ -93,7 +96,7 @@ TEST(GraphDraw, TopLevelCommentDrawsAsACommentBox) {
   EXPECT_TRUE(hasWrappedText(r.calls, "hello", Rect{54, 79, 117, 92}, 1.0));
   EXPECT_EQ(clipsCovering(r.calls, Rect{54, 79, 117, 92}).size(), 1u);
   EXPECT_TRUE(hasScaledTextAt(r.calls, "//", Vec2{54, 64.6}, 0.8));  // header tag
-  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no ports
+  EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());                   // no terminals
   EXPECT_TRUE(clipsCovering(r.calls, Rect{50, 50, 125, 125}).empty());
 }
 
@@ -192,7 +195,7 @@ TEST(GraphDraw, ParamRailFromInputOnly) {
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));   // header
 
   const auto dots = fillsOfSize(r.calls, 6, 6);
-  EXPECT_EQ(dots.size(), 2u);  // 2 param port dots, no others
+  EXPECT_EQ(dots.size(), 2u);  // 2 param terminal dots, no others
   EXPECT_TRUE(containsRect(dots, Rect{122, 84.5, 6, 6}));
   EXPECT_TRUE(containsRect(dots, Rect{122, 109.5, 6, 6}));
 
@@ -234,7 +237,7 @@ TEST(GraphDraw, ReturnRailFromOutputOnly) {
   EXPECT_TRUE(hasFill(r.calls, Rect{50, 50, 500, 25}));   // header
 
   const auto dots = fillsOfSize(r.calls, 6, 6);
-  EXPECT_EQ(dots.size(), 1u);  // 1 return port dot, no others
+  EXPECT_EQ(dots.size(), 1u);  // 1 return terminal dot, no others
   EXPECT_TRUE(containsRect(dots, Rect{522, 84.5, 6, 6}));
 
   EXPECT_TRUE(hasScaledTextAt(r.calls, "F64", Vec2{529, 89.6}, 0.8));
@@ -441,12 +444,40 @@ TEST(GraphDraw, CallNodeArgsAndReturn) {
 
     EXPECT_TRUE(hasTextAt(r.calls, "doStuff", Vec2{29, 54}));
 
-    EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no port dots
+    EXPECT_TRUE(fillsOfSize(r.calls, 6, 6).empty());  // no args, no return -> no terminal dots
     EXPECT_EQ(countOf(r.calls, DrawCall::Op::Line), 0u);
   }
 }
 
-TEST(GraphDraw, WireEndpointsMatchPorts) {
+// Terminal dots come from the layout's Terminal boxes: each one paints a fill centered on its box.
+TEST(GraphDraw, PaintsADotCenteredOnEveryTerminalBox) {
+  for (const char* fixture : {"read/simple_binary_expr.fl", "read/function_with_input_only.fl"}) {
+    const Loaded l = loadFixture(fixture);
+    ASSERT_TRUE(l.result.tree.has_value());
+
+    RecordingRenderer r;
+    drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+    const auto fills = testutil::fillsOf(r.calls);
+    bool any = false;
+    for (const fluir::editor::Box& box : fluir::editor::layoutGraph(*l.result.tree, kCtx.layout)) {
+      if (box.part != fluir::editor::Part::Terminal) {
+        continue;
+      }
+      any = true;
+      const Rect& t = box.world;
+      EXPECT_TRUE(std::ranges::any_of(fills,
+                                      [&](const Rect& f) {
+                                        return std::abs((f.x + f.w / 2) - (t.x + t.w / 2)) < 1e-6 &&
+                                               std::abs((f.y + f.h / 2) - (t.y + t.h / 2)) < 1e-6;
+                                      }))
+        << fixture;
+    }
+    EXPECT_TRUE(any) << fixture;
+  }
+}
+
+TEST(GraphDraw, WireEndpointsMatchTerminals) {
   const Loaded l = loadFixture("read/simple_binary_expr.fl");
   ASSERT_TRUE(l.result.tree.has_value());
 
@@ -519,4 +550,172 @@ TEST(GraphDraw, SelectedFunctionIsOutlined) {
   drawTree(kCtx, *l.result.tree, Viewport{}, r, fluir::FullID{1});
 
   EXPECT_TRUE(hasRect(r.calls, Rect{48, 48, 504, 504}));
+}
+
+namespace {
+
+  using fluir::FlowGraphLocation;
+  using fluir::ID;
+  using fluir::editor::THEN_BRANCH_ID;
+
+  // Function 1 (frame {0,0,500,500}, body clip {0,25,500,475}) holds conditional 20 at units (2,y)
+  // 20 wide and 18 tall. It is one frame with one header band over its then branch, which holds
+  // a constant 1:
+  //   frame {10,35,100,90}   then branch content {10,60,100,65}   then 1 {15,65,50,50}
+  fluir::editor::et::ParseTree conditionalTree(int y = 2) {
+    fluir::editor::et::Block then;
+    then.nodes.emplace(1,
+                       fluir::editor::et::Constant{.id = 1,
+                                                   .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                   .value = fluir::literals_types::I32{0}});
+
+    fluir::editor::et::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = y, .z = 0, .width = 20, .height = 18},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  // Where an `op` call on `want` first lands in the call list, or calls.size() when it never does.
+  std::size_t firstIndex(const std::vector<DrawCall>& calls, DrawCall::Op op, Rect want) {
+    for (std::size_t i = 0; i < calls.size(); ++i) {
+      if (calls[i].op == op && std::abs(calls[i].rect.x - want.x) < 1e-6 && std::abs(calls[i].rect.y - want.y) < 1e-6 &&
+          std::abs(calls[i].rect.w - want.w) < 1e-6 && std::abs(calls[i].rect.h - want.h) < 1e-6) {
+        return i;
+      }
+    }
+    return calls.size();
+  }
+
+}  // namespace
+
+TEST(GraphDraw, AConditionalDrawsOneHeaderBandInsideItsFrame) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, 25}));  // the header band over the then branch
+  EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // border around the whole frame
+  const std::vector<std::string> texts = textStrings(r.calls);
+  EXPECT_NE(std::find(texts.begin(), texts.end(), std::string{"then"}), texts.end());
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"else"}), texts.end());
+  EXPECT_EQ(std::find(texts.begin(), texts.end(), std::string{"if"}), texts.end());
+}
+
+TEST(GraphDraw, TheBranchClipsToTheContentRegionUnderTheHeader) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 60, 100, 65}).empty());
+  EXPECT_TRUE(hasFill(r.calls, Rect{15, 65, 50, 50}));  // the branch's node
+}
+
+// A conditional near its function's bottom edge: the branch clip is the intersection of the two.
+TEST(GraphDraw, BranchClipIsIntersectedWithItsContainer) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(88), Viewport{}, r);  // frame {10,465,100,90}, function clip ends at y 500
+
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{10, 490, 100, 10}).empty());  // content 490..525, clipped at 500
+  EXPECT_TRUE(clipsCovering(r.calls, Rect{10, 505, 100, 20}).empty());   // nothing past the function's edge
+}
+
+// The header is the frame's chrome, so it paints over the nodes it clips.
+TEST(GraphDraw, TheHeaderBandPaintsOverItsNestedNodes) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  const std::size_t node = firstIndex(r.calls, DrawCall::Op::Fill, Rect{15, 65, 50, 50});
+  const std::size_t header = firstIndex(r.calls, DrawCall::Op::Fill, Rect{10, 35, 100, 25});
+
+  ASSERT_LT(node, r.calls.size());
+  ASSERT_LT(header, r.calls.size());
+  EXPECT_LT(node, header);
+}
+
+// The port straddles the wall, so it must cover the border or half of it would hide.
+TEST(GraphDraw, TheConditionPortPaintsOverTheFrameBorder) {
+  const fluir::editor::et::ParseTree tree = conditionalTree();
+  const auto& conditional =
+    std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, fluir::FullID{1, 20}));
+  RecordingRenderer r;
+  drawTree(kCtx, tree, Viewport{}, r);
+
+  const Rect frame{10, 35, 100, 90};
+  const Rect portRect = fluir::editor::draw::portRect(conditional, {}, frame, kCtx.layout);
+  const std::size_t border = firstIndex(r.calls, DrawCall::Op::Rect, frame);
+  const std::size_t port = firstIndex(r.calls, DrawCall::Op::Fill, portRect);
+
+  ASSERT_LT(border, r.calls.size());
+  ASSERT_LT(port, r.calls.size());
+  EXPECT_LT(border, port);
+}
+
+TEST(GraphDraw, EachWallPortPaintsInItsColor) {
+  fluir::editor::et::ParseTree tree = conditionalTree();
+  auto& conditional = std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(tree, fluir::FullID{1, 20}));
+  conditional.inputs = {{.innerId = 6, .y = 12}};
+  conditional.outputs = {{.innerId = 7, .y = 8}};
+  RecordingRenderer r;
+  drawTree(kCtx, tree, Viewport{}, r);
+
+  const Rect frame{10, 35, 100, 90};
+  const auto rectOf = [&](fluir::editor::PortRef ref) {
+    return fluir::editor::draw::portRect(conditional, ref, frame, kCtx.layout);
+  };
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({}), kCtx.theme.boolNode));
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({.output = false, .index = 1}), kCtx.theme.port));
+  EXPECT_TRUE(testutil::hasFillColored(r.calls, rectOf({.output = true, .index = 0}), kCtx.theme.port));
+}
+
+// A conditional resizes as one rect now, so it carries the two-axis corner icon.
+TEST(GraphDraw, AConditionalDrawsACornerResizeIcon) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r);
+
+  EXPECT_TRUE(hasIcon(r.calls, fluir::editor::assets::xyResizeIcon(), Rect{95, 110, 15, 15}));
+  EXPECT_TRUE(hasIcon(r.calls, fluir::editor::assets::xyResizeIcon(), Rect{485, 485, 15, 15}));  // the function's
+}
+
+TEST(GraphDraw, SelectingABranchOutlinesItsConditional) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r, fluir::FullID{1, 20, THEN_BRANCH_ID});
+
+  // Frame {10,35,100,90} outset by selectionPad (2), then by one more px.
+  EXPECT_TRUE(hasRect(r.calls, Rect{8, 33, 104, 94}));
+  EXPECT_TRUE(hasRect(r.calls, Rect{7, 32, 106, 96}));
+}
+
+TEST(GraphDraw, SelectingANestedNodeOutlinesThatNodeAlone) {
+  RecordingRenderer r;
+  drawTree(kCtx, conditionalTree(), Viewport{}, r, fluir::FullID{1, 20, THEN_BRANCH_ID, 1});
+
+  EXPECT_TRUE(hasRect(r.calls, Rect{13, 63, 54, 54}));   // the node, outset by 2
+  EXPECT_FALSE(hasRect(r.calls, Rect{8, 33, 104, 94}));  // not its conditional
+}
+
+// conditional_with_body.fl: conditional 2 -> frame {50,40,2500,2500}, then branch content
+// from y 65 holding constant 2 {75,90,25,25} and binary 1 {50,165,35,35}.
+TEST(GraphDraw, FixtureConditionalDrawsItsChromeAndItsThenBranch) {
+  const Loaded l = loadFixture("read/conditional_with_body.fl");
+  ASSERT_TRUE(l.result.tree.has_value());
+
+  RecordingRenderer r;
+  drawTree(kCtx, *l.result.tree, Viewport{}, r);
+
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 40, 2500, 25}));    // the header band
+  EXPECT_TRUE(hasRect(r.calls, Rect{50, 40, 2500, 2500}));  // border around the frame
+  EXPECT_FALSE(clipsCovering(r.calls, Rect{50, 65, 2500, 2475}).empty());
+  EXPECT_TRUE(hasFill(r.calls, Rect{75, 90, 25, 25}));   // then: constant 2
+  EXPECT_TRUE(hasFill(r.calls, Rect{50, 165, 35, 35}));  // then: binary 1
 }

@@ -2,8 +2,8 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <memory>
 #include <utility>
-#include <variant>
 
 #include "editor/core/tree_edit.hpp"
 #include "editor/core/tree_path.hpp"
@@ -11,12 +11,8 @@
 namespace fluir::editor {
   namespace {
 
-    fluir::ID idOf(const pt::Node& node) {
-      return std::visit([](const auto& n) { return n.id; }, node);
-    }
-
-    std::vector<pt::Conduit> touchedConduits(const pt::Block& block, fluir::ID id) {
-      std::vector<pt::Conduit> out;
+    std::vector<et::Conduit> touchedConduits(const et::Block& block, fluir::ID id) {
+      std::vector<et::Conduit> out;
       for (const auto& [conduitId, conduit] : block.conduits) {
         if (touches(conduit, id)) {
           out.push_back(conduit);
@@ -27,7 +23,7 @@ namespace fluir::editor {
 
   }  // namespace
 
-  bool DeleteTransaction::execute(pt::ParseTree& tree) {
+  bool DeleteTransaction::execute(et::ParseTree& tree) {
     if (declarationAt(tree, path_) != nullptr) {
       const auto it = tree.declarations.find(path_.front());
       declaration_ = std::move(it->second);
@@ -35,8 +31,8 @@ namespace fluir::editor {
       return true;
     }
 
-    pt::Block* block = blockOf(tree, parentOf(path_));
-    const pt::Node* node = nodeAt(tree, path_);
+    et::Block* block = blockOf(tree, parentOf(path_));
+    const et::Node* node = nodeAt(tree, path_);
     if (block == nullptr || node == nullptr) {
       return executeRail(tree);
     }
@@ -44,17 +40,11 @@ namespace fluir::editor {
     const fluir::ID nodeId = path_.back();
     node_ = *node;
     conduits_ = touchedConduits(*block, nodeId);
-    referrers_.clear();
-    for (const auto& [id, other] : block->nodes) {
-      if (hasOperand(other, nodeId)) {
-        referrers_.push_back(other);
-      }
-    }
     return deleteNode(*block, nodeId);
   }
 
-  bool DeleteTransaction::executeRail(pt::ParseTree& tree) {
-    pt::FunctionDecl* fn = path_.empty() ? nullptr : functionAt(tree, parentOf(path_));
+  bool DeleteTransaction::executeRail(et::ParseTree& tree) {
+    et::FunctionDecl* fn = path_.empty() ? nullptr : functionAt(tree, parentOf(path_));
     if (fn == nullptr) {
       return false;
     }
@@ -64,7 +54,7 @@ namespace fluir::editor {
       fn->output->ret.reset();
     } else if (fn->input) {
       auto& params = fn->input->parameters;
-      const auto it = std::ranges::find(params, id, &pt::FunctionDecl::Parameter::id);
+      const auto it = std::ranges::find(params, id, &et::FunctionDecl::Parameter::id);
       if (it == params.end()) {
         return false;
       }
@@ -79,7 +69,7 @@ namespace fluir::editor {
     return true;
   }
 
-  bool DeleteTransaction::unexecute(pt::ParseTree& tree) {
+  bool DeleteTransaction::unexecute(et::ParseTree& tree) {
     if (declaration_) {
       tree.declarations.insert_or_assign(path_.front(), std::move(*declaration_));
       declaration_.reset();
@@ -87,7 +77,7 @@ namespace fluir::editor {
     }
 
     if (param_ || ret_) {
-      pt::FunctionDecl* fn = functionAt(tree, parentOf(path_));
+      et::FunctionDecl* fn = functionAt(tree, parentOf(path_));
       if (fn == nullptr || (param_ && !fn->input) || (ret_ && !fn->output)) {
         return false;
       }
@@ -100,28 +90,28 @@ namespace fluir::editor {
         fn->output->ret = std::move(ret_);
         ret_.reset();
       }
-      for (pt::Conduit& conduit : conduits_) {
+      for (et::Conduit& conduit : conduits_) {
         fn->body.conduits.insert_or_assign(conduit.id, std::move(conduit));
       }
       conduits_.clear();
       return true;
     }
 
-    pt::Block* block = blockOf(tree, parentOf(path_));
+    et::Block* block = blockOf(tree, parentOf(path_));
     if (block == nullptr || !node_) {
       return false;
     }
     block->nodes.insert_or_assign(path_.back(), std::move(*node_));
     node_.reset();
-    for (pt::Conduit& conduit : conduits_) {
+    for (et::Conduit& conduit : conduits_) {
       block->conduits.insert_or_assign(conduit.id, std::move(conduit));
     }
-    for (pt::Node& referrer : referrers_) {
-      block->nodes.insert_or_assign(idOf(referrer), std::move(referrer));
-    }
     conduits_.clear();
-    referrers_.clear();
     return true;
+  }
+
+  std::unique_ptr<Transaction> deleteAt(fluir::FullID path) {
+    return std::make_unique<DeleteTransaction>(std::move(path));
   }
 
 }  // namespace fluir::editor

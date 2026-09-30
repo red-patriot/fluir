@@ -5,10 +5,10 @@
 #include <utility>
 #include <vector>
 
-#include "editor/core/graph_geometry.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/tools/completion_modal.hpp"
 #include "editor/tools/menu_popup.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor {
 
@@ -23,19 +23,24 @@ namespace fluir::editor {
     Vec2 origin;
     int z = 0;  // top-level parent
     if (hit != nullptr) {
-      const pt::FunctionDecl* fn =
-        hit->part == Part::Body && hit->path.size() == 1 ? functionAt(state.editor.tree(), hit->path) : nullptr;
-      if (fn == nullptr) {
+      // Completions go into a container's body.
+      const et::ParseTree& tree = state.editor.tree();
+      // A branch has no geometry of its own: its box is already the content area under its
+      // conditional's header, and its z is the conditional's.
+      const bool branch = hit->part == Part::Branch;
+      const FlowGraphLocation* location = locationAt(tree, branch ? parentOf(hit->path) : hit->path);
+      if ((hit->part != Part::Body && !branch) || location == nullptr || blockOf(tree, hit->path) == nullptr) {
         return false;
       }
-      origin = bodyOrigin(localRect(fn->location, layout.unitPx).topLeft(), layout.headerH());
+      // A declaration's or node's hit box is its frame, so its content starts under the header.
+      origin = branch ? hit->world.topLeft() : bodyOrigin(hit->world.topLeft(), layout.headerH());
       if (world.y < origin.y) {
         return false;  // header
       }
       body = hit->path;
-      z = fn->location.z;
+      z = location->z;
     }
-    std::vector<Completion> completions = state.intelligence.completions(state.editor.tree(), body);
+    std::vector<Completion> completions = state.editor.intelligence().completions(state.editor.tree(), body);
     if (completions.empty()) {
       return false;
     }

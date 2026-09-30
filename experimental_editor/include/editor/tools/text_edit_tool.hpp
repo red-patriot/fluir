@@ -1,8 +1,10 @@
-#pragma once
+#ifndef FLUIR_EDITOR_TOOLS_TEXT_EDIT_TOOL_HPP
+#define FLUIR_EDITOR_TOOLS_TEXT_EDIT_TOOL_HPP
 
 #include <optional>
 
 #include "editor/components/text_field.hpp"
+#include "editor/core/field.hpp"
 #include "editor/tools/tool.hpp"
 
 namespace fluir::editor {
@@ -18,10 +20,10 @@ namespace fluir::editor {
     /** The open draft, or nullptr. */
     const TextField* field() const { return field_ ? &*field_ : nullptr; }
 
-    /** What a draft edits: `index` names a parameter (path = function) or argument (path = call). */
+    /** What a draft edits: `field` of the node or declaration at `path`. */
     struct Target {
       FullID path;
-      std::optional<int> index;
+      Field field;
 
       friend bool operator==(const Target&, const Target&) = default;
     };
@@ -35,3 +37,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

@@ -6,8 +6,8 @@
 #include <utility>
 #include <variant>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/transaction/transaction.hpp"
 
 namespace fluir::editor {
@@ -22,8 +22,8 @@ namespace fluir::editor {
                                                                fluir::ID railId,
                                                                std::string typeName);
 
-    bool execute(pt::ParseTree& tree) override;
-    bool unexecute(pt::ParseTree& tree) override { return execute(tree); }
+    bool execute(et::ParseTree& tree) override;
+    bool unexecute(et::ParseTree& tree) override { return execute(tree); }
 
    private:
     struct Rename {
@@ -41,6 +41,9 @@ namespace fluir::editor {
     fluir::FullID path_;
     std::variant<Rename, SetType> edit_;
   };
+
+  std::unique_ptr<Transaction> renameParameter(fluir::FullID path, int index, std::string name);
+  std::unique_ptr<Transaction> setRailType(fluir::FullID path, fluir::ID railId, std::string typeName);
 
 }  // namespace fluir::editor
 

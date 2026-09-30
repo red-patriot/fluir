@@ -1,25 +1,26 @@
 #include "editor/transaction/add_node.hpp"
 
 #include <algorithm>
+#include <memory>
 #include <ranges>
+#include <utility>
 
 #include "editor/core/tree_path.hpp"
+#include "fluir/util/overloaded.hpp"
 
 namespace fluir::editor {
   namespace {
-
-    template <typename... Fs>
-    struct Overloaded : Fs... {
-      using Fs::operator()...;
-    };
-
+    // Both branches start empty, so the condition port's inner id is free in each.
+    constexpr fluir::ID CONDITION_INNER_ID = 1;
+    // The condition port's top, in grid units below the frame top: clear of the header band.
+    constexpr int CONDITION_PORT_Y = 10;
   }  // namespace
 
-  bool AddNode::execute(pt::ParseTree& tree) {
+  bool AddNode::execute(et::ParseTree& tree) {
     if (id_ == INVALID_ID) {
       return false;
     }
-    pt::Block* block = blockOf(tree, parent_);
+    et::Block* block = blockOf(tree, parent_);
     if (block == nullptr || block->nodes.contains(id_)) {
       return false;
     }
@@ -27,45 +28,64 @@ namespace fluir::editor {
     if (op != nullptr && op->op == Operator::UNKNOWN) {
       return false;
     }
-    pt::Node node = std::visit(
-      Overloaded{[&](const OperatorOption& o) -> pt::Node {
-                   if (o.arity == OperatorOption::BINARY) {
-                     return pt::Binary{.id = id_, .location = location_, .op = o.op};
-                   }
-                   return pt::Unary{.id = id_, .location = location_, .op = o.op};
-                 },
-                 [&](const ConstantOption& c) -> pt::Node {
-                   return pt::Constant{.id = id_, .location = location_, .value = c.value};
-                 },
-                 [&](const CallFunctionOption& call) -> pt::Node {
-                   namespace rv = std::ranges::views;
+    et::Node node =
+      std::visit(util::Overloaded{[&](const OperatorOption& o) -> et::Node {
+                                    if (o.arity == OperatorOption::BINARY) {
+                                      return et::Binary{.id = id_, .location = location_, .op = o.op};
+                                    }
+                                    return et::Unary{.id = id_, .location = location_, .op = o.op};
+                                  },
+                                  [&](const ConstantOption& c) -> et::Node {
+                                    return et::Constant{.id = id_, .location = location_, .value = c.value};
+                                  },
+                                  [&](const CallFunctionOption& call) -> et::Node {
+                                    namespace rv = std::ranges::views;
 
-                   pt::Call::Arguments args;
-                   args.reserve(call.parameters.size());
-                   std::ranges::copy(call.parameters | rv::enumerate | rv::transform([](const auto& c) {
-                                       const auto& [i, param] = c;
-                                       return pt::Call::Argument{.name = param.name, .index = static_cast<int>(i)};
-                                     }),
-                                     std::back_inserter(args));
+                                    et::Call::Arguments args;
+                                    args.reserve(call.parameters.size());
+                                    std::ranges::copy(
+                                      call.parameters | rv::enumerate | rv::transform([](const auto& c) {
+                                        const auto& [i, param] = c;
+                                        return et::Call::Argument{.name = param.name, .index = static_cast<int>(i)};
+                                      }),
+                                      std::back_inserter(args));
 
-                   std::optional<pt::Call::Return> ret;
-                   if (call.returnType) {
-                     ret = pt::Call::Return{};
-                   }
+                                    std::optional<et::Call::Return> ret;
+                                    if (call.returnType) {
+                                      ret = et::Call::Return{};
+                                    }
 
-                   return pt::Call{.id = id_,
-                                   .location = location_,
-                                   .target = std::string{call.target},
-                                   ._return = ret,
-                                   .arguments = std::move(args)};
-                 }},
-      params_);
+                                    return et::Call{.id = id_,
+                                                    .location = location_,
+                                                    .target = std::string{call.target},
+                                                    ._return = ret,
+                                                    .arguments = std::move(args)};
+                                  },
+                                  [&](const ConditionalOption&) -> et::Node {
+                                    return et::Conditional{
+                                      .id = id_,
+                                      .location = location_,
+                                      .condition = {.innerId = CONDITION_INNER_ID, .y = CONDITION_PORT_Y},
+                                      .inputs = {},
+                                      .outputs = {},
+                                      .thenScope = xyz::indirect<et::Block>{},
+                                      .elseScope = xyz::indirect<et::Block>{},
+                                    };
+                                  }},
+                 params_);
     return block->nodes.emplace(id_, std::move(node)).second;
   }
 
-  bool AddNode::unexecute(pt::ParseTree& tree) {
-    pt::Block* block = blockOf(tree, parent_);
+  bool AddNode::unexecute(et::ParseTree& tree) {
+    et::Block* block = blockOf(tree, parent_);
     return block != nullptr && block->nodes.erase(id_) > 0;
+  }
+
+  std::unique_ptr<Transaction> addNode(fluir::FullID parent,
+                                       fluir::ID newId,
+                                       fluir::FlowGraphLocation location,
+                                       AddNode::Params params) {
+    return std::make_unique<AddNode>(std::move(parent), newId, location, std::move(params));
   }
 
 }  // namespace fluir::editor

@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <filesystem>
-#include <optional>
 
 namespace fluir::editor {
 
@@ -20,7 +18,7 @@ namespace fluir::editor {
     struct Layout {
       double unitPx = 5.0;
       double textPad = 4.0;
-      double portDot = 6.0;
+      double terminalDot = 6.0;
       double headerUnits = 5.0;
       double railUnits = 5.0;
       double paramUnits = 15.0;
@@ -50,11 +48,13 @@ namespace fluir::editor {
       Color error{224, 68, 68, 255};
       Color text{225, 225, 235, 255};
       Color funcDeclHeader{237, 170, 30, 255};
+      Color conditionalNodeHeader{1, 140, 105, 255};
       Color operatorNode{75, 107, 210, 255};
       Color uIntNode{242, 44, 189, 255};
       Color sIntNode{225, 31, 251, 255};
       Color floatNode{139, 31, 255, 255};
       Color boolNode{25, 180, 200, 255};
+      Color port{130, 135, 145, 255};
       Color callNode{31, 117, 255, 255};
       Color headerBackground{44, 49, 60, 255};
       Color commentNode{95, 95, 95, 255};
@@ -70,7 +70,6 @@ namespace fluir::editor {
     Theme theme;
     Window window;
     bool running = true;
-    std::optional<std::filesystem::path> program;
   };
 
 }  // namespace fluir::editor

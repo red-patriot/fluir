@@ -4,19 +4,13 @@
 #include <cstddef>
 #include <vector>
 
-#include "editor/core/renderer.hpp"
+#include "editor/core/node_access.hpp"
 
 namespace fluir::editor::draw {
   namespace {
 
-    std::vector<const pt::Call::Argument*> sortedArgs(const pt::Call& call) {
-      std::vector<const pt::Call::Argument*> args;
-      for (const auto& arg : call.arguments) {
-        args.push_back(&arg);
-      }
-      std::ranges::sort(args, {}, &pt::Call::Argument::index);
-      return args;
-    }
+    // In grid units. A node's height follows its content, so it is unbounded below.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
 
     // One row per argument below the header row, each input at its row's centre.
     double argRowTop(const Rect& rect, std::size_t row, const EditorContext::Layout& layout) {
@@ -25,8 +19,8 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  PortSet anchors(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
-    PortSet out;
+  TerminalSet anchors(const et::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+    TerminalSet out;
     const std::size_t count = call.arguments.size();
     for (std::size_t row = 0; row < count; ++row) {
       out.inputs.push_back(Vec2{r.x, argRowTop(r, row, layout) + layout.railStep() * 0.5});
@@ -37,17 +31,30 @@ namespace fluir::editor::draw {
     return out;
   }
 
-  Color color(const pt::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
+  Color color(const et::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
 
-  void draw(const pt::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(call, ctx.theme), view, ctx);
-    drawTitle(call.target, world, view, ctx);
-    const std::vector<const pt::Call::Argument*> args = sortedArgs(call);
+  Limits<Vec2i> sizeLimits(const et::Call&) { return SIZE_LIMITS; }
+
+  std::optional<Part> resizePart(const et::Call&) { return Part::ResizeX; }
+
+  std::vector<FieldLabel> labels(const et::Call& call, const Rect& r, const EditorContext::Layout& layout) {
+    std::vector<FieldLabel> out{{{Field::Kind::Target}, {r.x, r.y, r.w, std::min(r.h, layout.railStep())}}};
+    const std::vector<const et::Call::Argument*> args = sortedArguments(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
-      const Vec2 pos{world.x + ctx.layout.textPad, argRowTop(world, row, ctx.layout) + ctx.layout.textPad};
-      view.renderer().drawText(view.toScreen(pos), args[row]->name, ctx.theme.text, view.composed().scale);
+      out.push_back({{Field::Kind::Arg, args[row]->index}, {r.x, argRowTop(r, row, layout), r.w, layout.railStep()}});
     }
-    drawPortDots(anchors(call, world, ctx.layout), view, ctx);
+    return out;
+  }
+
+  void draw(const et::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
+    drawShell(world, color(call, ctx.theme), view, ctx);
+    // Rows follow `labels`' order: the target, then each argument by index.
+    const std::vector<FieldLabel> rows = labels(call, world, ctx.layout);
+    const std::vector<const et::Call::Argument*> args = sortedArguments(call);
+    drawTitle(call.target, rows.front().rect, view, ctx);
+    for (std::size_t row = 0; row < args.size(); ++row) {
+      drawTitle(args[row]->name, rows[row + 1].rect, view, ctx);
+    }
   }
 
 }  // namespace fluir::editor::draw

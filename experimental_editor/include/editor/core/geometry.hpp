@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <optional>
+
 namespace fluir::editor {
   //? Consider using a library for linalg instead
 
@@ -39,6 +42,16 @@ namespace fluir::editor {
 
     friend constexpr bool operator==(const Rect&, const Rect&) = default;
   };
+
+  /** Overlapping region of two rects, or nullopt when they do not overlap in area. */
+  constexpr std::optional<Rect> intersect(const Rect& a, const Rect& b) {
+    const double left = std::max(a.x, b.x);
+    const double top = std::max(a.y, b.y);
+    const double right = std::min(a.x + a.w, b.x + b.w);
+    const double bottom = std::min(a.y + a.h, b.y + b.h);
+    if (right <= left || bottom <= top) return std::nullopt;
+    return Rect{.x = left, .y = top, .w = right - left, .h = bottom - top};
+  }
 
   template <typename T>
   struct Limits {

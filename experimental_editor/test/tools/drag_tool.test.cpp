@@ -1,6 +1,9 @@
 #include "editor/tools/drag_tool.hpp"
 
+#include <algorithm>
 #include <memory>
+#include <optional>
+#include <variant>
 
 #include <gtest/gtest.h>
 
@@ -36,11 +39,11 @@ namespace {
   const EditorContext kCtx;
   const FullID kBinary{1, 1};
   const FullID kFunction{1};
-  constexpr Vec2 kBinaryGrip{137, 97};       // centre of {130,90,15,15}
-  constexpr Vec2 kBinaryBar{147, 100};       // inside {145,85,5,25}
-  constexpr Vec2 kBinaryBody{127, 107};      // off both grips
-  constexpr Vec2 kHeaderGrip{537.5, 62.5};   // centre of {530,55,15,15}
-  constexpr Vec2 kCornerGrip{542.5, 542.5};  // centre of {535,535,15,15}
+  constexpr Vec2 kBinaryGrip{137, 97};        // centre of {130,90,15,15}
+  constexpr Vec2 kBinaryRightEdge{147, 100};  // inside the right edge {145,85,5,25}
+  constexpr Vec2 kBinaryBody{127, 107};       // off both grips
+  constexpr Vec2 kHeaderGrip{537.5, 62.5};    // centre of {530,55,15,15}
+  constexpr Vec2 kCornerGrip{542.5, 542.5};   // centre of {535,535,15,15}
 
   struct Harness {
     EditorState state{kCtx};
@@ -140,12 +143,12 @@ TEST(DragTool, EscapeCancelsALiveGesture) {
   EXPECT_EQ(h.state.editor.tree(), before);
 }
 
-TEST(DragTool, TheResizeBarGrowsWidthOnly) {
+TEST(DragTool, TheRightEdgeGrowsWidthOnly) {
   Harness h;
-  ASSERT_TRUE(h.send(down(kBinaryBar)));
+  ASSERT_TRUE(h.send(down(kBinaryRightEdge)));
 
-  h.send(move(kBinaryBar + Vec2{15, 20}));
-  h.send(up(kBinaryBar + Vec2{15, 20}));
+  h.send(move(kBinaryRightEdge + Vec2{15, 20}));
+  h.send(up(kBinaryRightEdge + Vec2{15, 20}));
 
   EXPECT_EQ(h.loc(kBinary).width, 8);
   EXPECT_EQ(h.loc(kBinary).height, 5);
@@ -154,9 +157,9 @@ TEST(DragTool, TheResizeBarGrowsWidthOnly) {
 
 TEST(DragTool, ANodeResizeClampsToTheMinimumWidth) {
   Harness h;
-  ASSERT_TRUE(h.send(down(kBinaryBar)));
+  ASSERT_TRUE(h.send(down(kBinaryRightEdge)));
 
-  h.send(move(kBinaryBar + Vec2{-100, 0}));
+  h.send(move(kBinaryRightEdge + Vec2{-100, 0}));
 
   EXPECT_EQ(h.loc(kBinary).width, 4);
 }
@@ -234,7 +237,7 @@ TEST(DragTool, AMoveGripDragMovesATopLevelComment) {
   EXPECT_FALSE(state.editor.canUndo());
 }
 
-// Comment corner {160,160,15,15}.
+// Comment corner {160,160,15,15}: one diagonal gesture sizes both axes, as a function's does.
 TEST(DragTool, TheCornerGripResizesACommentInBothAxes) {
   EditorState state{kCtx};
   testutil::loadInto(state, "read/top_level_comment_only.fl");
@@ -279,4 +282,117 @@ TEST(DragTool, ReleaseAfterThePathVanishedRecordsNothing) {
 
   EXPECT_FALSE(h.tool.capturing());
   EXPECT_FALSE(h.state.editor.canUndo());
+}
+
+namespace {
+
+  using fluir::editor::THEN_BRANCH_ID;
+
+  // Function 1 {0,0,500,500} holds conditional 20 -> frame {10,35,100,90}, one header band over its
+  // then branch, which holds constant 1 at {15,65,50,50}.
+  //   conditional move grip {90,40,15,15}   corner grip {95,110,15,15}
+  //   nested constant move grip {45,70,15,15}
+  fluir::editor::et::ParseTree conditionalTree() {
+    fluir::editor::et::Block then;
+    then.nodes.emplace(1,
+                       fluir::editor::et::Constant{.id = 1,
+                                                   .location = {.x = 1, .y = 1, .z = 0, .width = 10, .height = 10},
+                                                   .value = fluir::literals_types::I32{0}});
+
+    fluir::editor::et::FunctionDecl fn;
+    fn.id = 1;
+    fn.location = FlowGraphLocation{.x = 0, .y = 0, .z = 0, .width = 100, .height = 100};
+    fn.name = "f";
+    fn.body.nodes.emplace(
+      20,
+      fluir::editor::et::Conditional{.id = 20,
+                                     .location = {.x = 2, .y = 2, .z = 0, .width = 20, .height = 18},
+                                     .condition = {},
+                                     .inputs = {},
+                                     .outputs = {},
+                                     .thenScope = xyz::indirect{std::move(then)},
+                                     .elseScope = xyz::indirect<fluir::editor::et::Block>{}});
+
+    fluir::editor::et::ParseTree tree;
+    tree.declarations.emplace(1, fluir::editor::et::Declaration{std::move(fn)});
+    return tree;
+  }
+
+  struct NestedHarness {
+    EditorState state{kCtx};
+    DragTool tool;
+
+    NestedHarness() { state.editor.load(std::nullopt, conditionalTree()); }
+
+    bool send(const InputEvent& event) { return testutil::send(tool, state, event); }
+    FlowGraphLocation loc(const FullID& path) const { return *locationAt(state.editor.tree(), path); }
+  };
+
+  const FullID kConditional{1, 20};
+  const FullID kNested{1, 20, THEN_BRANCH_ID, 1};
+  constexpr Vec2 kNestedGrip{52, 77};           // centre of {45,70,15,15}
+  constexpr Vec2 kConditionalGrip{97, 47};      // centre of {90,40,15,15}
+  constexpr Vec2 kConditionalCorner{102, 117};  // centre of {95,110,15,15}
+
+}  // namespace
+
+TEST(DragTool, ANestedNodeDragsInsideItsBranch) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kNestedGrip)));
+
+  EXPECT_TRUE(h.send(move(kNestedGrip + Vec2{10, 5})));
+
+  EXPECT_EQ(h.loc(kNested).x, 3);
+  EXPECT_EQ(h.loc(kNested).y, 2);
+  EXPECT_TRUE(h.send(up(kNestedGrip + Vec2{10, 5})));
+  EXPECT_TRUE(h.state.editor.canUndo());
+}
+
+TEST(DragTool, AConditionalMoveGripMovesTheConditional) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kConditionalGrip)));
+
+  EXPECT_TRUE(h.send(move(kConditionalGrip + Vec2{10, 10})));
+
+  EXPECT_EQ(h.loc(kConditional).x, 4);
+  EXPECT_EQ(h.loc(kConditional).y, 4);
+}
+
+// The conditional owns its height now, so its corner grip resizes both axes.
+TEST(DragTool, AConditionalCornerGripResizesBothAxes) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
+
+  EXPECT_TRUE(h.send(move(kConditionalCorner + Vec2{20, 25})));
+
+  EXPECT_EQ(h.loc(kConditional).width, 24);
+  EXPECT_EQ(h.loc(kConditional).height, 23);
+}
+
+TEST(DragTool, AConditionalCannotCollapse) {
+  NestedHarness h;
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
+
+  EXPECT_TRUE(h.send(move(kConditionalCorner - Vec2{200, 200})));
+
+  EXPECT_GE(h.loc(kConditional).width, 10);
+  EXPECT_GE(h.loc(kConditional).height, 10);
+}
+
+// A shrink stops where the lowest port's bottom meets the frame.
+TEST(DragTool, AConditionalCannotShrinkPastItsPort) {
+  NestedHarness h;
+  std::get<fluir::editor::et::Conditional>(*fluir::editor::nodeAt(h.state.editor.tree(), kConditional)).condition.y =
+    14;
+  ASSERT_TRUE(h.send(down(kConditionalCorner)));
+
+  h.send(move(kConditionalCorner - Vec2{0, 200}));
+
+  const auto boxes = fluir::editor::layoutGraph(h.state.editor.tree(), kCtx.layout);
+  const auto boxOf = [&](fluir::editor::Part part) {
+    return std::ranges::find_if(boxes, [&](const auto& b) { return b.path == kConditional && b.part == part; })->world;
+  };
+  const fluir::editor::Rect frame = boxOf(fluir::editor::Part::Frame);
+  const fluir::editor::Rect port = boxOf(fluir::editor::Part::Port);
+  EXPECT_DOUBLE_EQ(port.y + port.h, frame.y + frame.h);
 }

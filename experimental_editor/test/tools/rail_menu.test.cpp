@@ -5,9 +5,9 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/tools/context_menu_tool.hpp"
 #include "editor/view/graph_layout.hpp"
@@ -42,7 +42,7 @@ namespace {
     std::vector<MenuItem> itemsAt(Vec2 world) const {
       const std::vector<Box> boxes = layoutGraph(state.editor.tree(), kCtx.layout);
       const Box* hit = hitAt(boxes, world);
-      return hit == nullptr ? std::vector<MenuItem>{} : railItems(*hit, world, state);
+      return hit == nullptr ? std::vector<MenuItem>{} : railItems(*hit, state);
     }
 
     // The center of the rail box laid out for `path`.
@@ -88,7 +88,7 @@ TEST(RailMenu, TheHeaderBodyNodesAndCommentsOfferNothing) {
 
 TEST(RailMenu, DeleteRemovesTheParameterAsOneUndoableEdit) {
   Fixture f{"read/function_with_input_only.fl"};
-  const fluir::pt::ParseTree before = f.state.editor.tree();
+  const fluir::editor::et::ParseTree before = f.state.editor.tree();
 
   f.itemsAt(f.railCenter(FullID{1, 2})).at(0).onClick(f.state);
 
@@ -101,7 +101,7 @@ TEST(RailMenu, DeleteRemovesTheParameterAsOneUndoableEdit) {
 
 TEST(RailMenu, DeleteRemovesTheReturnAsOneUndoableEdit) {
   Fixture f{"read/function_with_output_only.fl"};
-  const fluir::pt::ParseTree before = f.state.editor.tree();
+  const fluir::editor::et::ParseTree before = f.state.editor.tree();
 
   f.itemsAt(f.railCenter(FullID{1, 4})).at(0).onClick(f.state);
 

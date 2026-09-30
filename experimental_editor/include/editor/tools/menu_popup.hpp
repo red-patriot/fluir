@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_TOOLS_MENU_POPUP_HPP
+#define FLUIR_EDITOR_TOOLS_MENU_POPUP_HPP
 
 #include <cstddef>
 #include <functional>
@@ -25,7 +26,7 @@ namespace fluir::editor {
               Rect anchor,
               Rect bounds,
               const EditorContext::Layout& layout,
-              Renderer* text,
+              TextMetrics* text,
               OnPick onPick,
               std::vector<bool> enabled = {});
 
@@ -43,3 +44,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

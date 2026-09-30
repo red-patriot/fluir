@@ -1,6 +1,6 @@
 #include "editor/components/button.hpp"
 
-#include <X11/X.h>
+#include <utility>
 
 namespace fluir::editor {
   ButtonComp::ButtonComp(ButtonOptions options) : options_(std::move(options)) { }
@@ -15,7 +15,6 @@ namespace fluir::editor {
 
   bool ButtonComp::handle(const InputEvent& event) {
     if (!event.button) {
-      armed_ = false;
       return false;
     }
     if (!rect_.contains(event.pos)) {

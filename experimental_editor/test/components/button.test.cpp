@@ -165,6 +165,18 @@ TEST(Button, PressOutsideThenReleaseInsideIsIgnored) {
   EXPECT_EQ(f.clicks, 0);
 }
 
+TEST(Button, MovingWhilePressedStillClicksOnRelease) {
+  Fixture f;
+
+  f.uut.handle(down(INSIDE));
+  f.uut.handle(move(INSIDE));
+  f.uut.handle(move(OUTSIDE));
+  f.uut.handle(move(INSIDE));
+  f.uut.handle(up(INSIDE));
+
+  EXPECT_EQ(f.clicks, 1);
+}
+
 TEST(Button, OtherMouseButtonsAreIgnored) {
   Fixture f;
 

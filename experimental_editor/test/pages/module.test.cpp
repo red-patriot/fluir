@@ -103,11 +103,19 @@ namespace {
       send({down(screen(world)), move(screen(world + worldDelta)), up(screen(world + worldDelta))});
     }
 
+    Vec2 headerButton(std::string_view label) const {
+      for (const auto* buttons : {&page->header().left, &page->header().right}) {
+        const auto it = std::ranges::find(*buttons, label, &fluir::editor::ButtonComp::label);
+        if (it != buttons->end()) {
+          return it->rect().center();
+        }
+      }
+      ADD_FAILURE() << "no header button " << label;
+      return {};
+    }
+
     void click(std::string_view label) {
-      const auto& buttons = page->header().buttons;
-      const auto it = std::ranges::find(buttons, label, &fluir::editor::Button::label);
-      ASSERT_NE(it, buttons.end()) << label;
-      const Vec2 at = page->headerLayout().buttons[static_cast<std::size_t>(it - buttons.begin())].center();
+      const Vec2 at = headerButton(label);
       send({down(at), up(at)});
     }
 
@@ -215,6 +223,14 @@ TEST(ModulePage, TheExitButtonLeavesForTheSplashPage) {
   h.click("Exit");
 
   EXPECT_NE(h.page->next(), nullptr);
+}
+
+TEST(ModulePage, PressOnAHeaderButtonAloneDoesNothing) {
+  Harness h{kIntConstants};
+
+  h.send({down(h.headerButton("Exit"))});
+
+  EXPECT_EQ(h.page->next(), nullptr);
 }
 
 TEST(ModulePage, QuitStopsTheAppEvenOverANode) {

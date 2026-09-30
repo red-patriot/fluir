@@ -25,8 +25,13 @@ namespace fluir::editor::draw {
       Vec2 inner;
     };
 
+    constexpr int dumb_ceil(double x) {
+      // HACK: Do a stupid version of ceil here because MSVC doesn't implement std::ceil as constexpr
+      return static_cast<int>((x - static_cast<int>(x)) > 0 ? x + 1 : x);
+    }
+
     // A port's side rounded up to whole grid units, so a port on the grid never pokes past one.
-    constexpr int PORT_GRID_UNITS = static_cast<int>(std::ceil(PORT_UNITS));
+    constexpr int PORT_GRID_UNITS = dumb_ceil(PORT_UNITS);
 
     PortAnchors portAnchors(const et::Conditional& node,
                             PortRef ref,

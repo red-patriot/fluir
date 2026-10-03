@@ -1,0 +1,7 @@
+Function(1): 'main'
+  Conditional(1):
+    Condition
+      ConstantBool(2): true
+    Input
+    Then
+    Else

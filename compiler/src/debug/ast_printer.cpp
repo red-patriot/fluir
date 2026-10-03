@@ -118,6 +118,30 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::operator()(const ast::Conditional& conditional) {
+    out_ << formatIndented("Conditional({}):\n", conditional.id());
+    FLUIR_SCOPED_INDENT;
+    {
+      out_ << formatIndented("Condition\n");
+      FLUIR_SCOPED_INDENT;
+      print(*conditional.condition());
+    }
+    {
+      out_ << formatIndented("Input\n");
+      // TODO: Print inputs
+    }
+    {
+      out_ << formatIndented("Then\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.thenBody());
+    }
+    {
+      out_ << formatIndented("Else\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.elseBody());
+    }
+  }
+
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       print(*node);
@@ -157,6 +181,8 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::LocalRead>());
       case ast::NodeKind::Call:
         return (*this)(*node.as<ast::Call>());
+      case ast::NodeKind::Conditional:
+        return (*this)(*node.as<ast::Conditional>());
     }
   }
 

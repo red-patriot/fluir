@@ -14,7 +14,7 @@
 #include "compiler/types/typeid.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead, Call };
+  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead, Call, Conditional };
 
   class Node {
    public:
@@ -57,6 +57,8 @@ namespace fluir::ast {
   };
 
   using UniqueNode = std::unique_ptr<Node>;
+  using DataFlowGraph = std::vector<UniqueNode>;
+
   template <typename NodeType, typename... Args>
   auto createDependency(Args&&... args) {
     return std::make_unique<NodeType>(std::forward<Args>(args)...);
@@ -182,7 +184,30 @@ namespace fluir::ast {
     UniqueNode operand_;
   };
 
-  using DataFlowGraph = std::vector<UniqueNode>;
+  class Conditional : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Conditional; }
+
+    Conditional(FullID id,
+                const FlowGraphLocation& location,
+                UniqueNode condition,
+                DataFlowGraph thenBody,
+                DataFlowGraph elseBody) :
+      // TODO: Inputs + Outputs
+      Node(NodeKind::Conditional, std::move(id), location),
+      condition_(std::move(condition)),
+      then_(std::move(thenBody)),
+      else_(std::move(elseBody)) { }
+
+    [[nodiscard]] const UniqueNode& condition() const { return condition_; }
+    [[nodiscard]] const DataFlowGraph& thenBody() const { return then_; }
+    [[nodiscard]] const DataFlowGraph& elseBody() const { return else_; }
+
+   private:
+    UniqueNode condition_;
+    DataFlowGraph then_;
+    DataFlowGraph else_;
+  };
 
   class LocalWrite : public Node {
    public:

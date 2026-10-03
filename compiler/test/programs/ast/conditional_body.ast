@@ -1,0 +1,13 @@
+Function(1): 'main'
+  Conditional(1):
+    Condition
+      ConstantBool(2): true
+    Input
+    Then
+      Call(3): 'print'
+        Arg(1):
+          ConstantI32(2): 0
+    Else
+      Call(6): 'print'
+        Arg(1):
+          ConstantF64(5): 12.5000

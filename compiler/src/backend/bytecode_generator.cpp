@@ -341,6 +341,8 @@ namespace fluir {
         return generate(*node.as<ast::LocalRead>());
       case ast::NodeKind::Call:
         return generate(*node.as<ast::Call>());
+      case ast::NodeKind::Conditional:
+        assert(false && "TODO");
     }
   }
 

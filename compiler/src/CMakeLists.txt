@@ -33,6 +33,7 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES
     "frontend/parser.cpp"
     "frontend/ast_builder.cpp"
     "frontend/ast_builder/function_builder.cpp"
+    "frontend/ast_builder/scope_builder.cpp"
     "frontend/text_parse.cpp"
     "frontend/type_checker.cpp"
 )

@@ -128,7 +128,8 @@ namespace fluir::debug {
     }
     {
       out_ << formatIndented("Input\n");
-      // TODO: Print inputs
+      FLUIR_SCOPED_INDENT;
+      print(conditional.inputs());
     }
     {
       out_ << formatIndented("Then\n");
@@ -183,6 +184,14 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
         return (*this)(*node.as<ast::Conditional>());
+    }
+  }
+
+  void AstPrinter::print(const std::vector<ast::ScopeInput>& inputs) {
+    for (const auto& [node, id] : inputs) {
+      out_ << formatIndented("({})\n", id);
+      FLUIR_SCOPED_INDENT;
+      print(*node);
     }
   }
 

@@ -58,6 +58,10 @@ namespace fluir::ast {
 
   using UniqueNode = std::unique_ptr<Node>;
   using DataFlowGraph = std::vector<UniqueNode>;
+  struct ScopeInput {
+    UniqueNode node;
+    ID innerId;
+  };
 
   template <typename NodeType, typename... Args>
   auto createDependency(Args&&... args) {
@@ -191,20 +195,24 @@ namespace fluir::ast {
     Conditional(FullID id,
                 const FlowGraphLocation& location,
                 UniqueNode condition,
+                std::vector<ScopeInput> inputs,
                 DataFlowGraph thenBody,
                 DataFlowGraph elseBody) :
       // TODO: Inputs + Outputs
       Node(NodeKind::Conditional, std::move(id), location),
       condition_(std::move(condition)),
+      inputs_(std::move(inputs)),
       then_(std::move(thenBody)),
       else_(std::move(elseBody)) { }
 
     [[nodiscard]] const UniqueNode& condition() const { return condition_; }
     [[nodiscard]] const DataFlowGraph& thenBody() const { return then_; }
     [[nodiscard]] const DataFlowGraph& elseBody() const { return else_; }
+    [[nodiscard]] const std::vector<ScopeInput>& inputs() const { return inputs_; }
 
    private:
     UniqueNode condition_;
+    std::vector<ScopeInput> inputs_;
     DataFlowGraph then_;
     DataFlowGraph else_;
   };

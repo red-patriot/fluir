@@ -68,15 +68,21 @@ namespace fluir::fe {
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
     auto condition = getDependency(pt.id, CONDITION_INDEX);
+    std::unordered_set<ID> inputIds = {pt.condition.innerId};
+    std::vector<ast::ScopeInput> inputs;
     // TODO: Process inputs
-    std::unordered_set<ID> inputs = {pt.condition.innerId};
+    for (const auto [idx, ptInput] : pt.inputs | std::ranges::views::enumerate) {
+      inputs.emplace_back(getDependency(pt.id, idx + 1),  // Index 0 is the condition, so inc by 1 for the other inputs
+                          ptInput.innerId);
+      inputIds.insert(ptInput.innerId);
+    }
     // TODO: Process outputs
 
     ast::DataFlowGraph thenBody;
     {
       currentID_.emplace_back(THEN_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeThen = buildAst(ctx_, *pt.thenScope, inputs, {}, currentID_);
+      auto maybeThen = buildAst(ctx_, *pt.thenScope, inputIds, {}, currentID_);
       if (maybeThen) {
         thenBody = std::move(*maybeThen);
       }
@@ -85,14 +91,14 @@ namespace fluir::fe {
     {
       currentID_.emplace_back(ELSE_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeElse = buildAst(ctx_, *pt.elseScope, inputs, {}, currentID_);
+      auto maybeElse = buildAst(ctx_, *pt.elseScope, inputIds, {}, currentID_);
       if (maybeElse) {
         elseBody = std::move(*maybeElse);
       }
     }
 
     return ast::createDependency<ast::Conditional>(
-      currentID_, pt.location, std::move(condition), std::move(thenBody), std::move(elseBody));
+      currentID_, pt.location, std::move(condition), std::move(inputs), std::move(thenBody), std::move(elseBody));
   }
 
   Results<ast::DataFlowGraph> ScopeBuilder::run() {

@@ -1,0 +1,19 @@
+Function(1): 'main'
+  Conditional(1):
+    Condition
+      ConstantBool(2): false
+    Input
+      (2)
+        ConstantI32(4): 0
+      (3)
+        ConstantF64(6): 0.0000
+    Then
+      Call(4): 'print'
+        Arg(1):
+          LocalRead(2): 2
+    Else
+      Call(7): 'print'
+        Arg(1):
+          BinaryOp(6): +
+            LocalRead(2): 2
+            LocalRead(3): 3

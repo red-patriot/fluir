@@ -1,0 +1,22 @@
+Function(1): 'main'
+  LocalWrite(1)
+    Conditional(1):
+      Condition
+        ConstantBool(2): true
+      Input
+      Then
+        LocalWrite(4)
+          ConstantI32(2): 0
+        LocalWrite(7)
+          ConstantF64(8): 0.0000
+      Else
+        LocalWrite(4)
+          ConstantI32(3): 12
+        LocalWrite(7)
+          ConstantF64(10): -1.0000
+  Call(4): 'print'
+    Arg(1):
+      LocalRead(4): 1
+  Call(6): 'print'
+    Arg(1):
+      LocalRead(6): 1.1

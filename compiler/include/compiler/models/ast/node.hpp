@@ -240,14 +240,20 @@ namespace fluir::ast {
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
 
     LocalRead(ID variable, FullID parentID, const FlowGraphLocation& location) :
-      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(std::move(variable)) { }
+      LocalRead(variable, 0, std::move(parentID), location) { }
+
+    LocalRead(ID variable, int varIndex, FullID parentID, const FlowGraphLocation& location) :
+      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(variable), varIndex_(varIndex) { }
 
     [[nodiscard]] const FullID& parent() const { return fullId(); }
     /** Returns the ID of the read variable */
     [[nodiscard]] ID variable() const { return variable_; }
+    /** Returns the index (if set) of the read variable */
+    [[nodiscard]] int varIndex() const { return varIndex_; }
 
    private:
     ID variable_;
+    int varIndex_;
   };
 
   class Call : public Node {

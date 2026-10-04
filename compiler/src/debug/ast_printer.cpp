@@ -104,7 +104,9 @@ namespace fluir::debug {
     print(*write.child());
   }
   void AstPrinter::operator()(const ast::LocalRead& read) {
-    out_ << formatIndented("LocalRead({}): {}\n", read.id(), read.variable());
+    auto target = read.varIndex() == 0 ? fmt::format("{}", read.variable()) :
+                                         fmt::format("{}.{}", read.variable(), read.varIndex());
+    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), target);
   }
 
   void AstPrinter::operator()(const ast::Call& call) {

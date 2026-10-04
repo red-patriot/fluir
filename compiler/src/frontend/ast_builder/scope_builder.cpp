@@ -70,19 +70,20 @@ namespace fluir::fe {
     auto condition = getDependency(pt.id, CONDITION_INDEX);
     std::unordered_set<ID> inputIds = {pt.condition.innerId};
     std::vector<ast::ScopeInput> inputs;
-    // TODO: Process inputs
     for (const auto [idx, ptInput] : pt.inputs | std::ranges::views::enumerate) {
       inputs.emplace_back(getDependency(pt.id, idx + 1),  // Index 0 is the condition, so inc by 1 for the other inputs
                           ptInput.innerId);
       inputIds.insert(ptInput.innerId);
     }
-    // TODO: Process outputs
+    std::unordered_set<ID> outputIds;
+    std::ranges::transform(
+      pt.outputs, std::inserter(outputIds, outputIds.begin()), [](const auto& o) { return o.innerId; });
 
     ast::DataFlowGraph thenBody;
     {
       currentID_.emplace_back(THEN_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeThen = buildAst(ctx_, *pt.thenScope, inputIds, {}, currentID_);
+      auto maybeThen = buildAst(ctx_, *pt.thenScope, inputIds, outputIds, currentID_);
       if (maybeThen) {
         thenBody = std::move(*maybeThen);
       }
@@ -91,7 +92,7 @@ namespace fluir::fe {
     {
       currentID_.emplace_back(ELSE_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeElse = buildAst(ctx_, *pt.elseScope, inputIds, {}, currentID_);
+      auto maybeElse = buildAst(ctx_, *pt.elseScope, inputIds, outputIds, currentID_);
       if (maybeElse) {
         elseBody = std::move(*maybeElse);
       }
@@ -186,6 +187,7 @@ namespace fluir::fe {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_MISSING_DEPENDENCY, ctx_.currentFile, currentID_);
     }
     const auto& dependencyId = dependencyPt->second.input;
+    const auto& dependencyIdx = dependencyPt->second.index;
 
     // Check that the dependency index isn't already in progress
     if (std::ranges::find(inProgressNodes_, dependencyId) != inProgressNodes_.end()) {
@@ -196,16 +198,18 @@ namespace fluir::fe {
     if (inputs_.contains(dependencyId)) {
       auto parameterID = currentID_;
       parameterID.back() = dependencyId;
-      return ast::createDependency<ast::LocalRead>(dependencyId, parameterID, FlowGraphLocation{});
+      return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, parameterID, FlowGraphLocation{});
     }
 
     if (promotedIds_.contains(dependencyId)) {
       dependencies_.insert(dependencyId);
-      return ast::createDependency<ast::LocalRead>(dependencyId, currentID_, FlowGraphLocation{});
+      return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
     }
 
-    auto& pt = pt_.nodes.at(dependencyId);  // TODO: Handle missing ID
+    auto& pt = pt_.nodes.at(dependencyId);
+    // TODO: Handle missing ID
     auto dependency = process(dependencyId, pt);
+    // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
     return dependency;
   }

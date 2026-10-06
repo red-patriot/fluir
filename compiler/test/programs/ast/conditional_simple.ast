@@ -3,5 +3,6 @@ Function(1): 'main'
     Condition
       ConstantBool(2): true
     Input
+    Output
     Then
     Else

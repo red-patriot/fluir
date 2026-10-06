@@ -98,8 +98,16 @@ namespace fluir::fe {
       }
     }
 
-    return ast::createDependency<ast::Conditional>(
-      currentID_, pt.location, std::move(condition), std::move(inputs), std::move(thenBody), std::move(elseBody));
+    std::vector<ID> outputs;
+    std::ranges::transform(pt.outputs, std::back_inserter(outputs), [](const auto& o) { return o.innerId; });
+
+    return ast::createDependency<ast::Conditional>(currentID_,
+                                                   pt.location,
+                                                   std::move(condition),
+                                                   std::move(inputs),
+                                                   std::move(outputs),
+                                                   std::move(thenBody),
+                                                   std::move(elseBody));
   }
 
   Results<ast::DataFlowGraph> ScopeBuilder::run() {

@@ -133,6 +133,7 @@ namespace fluir::debug {
       FLUIR_SCOPED_INDENT;
       print(conditional.inputs());
     }
+    out_ << formatIndented("Output{}\n", fmt::join(conditional.outputs(), ","));
     {
       out_ << formatIndented("Then\n");
       FLUIR_SCOPED_INDENT;

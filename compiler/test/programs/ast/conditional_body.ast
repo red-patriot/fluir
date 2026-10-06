@@ -3,6 +3,7 @@ Function(1): 'main'
     Condition
       ConstantBool(2): true
     Input
+    Output
     Then
       Call(3): 'print'
         Arg(1):

@@ -196,12 +196,13 @@ namespace fluir::ast {
                 const FlowGraphLocation& location,
                 UniqueNode condition,
                 std::vector<ScopeInput> inputs,
+                std::vector<ID> outputs,
                 DataFlowGraph thenBody,
                 DataFlowGraph elseBody) :
-      // TODO: Inputs + Outputs
       Node(NodeKind::Conditional, std::move(id), location),
       condition_(std::move(condition)),
       inputs_(std::move(inputs)),
+      outputs_(std::move(outputs)),
       then_(std::move(thenBody)),
       else_(std::move(elseBody)) { }
 
@@ -212,10 +213,12 @@ namespace fluir::ast {
     [[nodiscard]] DataFlowGraph& elseBody() { return else_; }
     [[nodiscard]] const std::vector<ScopeInput>& inputs() const { return inputs_; }
     [[nodiscard]] std::vector<ScopeInput>& inputs() { return inputs_; }
+    [[nodiscard]] const std::vector<ID>& outputs() const { return outputs_; }
 
    private:
     UniqueNode condition_;
     std::vector<ScopeInput> inputs_;
+    std::vector<ID> outputs_;
     DataFlowGraph then_;
     DataFlowGraph else_;
   };

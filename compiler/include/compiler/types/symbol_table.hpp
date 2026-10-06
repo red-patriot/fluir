@@ -96,7 +96,6 @@ namespace fluir::types {
     TypeID nextTypeID_{static_cast<TypeID>(1)};  // 0 == ID_INVALID; unified counter for all types
 
     std::stack<Scope> localScopes_{};
-    // TODO: UNIQUE_PTR HERE FOR POLYMORPHISM
     std::unordered_map<TypeID, std::unique_ptr<Type>> types_{};
     std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};

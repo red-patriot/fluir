@@ -14,6 +14,8 @@ namespace fluir {
     bool checkType(Context& ctx, ast::LocalWrite* write);
     bool checkType(Context& ctx, ast::LocalRead* read);
     bool checkType(Context& ctx, ast::Call* call);
+    bool checkType(Context& ctx, ast::Conditional* conditional);
+    bool checkType(Context& ctx, ast::DataFlowGraph& dfg, const std::vector<ast::ScopeInput>& inputs);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
 
@@ -42,9 +44,10 @@ namespace fluir {
           return checkType(ctx, node->as<ast::LocalRead>());
         case ast::NodeKind::Call:
           return checkType(ctx, node->as<ast::Call>());
-        default:
-          diagnostic::emitInternalError("Unknown node kind encountered");
+        case ast::NodeKind::Conditional:
+          return checkType(ctx, node->as<ast::Conditional>());
       }
+      diagnostic::emitInternalError("Unknown node kind encountered");
     }
   }  // namespace
 
@@ -353,6 +356,63 @@ namespace fluir {
         call->setType(funcType->returnType().value());
       }
       return true;
+    }
+
+    bool checkType(Context& ctx, ast::Conditional* conditional) {
+      bool succeeded = true;
+      if (!checkType(ctx, conditional->condition().get())) {
+        succeeded = false;
+      }
+      for (auto& input : conditional->inputs()) {
+        if (!checkType(ctx, input.node.get())) {
+          succeeded = false;
+        }
+      }
+      if (conditional->condition()->type() != types::ID_BOOL) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                         ctx.currentFile,
+                                         conditional->fullId(),
+                                         "Condition requires a BOOL input, found '{}'",
+                                         ctx.symbolTable.getType(conditional->condition()->type())->name());
+        succeeded = false;
+      }
+
+      if (!succeeded) {
+        // If the inputs failed, don't check the body
+        return succeeded;
+      }
+
+      if (!checkType(ctx, conditional->thenBody(), conditional->inputs())) {
+        succeeded = false;
+      }
+      if (!checkType(ctx, conditional->elseBody(), conditional->inputs())) {
+        succeeded = false;
+      }
+
+      // TODO: Handle outputs
+
+      return succeeded;
+    }
+
+    bool checkType(Context& ctx, ast::DataFlowGraph& dfg, const std::vector<ast::ScopeInput>& inputs) {
+      ctx.symbolTable.pushScope();
+      FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
+      // Add all the input types as locals
+      std::vector<types::TypeID> inputTypes;
+      for (auto& input : inputs) {
+        auto inputType = input.node->type();
+        inputTypes.push_back(inputType);
+        ctx.symbolTable.addLocalVariable(input.innerId, inputType);
+      }
+
+      bool succeeded = true;
+      for (auto& node : dfg) {
+        if (!checkType(ctx, node.get())) {
+          succeeded = false;
+        }
+      }
+
+      return succeeded;
     }
 
   }  // namespace

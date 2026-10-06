@@ -207,8 +207,11 @@ namespace fluir::ast {
 
     [[nodiscard]] const UniqueNode& condition() const { return condition_; }
     [[nodiscard]] const DataFlowGraph& thenBody() const { return then_; }
+    [[nodiscard]] DataFlowGraph& thenBody() { return then_; }
     [[nodiscard]] const DataFlowGraph& elseBody() const { return else_; }
+    [[nodiscard]] DataFlowGraph& elseBody() { return else_; }
     [[nodiscard]] const std::vector<ScopeInput>& inputs() const { return inputs_; }
+    [[nodiscard]] std::vector<ScopeInput>& inputs() { return inputs_; }
 
    private:
     UniqueNode condition_;

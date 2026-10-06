@@ -1,12 +1,12 @@
 #ifndef FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 #define FLUIR_COMPILER_TYPES_SYMBOL_TABLE_HPP
 
+#include <memory>
 #include <optional>
 #include <stack>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <utility>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -25,7 +25,17 @@ namespace fluir::types {
     SymbolTable();
 
     /** Add a known type to the symbol table, returns a pointer to the type */
-    TypeID addType(Type t);
+    template <typename Concrete>
+      requires std::derived_from<Concrete, Type>
+    TypeID addType(Concrete t) {
+      auto [it, added] = typeNames_.try_emplace(t.name(), nextTypeID_);
+      if (added) {
+        auto ptr = std::make_unique<Concrete>(std::move(t));
+        types_.insert({nextTypeID_, std::move(ptr)});
+        nextTypeID_ = static_cast<TypeID>(static_cast<std::uint64_t>(nextTypeID_) + 1);
+      }
+      return it->second;
+    }
     /** Gets a type */
     TypeID getTypeID(const std::string& name) const;
     Type const* getType(TypeID id) const;
@@ -86,7 +96,8 @@ namespace fluir::types {
     TypeID nextTypeID_{static_cast<TypeID>(1)};  // 0 == ID_INVALID; unified counter for all types
 
     std::stack<Scope> localScopes_{};
-    std::unordered_map<TypeID, Type> types_{};
+    // TODO: UNIQUE_PTR HERE FOR POLYMORPHISM
+    std::unordered_map<TypeID, std::unique_ptr<Type>> types_{};
     std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};
     std::unordered_map<TypeID, std::unordered_set<Conversion>> conversions_{};

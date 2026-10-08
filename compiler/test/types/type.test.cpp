@@ -33,3 +33,20 @@ TEST(TestType, ProductTypeDef) {
   EXPECT_EQ(ft::TypeID::ID_I32, uut.at(1));
   EXPECT_EQ(ft::TypeID::ID_BOOL, uut.at(2));
 }
+
+TEST(TestType, AnonymousProductName) {
+  std::string expected = "__product_1_2_12";
+
+  auto actual = ft::Product::anonymousName({ft::TypeID{1}, ft::TypeID{2}, ft::TypeID{12}});
+
+  EXPECT_EQ(expected, actual);
+}
+
+TEST(TestType, AnonymousProduct) {
+  std::vector<ft::TypeID> ids{ft::TypeID{17}, ft::TypeID{5000}};
+  ft::Product expected{"__product_17_5000", ids};
+
+  auto actual = ft::Product::anonymous(ids);
+
+  EXPECT_EQ(expected, actual);
+}

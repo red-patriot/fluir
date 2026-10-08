@@ -2,20 +2,25 @@
 
 #include <algorithm>
 
-#include <compiler/utility/scope_guard.hpp>
 #include <fmt/format.h>
+
+#include "compiler/utility/results.hpp"
+#include "compiler/utility/scope_guard.hpp"
 
 namespace fluir {
   namespace {
-    bool checkType(Context& ctx, ast::Constant* constant);
-    bool checkType(Context& ctx, ast::BinaryOp* binary);
-    bool checkType(Context& ctx, ast::UnaryOp* unary);
-    bool checkType(Context& ctx, ast::Cast* cast);
-    bool checkType(Context& ctx, ast::LocalWrite* write);
-    bool checkType(Context& ctx, ast::LocalRead* read);
-    bool checkType(Context& ctx, ast::Call* call);
-    bool checkType(Context& ctx, ast::Conditional* conditional);
-    bool checkType(Context& ctx, ast::DataFlowGraph& dfg, const std::vector<ast::ScopeInput>& inputs);
+    Results<types::TypeID> checkType(Context& ctx, ast::Constant* constant);
+    Results<types::TypeID> checkType(Context& ctx, ast::BinaryOp* binary);
+    Results<types::TypeID> checkType(Context& ctx, ast::UnaryOp* unary);
+    Results<types::TypeID> checkType(Context& ctx, ast::Cast* cast);
+    Results<types::TypeID> checkType(Context& ctx, ast::LocalWrite* write);
+    Results<types::TypeID> checkType(Context& ctx, ast::LocalRead* read);
+    Results<types::TypeID> checkType(Context& ctx, ast::Call* call);
+    Results<types::TypeID> checkType(Context& ctx, ast::Conditional* conditional);
+    Results<types::TypeID> checkType(Context& ctx,
+                                     ast::DataFlowGraph& dfg,
+                                     const std::vector<ast::ScopeInput>& inputs,
+                                     const std::vector<ID>& outputs);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
 
@@ -24,10 +29,10 @@ namespace fluir {
       parent->setType(targetType);
     }
 
-    bool checkType(Context& ctx, ast::Node* node) {
-      if (node->type() != types::ID_INVALID) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Node* node) {
+      if (node->type()) {
         // This node has already been type-checked
-        return true;
+        return node->type();
       }
       switch (node->kind()) {
         case ast::NodeKind::Constant:
@@ -48,6 +53,7 @@ namespace fluir {
           return checkType(ctx, node->as<ast::Conditional>());
       }
       diagnostic::emitInternalError("Unknown node kind encountered");
+      return NoResult;
     }
   }  // namespace
 
@@ -174,7 +180,7 @@ namespace fluir {
       return !failed;
     }
 
-    bool checkType(Context&, ast::Constant* constant) {
+    Results<types::TypeID> checkType(Context&, ast::Constant* constant) {
       // This is dependent on the order of the types in Literal
       // TODO: Refactor this to be independent
       switch (constant->value().index()) {
@@ -209,12 +215,12 @@ namespace fluir {
           diagnostic::emitInternalError("Entered an impossible case");
           break;
       }
-      return true;
+      return constant->type();
     }
 
-    bool checkType(Context& ctx, ast::BinaryOp* binary) {
+    Results<types::TypeID> checkType(Context& ctx, ast::BinaryOp* binary) {
       if (!checkType(ctx, binary->lhs().get()) || !checkType(ctx, binary->rhs().get())) {
-        return false;
+        return NoResult;
       }
 
       const auto lhs = binary->lhs()->type();
@@ -238,12 +244,12 @@ namespace fluir {
       if (overloadRHS != rhs) {
         insertCast(overloadRHS, binary->rhs(), binary);
       }
-      return true;
+      return binary->type();
     }
 
-    bool checkType(Context& ctx, ast::UnaryOp* unary) {
+    Results<types::TypeID> checkType(Context& ctx, ast::UnaryOp* unary) {
       if (!checkType(ctx, unary->operand().get())) {
-        return false;
+        return NoResult;
       }
 
       const auto operand = unary->operand()->type();
@@ -255,49 +261,55 @@ namespace fluir {
                                          "No unary {} exists with operand type {}.",
                                          stringify(unary->op()),
                                          ctx.symbolTable.getType(operand)->name());
-        return false;
+        return NoResult;
       }
       unary->setDefinition(selectedOverload);
       auto [overloadOp, _] = selectedOverload->getParameters();
       if (overloadOp != operand) {
         insertCast(overloadOp, unary->operand(), unary);
       }
-      return true;
+      return unary->type();
     }
 
-    bool checkType(Context& ctx, ast::Cast* cast) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Cast* cast) {
       // TODO: Handle user-defined casts here
       return checkType(ctx, cast->operand().get());
     }
 
-    bool checkType(Context& ctx, ast::LocalWrite* write) {
+    Results<types::TypeID> checkType(Context& ctx, ast::LocalWrite* write) {
       if (!checkType(ctx, write->child().get())) {
-        return false;
+        return NoResult;
       }
       auto type = write->child()->type();
       write->setType(type);
-      if (write->variable() != INVALID_ID && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
-        return true;
+      if (write->variable() && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
+        return write->type();
       }
 
       diagnostic::emitInternalError("Encountered an invalid element ID.");
     }
 
-    bool checkType(Context& ctx, ast::LocalRead* read) {
+    Results<types::TypeID> checkType(Context& ctx, ast::LocalRead* read) {
       if (read->variable() == INVALID_ID) {
         diagnostic::emitInternalError("Encountered an invalid element ID.");
       }
 
-      auto type = ctx.symbolTable.getLocalVariableType(read->variable());
-      read->setType(type);
-      if (type == types::ID_INVALID) {
+      auto typeId = ctx.symbolTable.getLocalVariableType(read->variable());
+      if (const auto typeDescriptor = ctx.symbolTable.getType(typeId);
+          typeDescriptor && typeDescriptor->is<types::Product>()) {
+        // To read product types, use the index
+        const auto* product = typeDescriptor->as<types::Product>();
+        typeId = product->at(read->varIndex());
+      }
+      read->setType(typeId);
+      if (typeId == types::ID_INVALID) {
         ctx.diagnosticSink.emitAtElement(
           diagnostic::Code::ERROR_CANNOT_DETERMINE_TYPE_OF_LOCAL, ctx.currentFile, read->fullId());
       }
-      return true;
+      return typeId;
     }
 
-    bool checkType(Context& ctx, ast::Call* call) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Call* call) {
       auto* funcType = ctx.symbolTable.getFunctionType(call->target());
       if (!funcType) {
         ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_UNDEFINED_FUNCTION,
@@ -305,7 +317,7 @@ namespace fluir {
                                          call->fullId(),
                                          "Call to undefined function '{}'.",
                                          call->target());
-        return false;
+        return NoResult;
       }
       if (call->arguments().size() != funcType->parameters().size()) {
         ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_WRONG_ARITY,
@@ -315,7 +327,7 @@ namespace fluir {
                                          call->target(),
                                          funcType->parameters().size(),
                                          call->arguments().size());
-        return false;
+        return NoResult;
       }
       bool argsFailed = false;
       for (size_t i = 0; i < call->arguments().size(); ++i) {
@@ -350,15 +362,15 @@ namespace fluir {
         }
       }
       if (argsFailed) {
-        return false;
+        return NoResult;
       }
       if (funcType->returnType()) {
         call->setType(funcType->returnType().value());
       }
-      return true;
+      return call->type();
     }
 
-    bool checkType(Context& ctx, ast::Conditional* conditional) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Conditional* conditional) {
       bool succeeded = true;
       if (!checkType(ctx, conditional->condition().get())) {
         succeeded = false;
@@ -379,22 +391,32 @@ namespace fluir {
 
       if (!succeeded) {
         // If the inputs failed, don't check the body
-        return succeeded;
+        return NoResult;
       }
 
-      if (!checkType(ctx, conditional->thenBody(), conditional->inputs())) {
-        succeeded = false;
-      }
-      if (!checkType(ctx, conditional->elseBody(), conditional->inputs())) {
-        succeeded = false;
+      auto thenType = checkType(ctx, conditional->thenBody(), conditional->inputs(), conditional->outputs());
+      auto elseType = checkType(ctx, conditional->elseBody(), conditional->inputs(), conditional->outputs());
+      if (!thenType && !elseType) {
+        return NoResult;
       }
 
-      // TODO: Handle outputs
+      if (*thenType != *elseType) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                         ctx.currentFile,
+                                         conditional->fullId(),
+                                         "then and else branche outputs are different types, types must be identical");
 
-      return succeeded;
+        return NoResult;
+      }
+
+      conditional->setType(*thenType);
+      return thenType;
     }
 
-    bool checkType(Context& ctx, ast::DataFlowGraph& dfg, const std::vector<ast::ScopeInput>& inputs) {
+    Results<types::TypeID> checkType(Context& ctx,
+                                     ast::DataFlowGraph& dfg,
+                                     const std::vector<ast::ScopeInput>& inputs,
+                                     const std::vector<ID>& outputs) {
       ctx.symbolTable.pushScope();
       FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
       // Add all the input types as locals
@@ -412,7 +434,24 @@ namespace fluir {
         }
       }
 
-      return succeeded;
+      std::vector<types::TypeID> outputTypes;
+      for (auto& output : outputs) {
+        auto type = ctx.symbolTable.getLocalVariableType(output);
+        if (type == types::ID_INVALID) {
+          succeeded = false;
+        }
+        outputTypes.push_back(type);
+      }
+      if (succeeded) {
+        if (outputTypes.size() == 1) {
+          // If there is one output, the type is just that output type
+          return outputTypes.front();
+        } else {
+          return ctx.symbolTable.addType(types::Product::anonymous(std::move(outputTypes)));
+        }
+      }
+
+      return NoResult;
     }
 
   }  // namespace

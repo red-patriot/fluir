@@ -57,6 +57,11 @@ namespace fluir::types {
 
     [[nodiscard]] TypeID at(size_t index) const { return elements_.at(index); }
 
+    /** Create an anonymous product type with the given elements. */
+    static Product anonymous(std::vector<TypeID> elements);
+    /** Create the name of an anonymous product type with the given elements. */
+    static std::string anonymousName(const std::vector<TypeID>& elements);
+
     friend bool operator==(const Product&, const Product&) = default;
 
    private:

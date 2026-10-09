@@ -32,6 +32,7 @@ namespace fluir::debug {
     void doInOrderPrint(const ast::DataFlowGraph& graph);
 
     void print(const ast::Node& node);
+    void print(const ast::Dependency& dependency);
     void print(const std::vector<ast::ScopeInput>& inputs);
   };
 }  // namespace fluir::debug

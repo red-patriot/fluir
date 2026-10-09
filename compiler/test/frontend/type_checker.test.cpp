@@ -46,8 +46,8 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) {
 
   const auto& concrete = actual->as<fa::BinaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_EQ(expected, concrete->lhs()->type());
-  EXPECT_EQ(expected, concrete->rhs()->type());
+  EXPECT_EQ(expected, concrete->lhs().type());
+  EXPECT_EQ(expected, concrete->rhs().type());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
@@ -55,8 +55,11 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
   auto lhs =
     fa::createDependency<fa::Constant>((fluir::literals_types::I16)13, FullID{1, 1}, fluir::FlowGraphLocation{});
   auto rhs = fa::createDependency<fa::Constant>(2.0, FullID{1, 2}, fluir::FlowGraphLocation{});
-  decl.statements.emplace_back(std::make_unique<fa::BinaryOp>(
-    fluir::Operator::MINUS, fa::clone(lhs), fa::clone(rhs), FullID{1, 3}, fluir::FlowGraphLocation{}));
+  decl.statements.emplace_back(std::make_unique<fa::BinaryOp>(fluir::Operator::MINUS,
+                                                              fa::clone<fa::Constant>(lhs),
+                                                              fa::clone<fa::Constant>(rhs),
+                                                              FullID{1, 3},
+                                                              fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -71,9 +74,9 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
 
   const auto& concrete = actual->as<fa::BinaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_EQ(expected, concrete->lhs()->type());
-  EXPECT_EQ(expected, concrete->rhs()->type());
-  EXPECT_TRUE(concrete->lhs()->is<fa::Cast>());
+  EXPECT_EQ(expected, concrete->lhs().type());
+  EXPECT_EQ(expected, concrete->rhs().type());
+  EXPECT_TRUE(concrete->lhs().get().is<fa::Cast>());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
@@ -81,8 +84,11 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
   auto lhs = fa::createDependency<fa::Constant>(1.0, FullID{1, 1}, fluir::FlowGraphLocation{});
   auto rhs =
     fa::createDependency<fa::Constant>((fluir::literals_types::I32)12, FullID{1, 2}, fluir::FlowGraphLocation{});
-  decl.statements.emplace_back(std::make_unique<fa::BinaryOp>(
-    fluir::Operator::PLUS, fa::clone(lhs), fa::clone(rhs), FullID{1, 3}, fluir::FlowGraphLocation{}));
+  decl.statements.emplace_back(std::make_unique<fa::BinaryOp>(fluir::Operator::PLUS,
+                                                              fa::clone<fa::Constant>(lhs),
+                                                              fa::clone<fa::Constant>(rhs),
+                                                              FullID{1, 3},
+                                                              fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -97,9 +103,9 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
 
   const auto& concrete = actual->as<fa::BinaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_EQ(expected, concrete->lhs()->type());
-  EXPECT_EQ(expected, concrete->rhs()->type());
-  EXPECT_TRUE(concrete->rhs()->is<fa::Cast>());
+  EXPECT_EQ(expected, concrete->lhs().type());
+  EXPECT_EQ(expected, concrete->rhs().type());
+  EXPECT_TRUE(concrete->rhs().get().is<fa::Cast>());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
@@ -108,7 +114,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
   auto n2 = fa::createDependency<fa::Constant>(
     static_cast<fluir::literals_types::U32>(2), FullID{1, 2}, fluir::FlowGraphLocation{});
   auto n3 = fa::createDependency<fa::BinaryOp>(
-    fluir::Operator::MINUS, std::move(n1), fa::clone(n2), FullID{1, 3}, fluir::FlowGraphLocation{});
+    fluir::Operator::MINUS, std::move(n1), fa::clone<fa::Constant>(n2), FullID{1, 3}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(std::make_unique<fa::BinaryOp>(
     fluir::Operator::PLUS, std::move(n3), std::move(n2), FullID{1, 4}, fluir::FlowGraphLocation{}));
 
@@ -125,14 +131,14 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
 
   const auto& concrete = actual->as<fa::BinaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_TRUE(concrete->lhs()->is<fa::BinaryOp>());
-  EXPECT_EQ(expected, concrete->lhs()->type());
-  EXPECT_TRUE(concrete->rhs()->is<fa::Cast>());
-  EXPECT_EQ(expected, concrete->rhs()->type());
-  const auto& lhs = concrete->lhs()->as<fa::BinaryOp>();
-  EXPECT_EQ(expected, lhs->lhs()->type());
-  EXPECT_EQ(expected, lhs->rhs()->type());
-  EXPECT_EQ(expected, lhs->rhs()->is<fa::Cast>());
+  EXPECT_TRUE(concrete->lhs().get().is<fa::BinaryOp>());
+  EXPECT_EQ(expected, concrete->lhs().type());
+  EXPECT_TRUE(concrete->rhs().get().is<fa::Cast>());
+  EXPECT_EQ(expected, concrete->rhs().type());
+  const auto& lhs = concrete->lhs().get().as<fa::BinaryOp>();
+  EXPECT_EQ(expected, lhs->lhs().type());
+  EXPECT_EQ(expected, lhs->rhs().type());
+  EXPECT_EQ(expected, lhs->rhs().get().is<fa::Cast>());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
@@ -140,7 +146,7 @@ TEST(TestDeclarationTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
   auto operand = fa::createDependency<fa::Constant>(
     static_cast<fluir::literals_types::U8>(7), FullID{1, 1}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, fa::clone(operand), FullID{1, 3}, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, std::move(operand), FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -155,7 +161,7 @@ TEST(TestDeclarationTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
 
   const auto& concrete = actual->as<fa::UnaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_EQ(expected, concrete->operand()->type());
+  EXPECT_EQ(expected, concrete->operand().type());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesFunctionDecl) {
@@ -165,7 +171,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDecl) {
   auto operand = fa::createDependency<fa::Constant>(
     static_cast<fluir::literals_types::U8>(7), FullID{1, 1}, fluir::FlowGraphLocation{});
   decl.statements.emplace_back(
-    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, fa::clone(operand), FullID{1, 3}, fluir::FlowGraphLocation{}));
+    std::make_unique<fa::UnaryOp>(fluir::Operator::PLUS, std::move(operand), FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -180,19 +186,18 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDecl) {
 
   const auto& concrete = actual->as<fa::UnaryOp>();
   ASSERT_TRUE(concrete) << "If this fails something has gone horribly wrong";
-  EXPECT_EQ(expected, concrete->operand()->type());
+  EXPECT_EQ(expected, concrete->operand().type());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesLocalReadWrite) {
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     fa::createDependency<fa::Constant>(
       static_cast<fluir::literals_types::I16>(12), FullID{1, 3}, fluir::FlowGraphLocation{}),
     fluir::FlowGraphLocation{}));
-  decl.statements.emplace_back(
-    fa::createDependency<fa::LocalRead>(3, FullID{1, INVALID_ID}, fluir::FlowGraphLocation{}));
+  decl.statements.emplace_back(fa::createNode<fa::LocalRead>(3, FullID{1, INVALID_ID}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -210,7 +215,7 @@ TEST(TestDeclarationTypeChecker, LocalWriteFailsIfIdIsInvalid) {
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     fa::createDependency<fa::Constant>(
       static_cast<fluir::literals_types::I16>(12), FullID{1, INVALID_ID}, fluir::FlowGraphLocation{}),
     fluir::FlowGraphLocation{}));
@@ -225,12 +230,12 @@ TEST(TestDeclarationTypeChecker, LocalReadFailsIfIdIsInvalid) {
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     fa::createDependency<fa::Constant>(
       static_cast<fluir::literals_types::I16>(12), FullID{1, 3}, fluir::FlowGraphLocation{}),
     fluir::FlowGraphLocation{}));
   decl.statements.emplace_back(
-    fa::createDependency<fa::LocalRead>(INVALID_ID, FullID{1, INVALID_ID}, fluir::FlowGraphLocation{}));
+    fa::createNode<fa::LocalRead>(INVALID_ID, FullID{1, INVALID_ID}, fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -242,15 +247,15 @@ TEST(TestDeclarationTypeChecker, LocalReadFailsIfIdIsMissing) {
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back([&]() { return fa::Declaration{.id = 1, .name = "test", .statements = {}}; }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     fa::createDependency<fa::Constant>(
       static_cast<fluir::literals_types::I16>(12), FullID{1, 4}, fluir::FlowGraphLocation{}),
     fluir::FlowGraphLocation{}));
   decl.statements.emplace_back(
-    fa::createDependency<fa::UnaryOp>(fluir::Operator::MINUS,
-                                      fa::createDependency<fa::LocalRead>(3, FullID{1, 5}, fluir::FlowGraphLocation{}),
-                                      FullID{1, 5},
-                                      fluir::FlowGraphLocation{}));
+    fa::createNode<fa::UnaryOp>(fluir::Operator::MINUS,
+                                fa::createDependency<fa::LocalRead>(3, FullID{1, 5}, fluir::FlowGraphLocation{}),
+                                FullID{1, 5},
+                                fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -275,11 +280,11 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
   }());
   auto& decl = ast.declarations.front();
   decl.statements.emplace_back(
-    fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
-                                       fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
-                                       fa::createDependency<fa::LocalRead>(2, FullID{1, 3}, fluir::FlowGraphLocation{}),
-                                       FullID{1, 3},
-                                       fluir::FlowGraphLocation{}));
+    fa::createNode<fa::BinaryOp>(fluir::Operator::PLUS,
+                                 fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                 fa::createDependency<fa::LocalRead>(2, FullID{1, 3}, fluir::FlowGraphLocation{}),
+                                 FullID{1, 3},
+                                 fluir::FlowGraphLocation{}));
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
@@ -301,7 +306,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
                            .returnValue = fa::FunctionDecl::Return{4, "I32"}};
   }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     FullID{1, 4},
     fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
                                        fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
@@ -330,7 +335,7 @@ TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
                            .returnValue = fa::FunctionDecl::Return{4, "I64"}};
   }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     FullID{1, 4},
     fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
                                        fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
@@ -348,8 +353,8 @@ TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
   EXPECT_EQ(fluir::types::ID_I64, decl.statements.at(0)->type());
   ASSERT_TRUE(decl.statements.front()->is<fa::LocalWrite>());
   const auto& child = decl.statements.front()->as<fa::LocalWrite>()->child();
-  ASSERT_TRUE(child->is<fa::Cast>());
-  const auto& cast = child->as<fa::Cast>();
+  ASSERT_TRUE(child.get().is<fa::Cast>());
+  const auto& cast = child.get().as<fa::Cast>();
   EXPECT_EQ(ft::ID_I32, cast->from());
   EXPECT_EQ(ft::ID_I64, cast->to());
 }
@@ -365,7 +370,7 @@ TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
                            .returnValue = fa::FunctionDecl::Return{4, "I32"}};
   }());
   auto& decl = ast.declarations.front();
-  decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
+  decl.statements.emplace_back(fa::createNode<fa::LocalWrite>(
     FullID{1, 4},
     fa::createDependency<fa::BinaryOp>(fluir::Operator::PLUS,
                                        fa::createDependency<fa::LocalRead>(1, FullID{1, 3}, fluir::FlowGraphLocation{}),
@@ -396,10 +401,10 @@ TEST(TestDeclarationTypeChecker, HandlesCallWithMatchingArgTypes) {
   auto& decl = ast.declarations.front();
   auto arg = fa::createDependency<fa::Constant>(
     static_cast<fluir::literals_types::I32>(42), FullID{1, 2}, fluir::FlowGraphLocation{});
-  std::vector<fa::UniqueNode> args;
+  std::vector<fa::Dependency> args;
   args.emplace_back(std::move(arg));
   decl.statements.emplace_back(
-    fa::createDependency<fa::Call>("foo", std::move(args), FullID{1, 3}, fluir::FlowGraphLocation{}));
+    fa::createNode<fa::Call>("foo", std::move(args), FullID{1, 3}, fluir::FlowGraphLocation{}));
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
@@ -417,17 +422,17 @@ TEST(TestDeclarationTypeChecker, HandlesCallWithImplicitCastArg) {
   auto& decl = ast.declarations.front();
   auto arg = fa::createDependency<fa::Constant>(
     static_cast<fluir::literals_types::I32>(1), FullID{1, 1}, fluir::FlowGraphLocation{});
-  std::vector<fa::UniqueNode> args;
+  std::vector<fa::Dependency> args;
   args.emplace_back(std::move(arg));
   decl.statements.emplace_back(
-    fa::createDependency<fa::Call>("foo", std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
+    fa::createNode<fa::Call>("foo", std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& callNode = result->declarations.front().statements.front();
   EXPECT_EQ(ft::ID_I64, callNode->type());
-  ASSERT_TRUE(callNode->as<fa::Call>()->arguments().front()->is<fa::Cast>());
+  ASSERT_TRUE(callNode->as<fa::Call>()->arguments().front().get().is<fa::Cast>());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesCallToLaterDeclaredFunction) {
@@ -440,11 +445,11 @@ TEST(TestDeclarationTypeChecker, HandlesCallToLaterDeclaredFunction) {
   ast.declarations.push_back(fa::Declaration{.id = 1, .name = "main", .statements = {}});
   {
     auto& d = ast.declarations.back();
-    std::vector<fa::UniqueNode> args;
+    std::vector<fa::Dependency> args;
     args.emplace_back(fa::createDependency<fa::Constant>(
       static_cast<fluir::literals_types::I32>(1), FullID{1, 1}, fluir::FlowGraphLocation{}));
     d.statements.emplace_back(
-      fa::createDependency<fa::Call>("foo", std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
+      fa::createNode<fa::Call>("foo", std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
   }
 
   // foo is declared after main
@@ -455,10 +460,10 @@ TEST(TestDeclarationTypeChecker, HandlesCallToLaterDeclaredFunction) {
                                              .returnValue = fa::FunctionDecl::Return{2, "I32"}});
   {
     auto& d = ast.declarations.back();
-    d.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
-      FullID{2, 2},
-      fa::createDependency<fa::LocalRead>(1, FullID{2, 3}, fluir::FlowGraphLocation{}),
-      fluir::FlowGraphLocation{}));
+    d.statements.emplace_back(
+      fa::createNode<fa::LocalWrite>(FullID{2, 2},
+                                     fa::createDependency<fa::LocalRead>(1, FullID{2, 3}, fluir::FlowGraphLocation{}),
+                                     fluir::FlowGraphLocation{}));
   }
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));

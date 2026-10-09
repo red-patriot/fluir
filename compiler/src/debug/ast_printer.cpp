@@ -52,15 +52,15 @@ namespace fluir::debug {
     out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
     FLUIR_SCOPED_INDENT;
-    print(*binary.lhs());
-    print(*binary.rhs());
+    print(binary.lhs());
+    print(binary.rhs());
   }
 
   void AstPrinter::operator()(const ast::UnaryOp& unary) {
     out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
     FLUIR_SCOPED_INDENT;
-    print(*unary.operand());
+    print(unary.operand());
   }
 
   void AstPrinter::operator()(const ast::Constant& constant) {
@@ -96,12 +96,12 @@ namespace fluir::debug {
     out_ << formatIndented(
       "Cast({}): {} -> {}\n", cast.id(), std::to_underlying(cast.from()), std::to_underlying(cast.to()));
     FLUIR_SCOPED_INDENT;
-    print(*cast.operand());
+    print(cast.operand());
   }
   void AstPrinter::operator()(const ast::LocalWrite& write) {
     out_ << formatIndented("LocalWrite({})\n", write.id());
     FLUIR_SCOPED_INDENT;
-    print(*write.child());
+    print(write.child());
   }
   void AstPrinter::operator()(const ast::LocalRead& read) {
     auto target = read.varIndex() == 0 ? fmt::format("{}", read.variable()) :
@@ -116,7 +116,7 @@ namespace fluir::debug {
       // TODO: Fix the weird 1-based indexing of function args
       out_ << formatIndented("Arg({}):\n", idx + 1);
       FLUIR_SCOPED_INDENT;
-      print(*argument);
+      print(argument);
     }
   }
 
@@ -126,7 +126,7 @@ namespace fluir::debug {
     {
       out_ << formatIndented("Condition\n");
       FLUIR_SCOPED_INDENT;
-      print(*conditional.condition());
+      print(conditional.condition());
     }
     {
       out_ << formatIndented("Input\n");
@@ -190,11 +190,13 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::print(const ast::Dependency& dependency) { print(dependency.get()); }
+
   void AstPrinter::print(const std::vector<ast::ScopeInput>& inputs) {
     for (const auto& [node, id] : inputs) {
       out_ << formatIndented("({})\n", id);
       FLUIR_SCOPED_INDENT;
-      print(*node);
+      print(node);
     }
   }
 

@@ -21,10 +21,11 @@ namespace fluir {
                                      ast::DataFlowGraph& dfg,
                                      const std::vector<ast::ScopeInput>& inputs,
                                      const std::vector<ID>& outputs);
+    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
 
-    void insertCast(types::TypeID targetType, ast::UniqueNode& slot, ast::Node* parent) {
+    void insertCast(types::TypeID targetType, ast::Dependency& slot, ast::Node* parent) {
       slot = ast::createDependency<ast::Cast>(targetType, std::move(slot), parent->fullId(), parent->location());
       parent->setType(targetType);
     }
@@ -180,6 +181,15 @@ namespace fluir {
       return !failed;
     }
 
+    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency) {
+      if (const auto t = checkType(ctx, &dependency.get()); t.has_value()) {
+        const auto type = *t;
+        dependency.setType(type, ctx);
+        return dependency.type();
+      }
+      return NoResult;
+    }
+
     Results<types::TypeID> checkType(Context&, ast::Constant* constant) {
       // This is dependent on the order of the types in Literal
       // TODO: Refactor this to be independent
@@ -219,12 +229,12 @@ namespace fluir {
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::BinaryOp* binary) {
-      if (!checkType(ctx, binary->lhs().get()) || !checkType(ctx, binary->rhs().get())) {
+      if (!checkType(ctx, binary->lhs()) || !checkType(ctx, binary->rhs())) {
         return NoResult;
       }
 
-      const auto lhs = binary->lhs()->type();
-      const auto rhs = binary->rhs()->type();
+      const auto lhs = binary->lhs().type();
+      const auto rhs = binary->rhs().type();
 
       const auto selectedOverload = ctx.symbolTable.selectOverload(lhs, binary->op(), rhs);
       if (!selectedOverload) {
@@ -248,11 +258,11 @@ namespace fluir {
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::UnaryOp* unary) {
-      if (!checkType(ctx, unary->operand().get())) {
+      if (!checkType(ctx, unary->operand())) {
         return NoResult;
       }
 
-      const auto operand = unary->operand()->type();
+      const auto operand = unary->operand().type();
       const auto selectedOverload = ctx.symbolTable.selectOverload(unary->op(), operand);
       if (!selectedOverload) {
         ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_OPERATOR_OVERLOAD_RESOLUTION_FAILED,
@@ -273,14 +283,14 @@ namespace fluir {
 
     Results<types::TypeID> checkType(Context& ctx, ast::Cast* cast) {
       // TODO: Handle user-defined casts here
-      return checkType(ctx, cast->operand().get());
+      return checkType(ctx, cast->operand());
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::LocalWrite* write) {
-      if (!checkType(ctx, write->child().get())) {
+      if (!checkType(ctx, write->child())) {
         return NoResult;
       }
-      auto type = write->child()->type();
+      auto type = write->child().type();
       write->setType(type);
       if (write->variable() && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
         return write->type();
@@ -333,11 +343,11 @@ namespace fluir {
       for (size_t i = 0; i < call->arguments().size(); ++i) {
         auto& arg = call->arguments()[i];
         try {
-          if (!checkType(ctx, arg.get())) {
+          if (!checkType(ctx, arg)) {
             argsFailed = true;
             continue;
           }
-          const auto argType = arg->type();
+          const auto argType = arg.type();
           const auto expectedType = funcType->parameters()[i];
           if (argType != expectedType) {
             if (ctx.symbolTable.isMagicBuiltin(funcType)) {
@@ -349,7 +359,7 @@ namespace fluir {
             if (!ctx.symbolTable.canImplicitlyConvert(argType, expectedType)) {
               ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                                ctx.currentFile,
-                                               arg->fullId(),
+                                               arg.fullId(),
                                                "Cannot implicitly convert '{}' to '{}'.",
                                                ctx.symbolTable.getType(argType)->name(),
                                                ctx.symbolTable.getType(expectedType)->name());
@@ -372,20 +382,20 @@ namespace fluir {
 
     Results<types::TypeID> checkType(Context& ctx, ast::Conditional* conditional) {
       bool succeeded = true;
-      if (!checkType(ctx, conditional->condition().get())) {
+      if (!checkType(ctx, conditional->condition())) {
         succeeded = false;
       }
       for (auto& input : conditional->inputs()) {
-        if (!checkType(ctx, input.node.get())) {
+        if (!checkType(ctx, input.node)) {
           succeeded = false;
         }
       }
-      if (conditional->condition()->type() != types::ID_BOOL) {
+      if (conditional->condition().type() != types::ID_BOOL) {
         ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                          ctx.currentFile,
                                          conditional->fullId(),
                                          "Condition requires a BOOL input, found '{}'",
-                                         ctx.symbolTable.getType(conditional->condition()->type())->name());
+                                         ctx.symbolTable.getType(conditional->condition().type())->name());
         succeeded = false;
       }
 
@@ -422,7 +432,7 @@ namespace fluir {
       // Add all the input types as locals
       std::vector<types::TypeID> inputTypes;
       for (auto& input : inputs) {
-        auto inputType = input.node->type();
+        auto inputType = input.node.type();
         inputTypes.push_back(inputType);
         ctx.symbolTable.addLocalVariable(input.innerId, inputType);
       }

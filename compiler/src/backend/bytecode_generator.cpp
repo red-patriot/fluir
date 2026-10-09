@@ -78,20 +78,20 @@ namespace fluir {
       // Some operators are implemented with their inverse in the VM,
       // so generate their operands in the reverse order to put them
       // on the right order on the stack
-      recursivelyGenerate(*node.rhs());
-      recursivelyGenerate(*node.lhs());
+      recursivelyGenerate(node.rhs());
+      recursivelyGenerate(node.lhs());
     } else {
-      recursivelyGenerate(*node.lhs());
-      recursivelyGenerate(*node.rhs());
+      recursivelyGenerate(node.lhs());
+      recursivelyGenerate(node.rhs());
     }
 
     // TODO: Handle user-defined ops here
-    if (node.lhs()->type() != node.rhs()->type()) {
+    if (node.lhs().type() != node.rhs().type()) {
       diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
-    const auto type = node.lhs()->type();
+    const auto type = node.lhs().type();
     switch (type) {
       case types::ID_F64:
         return emitFloatOperator(node.op());
@@ -115,9 +115,9 @@ namespace fluir {
 
   void BytecodeGenerator::generate(const ast::UnaryOp& node) {
     constexpr bool IS_UNARY = true;
-    recursivelyGenerate(*node.operand());
+    recursivelyGenerate(node.operand());
 
-    const auto type = node.operand()->type();
+    const auto type = node.operand().type();
     switch (type) {
       case types::ID_F64:
         return emitFloatOperator(node.op(), IS_UNARY);
@@ -175,10 +175,10 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::Cast& cast) {
-    recursivelyGenerate(*cast.operand());
+    recursivelyGenerate(cast.operand());
 
     // TODO: Handle user-defined casts here
-    auto operandType = cast.operand()->type();
+    auto operandType = cast.operand().type();
     auto targetType = cast.type();
     if (types::isIntegral(targetType)) {
       if (types::isSigned(targetType)) {
@@ -216,7 +216,7 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
-    recursivelyGenerate(*write.child());
+    recursivelyGenerate(write.child());
 
     auto& [slots, returnCount] = scopes_.top();
     if (slots.contains(write.variable())) {
@@ -257,7 +257,7 @@ namespace fluir {
     }
 
     for (auto& arg : call.arguments()) {
-      recursivelyGenerate(*arg);
+      recursivelyGenerate(arg);
     }
 
     if (ctx_.symbolTable.isMagicBuiltin(targetType)) {
@@ -323,6 +323,11 @@ namespace fluir {
     for (const auto& chunk : chunks_) {
       writer_.writeChunk(chunk);
     }
+  }
+
+  void BytecodeGenerator::recursivelyGenerate(const ast::Dependency& dependency) {
+    // TODO: Handle index?
+    recursivelyGenerate(dependency.get());
   }
 
   void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {

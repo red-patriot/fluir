@@ -48,7 +48,7 @@ namespace fluir::fe {
     /** Process the given parse tree node into an AST subtree */
     ast::UniqueNode process(ID id, pt::Node pt);
     /** Returns the dependency node with the given ID+index, processing it if necessary */
-    ast::UniqueNode getDependency(ID dependentId, int index);
+    ast::Dependency getDependency(ID dependentId, std::optional<unsigned> index);
 
     /** Returns the IDs of all nodes that are promoted to local variables because they have multiple dependents*/
     std::unordered_set<ID> getIdsPromotedToLocal() const;

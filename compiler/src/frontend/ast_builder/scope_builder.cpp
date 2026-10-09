@@ -51,13 +51,13 @@ namespace fluir::fe {
     std::ranges::sort(
       ptArgs, [](const pt::Call::Argument& lhs, const pt::Call::Argument& rhs) { return lhs.index < rhs.index; });
 
-    std::vector<ast::UniqueNode> astArgs;
+    std::vector<ast::Dependency> astArgs;
     for (const auto& [name, index] : ptArgs) {
       auto argument = getDependency(pt.id, index);
       astArgs.emplace_back(std::move(argument));
     }
 
-    return ast::createDependency<ast::Call>(pt.target, std::move(astArgs), currentID_, pt.location);
+    return ast::createNode<ast::Call>(pt.target, std::move(astArgs), currentID_, pt.location);
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Conditional& pt) {
@@ -101,13 +101,13 @@ namespace fluir::fe {
     std::vector<ID> outputs;
     std::ranges::transform(pt.outputs, std::back_inserter(outputs), [](const auto& o) { return o.innerId; });
 
-    return ast::createDependency<ast::Conditional>(currentID_,
-                                                   pt.location,
-                                                   std::move(condition),
-                                                   std::move(inputs),
-                                                   std::move(outputs),
-                                                   std::move(thenBody),
-                                                   std::move(elseBody));
+    return ast::createNode<ast::Conditional>(currentID_,
+                                             pt.location,
+                                             std::move(condition),
+                                             std::move(inputs),
+                                             std::move(outputs),
+                                             std::move(thenBody),
+                                             std::move(elseBody));
   }
 
   Results<ast::DataFlowGraph> ScopeBuilder::run() {
@@ -125,7 +125,8 @@ namespace fluir::fe {
         continue;
       }
       alreadyFound_.insert(local);
-      auto write = ast::createDependency<ast::LocalWrite>(std::move(astNode), astNode->location());
+      const auto location = astNode->location();
+      auto write = ast::createNode<ast::LocalWrite>(ast::createDependency(std::nullopt, std::move(astNode)), location);
       dependencies.insert({local, std::move(dependencies_)});
       dependencies_ = {};
       graph_.emplace_back(std::move(write));
@@ -139,12 +140,9 @@ namespace fluir::fe {
     for (const auto& output : outputs_) {
       FullID outputID = currentID_;
       outputID.push_back(output);
-      auto astNode = getDependency(output, 0);
-      if (!astNode) {
-        continue;
-      }
+      auto astNode = getDependency(output, std::nullopt);
       auto write =
-        ast::createDependency<ast::LocalWrite>(std::move(outputID), std::move(astNode), fluir::FlowGraphLocation{});
+        ast::createNode<ast::LocalWrite>(std::move(outputID), std::move(astNode), fluir::FlowGraphLocation{});
       graph_.emplace_back(std::move(write));
     }
 
@@ -182,13 +180,13 @@ namespace fluir::fe {
     return astNode;
   }
 
-  ast::UniqueNode ScopeBuilder::getDependency(ID dependentId, int index) {
+  ast::Dependency ScopeBuilder::getDependency(ID dependentId, std::optional<unsigned> index) {
     // Find the dependency of ID:index in the tree
     const auto dependencyPt =
       std::ranges::find_if(pt_.conduits, [&dependentId, &index](const pt::Block::Conduits::value_type& v) {
         auto& [_, conduit] = v;
         return std::ranges::any_of(conduit.children, [&dependentId, &index](const pt::Conduit::Output& out) {
-          return out.target == dependentId && out.index == index;
+          return out.target == dependentId && ((out.index == index) || (!index && out.index == 0));
         });
       });
     if (dependencyPt == pt_.conduits.end()) {
@@ -211,7 +209,12 @@ namespace fluir::fe {
 
     if (promotedIds_.contains(dependencyId)) {
       dependencies_.insert(dependencyId);
-      return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
+      if (index) {
+        return ast::createDependencyWithIndex<ast::LocalRead>(
+          *index, dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
+      } else {
+        return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
+      }
     }
 
     auto& pt = pt_.nodes.at(dependencyId);
@@ -219,7 +222,7 @@ namespace fluir::fe {
     auto dependency = process(dependencyId, pt);
     // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
-    return dependency;
+    return ast::Dependency{std::move(dependency), index ? std::optional(dependencyIdx) : std::nullopt};
   }
 
   std::unordered_set<fluir::ID> ScopeBuilder::getIdsPromotedToLocal() const {

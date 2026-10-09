@@ -49,6 +49,7 @@ namespace fluir {
     size_t addConstant(be::Constant value);
 
     void run();
+    void recursivelyGenerate(const ast::Dependency& dependency);
     void recursivelyGenerate(const ast::Node& node);
 
     Scope& pushScope();

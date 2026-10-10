@@ -38,7 +38,7 @@ namespace fluir {
 
     struct Scope {
       std::unordered_map<ID, size_t> slots{};
-      size_t returnCount{0};
+      size_t outputCount{0};
     };
     std::stack<Scope> scopes_;
 
@@ -54,6 +54,7 @@ namespace fluir {
     size_t addConstant(be::Constant value);
 
     void run();
+    void generate(const ast::DataFlowGraph& subgraph, const std::vector<ID>& inputs, const std::vector<ID>& outputs);
     void recursivelyGenerate(const ast::Dependency& dependency);
     void recursivelyGenerate(const ast::Node& node);
 

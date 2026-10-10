@@ -1,12 +1,12 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <format>
 #include <ranges>
 
 #include <fmt/format.h>
-#include <fmt/ranges.h>
 
 #include "compiler/types/traits.hpp"
 #include "compiler/utility/scope_guard.hpp"
@@ -42,33 +42,14 @@ namespace fluir {
     current_->inCount = static_cast<std::uint8_t>(func.parameters.size());
     current_->outCount = func.returnValue ? 1 : 0;
 
-    // TODO: Handle parameters
-    auto& [slots, returnCount] = pushScope();
+    std::vector<ID> outputs;
     if (func.returnValue) {
-      // If there is a return value, it is reserved at slot 0
-      // TODO: Support multiple return values
-      slots.insert({func.returnValue->id, 0});
-      returnCount = 1;
+      outputs.push_back(func.returnValue->id);
     }
-    // Push parameters in order onto the stack
-    for (const auto& param : func.parameters) {
-      slots.insert({param.id, slots.size()});
-    }
-    for (const auto& node : func.statements) {
-      recursivelyGenerate(*node);
-      if (shouldPopAfter(*node)) {
-        // Each top level node may leave a value on the stack, so pop it off if needed
-        emitByte(Instruction::POP);
-      }
-      // If the value is the return value, discard it
-      // HACK: Use a multipop 1 instruction to suppress printing the
-      // value until that temp behavior is removed
-      if (func.returnValue && func.returnValue->id == node->id()) {
-        emitBytes(Instruction::MULTIPOP, 1);
-      }
-    }
-    popScope();
+    std::vector<ID> inputs;
+    std::ranges::transform(func.parameters, std::back_inserter(inputs), [](const auto& p) { return p.id; });
 
+    generate(func.statements, inputs, outputs);
     emitByte(Instruction::RETURN);
   }
 
@@ -357,6 +338,33 @@ namespace fluir {
     }
   }
 
+  void BytecodeGenerator::generate(const ast::DataFlowGraph& subgraph,
+                                   const std::vector<ID>& inputs,
+                                   const std::vector<ID>& outputs) {
+    auto& [slots, outputCount] = pushScope();
+    for (const auto& output : outputs) {
+      slots.insert({output, slots.size()});
+      ++outputCount;
+    }
+    for (const auto& input : inputs) {
+      slots.insert({input, slots.size()});
+    }
+    for (const auto& node : subgraph) {
+      recursivelyGenerate(*node);
+      if (shouldPopAfter(*node)) {
+        // Each top level node may leave a value on the stack, so pop it off if needed
+        emitByte(Instruction::POP);
+      }
+      // If the value is an output, discard it
+      // HACK: Use a multipop 1 instruction to suppress printing the
+      // value until that temp behavior is removed
+      if (std::ranges::contains(outputs, node->id())) {
+        emitBytes(Instruction::MULTIPOP, 1);
+      }
+    }
+    popScope();
+  }
+
   void BytecodeGenerator::recursivelyGenerate(const ast::Dependency& dependency) {
     // TODO: Handle index?
     recursivelyGenerate(dependency.get());
@@ -390,7 +398,7 @@ namespace fluir {
   void BytecodeGenerator::popScope() {
     auto& currentScope = scopes_.top();
     // Clean up the local variables from this scope before popping it
-    if (const auto toPop = static_cast<std::uint8_t>(currentScope.slots.size() - currentScope.returnCount); toPop > 0) {
+    if (const auto toPop = static_cast<std::uint8_t>(currentScope.slots.size() - currentScope.outputCount); toPop > 0) {
       emitBytes(Instruction::MULTIPOP, toPop);
     }
     scopes_.pop();

@@ -23,6 +23,7 @@ namespace fluir {
     void generate(const ast::LocalWrite& write);
     void generate(const ast::LocalRead& read);
     void generate(const ast::Call& call);
+    void generate(const ast::Conditional& conditional);
 
    private:
     Context& ctx_;
@@ -46,6 +47,10 @@ namespace fluir {
     void emitByte(std::uint8_t byte);
     void emitBytes(std::uint8_t byte1, std::uint8_t byte2);
     void emitLongOperand(std::uint64_t arg);
+    /** Emits a jump instruction with a placeholder operand to be patched later. */
+    size_t emitJump(code::Instruction instruction);
+    /** Patches a previously emitted jump. */
+    void patchJump(size_t jumpIndex, size_t targetIndex);
     size_t addConstant(be::Constant value);
 
     void run();
@@ -58,6 +63,8 @@ namespace fluir {
     /** Determines if a POP instruction should be emitted after
      * executing this node as a top-level expression */
     bool shouldPopAfter(const ast::Node& node);
+    /** Indicates if the given node type leaves values on the stack to be popped */
+    bool pushesToStack(const ast::Node& node);
 
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);

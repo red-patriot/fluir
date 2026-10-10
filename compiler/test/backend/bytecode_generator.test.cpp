@@ -1493,3 +1493,50 @@ TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
   ASSERT_EQ(1, writer.chunks.size());
   EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
+
+TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fluir::ast::ScopeInput>{},
+      std::vector<fluir::ID>{},
+      fa::DataFlowGraph{},
+      fa::DataFlowGraph{})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0x7,
+        fc::Instruction::POP,
+        fc::Instruction::JUMP,
+        0x0,
+        0x0,
+        0x0,
+        0x2,
+        fc::Instruction::POP,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}

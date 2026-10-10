@@ -57,8 +57,7 @@ namespace fluir {
     for (const auto& node : func.statements) {
       recursivelyGenerate(*node);
       if (shouldPopAfter(*node)) {
-        // Each top level node will leave a value on the stack,so
-        // pop it off iff it was not saved as a new local variable
+        // Each top level node may leave a value on the stack, so pop it off if needed
         emitByte(Instruction::POP);
       }
       // If the value is the return value, discard it
@@ -276,6 +275,19 @@ namespace fluir {
     }
   }
 
+  void BytecodeGenerator::generate(const ast::Conditional& conditional) {
+    // TODO: Handle inputs
+    // TODO: Handle outputs
+    recursivelyGenerate(conditional.condition());
+    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+    // TODO: emit then body
+    emitByte(Instruction::POP);  // POP the condition in the then branch
+    auto elseJump = emitJump(Instruction::JUMP);
+    patchJump(thenJump, current_->code.size());
+    emitByte(Instruction::POP);  // POP the condition in the else branch
+    patchJump(elseJump, current_->code.size());
+  }
+
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
     ctx_(ctx), graph_(graph), writer_(writer) { }
 
@@ -293,6 +305,26 @@ namespace fluir {
       const auto byte = static_cast<std::uint8_t>(arg >> SHIFT);
       emitByte(byte);
       arg <<= BYTE_SIZE;
+    }
+  }
+
+  size_t BytecodeGenerator::emitJump(code::Instruction instruction) {
+    emitByte(instruction);
+    auto jumpIndex = current_->code.size() - 1;
+    emitLongOperand(0xffffffff);  // Emit a placeholder for the jump operand
+    return jumpIndex;
+  }
+  void BytecodeGenerator::patchJump(size_t jumpIndex, size_t targetIndex) {
+    static constexpr int BYTE_SIZE = 8;
+    static constexpr int SHIFT = BYTE_SIZE * 3;
+
+    auto offsetIndex = jumpIndex + 1;
+    auto offset = targetIndex - (jumpIndex + 4);  // 4 for the operand of the jump instruction
+    for (int i = 0; i != 4; ++i) {
+      // Consume the top 8 bits of the offset and emit them one by one to write into the bytecode.
+      const auto byte = static_cast<std::uint8_t>(offset >> SHIFT);
+      current_->code[offsetIndex + i] = byte;
+      offset <<= BYTE_SIZE;
     }
   }
 
@@ -347,7 +379,7 @@ namespace fluir {
       case ast::NodeKind::Call:
         return generate(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
-        assert(false && "TODO");
+        return generate(*node.as<ast::Conditional>());
     }
   }
 
@@ -365,6 +397,10 @@ namespace fluir {
   }
 
   bool BytecodeGenerator::shouldPopAfter(const ast::Node& node) {
+    if (!pushesToStack(node)) {
+      return false;
+    }
+
     const auto& [slots, _] = scopes_.top();
     if (slots.contains(node.id())) {
       return false;
@@ -377,6 +413,15 @@ namespace fluir {
     }
 
     return true;
+  }
+
+  bool BytecodeGenerator::pushesToStack(const ast::Node& node) {
+    switch (node.kind()) {
+      case ast::NodeKind::Conditional:
+        return false;
+      default:
+        return true;
+    }
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

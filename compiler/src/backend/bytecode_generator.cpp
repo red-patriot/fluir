@@ -258,6 +258,10 @@ namespace fluir {
 
   void BytecodeGenerator::generate(const ast::Conditional& conditional) {
     /*
+     *       [input0]
+     *       [input1]
+     *       ...
+     *       [inputN]
      *       [condition]
      *       JUMP_IF_FALSE   ------|
      *         // THEN BODY        |
@@ -267,21 +271,23 @@ namespace fluir {
      *  |      POP (condition)
      *  |--> // REST...
      */
-    // TODO: Handle inputs
     std::vector<ID> inputIds;
-    std::ranges::transform(conditional.inputs(), std::back_inserter(inputIds), [](const auto& i) { return i.innerId; });
+    inputIds.reserve(conditional.inputs().size());
+    for (const auto& [dependency, innerId] : conditional.inputs()) {
+      recursivelyGenerate(dependency);
+      inputIds.push_back(innerId);
+    }
     // TODO: Handle outputs
 
     recursivelyGenerate(conditional.condition());
+    inputIds.push_back(1);  // Inner ID of the condition
 
     auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
     generate(conditional.thenBody(), inputIds, conditional.outputs());
-    emitByte(Instruction::POP);  // POP the condition in the then branch
     auto elseJump = emitJump(Instruction::JUMP);
     patchJump(thenJump, current_->code.size());
 
     generate(conditional.elseBody(), inputIds, conditional.outputs());
-    emitByte(Instruction::POP);  // POP the condition in the else branch
     patchJump(elseJump, current_->code.size());
   }
 

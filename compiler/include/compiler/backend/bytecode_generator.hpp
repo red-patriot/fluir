@@ -16,14 +16,14 @@ namespace fluir {
 
     void operator()(const ast::FunctionDecl& func);
 
-    void generate(const ast::BinaryOp& binary);
-    void generate(const ast::UnaryOp& unary);
-    void generate(const ast::Constant& constant);
-    void generate(const ast::Cast& cast);
-    void generate(const ast::LocalWrite& write);
-    void generate(const ast::LocalRead& read);
-    void generate(const ast::Call& call);
-    void generate(const ast::Conditional& conditional);
+    int generate(const ast::BinaryOp& binary);
+    int generate(const ast::UnaryOp& unary);
+    int generate(const ast::Constant& constant);
+    int generate(const ast::Cast& cast);
+    int generate(const ast::LocalWrite& write);
+    int generate(const ast::LocalRead& read);
+    int generate(const ast::Call& call);
+    int generate(const ast::Conditional& conditional);
 
    private:
     Context& ctx_;
@@ -54,12 +54,17 @@ namespace fluir {
     size_t addConstant(be::Constant value);
 
     void run();
-    void generate(const ast::DataFlowGraph& subgraph, const std::vector<ID>& inputs, const std::vector<ID>& outputs);
-    void recursivelyGenerate(const ast::Dependency& dependency);
-    void recursivelyGenerate(const ast::Node& node);
+    /*Generate bytecode for a subgraph, returns the number of stack slots added or removed by this code */
+    int generate(const ast::DataFlowGraph& subgraph, const std::vector<ID>& inputs, const std::vector<ID>& outputs);
+    /*Generate bytecode for a dependency, returns the number of stack slots added or removed by this code */
+    int recursivelyGenerate(const ast::Dependency& dependency);
+    /*Generate bytecode for a node, returns the number of stack slots added or removed by this code */
+    int recursivelyGenerate(const ast::Node& node);
 
+    /** Starts a new scope, with its own local variables and outputs */
     Scope& pushScope();
-    void popScope();
+    /** Cleans up the top scope on the stack, including popping all its local variables and temporaries. */
+    void popScope(int stackTemporaries);
 
     /** Determines if a POP instruction should be emitted after
      * executing this node as a top-level expression */

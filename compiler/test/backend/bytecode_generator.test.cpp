@@ -113,7 +113,8 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::F64_MUL,
-        fc::Instruction::POP,
+        fc::Instruction::MULTIPOP,
+        0x1,
         fc::Instruction::RETURN,
       },
   };
@@ -147,7 +148,8 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::F64_NEG,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x1,
                             fc::Instruction::RETURN,
                           }};
 
@@ -202,13 +204,23 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "bar",
                           .code = {
-                            fc::PUSH,    0x0,         fc::F64_NEG, fc::PUSH,     0x1,
-                            fc::F64_DIV,  // No POP, write {3,4}
-                            fc::PUSH,    0x2,
-                            fc::GET_VAL,  // Read {3,4}
-                            0x0,         fc::F64_ADD, fc::POP,
-                            fc::GET_VAL,  // Read {3,4}
-                            0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
+                            fc::PUSH,
+                            0x0,
+                            fc::F64_NEG,
+                            fc::PUSH,
+                            0x1,
+                            fc::F64_DIV,  // write {3,4}
+                            fc::PUSH,
+                            0x2,
+                            fc::GET_VAL,
+                            0x0,  // Read {3,4}
+                            fc::F64_ADD,
+                            fc::GET_VAL,
+                            0x0,  // Read {3,4}
+                            fc::F64_NEG,
+                            fc::MULTIPOP,
+                            0x4,
+                            fc::RETURN,
                           }};
 
   input = prepare(std::move(input));
@@ -268,8 +280,8 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
   fc::Chunk expectedChunk{
     .name = "main",
     .code = {
-      fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
-      fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
+      fc::PUSH,    0x0,         fc::PUSH, 0x1,         fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0,
+      fc::I64_MUL, fc::GET_VAL, 0x1,      fc::GET_VAL, 0x0,         fc::I64_ADD, fc::MULTIPOP, 0x5, fc::RETURN,
     }};
 
   input = prepare(std::move(input));
@@ -302,16 +314,14 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
                           .code = {
                             fc::Instruction::PUSH,
                             0x00,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x02,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x03,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x4,
                             fc::Instruction::RETURN,
                           }};
 
@@ -346,16 +356,14 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
                           .code = {
                             fc::Instruction::PUSH,
                             0x00,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x02,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x03,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x4,
                             fc::Instruction::RETURN,
                           }};
 
@@ -402,15 +410,14 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   }());
 
   fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  fc::Chunk expectedChunk{
-    .name = "ints",
-    .code = {
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
-      fc::Instruction::RETURN,
-    }};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_ADD,
+                            fc::Instruction::PUSH,     0x2, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_SUB,
+                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_MUL,
+                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_DIV,
+                            fc::Instruction::MULTIPOP, 0x4, fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -459,11 +466,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
     .name = "ints",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
-        fc::Instruction::RETURN,
+        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_ADD,
+        fc::Instruction::PUSH,     0x2, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_SUB,
+        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_MUL,
+        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_DIV,
+        fc::Instruction::MULTIPOP, 0x4, fc::Instruction::RETURN,
       },
   };
 
@@ -506,32 +513,28 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IF,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
                             fc::Instruction::CAST_FI,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_8,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_16,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x6,
                             fc::Instruction::RETURN,
                           }};
 
@@ -568,17 +571,16 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_32,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_16,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_8,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x3,
                             fc::Instruction::RETURN,
                           }};
 
@@ -612,12 +614,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UF,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
                             fc::Instruction::CAST_FU,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x2,
                             fc::Instruction::RETURN,
                           }};
 
@@ -654,17 +656,16 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_32,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_16,
-                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_8,
-                            fc::Instruction::POP,
+                            fc::Instruction::MULTIPOP,
+                            0x3,
                             fc::Instruction::RETURN,
                           }};
 
@@ -709,9 +710,9 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
     .name = "inc_dec",
     .code =
       {
-        fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
-        0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
-        fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
+        fc::PUSH,    0x0,         fc::I64_INC, fc::PUSH,    0x0,          fc::I64_DEC, fc::PUSH,
+        0x1,         fc::F64_INC, fc::PUSH,    0x1,         fc::F64_DEC,  fc::PUSH,    0x2,
+        fc::U64_INC, fc::PUSH,    0x2,         fc::U64_DEC, fc::MULTIPOP, 0x6,         fc::RETURN,
       },
   };
 
@@ -788,7 +789,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                            0x00,
                                            0x00,
                                            0x01,
-                                           fc::Instruction::POP,
+                                           fc::Instruction::MULTIPOP,
+                                           0x1,
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "add_nums",
@@ -801,10 +803,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                            fc::I64_ADD,
                                            fc::SET_VAL,
                                            0x0,
-                                           fc::MULTIPOP,  // Pop off the returned temporary
-                                           0x01,
                                            fc::MULTIPOP,
-                                           0x2,
+                                           0x3,
                                            fc::Instruction::RETURN,
                                          },
                                        .inCount = 2,
@@ -850,7 +850,7 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
                                            0x00,
                                            0x00,
                                            0x01,
-                                           // No return => no POP instruction
+                                           // No return => no popping instruction
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "sink",
@@ -904,7 +904,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
                                            0x00,
                                            0x00,
                                            0x01,
-                                           fc::Instruction::POP,
+                                           fc::Instruction::MULTIPOP,
+                                           0x1,
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "get_val",
@@ -966,7 +967,6 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
                   0x00,
                   0x00,
                   0x01,
-                  fc::Instruction::POP,
                   fc::RESERVE,
                   0x01,
                   fc::CALL,
@@ -974,7 +974,8 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
                   0x00,
                   0x00,
                   0x02,
-                  fc::Instruction::POP,
+                  fc::Instruction::MULTIPOP,
+                  0x2,
                   fc::Instruction::RETURN,
                 }},
     fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
@@ -1036,7 +1037,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
                                          0x00,
                                          0x00,
                                          0x00,  // add is at index 0
-                                         fc::Instruction::POP,
+                                         fc::Instruction::MULTIPOP,
+                                         0x1,
                                          fc::Instruction::RETURN,
                                        }}};
 
@@ -1083,8 +1085,8 @@ TEST_F(TestBytecodeGenerator, ConstantsAreGlobal) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fluir::be::ConstantsArray expectedConstants{1.0, 2.0, 3.0, 4.0};
   std::vector expectedChunks{
-    fc::Chunk{.name = "foo", .code = {fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::POP, fc::RETURN}},
-    fc::Chunk{.name = "bar", .code = {fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::POP, fc::RETURN}},
+    fc::Chunk{.name = "foo", .code = {fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::MULTIPOP, 0x1, fc::RETURN}},
+    fc::Chunk{.name = "bar", .code = {fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::MULTIPOP, 0x1, fc::RETURN}},
   };
 
   input = prepare(std::move(input));
@@ -1125,14 +1127,16 @@ TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
                                                      for (size_t i = 0; i <= UINT8_MAX; ++i) {
                                                        bytes.emplace_back(fc::PUSH);
                                                        bytes.emplace_back(static_cast<uint8_t>(i));
-                                                       bytes.emplace_back(fc::POP);
                                                      }
                                                      bytes.emplace_back(fc::QUAD_PUSH);
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
                                                      bytes.emplace_back(static_cast<uint8_t>(0x01));
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
-                                                     bytes.emplace_back(fc::POP);
+                                                     bytes.emplace_back(fc::MULTIPOP);
+                                                     bytes.emplace_back(255);
+                                                     bytes.emplace_back(fc::MULTIPOP);
+                                                     bytes.emplace_back(2);
                                                      bytes.emplace_back(fc::RETURN);
                                                      return bytes;
                                                    }()}}};
@@ -1233,26 +1237,24 @@ TEST_F(TestBytecodeGenerator, GeneratesEqualityComparisons) {
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::EQ,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::EQ,
         fc::Instruction::NOT,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x02,
         fc::Instruction::PUSH,
         0x03,
         fc::Instruction::EQ,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x04,
         fc::Instruction::PUSH,
         0x05,
         fc::Instruction::EQ,
-        fc::Instruction::POP,
+        fc::Instruction::MULTIPOP,
+        0x4,
         fc::Instruction::RETURN,
       },
   };
@@ -1305,11 +1307,11 @@ TEST_F(TestBytecodeGenerator, GeneratesSignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LE, fc::Instruction::POP,
-        fc::Instruction::RETURN,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_LT,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_LE,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::I64_LT,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::I64_LE,
+        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
       },
   };
 
@@ -1361,11 +1363,11 @@ TEST_F(TestBytecodeGenerator, GeneratesUnsignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LE, fc::Instruction::POP,
-        fc::Instruction::RETURN,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_LT,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_LE,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::U64_LT,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::U64_LE,
+        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
       },
   };
 
@@ -1417,11 +1419,11 @@ TEST_F(TestBytecodeGenerator, GeneratesFloatComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LE, fc::Instruction::POP,
-        fc::Instruction::RETURN,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::F64_LT,
+        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::F64_LE,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::F64_LT,
+        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::F64_LE,
+        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
       },
   };
 
@@ -1470,17 +1472,16 @@ TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::AND,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::OR,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::NOT,
-        fc::Instruction::POP,
+        fc::Instruction::MULTIPOP,
+        0x3,
         fc::Instruction::RETURN,
       },
   };
@@ -1588,30 +1589,28 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
         0x0,
         0x0,
         0x0,
-        0xE,
+        0xD,
         // THEN
         fc::Instruction::PUSH,
         0x1,
         fc::Instruction::PUSH,
         0x2,
         fc::Instruction::I64_ADD,
-        fc::Instruction::POP,
         fc::Instruction::MULTIPOP,
-        0x1,
+        0x2,
         fc::Instruction::JUMP,
         0x0,
         0x0,
         0x0,
-        0x9,
+        0x8,
         // ELSE
         fc::Instruction::PUSH,
         0x3,
         fc::Instruction::PUSH,
         0x2,
         fc::Instruction::I64_SUB,
-        fc::Instruction::POP,
         fc::Instruction::MULTIPOP,
-        0x1,
+        0x2,
         fc::Instruction::RETURN,
       },
   };
@@ -1679,30 +1678,232 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithInputs) {
         0x0,
         0x0,
         0x0,
-        0xE,
+        0xD,
         // THEN
         fc::Instruction::PUSH,
         0x3,
         fc::Instruction::GET_VAL,
         0x0,
         fc::Instruction::I64_ADD,
-        fc::Instruction::POP,
         fc::Instruction::MULTIPOP,
-        0x3,
+        0x4,
         fc::Instruction::JUMP,
         0x0,
         0x0,
         0x0,
-        0x9,
+        0x8,
         // ELSE
         fc::Instruction::GET_VAL,
         0x0,
         fc::Instruction::GET_VAL,
         0x1,
         fc::Instruction::I64_SUB,
-        fc::Instruction::POP,
+        fc::Instruction::MULTIPOP,
+        0x4,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithOutput) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fa::ScopeInput>{[]() {
+        std::vector<fa::ScopeInput> inputs;
+        inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+        return inputs;
+      }()},
+      std::vector<fluir::ID>{12},
+      // THEN
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 12},
+          fa::createDependency<fa::BinaryOp>(
+            fluir::Operator::PLUS,
+            fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+            fa::createDependency<fa::LocalRead>(14, FullID{3, 0}, fluir::FlowGraphLocation{}),  // 1
+            FullID{3, 0, 3},
+            fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      // ELSE
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 12},
+          fa::createDependency<fa::Constant>(13, FullID{3, 1, 19}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, true, 13
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x1,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xF,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x1,
+        fc::Instruction::I64_ADD,
+        fc::Instruction::SET_VAL,
+        0x0,
         fc::Instruction::MULTIPOP,
         0x3,
+        fc::Instruction::JUMP,
+        0x0,
+        0x0,
+        0x0,
+        0x7,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::MULTIPOP,
+        0x3,
+        fc::Instruction::MULTIPOP,
+        0x1,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fa::ScopeInput>{[]() {
+        std::vector<fa::ScopeInput> inputs;
+        inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+        return inputs;
+      }()},
+      std::vector<fluir::ID>{12, 13},
+      // THEN
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 12},
+          fa::createDependency<fa::BinaryOp>(
+            fluir::Operator::PLUS,
+            fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+            fa::createDependency<fa::LocalRead>(14, FullID{3, 0, 2}, fluir::FlowGraphLocation{}),  // 1
+            FullID{3, 0, 3},
+            fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 13},
+          fa::createDependency<fa::Constant>(false, FullID{3, 0, 4}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      // ELSE
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 12},
+          fa::createDependency<fa::Constant>(13, FullID{3, 1, 19}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 13},
+          fa::createDependency<fa::Constant>(true, FullID{3, 1, 21}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, true, 7, false, 13
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x2,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0x13,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x2,
+        fc::Instruction::I64_ADD,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::SET_VAL,
+        0x1,
+        fc::Instruction::MULTIPOP,
+        0x4,
+        fc::Instruction::JUMP,
+        0x0,
+        0x0,
+        0x0,
+        0xB,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x4,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x1,
+        fc::MULTIPOP,
+        0x4,
+        fc::Instruction::MULTIPOP,
+        0x2,
         fc::Instruction::RETURN,
       },
   };

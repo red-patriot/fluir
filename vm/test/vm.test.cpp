@@ -799,6 +799,34 @@ TEST(TestVM, NegateFalse) {
   EXPECT_TRUE(uut.viewStack().back().asBool());
 }
 
+TEST(TestVM, HandlesConditionals1) {
+  fc::ByteCode code{
+    .header = {},
+    .constants = {FALSE_VALUE, TRUE_VALUE},
+    .chunks = {fc::Chunk{
+      .name = "main",
+      .code = {PUSH, 0, JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x7, PUSH, 0x1, JUMP_BY, 0x0, 0x0, 0x0, 0x2, PUSH, 0x0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, HandlesConditionals2) {
+  fc::ByteCode code{
+    .header = {},
+    .constants = {FALSE_VALUE, TRUE_VALUE},
+    .chunks = {fc::Chunk{
+      .name = "main",
+      .code = {PUSH, 1, JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x7, PUSH, 0x1, JUMP_BY, 0x0, 0x0, 0x0, 0x2, PUSH, 0x0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
 class TestVmLogicalOps : public ::testing::TestWithParam<tuple<fc::Value, fc::Value, fc::Instruction, bool>> { };
 
 TEST_P(TestVmLogicalOps, Test) {

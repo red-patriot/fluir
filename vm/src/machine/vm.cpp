@@ -162,6 +162,20 @@ namespace fluir {
             pushStack(code::Value{eq});
           }
           break;
+        case JUMP_BY:
+          {
+            auto offset = readQuadWord();
+            ip_ += offset;
+            break;
+          }
+        case JUMP_IF_FALSE:
+          {
+            auto offset = readQuadWord();
+            if (!stackTop().asBool()) {
+              ip_ += offset;
+            }
+            break;
+          }
         case F64_ADD:
           floatBinary<std::plus<code::F64>>();
           break;

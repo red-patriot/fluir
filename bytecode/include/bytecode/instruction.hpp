@@ -14,7 +14,7 @@ namespace fluir::code {
   code(GET_VAL)                          \
   code(SET_VAL)                          \
   code(EQ)                               \
-  code(JUMP)                             \
+  code(JUMP_BY)                          \
   code(JUMP_IF_FALSE)                    \
   /* FLOAT OPS */                        \
   code(F64_ADD)                          \

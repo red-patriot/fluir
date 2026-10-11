@@ -307,7 +307,7 @@ namespace fluir {
 
     auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
     int thenDeltaSlots = generate(conditional.thenBody(), inputIds, conditional.outputs());
-    auto elseJump = emitJump(Instruction::JUMP);
+    auto elseJump = emitJump(Instruction::JUMP_BY);
     patchJump(thenJump, current_->code.size());
 
     int elseDeltaSlots = generate(conditional.elseBody(), inputIds, conditional.outputs());

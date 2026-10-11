@@ -15,7 +15,7 @@ This document describes the complete set of bytecode instructions understood by 
 | `QUAD_PUSH`     | idx0, idx1, idx2, idx3     | Pushes the value at the given index of the constant table to the top of the stack. Arguments form a 64-bit index. Used for constants that exceed 256.    |
 | `POP`           |                            | Pops the top value from the stack. As a temporary debug step, prints the value popped (this will be removed in v0.3).                                    |
 | `MULTIPOP`      | count                      | Pops the top count values from the stack. Does NOT print the value popped, like the temporary behavior of `POP`.                                         |
-| `JUMP`          | ofs0, ofs1, ofs2, ofs3     | Moves the ip by `ofs` (relative to current ip) slots.                                                                                                    |
+| `JUMP_BY`       | ofs0, ofs1, ofs2, ofs3     | Moves the ip by `ofs` (relative to current ip) slots.                                                                                                    |
 | `JUMP_IF_FALSE` | ofs0, ofs1, ofs2, ofs3     | If the value on the top of the stack is false, moves the ip by `ofs` (relative to current ip) slots.                                                     |
 | `GET_VAL`       | index                      | Pushes the value at index on the stack to the top of the stack.                                                                                          |
 | `SET_VAL`       | index                      | Writes the value on the top of the stack to index in the stack.                                                                                          |

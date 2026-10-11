@@ -47,9 +47,12 @@ namespace fluir {
     void emitByte(std::uint8_t byte);
     void emitBytes(std::uint8_t byte1, std::uint8_t byte2);
     void emitLongOperand(std::uint64_t arg);
-    /** Emits a jump instruction with a placeholder operand to be patched later. */
+    /** Emits a jump instruction with a placeholder operand to be patched later.
+     * \return the index to write the patch to. */
     size_t emitJump(code::Instruction instruction);
-    /** Patches a previously emitted jump. */
+    /** Patches a previously emitted jump.
+     * `jumpIndex` is the index where the patch should be written to, `targetIndex` is where the ip should land when the
+     * jump is executed. */
     void patchJump(size_t jumpIndex, size_t targetIndex);
     size_t addConstant(be::Constant value);
 

@@ -345,7 +345,7 @@ namespace fluir {
 
   size_t BytecodeGenerator::emitJump(code::Instruction instruction) {
     emitByte(instruction);
-    auto jumpIndex = current_->code.size() - 1;
+    auto jumpIndex = current_->code.size();
     emitLongOperand(0xffffffff);  // Emit a placeholder for the jump operand
     return jumpIndex;
   }
@@ -353,12 +353,11 @@ namespace fluir {
     static constexpr int BYTE_SIZE = 8;
     static constexpr int SHIFT = BYTE_SIZE * 3;
 
-    auto offsetIndex = jumpIndex + 1;
-    auto offset = targetIndex - (jumpIndex + 4);  // 4 for the operand of the jump instruction
+    auto offset = targetIndex - (jumpIndex + 4);
     for (int i = 0; i != 4; ++i) {
       // Consume the top 8 bits of the offset and emit them one by one to write into the bytecode.
       const auto byte = static_cast<std::uint8_t>(offset >> SHIFT);
-      current_->code[offsetIndex + i] = byte;
+      current_->code[jumpIndex + i] = byte;
       offset <<= BYTE_SIZE;
     }
   }

@@ -1521,14 +1521,14 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
         0x0,
         0x0,
         0x0,
-        0x8,
+        0x7,
         fc::Instruction::MULTIPOP,
         0x1,
         fc::Instruction::JUMP,
         0x0,
         0x0,
         0x0,
-        0x3,
+        0x2,
         fc::Instruction::MULTIPOP,
         0x1,
         fc::Instruction::RETURN,
@@ -1589,7 +1589,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
         0x0,
         0x0,
         0x0,
-        0xD,
+        0xC,
         // THEN
         fc::Instruction::PUSH,
         0x1,
@@ -1602,7 +1602,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
         0x0,
         0x0,
         0x0,
-        0x8,
+        0x7,
         // ELSE
         fc::Instruction::PUSH,
         0x3,
@@ -1678,7 +1678,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithInputs) {
         0x0,
         0x0,
         0x0,
-        0xD,
+        0xC,
         // THEN
         fc::Instruction::PUSH,
         0x3,
@@ -1691,7 +1691,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithInputs) {
         0x0,
         0x0,
         0x0,
-        0x8,
+        0x7,
         // ELSE
         fc::Instruction::GET_VAL,
         0x0,
@@ -1769,7 +1769,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithOutput) {
         0x0,
         0x0,
         0x0,
-        0xF,
+        0xE,
         // THEN
         fc::Instruction::PUSH,
         0x2,
@@ -1784,7 +1784,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithOutput) {
         0x0,
         0x0,
         0x0,
-        0x7,
+        0x6,
         // ELSE
         fc::Instruction::PUSH,
         0x3,
@@ -1871,7 +1871,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
         0x0,
         0x0,
         0x0,
-        0x13,
+        0x12,
         // THEN
         fc::Instruction::PUSH,
         0x2,
@@ -1890,7 +1890,7 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
         0x0,
         0x0,
         0x0,
-        0xB,
+        0xA,
         // ELSE
         fc::Instruction::PUSH,
         0x4,

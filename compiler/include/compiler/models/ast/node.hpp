@@ -294,6 +294,8 @@ namespace fluir::ast {
     [[nodiscard]] const Dependency& child() const { return child_; }
     [[nodiscard]] Dependency& child() { return child_; }
     [[nodiscard]] ID variable() const { return id(); }
+    /** Returns the stored type in the variable. */
+    [[nodiscard]] types::TypeID storedType() const { return child().type(); }
 
    private:
     Dependency child_;

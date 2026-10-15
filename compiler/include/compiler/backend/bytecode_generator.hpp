@@ -6,6 +6,7 @@
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
+#include "func_frame.hpp"
 
 namespace fluir {
   void generateCode(Context& ctx, const ast::AST& graph, CodeWriter& writer);
@@ -16,14 +17,14 @@ namespace fluir {
 
     void operator()(const ast::FunctionDecl& func);
 
-    int generate(const ast::BinaryOp& binary);
-    int generate(const ast::UnaryOp& unary);
-    int generate(const ast::Constant& constant);
-    int generate(const ast::Cast& cast);
-    int generate(const ast::LocalWrite& write);
-    int generate(const ast::LocalRead& read);
-    int generate(const ast::Call& call);
-    int generate(const ast::Conditional& conditional);
+    void generate(const ast::BinaryOp& binary);
+    void generate(const ast::UnaryOp& unary);
+    void generate(const ast::Constant& constant);
+    void generate(const ast::Cast& cast);
+    void generate(const ast::LocalWrite& write);
+    void generate(const ast::LocalRead& read);
+    void generate(const ast::Call& call);
+    void generate(const ast::Conditional& conditional);
 
    private:
     Context& ctx_;
@@ -35,12 +36,8 @@ namespace fluir {
     std::vector<code::Chunk> chunks_;
     code::Chunk* current_{nullptr};
     std::unordered_map<std::string_view, size_t> functionIndices_;
-
-    struct Scope {
-      std::unordered_map<ID, size_t> slots{};
-      size_t outputCount{0};
-    };
-    std::stack<Scope> scopes_;
+    be::BytecodeFrame* frame_{nullptr};
+    be::Scope* currentScope_{nullptr};
 
     BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph);
 
@@ -58,22 +55,18 @@ namespace fluir {
 
     void run();
     /*Generate bytecode for a subgraph, returns the number of stack slots added or removed by this code */
-    int generate(const ast::DataFlowGraph& subgraph, const std::vector<ID>& inputs, const std::vector<ID>& outputs);
-    /*Generate bytecode for a dependency, returns the number of stack slots added or removed by this code */
-    int recursivelyGenerate(const ast::Dependency& dependency);
-    /*Generate bytecode for a node, returns the number of stack slots added or removed by this code */
-    int recursivelyGenerate(const ast::Node& node);
+    void generate(const ast::DataFlowGraph& subgraph,
+                  const std::vector<WithID<types::TypeID>>& inputs,
+                  const std::vector<WithID<types::TypeID>>& outputs);
+    /*Generate bytecode for a dependency and leaves the result on the stack */
+    void generateDependency(const ast::Dependency& dependency);
+    /*Generate bytecode for a top-level node, and pops the final result off the stack when done */
+    void generateTopLevel(const ast::Node& node);
+    /** Generates bytecode for a node, leaving it on the stack */
+    void doGenerate(const ast::Node& node);
 
-    /** Starts a new scope, with its own local variables and outputs */
-    Scope& pushScope();
-    /** Cleans up the top scope on the stack, including popping all its local variables and temporaries. */
-    void popScope(int stackTemporaries);
-
-    /** Determines if a POP instruction should be emitted after
-     * executing this node as a top-level expression */
-    bool shouldPopAfter(const ast::Node& node);
-    /** Indicates if the given node type leaves values on the stack to be popped */
-    bool pushesToStack(const ast::Node& node);
+    /** Adds a local to the current scope, mapped by ID. */
+    uint8_t addLocalSlot(const ID& id, types::TypeID type);
 
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);

@@ -41,6 +41,7 @@ set(FLUIR_COMPILER_FRONTEND_SOURCES
 set(FLUIR_COMPILER_BACKEND_SOURCES
     "backend/bytecode_generator.cpp"
     "backend/code_writer.cpp"
+    "backend/func_frame.cpp"
     "backend/inspect_writer.cpp"
 )
 

@@ -136,7 +136,7 @@ namespace fluir {
         if (!returnNode) {
           diagnostic::emitInternalError("Unexpected node kind encountered");
         }
-        if (returnNode->type() != funcType->returnType().value()) {
+        if (returnNode->storedType() != funcType->returnType().value()) {
           if (!ctx.symbolTable.canImplicitlyConvert(returnNode->type(), funcType->returnType().value())) {
             ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                              ctx.currentFile,
@@ -291,7 +291,7 @@ namespace fluir {
         return NoResult;
       }
       auto type = write->child().type();
-      write->setType(type);
+      write->setType(types::ID_EMPTY);
       if (write->variable() && ctx.symbolTable.addLocalVariable(write->variable(), type)) {
         return write->type();
       }

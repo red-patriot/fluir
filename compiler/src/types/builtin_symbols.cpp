@@ -26,6 +26,7 @@ namespace fluir::types {
     table.addType(Type("U32"));
     table.addType(Type("U64"));
     table.addType(Type("BOOL"));
+    table.addType(Product{"__EMPTY", {}});
   }
 
   void instantiateBuiltinOperators(SymbolTable& table) {

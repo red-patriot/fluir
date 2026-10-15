@@ -55,7 +55,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  fc::Chunk expectedChunk{.name = "main", .code = {fc::Instruction::RETURN}};
+  fc::Chunk expectedChunk{.name = "main", .code = {fc::RESERVE, 0x0, fc::RETURN}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -74,8 +74,8 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  std::vector expectedChunks{fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}},
-                             fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}}};
+  std::vector expectedChunks{fc::Chunk{.name = "main", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}},
+                             fc::Chunk{.name = "foo", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -108,13 +108,14 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
     .name = "foo",
     .code =
       {
+        fc::RESERVE,
+        0x0,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::F64_MUL,
-        fc::Instruction::MULTIPOP,
-        0x1,
+        fc::Instruction::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -145,11 +146,12 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "bar",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::F64_NEG,
-                            fc::Instruction::MULTIPOP,
-                            0x1,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -204,23 +206,13 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "bar",
                           .code = {
-                            fc::PUSH,
-                            0x0,
-                            fc::F64_NEG,
-                            fc::PUSH,
-                            0x1,
+                            fc::RESERVE, 0x1,     fc::PUSH,     0x0, fc::F64_NEG, fc::PUSH, 0x1,
                             fc::F64_DIV,  // write {3,4}
-                            fc::PUSH,
-                            0x2,
-                            fc::GET_VAL,
+                            fc::SET_VAL, 0x0,     fc::PUSH,     0x2, fc::GET_VAL,
                             0x0,  // Read {3,4}
-                            fc::F64_ADD,
-                            fc::GET_VAL,
+                            fc::F64_ADD, fc::POP, fc::GET_VAL,
                             0x0,  // Read {3,4}
-                            fc::F64_NEG,
-                            fc::MULTIPOP,
-                            0x4,
-                            fc::RETURN,
+                            fc::F64_NEG, fc::POP, fc::MULTIPOP, 0x1, fc::RETURN,
                           }};
 
   input = prepare(std::move(input));
@@ -280,8 +272,9 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
   fc::Chunk expectedChunk{
     .name = "main",
     .code = {
-      fc::PUSH,    0x0,         fc::PUSH, 0x1,         fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0,
-      fc::I64_MUL, fc::GET_VAL, 0x1,      fc::GET_VAL, 0x0,         fc::I64_ADD, fc::MULTIPOP, 0x5, fc::RETURN,
+      fc::RESERVE, 0x2,         fc::PUSH, 0x0,         fc::PUSH, 0x1,          fc::I64_MUL, fc::I64_NEG, fc::SET_VAL,
+      0x0,         fc::GET_VAL, 0x0,      fc::PUSH,    0x0,      fc::I64_MUL,  fc::SET_VAL, 0x1,         fc::GET_VAL,
+      0x1,         fc::GET_VAL, 0x0,      fc::I64_ADD, fc::POP,  fc::MULTIPOP, 0x2,         fc::RETURN,
     }};
 
   input = prepare(std::move(input));
@@ -312,16 +305,20 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x02,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x03,
-                            fc::Instruction::MULTIPOP,
-                            0x4,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -354,16 +351,20 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x02,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x03,
-                            fc::Instruction::MULTIPOP,
-                            0x4,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -412,11 +413,33 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
-                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_ADD,
-                            fc::Instruction::PUSH,     0x2, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_SUB,
-                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_MUL,
-                            fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_DIV,
-                            fc::Instruction::MULTIPOP, 0x4, fc::Instruction::RETURN,
+                            fc::RESERVE,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_ADD,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x2,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_SUB,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_MUL,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_DIV,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
                           }};
 
   input = prepare(std::move(input));
@@ -466,11 +489,33 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
     .name = "ints",
     .code =
       {
-        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_ADD,
-        fc::Instruction::PUSH,     0x2, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_SUB,
-        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_MUL,
-        fc::Instruction::PUSH,     0x0, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_DIV,
-        fc::Instruction::MULTIPOP, 0x4, fc::Instruction::RETURN,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_ADD,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_SUB,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_MUL,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_DIV,
+        fc::Instruction::POP,
+        fc::Instruction::RETURN,
       },
   };
 
@@ -510,31 +555,37 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IF,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
                             fc::Instruction::CAST_FI,
                             fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_64,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_8,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_WIDTH,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::MULTIPOP,
-                            0x6,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -567,20 +618,23 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_32,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
                             fc::NumericWidth::WIDTH_8,
-                            fc::Instruction::MULTIPOP,
-                            0x3,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -611,15 +665,17 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "uints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UF,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x01,
                             fc::Instruction::CAST_FU,
                             fc::NumericWidth::WIDTH_64,
-                            fc::Instruction::MULTIPOP,
-                            0x2,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -652,20 +708,23 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "uints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_32,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_16,
+                            fc::Instruction::POP,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
                             fc::NumericWidth::WIDTH_8,
-                            fc::Instruction::MULTIPOP,
-                            0x3,
+                            fc::Instruction::POP,
                             fc::Instruction::RETURN,
                           }};
 
@@ -710,9 +769,9 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
     .name = "inc_dec",
     .code =
       {
-        fc::PUSH,    0x0,         fc::I64_INC, fc::PUSH,    0x0,          fc::I64_DEC, fc::PUSH,
-        0x1,         fc::F64_INC, fc::PUSH,    0x1,         fc::F64_DEC,  fc::PUSH,    0x2,
-        fc::U64_INC, fc::PUSH,    0x2,         fc::U64_DEC, fc::MULTIPOP, 0x6,         fc::RETURN,
+        fc::RESERVE, 0x0,      fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC,
+        fc::POP,     fc::PUSH, 0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,
+        fc::PUSH,    0x2,      fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
       },
   };
 
@@ -778,6 +837,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
   std::vector expectedChunks{fc::Chunk{.name = "main",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::RESERVE,  // Reserve space for the return
                                            0x01,
                                            fc::PUSH,
@@ -789,13 +850,14 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                            0x00,
                                            0x00,
                                            0x01,
-                                           fc::Instruction::MULTIPOP,
-                                           0x1,
+                                           fc::Instruction::POP,
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "add_nums",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::GET_VAL,
                                            0x1,
                                            fc::GET_VAL,
@@ -804,7 +866,7 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                            fc::SET_VAL,
                                            0x0,
                                            fc::MULTIPOP,
-                                           0x3,
+                                           0x2,
                                            fc::Instruction::RETURN,
                                          },
                                        .inCount = 2,
@@ -843,6 +905,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
   std::vector expectedChunks{fc::Chunk{.name = "main",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::PUSH,
                                            0x00,  // arg 7
                                            fc::CALL,
@@ -856,6 +920,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
                              fc::Chunk{.name = "sink",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::MULTIPOP,
                                            0x01,
                                            fc::Instruction::RETURN,
@@ -898,25 +964,26 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
                                        .code =
                                          {
                                            fc::RESERVE,
+                                           0x0,
+                                           fc::RESERVE,
                                            0x01,
                                            fc::CALL,
                                            0x00,
                                            0x00,
                                            0x00,
                                            0x01,
-                                           fc::Instruction::MULTIPOP,
-                                           0x1,
+                                           fc::Instruction::POP,
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "get_val",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::Instruction::PUSH,
                                            0x0,
                                            fc::Instruction::SET_VAL,
                                            0x0,
-                                           fc::Instruction::MULTIPOP,  // Pop off the returned temporary
-                                           0x01,
                                            fc::Instruction::RETURN,
                                          },
                                        .inCount = 0,
@@ -961,12 +1028,15 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
               .code =
                 {
                   fc::RESERVE,
+                  0x0,
+                  fc::RESERVE,
                   0x01,
                   fc::CALL,
                   0x00,
                   0x00,
                   0x00,
                   0x01,
+                  fc::POP,
                   fc::RESERVE,
                   0x01,
                   fc::CALL,
@@ -974,12 +1044,11 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
                   0x00,
                   0x00,
                   0x02,
-                  fc::Instruction::MULTIPOP,
-                  0x2,
+                  fc::POP,
                   fc::Instruction::RETURN,
                 }},
-    fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
-    fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1}};
+    fc::Chunk{.name = "first", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
+    fc::Chunk{.name = "second", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}, .inCount = 0, .outCount = 1}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -1018,6 +1087,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
   std::vector expectedChunks{fc::Chunk{.name = "add",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::MULTIPOP,
                                            0x02,
                                            fc::Instruction::RETURN,
@@ -1026,6 +1097,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
                                        .outCount = 1},
                              fc::Chunk{.name = "main",
                                        .code = {
+                                         fc::RESERVE,
+                                         0x0,
                                          fc::RESERVE,
                                          0x01,
                                          fc::PUSH,
@@ -1037,8 +1110,7 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
                                          0x00,
                                          0x00,
                                          0x00,  // add is at index 0
-                                         fc::Instruction::MULTIPOP,
-                                         0x1,
+                                         fc::Instruction::POP,
                                          fc::Instruction::RETURN,
                                        }}};
 
@@ -1085,8 +1157,10 @@ TEST_F(TestBytecodeGenerator, ConstantsAreGlobal) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fluir::be::ConstantsArray expectedConstants{1.0, 2.0, 3.0, 4.0};
   std::vector expectedChunks{
-    fc::Chunk{.name = "foo", .code = {fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::MULTIPOP, 0x1, fc::RETURN}},
-    fc::Chunk{.name = "bar", .code = {fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::MULTIPOP, 0x1, fc::RETURN}},
+    fc::Chunk{.name = "foo",
+              .code = {fc::RESERVE, 0x0, fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::POP, fc::RETURN}},
+    fc::Chunk{.name = "bar",
+              .code = {fc::RESERVE, 0x0, fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::POP, fc::RETURN}},
   };
 
   input = prepare(std::move(input));
@@ -1124,19 +1198,19 @@ TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
   }();
   fc::Chunk expectedChunk{fc::Chunk{.name = "foo", .code = {[]() {
                                                      std::vector<uint8_t> bytes;
+                                                     bytes.emplace_back(fc::RESERVE);
+                                                     bytes.emplace_back(0x0);
                                                      for (size_t i = 0; i <= UINT8_MAX; ++i) {
                                                        bytes.emplace_back(fc::PUSH);
                                                        bytes.emplace_back(static_cast<uint8_t>(i));
+                                                       bytes.emplace_back(fc::POP);
                                                      }
                                                      bytes.emplace_back(fc::QUAD_PUSH);
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
                                                      bytes.emplace_back(static_cast<uint8_t>(0x01));
                                                      bytes.emplace_back(static_cast<uint8_t>(0));
-                                                     bytes.emplace_back(fc::MULTIPOP);
-                                                     bytes.emplace_back(255);
-                                                     bytes.emplace_back(fc::MULTIPOP);
-                                                     bytes.emplace_back(2);
+                                                     bytes.emplace_back(fc::POP);
                                                      bytes.emplace_back(fc::RETURN);
                                                      return bytes;
                                                    }()}}};
@@ -1174,6 +1248,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
   fluir::be::ConstantsArray expectedConstants{12.5, "print"s};
   fc::Chunk expectedChunk{.name = "main",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::PUSH,
                             0x00,  // arg 12.5
                             fc::DYN_CALL,
@@ -1232,29 +1308,33 @@ TEST_F(TestBytecodeGenerator, GeneratesEqualityComparisons) {
     .name = "eq",
     .code =
       {
+        fc::RESERVE,
+        0x0,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::EQ,
+        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
         fc::Instruction::EQ,
         fc::Instruction::NOT,
+        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x02,
         fc::Instruction::PUSH,
         0x03,
         fc::Instruction::EQ,
+        fc::Instruction::POP,
         fc::Instruction::PUSH,
         0x04,
         fc::Instruction::PUSH,
         0x05,
         fc::Instruction::EQ,
-        fc::Instruction::MULTIPOP,
-        0x4,
+        fc::Instruction::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -1307,11 +1387,33 @@ TEST_F(TestBytecodeGenerator, GeneratesSignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_LT,
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::I64_LE,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::I64_LT,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::I64_LE,
-        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::I64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::I64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::I64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::I64_LE,
+        fc::POP,
+        fc::Instruction::RETURN,
       },
   };
 
@@ -1363,11 +1465,33 @@ TEST_F(TestBytecodeGenerator, GeneratesUnsignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_LT,
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::U64_LE,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::U64_LT,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::U64_LE,
-        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::U64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::U64_LE,
+        fc::POP,
+        fc::Instruction::RETURN,
       },
   };
 
@@ -1419,11 +1543,33 @@ TEST_F(TestBytecodeGenerator, GeneratesFloatComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::F64_LT,
-        fc::Instruction::PUSH,     0x00, fc::Instruction::PUSH,   0x01, fc::Instruction::F64_LE,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::F64_LT,
-        fc::Instruction::PUSH,     0x01, fc::Instruction::PUSH,   0x00, fc::Instruction::F64_LE,
-        fc::Instruction::MULTIPOP, 0x4,  fc::Instruction::RETURN,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::F64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::F64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::F64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::F64_LE,
+        fc::POP,
+        fc::Instruction::RETURN,
       },
   };
 
@@ -1467,22 +1613,11 @@ TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
     .name = "logic",
     .code =
       {
-        fc::Instruction::PUSH,
-        0x00,
-        fc::Instruction::PUSH,
-        0x01,
-        fc::Instruction::AND,
-        fc::Instruction::PUSH,
-        0x00,
-        fc::Instruction::PUSH,
-        0x01,
-        fc::Instruction::OR,
-        fc::Instruction::PUSH,
-        0x00,
-        fc::Instruction::NOT,
-        fc::Instruction::MULTIPOP,
-        0x3,
-        fc::Instruction::RETURN,
+        fc::RESERVE,           0x0,     fc::Instruction::PUSH,   0x00,
+        fc::Instruction::PUSH, 0x01,    fc::Instruction::AND,    fc::POP,
+        fc::Instruction::PUSH, 0x00,    fc::Instruction::PUSH,   0x01,
+        fc::Instruction::OR,   fc::POP, fc::Instruction::PUSH,   0x00,
+        fc::Instruction::NOT,  fc::POP, fc::Instruction::RETURN,
       },
   };
 
@@ -1515,20 +1650,24 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
     .name = "cond",
     .code =
       {
+        fc::RESERVE,
+        0x1,
         fc::Instruction::PUSH,
         0x00,
+        fc::SET_VAL,
+        0x0,
+        fc::GET_VAL,
+        0x0,
         fc::Instruction::JUMP_IF_FALSE,
         0x0,
         0x0,
         0x0,
-        0x7,
-        fc::Instruction::MULTIPOP,
-        0x1,
+        0x5,
         fc::Instruction::JUMP_BY,
         0x0,
         0x0,
         0x0,
-        0x2,
+        0x0,
         fc::Instruction::MULTIPOP,
         0x1,
         fc::Instruction::RETURN,

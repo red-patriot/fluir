@@ -277,9 +277,6 @@ namespace fluir {
      *  |      MULTIPOP (inputs)
      *  |--> // REST...
      */
-    const auto type = ctx_.symbolTable.getType(conditional.type())->as<types::Product>();
-
-    // TODO: Handle outputs
     std::vector<WithID<types::TypeID>> inputs;
     inputs.reserve(conditional.inputs().size());
     for (const auto& [dependency, innerId] : conditional.inputs()) {
@@ -294,7 +291,7 @@ namespace fluir {
     auto scope = currentScope_->pushScope();
     currentScope_ = &scope;
     FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
-    for (const auto& [id, type] : inputs) {
+    for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
       auto slot = addLocalSlot(id, type);
       emitBytes(Instruction::SET_VAL, slot);
     }
@@ -302,8 +299,15 @@ namespace fluir {
     emitBytes(Instruction::GET_VAL, currentScope_->getLocalSlot(1));
 
     std::vector<WithID<types::TypeID>> outputs;
-    for (const auto& [id, idx] : std::ranges::views::enumerate(conditional.outputs())) {
-      outputs.emplace_back(id, type->at(idx));
+    if (conditional.outputs().size() == 0) {
+    } else if (conditional.outputs().size() == 1) {
+      outputs.emplace_back(conditional.outputs().front(), conditional.type());
+    } else {
+      auto product = ctx_.symbolTable.getType(conditional.type())->as<types::Product>();
+      for (const auto& [idx, id] : std::ranges::views::enumerate(conditional.outputs())) {
+        outputs.emplace_back(id, product->at(idx));
+        addLocalSlot(id, product->at(idx));
+      }
     }
 
     auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
@@ -313,6 +317,11 @@ namespace fluir {
 
     generate(conditional.elseBody(), inputs, outputs);
     patchJump(elseJump, current_->code.size());
+
+    // Push the outputs onto the stack
+    for (const auto& id : conditional.outputs()) {
+      emitBytes(Instruction::GET_VAL, currentScope_->getLocalSlot(id));
+    }
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :

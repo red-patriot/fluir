@@ -539,12 +539,25 @@ TEST(TestVM, DivideU8) {
   EXPECT_EQ(expected, uut.viewStack().back().asU8());
 }
 
+TEST(TestVM, SetValConsumes) {
+  auto expected = 4;
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {3_i8, 3_u8},
+                             .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, SET_VAL, 0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(1, uut.viewStack().size());
+}
+
 TEST(TestVM, GetSetValues) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
     .constants = {3_i8, 3_u8},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, EXIT}}}};
+    .chunks = {
+      fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, SET_VAL, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, EXIT}}}};
 
   fluir::VirtualMachine uut;
 

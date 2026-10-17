@@ -151,7 +151,7 @@ namespace fluir {
         case SET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            currentFrame_->basePtr[index] = stackTop();
+            currentFrame_->basePtr[index] = stackPopTop();
             break;
           }
         case EQ:

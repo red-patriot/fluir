@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace fluir::debug {
   AstPrinter::AstPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }

@@ -24,6 +24,9 @@ namespace fluir::types {
                         // TODO: remove this once things are updated to support generics
   };
 
+  /** Lets fmt format TypeIDs as their underlying integer value */
+  constexpr auto format_as(TypeID id) { return std::to_underlying(id); }
+
 }  // namespace fluir::types
 
 #endif

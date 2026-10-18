@@ -7,6 +7,7 @@
 #include <ranges>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 #include "compiler/types/traits.hpp"
 #include "compiler/utility/scope_guard.hpp"
@@ -296,7 +297,7 @@ namespace fluir {
       emitBytes(Instruction::SET_VAL, slot);
     }
     // Read the condition back to the stack to use it
-    emitBytes(Instruction::GET_VAL, currentScope_->getLocalSlot(1));
+    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
 
     std::vector<WithID<types::TypeID>> outputs;
     if (conditional.outputs().size() == 0) {
@@ -320,7 +321,7 @@ namespace fluir {
 
     // Push the outputs onto the stack
     for (const auto& id : conditional.outputs()) {
-      emitBytes(Instruction::GET_VAL, currentScope_->getLocalSlot(id));
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
     }
   }
 
@@ -418,7 +419,7 @@ namespace fluir {
     doGenerate(node);
     // TODO: Handle sizes generically based by type
     const auto* type = ctx_.symbolTable.getType(node.type());
-    if (auto slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
+    if (uint8_t slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
       // No emit for no slots
     } else if (slotCount == 1) {
       emitByte(Instruction::POP);
@@ -455,7 +456,7 @@ namespace fluir {
       diagnostic::emitInternalError("Encountered unexpected null");
     }
 
-    return currentScope_->addLocalSlot(id, *ptr);
+    return static_cast<uint8_t>(currentScope_->addLocalSlot(id, *ptr));
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

@@ -71,8 +71,10 @@ namespace fluir::fe {
     std::unordered_set<ID> inputIds = {pt.condition.innerId};
     std::vector<ast::ScopeInput> inputs;
     for (const auto [idx, ptInput] : pt.inputs | std::ranges::views::enumerate) {
-      inputs.emplace_back(getDependency(pt.id, idx + 1),  // Index 0 is the condition, so inc by 1 for the other inputs
-                          ptInput.innerId);
+      inputs.emplace_back(
+        getDependency(pt.id,
+                      static_cast<unsigned>(idx + 1)),  // Index 0 is the condition, so inc by 1 for the other inputs
+        ptInput.innerId);
       inputIds.insert(ptInput.innerId);
     }
     std::unordered_set<ID> outputIds;

@@ -54,7 +54,6 @@ namespace fluir {
           return checkType(ctx, node->as<ast::Conditional>());
       }
       diagnostic::emitInternalError("Unknown node kind encountered");
-      return NoResult;
     }
   }  // namespace
 

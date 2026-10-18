@@ -1,6 +1,7 @@
 #include "compiler/types/type.hpp"
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace fluir::types {
   Type::Type(std::string name) : name_(std::move(name)) { }

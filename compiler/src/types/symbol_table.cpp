@@ -6,15 +6,9 @@
 #include <iterator>
 
 namespace fluir::types {
-  SymbolTable::SymbolTable() : types_({{ID_INVALID, Type{""}}}), typeNames_({{"", ID_INVALID}}) { }
-
-  TypeID SymbolTable::addType(Type t) {
-    auto [it, added] = typeNames_.try_emplace(t.name(), nextTypeID_);
-    if (added) {
-      types_.insert({nextTypeID_, std::move(t)});
-      nextTypeID_ = static_cast<TypeID>(static_cast<std::uint64_t>(nextTypeID_) + 1);
-    }
-    return it->second;
+  SymbolTable::SymbolTable() {
+    types_.insert({ID_INVALID, std::make_unique<Type>("")});
+    typeNames_.insert({"", ID_INVALID});
   }
 
   TypeID SymbolTable::getTypeID(const std::string& name) const {
@@ -26,7 +20,7 @@ namespace fluir::types {
 
   Type const* SymbolTable::getType(TypeID id) const {
     if (id != ID_INVALID && types_.contains(id)) {
-      return &types_.at(id);
+      return types_.at(id).get();
     }
     return nullptr;
   }

@@ -76,6 +76,9 @@ namespace fluir {
           emitInstructionWithArg(*i, *(i + 1));
           ++i;
           break;
+        case code::Instruction::QUAD_PUSH:
+        case code::Instruction::JUMP_BY:
+        case code::Instruction::JUMP_IF_FALSE:
         case code::Instruction::CALL:
         case code::Instruction::DYN_CALL:
           emitInstruction(*i++);

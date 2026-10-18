@@ -19,7 +19,9 @@ set(FLUIR_FRONTEND_TEST_SOURCES
 )
 
 set(FLUIR_AST_TEST_SOURCES
-    ast/ast_errors.test.cpp ast/ast_parser_integration.test.cpp
+    ast/ast_errors.test.cpp
+    ast/ast_parser_integration.test.cpp
+    ast/dependency.test.cpp
     # TODO: Restore this file in a minute ast/ast.test.cpp
 )
 

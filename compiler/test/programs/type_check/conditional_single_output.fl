@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="-49" y="-29" z="1" w="86" h="45">
+    <body>
+      <conditional id="1" x="15" y="3" z="2" w="27" h="24">
+        <condition inner="1" y="10"/>
+        <input/>
+        <output>
+          <port inner="2" y="11"/>
+        </output>
+        <then>
+          <constant id="3" x="8" y="5" z="3" w="12" h="5">
+            <f64>0.000000</f64>
+          </constant>
+          <conduit id="6" input="3">
+            <output target="2" index="0"/>
+          </conduit>
+        </then>
+        <else>
+          <constant id="4" x="11" y="5" z="3" w="12" h="5">
+            <f64>1.000000</f64>
+          </constant>
+          <conduit id="5" input="4">
+            <output target="2" index="0"/>
+          </conduit>
+        </else>
+      </conditional>
+      <constant id="2" x="3" y="12" z="2" w="8" h="5">
+        <bool>true</bool>
+      </constant>
+      <call target="print" id="4" x="65" y="8" z="2" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <unary id="5" x="50" y="13" z="2" w="8" h="5" operator="-"/>
+      <conduit id="3" input="2">
+        <output target="1" index="0"/>
+      </conduit>
+      <conduit id="6" input="1">
+        <output target="5" index="0"/>
+      </conduit>
+      <conduit id="7" input="5">
+        <output target="4" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

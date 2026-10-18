@@ -539,12 +539,25 @@ TEST(TestVM, DivideU8) {
   EXPECT_EQ(expected, uut.viewStack().back().asU8());
 }
 
+TEST(TestVM, SetValConsumes) {
+  auto expected = 4;
+  fluir::code::ByteCode code{.header = {},
+                             .constants = {3_i8, 3_u8},
+                             .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, SET_VAL, 0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_EQ(1, uut.viewStack().size());
+}
+
 TEST(TestVM, GetSetValues) {
   auto expected = 4;
   fluir::code::ByteCode code{
     .header = {},
     .constants = {3_i8, 3_u8},
-    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, POP, EXIT}}}};
+    .chunks = {
+      fc::Chunk{.name = "main", .code = {RESERVE, 1, PUSH, 0, SET_VAL, 0, GET_VAL, 0, I64_INC, SET_VAL, 0, EXIT}}}};
 
   fluir::VirtualMachine uut;
 
@@ -792,6 +805,34 @@ TEST(TestVM, NegateTrue) {
 TEST(TestVM, NegateFalse) {
   fc::ByteCode code{
     .header = {}, .constants = {FALSE_VALUE}, .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, NOT, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, HandlesConditionals1) {
+  fc::ByteCode code{
+    .header = {},
+    .constants = {FALSE_VALUE, TRUE_VALUE},
+    .chunks = {fc::Chunk{
+      .name = "main",
+      .code = {PUSH, 0, JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x7, PUSH, 0x1, JUMP_BY, 0x0, 0x0, 0x0, 0x2, PUSH, 0x0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_FALSE(uut.viewStack().back().asBool());
+}
+
+TEST(TestVM, HandlesConditionals2) {
+  fc::ByteCode code{
+    .header = {},
+    .constants = {FALSE_VALUE, TRUE_VALUE},
+    .chunks = {fc::Chunk{
+      .name = "main",
+      .code = {PUSH, 1, JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x7, PUSH, 0x1, JUMP_BY, 0x0, 0x0, 0x0, 0x2, PUSH, 0x0, EXIT}}}};
 
   fluir::VirtualMachine uut;
 

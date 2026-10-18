@@ -55,7 +55,7 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunction) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 3, .name = "main", .statements = {}});
 
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  fc::Chunk expectedChunk{.name = "main", .code = {fc::Instruction::RETURN}};
+  fc::Chunk expectedChunk{.name = "main", .code = {fc::RESERVE, 0x0, fc::RETURN}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -74,8 +74,8 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyFunctions) {
   input.declarations.emplace_back(fa::FunctionDecl{.id = 2, .name = "foo", .statements = {}});
 
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  std::vector expectedChunks{fc::Chunk{.name = "main", .code = {fc::Instruction::RETURN}},
-                             fc::Chunk{.name = "foo", .code = {fc::Instruction::RETURN}}};
+  std::vector expectedChunks{fc::Chunk{.name = "main", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}},
+                             fc::Chunk{.name = "foo", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -108,6 +108,8 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleBinaryExpression) {
     .name = "foo",
     .code =
       {
+        fc::RESERVE,
+        0x0,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
@@ -144,6 +146,8 @@ TEST_F(TestBytecodeGenerator, GeneratesSimpleUnaryExpression) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "bar",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::F64_NEG,
@@ -167,7 +171,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   input.declarations.push_back([&]() { return fa::Declaration{.id = 3, .name = "bar", .statements = {}}; }());
   auto& decl = input.declarations.back();
   {
-    auto shared = fa::createDependency<fa::LocalWrite>(
+    auto shared = fa::createNode<fa::LocalWrite>(
       fa::createDependency<fa::BinaryOp>(
         fluir::Operator::SLASH,
         fa::createDependency<fa::UnaryOp>(
@@ -182,7 +186,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
     decl.statements.push_back(std::move(shared));
   }
   {
-    auto binaryDependent = fa::createDependency<fa::BinaryOp>(
+    auto binaryDependent = fa::createNode<fa::BinaryOp>(
       fluir::Operator::PLUS,
       fa::createDependency<fa::Constant>(100.0, FullID{3, 3}, fluir::FlowGraphLocation{}),
       fa::createDependency<fa::LocalRead>(SHARED_ID.back(), FullID{3, 1}, fluir::FlowGraphLocation{}),
@@ -191,7 +195,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
     decl.statements.push_back(std::move(binaryDependent));
   }
   {
-    auto unaryDependent = fa::createDependency<fa::UnaryOp>(
+    auto unaryDependent = fa::createNode<fa::UnaryOp>(
       fluir::Operator::MINUS,
       fa::createDependency<fa::LocalRead>(SHARED_ID.back(), FullID{3, 7}, fluir::FlowGraphLocation{}),
       FullID{3, 7},
@@ -202,13 +206,13 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithSharedNodes) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "bar",
                           .code = {
-                            fc::PUSH,    0x0,         fc::F64_NEG, fc::PUSH,     0x1,
-                            fc::F64_DIV,  // No POP, write {3,4}
-                            fc::PUSH,    0x2,
-                            fc::GET_VAL,  // Read {3,4}
-                            0x0,         fc::F64_ADD, fc::POP,
-                            fc::GET_VAL,  // Read {3,4}
-                            0x0,         fc::F64_NEG, fc::POP,     fc::MULTIPOP, 0x1, fc::RETURN,
+                            fc::RESERVE, 0x1,     fc::PUSH,     0x0, fc::F64_NEG, fc::PUSH, 0x1,
+                            fc::F64_DIV,  // write {3,4}
+                            fc::SET_VAL, 0x0,     fc::PUSH,     0x2, fc::GET_VAL,
+                            0x0,  // Read {3,4}
+                            fc::F64_ADD, fc::POP, fc::GET_VAL,
+                            0x0,  // Read {3,4}
+                            fc::F64_NEG, fc::POP, fc::MULTIPOP, 0x1, fc::RETURN,
                           }};
 
   input = prepare(std::move(input));
@@ -229,7 +233,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
   auto& decl = input.declarations.back();
 
   {
-    auto shared1 = fa::createDependency<fa::LocalWrite>(
+    auto shared1 = fa::createNode<fa::LocalWrite>(
       fa::createDependency<fa::UnaryOp>(
         fluir::Operator::MINUS,
         fa::createDependency<fa::BinaryOp>(
@@ -244,7 +248,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
     decl.statements.push_back(std::move(shared1));
   }
   {
-    auto shared2 = fa::createDependency<fa::LocalWrite>(
+    auto shared2 = fa::createNode<fa::LocalWrite>(
       fa::createDependency<fa::BinaryOp>(
         fluir::Operator::STAR,
         fa::createDependency<fa::LocalRead>(SHARED_1.back(), FullID{SHARED_2}, fluir::FlowGraphLocation{}),
@@ -255,7 +259,7 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
     decl.statements.push_back(std::move(shared2));
   }
   {
-    auto binary = fa::createDependency<fa::BinaryOp>(
+    auto binary = fa::createNode<fa::BinaryOp>(
       fluir::Operator::PLUS,
       fa::createDependency<fa::LocalRead>(SHARED_2.back(), FullID{1, 8}, fluir::FlowGraphLocation{}),
       fa::createDependency<fa::LocalRead>(SHARED_1.back(), FullID{1, 8}, fluir::FlowGraphLocation{}),
@@ -268,8 +272,9 @@ TEST_F(TestBytecodeGenerator, GeneratesExpressionWithMultipleSharedNodes) {
   fc::Chunk expectedChunk{
     .name = "main",
     .code = {
-      fc::PUSH,    0x0, fc::PUSH,    0x1, fc::I64_MUL, fc::I64_NEG, fc::GET_VAL,  0x0, fc::PUSH,   0x0, fc::I64_MUL,
-      fc::GET_VAL, 0x1, fc::GET_VAL, 0x0, fc::I64_ADD, fc::POP,     fc::MULTIPOP, 0x2, fc::RETURN,
+      fc::RESERVE, 0x2,         fc::PUSH, 0x0,         fc::PUSH, 0x1,          fc::I64_MUL, fc::I64_NEG, fc::SET_VAL,
+      0x0,         fc::GET_VAL, 0x0,      fc::PUSH,    0x0,      fc::I64_MUL,  fc::SET_VAL, 0x1,         fc::GET_VAL,
+      0x1,         fc::GET_VAL, 0x0,      fc::I64_ADD, fc::POP,  fc::MULTIPOP, 0x2,         fc::RETURN,
     }};
 
   input = prepare(std::move(input));
@@ -300,6 +305,8 @@ TEST_F(TestBytecodeGenerator, GeneratesIntConstants) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::POP,
@@ -344,6 +351,8 @@ TEST_F(TestBytecodeGenerator, GeneratesUintConstants) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::POP,
@@ -402,15 +411,36 @@ TEST_F(TestBytecodeGenerator, GeneratesIntBinaryExpression) {
   }());
 
   fc::Header expectedHeader = {.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
-  fc::Chunk expectedChunk{
-    .name = "ints",
-    .code = {
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_ADD, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_SUB, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_MUL, fc::Instruction::POP,
-      fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_DIV, fc::Instruction::POP,
-      fc::Instruction::RETURN,
-    }};
+  fc::Chunk expectedChunk{.name = "ints",
+                          .code = {
+                            fc::RESERVE,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_ADD,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x2,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_SUB,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_MUL,
+                            fc::Instruction::POP,
+                            fc::Instruction::PUSH,
+                            0x0,
+                            fc::Instruction::PUSH,
+                            0x01,
+                            fc::Instruction::I64_DIV,
+                            fc::Instruction::POP,
+                            fc::Instruction::RETURN,
+                          }};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -459,10 +489,32 @@ TEST_F(TestBytecodeGenerator, GeneratesUintBinaryExpression) {
     .name = "ints",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_ADD, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x02, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_SUB, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_MUL, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_DIV, fc::Instruction::POP,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_ADD,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_SUB,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_MUL,
+        fc::Instruction::POP,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_DIV,
+        fc::Instruction::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -484,18 +536,18 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
 
     auto integer = fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
     auto floatPoint = fa::createDependency<fa::Constant>(12.4, FullID{3, 3}, fluir::FlowGraphLocation{});
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_F64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(floatPoint), FullID{3, 3}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I64, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_F64, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I64, fa::clone<fa::Constant>(floatPoint), FullID{3, 3}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_U64, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I8, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I16, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I64, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -503,6 +555,8 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IF,
@@ -551,12 +605,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
     fa::FunctionDecl decl{.id = 3, .name = "ints", .statements = {}};
 
     auto integer = fa::createDependency<fa::Constant>(static_cast<I32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U32, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_U8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_U32, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_U16, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_U8, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -564,6 +618,8 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "ints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_IU,
@@ -609,6 +665,8 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "uints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UF,
@@ -637,12 +695,12 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
     fa::FunctionDecl decl{.id = 3, .name = "uints", .statements = {}};
 
     auto integer = fa::createDependency<fa::Constant>(static_cast<U32>(8), FullID{3, 1}, fluir::FlowGraphLocation{});
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I32, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I16, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
-    decl.statements.push_back(
-      std::make_unique<fa::Cast>(ft::ID_I8, fa::clone(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I32, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I16, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.push_back(std::make_unique<fa::Cast>(
+      ft::ID_I8, fa::clone<fa::Constant>(integer), FullID{3, 2}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -650,6 +708,8 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fc::Chunk expectedChunk{.name = "uints",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::Instruction::PUSH,
                             0x00,
                             fc::Instruction::CAST_UI,
@@ -689,17 +749,17 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
       fa::createDependency<fa::Constant>(static_cast<U64>(8), FullID{3, 3}, fluir::FlowGraphLocation{});
 
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(integer), FullID{3, 4}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone<fa::Constant>(integer), FullID{3, 4}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(integer), FullID{3, 5}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone<fa::Constant>(integer), FullID{3, 5}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(floatingPt), FullID{3, 6}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone<fa::Constant>(floatingPt), FullID{3, 6}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(floatingPt), FullID{3, 7}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone<fa::Constant>(floatingPt), FullID{3, 7}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::PLUS_PLUS, fa::clone(unsignedInt), FullID{3, 8}, fluir::FlowGraphLocation{}));
+      fluir::Operator::PLUS_PLUS, fa::clone<fa::Constant>(unsignedInt), FullID{3, 8}, fluir::FlowGraphLocation{}));
     decl.statements.push_back(std::make_unique<fa::UnaryOp>(
-      fluir::Operator::MINUS_MINUS, fa::clone(unsignedInt), FullID{3, 9}, fluir::FlowGraphLocation{}));
+      fluir::Operator::MINUS_MINUS, fa::clone<fa::Constant>(unsignedInt), FullID{3, 9}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -709,9 +769,9 @@ TEST_F(TestBytecodeGenerator, GeneratesIncrementDecrementOperations) {
     .name = "inc_dec",
     .code =
       {
-        fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC, fc::POP,  fc::PUSH,
-        0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,     fc::PUSH, 0x2,
-        fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
+        fc::RESERVE, 0x0,      fc::PUSH,    0x0,         fc::I64_INC, fc::POP,  fc::PUSH,    0x0,         fc::I64_DEC,
+        fc::POP,     fc::PUSH, 0x1,         fc::F64_INC, fc::POP,     fc::PUSH, 0x1,         fc::F64_DEC, fc::POP,
+        fc::PUSH,    0x2,      fc::U64_INC, fc::POP,     fc::PUSH,    0x2,      fc::U64_DEC, fc::POP,     fc::RETURN,
       },
   };
 
@@ -743,14 +803,14 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
   fa::AST input;
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 2, .name = "main", .statements = {}};
-    std::vector<fa::UniqueNode> args;
+    std::vector<fa::Dependency> args;
     args.emplace_back(
       fa::createDependency<fa::Constant>(static_cast<I32>(2), FullID{2, 1}, fluir::FlowGraphLocation{}));
     args.emplace_back(
       fa::createDependency<fa::Constant>(static_cast<I32>(3), FullID{2, 2}, fluir::FlowGraphLocation{}));
 
     decl.statements.emplace_back(
-      fa::createDependency<fa::Call>("add_nums"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
+      fa::createNode<fa::Call>("add_nums"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
 
     return decl;
   }());
@@ -760,7 +820,7 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
     decl.parameters.push_back(fa::FunctionDecl::Parameter{.id = 2, .name = "b", .typeName = "I32"});
     decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
 
-    decl.statements.push_back(fa::createDependency<fa::LocalWrite>(
+    decl.statements.push_back(fa::createNode<fa::LocalWrite>(
       fluir::FullID{3, 1},
       fa::createDependency<fa::BinaryOp>(
         fluir::Operator::PLUS,
@@ -777,6 +837,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
   std::vector expectedChunks{fc::Chunk{.name = "main",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::RESERVE,  // Reserve space for the return
                                            0x01,
                                            fc::PUSH,
@@ -794,6 +856,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                              fc::Chunk{.name = "add_nums",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::GET_VAL,
                                            0x1,
                                            fc::GET_VAL,
@@ -801,8 +865,6 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCalls) {
                                            fc::I64_ADD,
                                            fc::SET_VAL,
                                            0x0,
-                                           fc::MULTIPOP,  // Pop off the returned temporary
-                                           0x01,
                                            fc::MULTIPOP,
                                            0x2,
                                            fc::Instruction::RETURN,
@@ -826,11 +888,11 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
   fa::AST input;
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
-    std::vector<fa::UniqueNode> args;
+    std::vector<fa::Dependency> args;
     args.emplace_back(
       fa::createDependency<fa::Constant>(static_cast<I32>(7), FullID{1, 1}, fluir::FlowGraphLocation{}));
     decl.statements.emplace_back(
-      fa::createDependency<fa::Call>("sink"s, std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
+      fa::createNode<fa::Call>("sink"s, std::move(args), FullID{1, 2}, fluir::FlowGraphLocation{}));
     return decl;
   }());
   input.declarations.emplace_back([]() {
@@ -843,6 +905,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
   std::vector expectedChunks{fc::Chunk{.name = "main",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::PUSH,
                                            0x00,  // arg 7
                                            fc::CALL,
@@ -850,12 +914,14 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoReturn) {
                                            0x00,
                                            0x00,
                                            0x01,
-                                           // No return => no POP instruction
+                                           // No return => no popping instruction
                                            fc::Instruction::RETURN,
                                          }},
                              fc::Chunk{.name = "sink",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::MULTIPOP,
                                            0x01,
                                            fc::Instruction::RETURN,
@@ -879,16 +945,16 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
   fa::AST input;
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
-    decl.statements.emplace_back(fa::createDependency<fa::Call>(
-      "get_val"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createNode<fa::Call>("get_val"s, std::vector<fa::Dependency>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
     return decl;
   }());
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 2, .name = "get_val", .statements = {}};
-    decl.statements.emplace_back(fa::createDependency<fa::LocalWrite>(
-      FullID{2, 1},
-      fa::createDependency<fa::Constant>(12, FullID{2, 2}, fluir::FlowGraphLocation{}),
-      fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createNode<fa::LocalWrite>(FullID{2, 1},
+                                     fa::createDependency<fa::Constant>(12, FullID{2, 2}, fluir::FlowGraphLocation{}),
+                                     fluir::FlowGraphLocation{}));
     decl.returnValue = fa::FunctionDecl::Return{.id = 1, .typeName = "I32"};
     return decl;
   }());
@@ -897,6 +963,8 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
   std::vector expectedChunks{fc::Chunk{.name = "main",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::RESERVE,
                                            0x01,
                                            fc::CALL,
@@ -910,12 +978,12 @@ TEST_F(TestBytecodeGenerator, GeneratesFunctionCallWithNoArguments) {
                              fc::Chunk{.name = "get_val",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::Instruction::PUSH,
                                            0x0,
                                            fc::Instruction::SET_VAL,
                                            0x0,
-                                           fc::Instruction::MULTIPOP,  // Pop off the returned temporary
-                                           0x01,
                                            fc::Instruction::RETURN,
                                          },
                                        .inCount = 0,
@@ -937,10 +1005,10 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
   fa::AST input;
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 1, .name = "main", .statements = {}};
-    decl.statements.emplace_back(fa::createDependency<fa::Call>(
-      "first"s, std::vector<fa::UniqueNode>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
-    decl.statements.emplace_back(fa::createDependency<fa::Call>(
-      "second"s, std::vector<fa::UniqueNode>{}, FullID{1, 2}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createNode<fa::Call>("first"s, std::vector<fa::Dependency>{}, FullID{1, 1}, fluir::FlowGraphLocation{}));
+    decl.statements.emplace_back(
+      fa::createNode<fa::Call>("second"s, std::vector<fa::Dependency>{}, FullID{1, 2}, fluir::FlowGraphLocation{}));
     return decl;
   }());
   input.declarations.emplace_back([]() {
@@ -960,13 +1028,15 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
               .code =
                 {
                   fc::RESERVE,
+                  0x0,
+                  fc::RESERVE,
                   0x01,
                   fc::CALL,
                   0x00,
                   0x00,
                   0x00,
                   0x01,
-                  fc::Instruction::POP,
+                  fc::POP,
                   fc::RESERVE,
                   0x01,
                   fc::CALL,
@@ -974,11 +1044,11 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleFunctionCalls) {
                   0x00,
                   0x00,
                   0x02,
-                  fc::Instruction::POP,
+                  fc::POP,
                   fc::Instruction::RETURN,
                 }},
-    fc::Chunk{.name = "first", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
-    fc::Chunk{.name = "second", .code = {fc::Instruction::RETURN}, .inCount = 0, .outCount = 1}};
+    fc::Chunk{.name = "first", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}, .inCount = 0, .outCount = 1},
+    fc::Chunk{.name = "second", .code = {fc::RESERVE, 0x0, fc::Instruction::RETURN}, .inCount = 0, .outCount = 1}};
 
   input = prepare(std::move(input));
   TestWriter writer;
@@ -1003,13 +1073,13 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
   }());
   input.declarations.emplace_back([]() {
     auto decl = fa::FunctionDecl{.id = 2, .name = "main", .statements = {}};
-    std::vector<fa::UniqueNode> args;
+    std::vector<fa::Dependency> args;
     args.emplace_back(
       fa::createDependency<fa::Constant>(static_cast<I32>(10), FullID{2, 1}, fluir::FlowGraphLocation{}));
     args.emplace_back(
       fa::createDependency<fa::Constant>(static_cast<I32>(20), FullID{2, 2}, fluir::FlowGraphLocation{}));
     decl.statements.emplace_back(
-      fa::createDependency<fa::Call>("add"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
+      fa::createNode<fa::Call>("add"s, std::move(args), FullID{2, 3}, fluir::FlowGraphLocation{}));
     return decl;
   }());
 
@@ -1017,6 +1087,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
   std::vector expectedChunks{fc::Chunk{.name = "add",
                                        .code =
                                          {
+                                           fc::RESERVE,
+                                           0x0,
                                            fc::MULTIPOP,
                                            0x02,
                                            fc::Instruction::RETURN,
@@ -1025,6 +1097,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCalleeChunkForFunctionWithParameters) {
                                        .outCount = 1},
                              fc::Chunk{.name = "main",
                                        .code = {
+                                         fc::RESERVE,
+                                         0x0,
                                          fc::RESERVE,
                                          0x01,
                                          fc::PUSH,
@@ -1083,8 +1157,10 @@ TEST_F(TestBytecodeGenerator, ConstantsAreGlobal) {
   fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
   fluir::be::ConstantsArray expectedConstants{1.0, 2.0, 3.0, 4.0};
   std::vector expectedChunks{
-    fc::Chunk{.name = "foo", .code = {fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::POP, fc::RETURN}},
-    fc::Chunk{.name = "bar", .code = {fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::POP, fc::RETURN}},
+    fc::Chunk{.name = "foo",
+              .code = {fc::RESERVE, 0x0, fc::PUSH, 0x00, fc::PUSH, 0x01, fc::F64_ADD, fc::POP, fc::RETURN}},
+    fc::Chunk{.name = "bar",
+              .code = {fc::RESERVE, 0x0, fc::PUSH, 0x02, fc::PUSH, 0x03, fc::F64_ADD, fc::POP, fc::RETURN}},
   };
 
   input = prepare(std::move(input));
@@ -1122,6 +1198,8 @@ TEST_F(TestBytecodeGenerator, EmitsQPushForLotsOfConstants) {
   }();
   fc::Chunk expectedChunk{fc::Chunk{.name = "foo", .code = {[]() {
                                                      std::vector<uint8_t> bytes;
+                                                     bytes.emplace_back(fc::RESERVE);
+                                                     bytes.emplace_back(0x0);
                                                      for (size_t i = 0; i <= UINT8_MAX; ++i) {
                                                        bytes.emplace_back(fc::PUSH);
                                                        bytes.emplace_back(static_cast<uint8_t>(i));
@@ -1156,10 +1234,10 @@ TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
         []() {
           fluir::ast::DataFlowGraph graph;
 
-          std::vector<fa::UniqueNode> args;
+          std::vector<fa::Dependency> args;
           args.emplace_back(fa::createDependency<fa::Constant>(12.5, FullID{1, 2}, fluir::FlowGraphLocation{}));
           graph.emplace_back(
-            fa::createDependency<fa::Call>("print"s, std::move(args), FullID{1, 1}, fluir::FlowGraphLocation{}));
+            fa::createNode<fa::Call>("print"s, std::move(args), FullID{1, 1}, fluir::FlowGraphLocation{}));
           return graph;
         }(),
       }};
@@ -1170,6 +1248,8 @@ TEST_F(TestBytecodeGenerator, GeneratesCodeForBuiltinFunctions) {
   fluir::be::ConstantsArray expectedConstants{12.5, "print"s};
   fc::Chunk expectedChunk{.name = "main",
                           .code = {
+                            fc::RESERVE,
+                            0x0,
                             fc::PUSH,
                             0x00,  // arg 12.5
                             fc::DYN_CALL,
@@ -1228,6 +1308,8 @@ TEST_F(TestBytecodeGenerator, GeneratesEqualityComparisons) {
     .name = "eq",
     .code =
       {
+        fc::RESERVE,
+        0x0,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
@@ -1305,10 +1387,32 @@ TEST_F(TestBytecodeGenerator, GeneratesSignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::I64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::I64_LE, fc::Instruction::POP,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::I64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::I64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::I64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::I64_LE,
+        fc::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -1361,10 +1465,32 @@ TEST_F(TestBytecodeGenerator, GeneratesUnsignedComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::U64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::U64_LE, fc::Instruction::POP,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::U64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::U64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::U64_LE,
+        fc::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -1417,10 +1543,32 @@ TEST_F(TestBytecodeGenerator, GeneratesFloatComparisons) {
     .name = "cmp",
     .code =
       {
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x00, fc::Instruction::PUSH, 0x01, fc::Instruction::F64_LE, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LT, fc::Instruction::POP,
-        fc::Instruction::PUSH,   0x01, fc::Instruction::PUSH, 0x00, fc::Instruction::F64_LE, fc::Instruction::POP,
+        fc::RESERVE,
+        0x0,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::F64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::F64_LE,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::F64_LT,
+        fc::POP,
+        fc::Instruction::PUSH,
+        0x01,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::Instruction::F64_LE,
+        fc::POP,
         fc::Instruction::RETURN,
       },
   };
@@ -1465,22 +1613,465 @@ TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
     .name = "logic",
     .code =
       {
+        fc::RESERVE,           0x0,     fc::Instruction::PUSH,   0x00,
+        fc::Instruction::PUSH, 0x01,    fc::Instruction::AND,    fc::POP,
+        fc::Instruction::PUSH, 0x00,    fc::Instruction::PUSH,   0x01,
+        fc::Instruction::OR,   fc::POP, fc::Instruction::PUSH,   0x00,
+        fc::Instruction::NOT,  fc::POP, fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fluir::ast::ScopeInput>{},
+      std::vector<fluir::ID>{},
+      fa::DataFlowGraph{},
+      fa::DataFlowGraph{})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::RESERVE,
+        0x1,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::SET_VAL,
+        0x0,
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x0,
+        fc::Instruction::MULTIPOP,
+        0x1,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fluir::ast::ScopeInput>{},
+      std::vector<fluir::ID>{},
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(std::make_unique<fa::BinaryOp>(
+          fluir::Operator::PLUS,
+          fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+          fa::createDependency<fa::Constant>(1, FullID{3, 0, 2}, fluir::FlowGraphLocation{}),
+          FullID{3, 0, 3},
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(std::make_unique<fa::BinaryOp>(
+          fluir::Operator::MINUS,
+          fa::createDependency<fa::Constant>(3, FullID{3, 1, 5}, fluir::FlowGraphLocation{}),
+          fa::createDependency<fa::Constant>(1, FullID{3, 1, 4}, fluir::FlowGraphLocation{}),
+          FullID{3, 1, 6},
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: true, 7, 1, 3
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::RESERVE,
+        0x1,
+        fc::Instruction::PUSH,
+        0x00,
+        fc::SET_VAL,
+        0x0,
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xB,
+        // THEN
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::I64_ADD,
+        fc::Instruction::POP,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x6,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::I64_SUB,
+        fc::Instruction::POP,
+        fc::MULTIPOP,
+        0x1,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithInputs) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fa::ScopeInput>{[]() {
+        std::vector<fa::ScopeInput> inputs;
+        inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+        inputs.emplace_back(fa::createDependency<fa::Constant>(3, FullID{3, 3}, fluir::FlowGraphLocation{}), 15);
+        return inputs;
+      }()},
+      std::vector<fluir::ID>{},
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(std::make_unique<fa::BinaryOp>(
+          fluir::Operator::PLUS,
+          fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+          fa::createDependency<fa::LocalRead>(14, FullID{3, 0}, fluir::FlowGraphLocation{}),  // 1
+          FullID{3, 0, 3},
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(std::make_unique<fa::BinaryOp>(
+          fluir::Operator::MINUS,
+          fa::createDependency<fa::LocalRead>(14, FullID{3, 1}, fluir::FlowGraphLocation{}),  // 1
+          fa::createDependency<fa::LocalRead>(15, FullID{3, 1}, fluir::FlowGraphLocation{}),  // 3
+          FullID{3, 1, 6},
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, 3, true, 7
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::RESERVE,
+        0x3,
         fc::Instruction::PUSH,
         0x00,
         fc::Instruction::PUSH,
         0x01,
-        fc::Instruction::AND,
-        fc::Instruction::POP,
         fc::Instruction::PUSH,
-        0x00,
+        0x02,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::SET_VAL,
+        0x1,  // input 1
+        fc::SET_VAL,
+        0x2,  // input 0
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xB,
+        // THEN
         fc::Instruction::PUSH,
-        0x01,
-        fc::Instruction::OR,
-        fc::Instruction::POP,
+        0x3,
+        fc::Instruction::GET_VAL,
+        0x2,  // input 0
+        fc::Instruction::I64_ADD,
+        fc::POP,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x6,
+        // ELSE
+        fc::Instruction::GET_VAL,
+        0x2,  // input 0
+        fc::Instruction::GET_VAL,
+        0x1,  // input 1
+        fc::Instruction::I64_SUB,
+        fc::POP,
+        fc::MULTIPOP,
+        0x3,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithOutput) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fa::ScopeInput>{[]() {
+        std::vector<fa::ScopeInput> inputs;
+        inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+        return inputs;
+      }()},
+      std::vector<fluir::ID>{12},
+      // THEN
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 12},
+          fa::createDependency<fa::BinaryOp>(
+            fluir::Operator::PLUS,
+            fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+            fa::createDependency<fa::LocalRead>(14, FullID{3, 0}, fluir::FlowGraphLocation{}),  // 1
+            FullID{3, 0, 3},
+            fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      // ELSE
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 12},
+          fa::createDependency<fa::Constant>(13, FullID{3, 1, 19}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, true, 13
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::RESERVE,
+        0x3,
         fc::Instruction::PUSH,
-        0x00,
-        fc::Instruction::NOT,
-        fc::Instruction::POP,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::SET_VAL,
+        0x1,  // input 0
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xC,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x1,  // input 0
+        fc::Instruction::I64_ADD,
+        fc::Instruction::SET_VAL,
+        0x2,  // output
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x4,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::SET_VAL,
+        0x2,  // output
+        fc::GET_VAL,
+        0x2,
+        fc::POP,
+        fc::Instruction::MULTIPOP,
+        0x3,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Conditional>(
+      FullID{3, 1},
+      fluir::FlowGraphLocation{},
+      fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+      std::vector<fa::ScopeInput>{[]() {
+        std::vector<fa::ScopeInput> inputs;
+        inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+        return inputs;
+      }()},
+      std::vector<fluir::ID>{12, 13},
+      // THEN
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 12},
+          fa::createDependency<fa::BinaryOp>(
+            fluir::Operator::PLUS,
+            fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+            fa::createDependency<fa::LocalRead>(14, FullID{3, 0, 2}, fluir::FlowGraphLocation{}),  // 1
+            FullID{3, 0, 3},
+            fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 0, 13},
+          fa::createDependency<fa::Constant>(false, FullID{3, 0, 4}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()},
+      // ELSE
+      fa::DataFlowGraph{[]() {
+        fa::DataFlowGraph graph;
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 12},
+          fa::createDependency<fa::Constant>(13, FullID{3, 1, 19}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        graph.emplace_back(std::move(fa::createNode<fa::LocalWrite>(
+          FullID{3, 1, 13},
+          fa::createDependency<fa::Constant>(true, FullID{3, 1, 21}, fluir::FlowGraphLocation{}),
+          fluir::FlowGraphLocation{})));
+        return graph;
+      }()})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, true, 7, false, 13
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x4,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::SET_VAL,
+        0x1,  // input 0
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0x10,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x1,  // input 0
+        fc::Instruction::I64_ADD,
+        fc::Instruction::SET_VAL,
+        0x2,
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::SET_VAL,
+        0x3,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x8,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x4,
+        fc::Instruction::SET_VAL,
+        0x2,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x3,
+        fc::GET_VAL,
+        0x2,
+        fc::GET_VAL,
+        0x3,
+        fc::MULTIPOP,
+        0x2,
+        fc::Instruction::MULTIPOP,
+        0x4,
         fc::Instruction::RETURN,
       },
   };

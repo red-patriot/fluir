@@ -601,3 +601,29 @@ OUT x0
   EXPECT_BC_VALUES_EQ(expected.constants, actual.constants);
   EXPECT_CHUNK_EQ(expected.chunks.at(0), actual.chunks.at(0));
 }
+
+TEST(TestInspectDecoder, DecodesJumpInstructions) {
+  std::string source = R"(I07220A000000000000001A
+CONSTANTS x0
+CHUNK foo
+  CODE xB
+    IJUMP_IF_FALSE x0 x0 x0 x12
+    IJUMP_BY x0 x1 x0 x3
+    IEXIT
+  IN x0
+  OUT x0
+)";
+  fluir::code::ByteCode expected{
+    .header = {.filetype = 'I', .major = 7, .minor = 34, .patch = 10, .entryOffset = 26},
+    .constants = {},
+    .chunks = {fluir::code::Chunk{.name = "foo",
+                                  .code = {JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x12, JUMP_BY, 0x0, 0x1, 0x0, 0x3, EXIT}}}};
+
+  auto actual = fluir::InspectDecoder{}.decode(source);
+
+  EXPECT_BC_HEADER_EQ(expected.header, actual.header);
+  EXPECT_EQ(expected.chunks.size(), actual.chunks.size());
+  for (int i = 0; i != expected.chunks.size(); ++i) {
+    EXPECT_CHUNK_EQ(expected.chunks.at(i), actual.chunks.at(i));
+  }
+}

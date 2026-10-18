@@ -230,3 +230,17 @@ TEST(TestSymbolTable, OnlyCurrentLocalScopeIsSearchedForVariables) {
   EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual1);
   EXPECT_EQ(B, actual2);
 }
+
+TEST(TestSymbolTable, AddProductType) {
+  fluir::types::SymbolTable uut;
+
+  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto B = uut.addType(fluir::types::Type{"B"});
+  const auto Product = uut.addType(fluir::types::Product("Product", {A, B}));
+
+  const auto* actual = uut.getType(Product);
+  ASSERT_TRUE(actual->is<fluir::types::Product>());
+  const auto* concrete = actual->as<fluir::types::Product>();
+  EXPECT_EQ(A, concrete->at(0));
+  EXPECT_EQ(B, concrete->at(1));
+}

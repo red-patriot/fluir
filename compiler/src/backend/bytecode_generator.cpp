@@ -1,5 +1,6 @@
 #include "compiler/backend/bytecode_generator.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <format>
@@ -42,34 +43,31 @@ namespace fluir {
     current_->inCount = static_cast<std::uint8_t>(func.parameters.size());
     current_->outCount = func.returnValue ? 1 : 0;
 
-    // TODO: Handle parameters
-    auto& [slots, returnCount] = pushScope();
+    std::vector<WithID<types::TypeID>> outputs;
     if (func.returnValue) {
-      // If there is a return value, it is reserved at slot 0
-      // TODO: Support multiple return values
-      slots.insert({func.returnValue->id, 0});
-      returnCount = 1;
+      auto returnType = ctx_.symbolTable.getTypeID(func.returnValue->typeName);
+      outputs.emplace_back(func.returnValue->id, returnType);
     }
-    // Push parameters in order onto the stack
-    for (const auto& param : func.parameters) {
-      slots.insert({param.id, slots.size()});
-    }
-    for (const auto& node : func.statements) {
-      recursivelyGenerate(*node);
-      if (shouldPopAfter(*node)) {
-        // Each top level node will leave a value on the stack,so
-        // pop it off iff it was not saved as a new local variable
-        emitByte(Instruction::POP);
-      }
-      // If the value is the return value, discard it
-      // HACK: Use a multipop 1 instruction to suppress printing the
-      // value until that temp behavior is removed
-      if (func.returnValue && func.returnValue->id == node->id()) {
-        emitBytes(Instruction::MULTIPOP, 1);
-      }
-    }
-    popScope();
+    std::vector<WithID<types::TypeID>> inputs;
+    std::ranges::transform(func.parameters, std::back_inserter(inputs), [this](const auto& p) -> WithID<types::TypeID> {
+      auto paramType = ctx_.symbolTable.getTypeID(p.typeName);
+      return {p.id, paramType};
+    });
 
+    {
+      auto frame = be::BytecodeFrame(ctx_, inputs, outputs, current_->code);
+      auto scope = frame.pushScope();
+      const auto lastFrame = frame_;
+      const auto lastScope = currentScope_;
+      frame_ = &frame;
+      currentScope_ = &scope;
+      FLUIR_SCOPE_EXIT {
+        currentScope_ = lastScope;
+        frame_ = lastFrame;
+      };
+
+      generate(func.statements, inputs, outputs);
+    }
     emitByte(Instruction::RETURN);
   }
 
@@ -78,35 +76,39 @@ namespace fluir {
       // Some operators are implemented with their inverse in the VM,
       // so generate their operands in the reverse order to put them
       // on the right order on the stack
-      recursivelyGenerate(*node.rhs());
-      recursivelyGenerate(*node.lhs());
+      generateDependency(node.rhs());
+      generateDependency(node.lhs());
     } else {
-      recursivelyGenerate(*node.lhs());
-      recursivelyGenerate(*node.rhs());
+      generateDependency(node.lhs());
+      generateDependency(node.rhs());
     }
 
     // TODO: Handle user-defined ops here
-    if (node.lhs()->type() != node.rhs()->type()) {
+    if (node.lhs().type() != node.rhs().type()) {
       diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
-    const auto type = node.lhs()->type();
+    const auto type = node.lhs().type();
     switch (type) {
       case types::ID_F64:
-        return emitFloatOperator(node.op());
+        emitFloatOperator(node.op());
+        break;
       case types::ID_I8:
       case types::ID_I16:
       case types::ID_I32:
       case types::ID_I64:
-        return emitIntOperator(node.op());
+        emitIntOperator(node.op());
+        break;
       case types::ID_U8:
       case types::ID_U16:
       case types::ID_U32:
       case types::ID_U64:
-        return emitUintOperator(node.op());
+        emitUintOperator(node.op());
+        break;
       case types::ID_BOOL:
-        return emitBoolOperator(node.op());
+        emitBoolOperator(node.op());
+        break;
       default:
         // TODO: Handle this case better
         diagnostic::emitInternalError("Unknown type encountered");
@@ -115,24 +117,28 @@ namespace fluir {
 
   void BytecodeGenerator::generate(const ast::UnaryOp& node) {
     constexpr bool IS_UNARY = true;
-    recursivelyGenerate(*node.operand());
+    generateDependency(node.operand());
 
-    const auto type = node.operand()->type();
+    const auto type = node.operand().type();
     switch (type) {
       case types::ID_F64:
-        return emitFloatOperator(node.op(), IS_UNARY);
+        emitFloatOperator(node.op(), IS_UNARY);
+        break;
       case types::ID_I64:
       case types::ID_I32:
       case types::ID_I16:
       case types::ID_I8:
-        return emitIntOperator(node.op(), IS_UNARY);
+        emitIntOperator(node.op(), IS_UNARY);
+        break;
       case types::ID_U64:
       case types::ID_U32:
       case types::ID_U16:
       case types::ID_U8:
-        return emitUintOperator(node.op(), IS_UNARY);
+        emitUintOperator(node.op(), IS_UNARY);
+        break;
       case types::ID_BOOL:
-        return emitBoolOperator(node.op(), IS_UNARY);
+        emitBoolOperator(node.op(), IS_UNARY);
+        break;
       default:
         // TODO: Handle this case better
         diagnostic::emitInternalError("Unknown type encountered");
@@ -164,7 +170,6 @@ namespace fluir {
       constant = addConstant(node.boolean());
     } else {
       diagnostic::emitInternalError("Unknown constant type encountered.");
-      return;
     }
     if (constant <= UINT8_MAX) {
       emitBytes(Instruction::PUSH, static_cast<std::uint8_t>(constant));
@@ -175,10 +180,9 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::Cast& cast) {
-    recursivelyGenerate(*cast.operand());
-
+    generateDependency(cast.operand());
     // TODO: Handle user-defined casts here
-    auto operandType = cast.operand()->type();
+    auto operandType = cast.operand().type();
     auto targetType = cast.type();
     if (types::isIntegral(targetType)) {
       if (types::isSigned(targetType)) {
@@ -216,32 +220,19 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
-    recursivelyGenerate(*write.child());
+    generateDependency(write.child());
 
-    auto& [slots, returnCount] = scopes_.top();
-    if (slots.contains(write.variable())) {
-      // LocalWrite is updating an existing value.
-      const auto slot = static_cast<std::uint8_t>(slots.at(write.variable()));
-      emitBytes(Instruction::SET_VAL, slot);
-    } else {
-      // This LocalWrite is initializing a new value, so make a new slot for it
-      const auto nextIndex = slots.size();
-      if (nextIndex >= std::numeric_limits<std::uint8_t>::max()) {
-        // TODO: Increase this limit
-        diagnostic::emitInternalError(std::format("Too many local variables defined. Only {} variables allowed.",
-                                                  std::numeric_limits<std::uint8_t>::max()));
-      }
-      slots.insert({write.variable(), nextIndex});
-    }
+    auto slot = addLocalSlot(write.variable(), write.storedType());
+    emitBytes(Instruction::SET_VAL, slot);
   }
+
   void BytecodeGenerator::generate(const ast::LocalRead& read) {
-    const auto& [slots, returnCount] = scopes_.top();
-    if (!slots.contains(read.variable())) {
+    if (!currentScope_->contains(read.variable())) {
       // This shouldn't happen because it should be caught in type checking
       diagnostic::emitInternalError(fmt::format(
         "Expected variable {}, read by node ({}) not found.", read.variable(), fmt::join(read.fullId(), ":")));
     }
-    const auto slot = slots.at(read.variable());
+    const auto slot = currentScope_->getLocalSlot(read.variable());
     emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(slot));
   }
 
@@ -257,7 +248,7 @@ namespace fluir {
     }
 
     for (auto& arg : call.arguments()) {
-      recursivelyGenerate(*arg);
+      generateDependency(arg);
     }
 
     if (ctx_.symbolTable.isMagicBuiltin(targetType)) {
@@ -273,6 +264,64 @@ namespace fluir {
       const auto index = functionIndices_.at(call.target());
       emitByte(Instruction::CALL);
       emitLongOperand(index);
+    }
+  }
+
+  void BytecodeGenerator::generate(const ast::Conditional& conditional) {
+    /*
+     *       [condition]
+     *       JUMP_IF_FALSE   ------|
+     *         // THEN BODY        |
+     *         MULTIPOP (inputs)   |
+     *  |--- JUMP                  |
+     *  |      // ELSE BODY  <-----|
+     *  |      MULTIPOP (inputs)
+     *  |--> // REST...
+     */
+    std::vector<WithID<types::TypeID>> inputs;
+    inputs.reserve(conditional.inputs().size());
+    for (const auto& [dependency, innerId] : conditional.inputs()) {
+      generateDependency(dependency);
+      inputs.emplace_back(innerId, dependency.type());
+    }
+
+    generateDependency(conditional.condition());
+    inputs.emplace_back(1, types::ID_BOOL);  // Inner ID of the condition
+
+    auto lastScope = currentScope_;
+    auto scope = currentScope_->pushScope();
+    currentScope_ = &scope;
+    FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
+    for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
+      auto slot = addLocalSlot(id, type);
+      emitBytes(Instruction::SET_VAL, slot);
+    }
+    // Read the condition back to the stack to use it
+    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
+
+    std::vector<WithID<types::TypeID>> outputs;
+    if (conditional.outputs().size() == 0) {
+    } else if (conditional.outputs().size() == 1) {
+      outputs.emplace_back(conditional.outputs().front(), conditional.type());
+    } else {
+      auto product = ctx_.symbolTable.getType(conditional.type())->as<types::Product>();
+      for (const auto& [idx, id] : std::ranges::views::enumerate(conditional.outputs())) {
+        outputs.emplace_back(id, product->at(idx));
+        addLocalSlot(id, product->at(idx));
+      }
+    }
+
+    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+    generate(conditional.thenBody(), inputs, outputs);
+    auto elseJump = emitJump(Instruction::JUMP_BY);
+    patchJump(thenJump, current_->code.size());
+
+    generate(conditional.elseBody(), inputs, outputs);
+    patchJump(elseJump, current_->code.size());
+
+    // Push the outputs onto the stack
+    for (const auto& id : conditional.outputs()) {
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
     }
   }
 
@@ -293,6 +342,25 @@ namespace fluir {
       const auto byte = static_cast<std::uint8_t>(arg >> SHIFT);
       emitByte(byte);
       arg <<= BYTE_SIZE;
+    }
+  }
+
+  size_t BytecodeGenerator::emitJump(code::Instruction instruction) {
+    emitByte(instruction);
+    auto jumpIndex = current_->code.size();
+    emitLongOperand(0xffffffff);  // Emit a placeholder for the jump operand
+    return jumpIndex;
+  }
+  void BytecodeGenerator::patchJump(size_t jumpIndex, size_t targetIndex) {
+    static constexpr int BYTE_SIZE = 8;
+    static constexpr int SHIFT = BYTE_SIZE * 3;
+
+    auto offset = targetIndex - (jumpIndex + 4);
+    for (int i = 0; i != 4; ++i) {
+      // Consume the top 8 bits of the offset and emit them one by one to write into the bytecode.
+      const auto byte = static_cast<std::uint8_t>(offset >> SHIFT);
+      current_->code[jumpIndex + i] = byte;
+      offset <<= BYTE_SIZE;
     }
   }
 
@@ -325,7 +393,42 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::recursivelyGenerate(const ast::Node& node) {
+  void BytecodeGenerator::generate(const ast::DataFlowGraph& subgraph,
+                                   const std::vector<WithID<types::TypeID>>& inputs,
+                                   const std::vector<WithID<types::TypeID>>& outputs) {
+    auto outputCount = outputs.size();
+    if (outputCount >= UINT8_MAX) {
+      diagnostic::emitInternalError(
+        fmt::format("Too many outputs from subgraph. Found {}, only up to {} allowed.", outputCount, UINT8_MAX));
+    }
+
+    for (const auto& [id, type] : outputs) {
+      addLocalSlot(id, type);
+    }
+    for (const auto& [id, type] : inputs) {
+      addLocalSlot(id, type);
+    }
+    for (const auto& node : subgraph) {
+      generateTopLevel(*node);
+    }
+  }
+
+  void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) { doGenerate(dependency.get()); }
+
+  void BytecodeGenerator::generateTopLevel(const ast::Node& node) {
+    doGenerate(node);
+    // TODO: Handle sizes generically based by type
+    const auto* type = ctx_.symbolTable.getType(node.type());
+    if (uint8_t slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
+      // No emit for no slots
+    } else if (slotCount == 1) {
+      emitByte(Instruction::POP);
+    } else {
+      emitBytes(Instruction::MULTIPOP, slotCount);
+    }
+  }
+
+  void BytecodeGenerator::doGenerate(const ast::Node& node) {
     switch (node.kind()) {
       case ast::NodeKind::BinaryOperator:
         return generate(*node.as<ast::BinaryOp>());
@@ -341,35 +444,19 @@ namespace fluir {
         return generate(*node.as<ast::LocalRead>());
       case ast::NodeKind::Call:
         return generate(*node.as<ast::Call>());
+      case ast::NodeKind::Conditional:
+        return generate(*node.as<ast::Conditional>());
     }
+    diagnostic::emitInternalError("Unknown node kind encountered");
   }
 
-  BytecodeGenerator::Scope& BytecodeGenerator::pushScope() {
-    scopes_.emplace();
-    return scopes_.top();
-  }
-  void BytecodeGenerator::popScope() {
-    auto& currentScope = scopes_.top();
-    // Clean up the local variables from this scope before popping it
-    if (const auto toPop = static_cast<std::uint8_t>(currentScope.slots.size() - currentScope.returnCount); toPop > 0) {
-      emitBytes(Instruction::MULTIPOP, toPop);
-    }
-    scopes_.pop();
-  }
-
-  bool BytecodeGenerator::shouldPopAfter(const ast::Node& node) {
-    const auto& [slots, _] = scopes_.top();
-    if (slots.contains(node.id())) {
-      return false;
+  uint8_t BytecodeGenerator::addLocalSlot(const ID& id, types::TypeID type) {
+    const auto* ptr = ctx_.symbolTable.getType(type);
+    if (!ptr || !currentScope_) {
+      diagnostic::emitInternalError("Encountered unexpected null");
     }
 
-    if (node.is<ast::Call>()) {
-      const auto& call = node.as<ast::Call>();
-      const auto& targetType = ctx_.symbolTable.getFunctionType(call->target());
-      return targetType->returnType().has_value();
-    }
-
-    return true;
+    return static_cast<uint8_t>(currentScope_->addLocalSlot(id, *ptr));
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {

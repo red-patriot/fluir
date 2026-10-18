@@ -22,6 +22,7 @@ namespace fluir::debug {
     void operator()(const ast::LocalWrite& write);
     void operator()(const ast::LocalRead& read);
     void operator()(const ast::Call& call);
+    void operator()(const ast::Conditional& conditional);
 
    private:
     std::ostream& out_;
@@ -31,6 +32,8 @@ namespace fluir::debug {
     void doInOrderPrint(const ast::DataFlowGraph& graph);
 
     void print(const ast::Node& node);
+    void print(const ast::Dependency& dependency);
+    void print(const std::vector<ast::ScopeInput>& inputs);
   };
 }  // namespace fluir::debug
 

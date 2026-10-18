@@ -25,7 +25,7 @@ namespace fluir::types {
   };
 
   /** Lets fmt format TypeIDs as their underlying integer value */
-  constexpr auto format_as(TypeID id) { return std::to_underlying(id); }
+  constexpr auto format_as(TypeID id) { return static_cast<std::underlying_type_t<TypeID>>(id); }
 
 }  // namespace fluir::types
 

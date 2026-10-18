@@ -321,7 +321,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  EXPECT_EQ(fluir::types::ID_I32, decl.statements.at(0)->type());
+  EXPECT_EQ(fluir::types::ID_I32, decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
@@ -350,7 +350,7 @@ TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  EXPECT_EQ(fluir::types::ID_I64, decl.statements.at(0)->type());
+  EXPECT_EQ(fluir::types::ID_I64, decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
   ASSERT_TRUE(decl.statements.front()->is<fa::LocalWrite>());
   const auto& child = decl.statements.front()->as<fa::LocalWrite>()->child();
   ASSERT_TRUE(child.get().is<fa::Cast>());

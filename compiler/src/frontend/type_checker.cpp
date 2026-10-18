@@ -136,7 +136,7 @@ namespace fluir {
           diagnostic::emitInternalError("Unexpected node kind encountered");
         }
         if (returnNode->storedType() != funcType->returnType().value()) {
-          if (!ctx.symbolTable.canImplicitlyConvert(returnNode->type(), funcType->returnType().value())) {
+          if (!ctx.symbolTable.canImplicitlyConvert(returnNode->storedType(), funcType->returnType().value())) {
             ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                              ctx.currentFile,
                                              returnNode->fullId(),

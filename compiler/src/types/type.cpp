@@ -16,7 +16,8 @@ namespace fluir::types {
   }
 
   Product Product::anonymous(std::vector<TypeID> elements) {
-    return Product{anonymousName(elements), std::move(elements)};
+    auto name = anonymousName(elements);
+    return Product{std::move(name), std::move(elements)};
   }
 
 }  // namespace fluir::types

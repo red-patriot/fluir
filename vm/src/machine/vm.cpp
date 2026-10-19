@@ -171,7 +171,8 @@ namespace fluir {
         case JUMP_IF_FALSE:
           {
             auto offset = readQuadWord();
-            if (!stackTop().asBool()) {
+            auto condition = stackPopTop();
+            if (!condition.asBool()) {
               ip_ += offset;
             }
             break;

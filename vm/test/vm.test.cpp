@@ -826,6 +826,17 @@ TEST(TestVM, HandlesConditionals1) {
   EXPECT_FALSE(uut.viewStack().back().asBool());
 }
 
+TEST(TestVM, JumpIfFalseConsumes) {
+  fc::ByteCode code{.header = {},
+                    .constants = {FALSE_VALUE, TRUE_VALUE},
+                    .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, JUMP_IF_FALSE, 0x0, 0x0, 0x0, 0x0, EXIT}}}};
+
+  fluir::VirtualMachine uut;
+
+  EXPECT_EQ(fluir::ExecResult::SUCCESS, uut.execute(&code));
+  EXPECT_TRUE(uut.viewStack().empty());
+}
+
 TEST(TestVM, HandlesConditionals2) {
   fc::ByteCode code{
     .header = {},

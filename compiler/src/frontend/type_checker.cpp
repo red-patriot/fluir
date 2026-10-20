@@ -452,11 +452,13 @@ namespace fluir {
         outputTypes.push_back(type);
       }
       if (succeeded) {
-        if (outputTypes.size() == 1) {
-          // If there is one output, the type is just that output type
-          return outputTypes.front();
-        } else {
-          return ctx.symbolTable.addType(types::Product::anonymous(std::move(outputTypes)));
+        switch (outputTypes.size()) {
+          case 0:
+            return types::ID_EMPTY;
+          case 1:
+            return outputTypes.front();
+          default:
+            return ctx.symbolTable.addType(types::Product::anonymous(std::move(outputTypes)));
         }
       }
 

@@ -59,10 +59,10 @@ namespace fluir::types {
     /** Returns the number of elements in the product type*/
     [[nodiscard]] size_t elements() const { return elements_.size(); }
 
-    /** Create an anonymous product type with the given elements. */
-    static Product anonymous(std::vector<TypeID> elements);
-    /** Create the name of an anonymous product type with the given elements. */
-    static std::string anonymousName(const std::vector<TypeID>& elements);
+    /** Create a product type with the given elements. */
+    static Product createFromTypes(std::vector<TypeID> elements);
+    /** Create the name of a product type with the given elements. */
+    static std::string nameFromTypes(const std::vector<TypeID>& elements);
 
     friend bool operator==(const Product&, const Product&) = default;
 

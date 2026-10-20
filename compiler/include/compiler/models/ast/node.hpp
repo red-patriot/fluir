@@ -74,37 +74,21 @@ namespace fluir::ast {
   /** A dependency on another node in the graph */
   class Dependency {
    public:
-    explicit Dependency(UniqueNode child, std::optional<unsigned> index = std::nullopt) :
-      child_(std::move(child)), index_(index) { }
+    explicit Dependency(UniqueNode child) : child_(std::move(child)) { }
 
     [[nodiscard]] Node& get() { return *child_; }
     [[nodiscard]] const Node& get() const { return *child_; }
-    [[nodiscard]] bool hasIndex() const noexcept { return index_.has_value(); }
-    [[nodiscard]] unsigned index() const { return index_.value(); }
     [[nodiscard]] const FullID& fullId() const { return child_->fullId(); }
     [[nodiscard]] ID id() const { return child_->id(); }
     [[nodiscard]] FlowGraphLocation location() const { return child_->location(); }
     [[nodiscard]] NodeKind kind() const { return child_->kind(); }
-    [[nodiscard]] types::TypeID type() const { return index_ ? type_ : child_->type(); }
+    [[nodiscard]] types::TypeID type() const { return child_->type(); }
     [[nodiscard]] types::TypeID fullType() const { return child_->type(); }
 
-    void setType(types::TypeID t, const Context& ctx) {
-      child_->setType(t);
-      if (!index_) {
-        return;
-      }
-      const auto* descriptor = ctx.symbolTable.getType(t);
-      if (descriptor && descriptor->is<types::Product>()) {
-        type_ = descriptor->as<types::Product>()->at(*index_);
-      } else {
-        type_ = t;
-      }
-    }
+    void setType(types::TypeID t) { child_->setType(t); }
 
    private:
-    UniqueNode child_;                      /**< The dependency node */
-    types::TypeID type_{types::ID_INVALID}; /**< The type at `index_` of `child_`'s output if `index_` is set */
-    std::optional<unsigned> index_;         /**< The index into `child_`'s outputs to read from */
+    UniqueNode child_; /**< The dependency node */
   };
 
   struct ScopeInput {
@@ -118,15 +102,13 @@ namespace fluir::ast {
   }
   template <typename NodeType, typename... Args>
   inline Dependency createDependency(Args&&... args) {
-    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...), std::nullopt};
+    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...)};
   }
   template <typename NodeType, typename... Args>
-  inline Dependency createDependencyWithIndex(unsigned index, Args&&... args) {
-    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...), index};
+  inline Dependency createDependencyWithIndex(unsigned, Args&&... args) {
+    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...)};
   }
-  inline Dependency createDependency(std::optional<unsigned> index, UniqueNode node) {
-    return Dependency{std::move(node), index};
-  }
+  inline Dependency createDependency(std::optional<unsigned>, UniqueNode node) { return Dependency{std::move(node)}; }
   template <typename NodeType>
   inline auto clone(const std::unique_ptr<NodeType>& p) {
     return createNode<NodeType>(*p);
@@ -136,7 +118,7 @@ namespace fluir::ast {
   inline Dependency clone(const Dependency& d) {
     const auto* concrete = d.get().as<NodeType>();
     assert(concrete && "clone called on a different node kind");
-    return Dependency{createNode<NodeType>(*concrete), d.hasIndex() ? std::optional{d.index()} : std::nullopt};
+    return Dependency{createNode<NodeType>(*concrete)};
   }
 
   class Constant : public Node {

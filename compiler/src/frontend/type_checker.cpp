@@ -458,7 +458,7 @@ namespace fluir {
           case 1:
             return outputTypes.front();
           default:
-            return ctx.symbolTable.addType(types::Product::anonymous(std::move(outputTypes)));
+            return ctx.symbolTable.addType(types::Product::createFromTypes(std::move(outputTypes)));
         }
       }
 

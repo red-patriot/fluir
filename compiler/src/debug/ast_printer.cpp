@@ -188,6 +188,9 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
         return (*this)(*node.as<ast::Conditional>());
+      case ast::NodeKind::Bundle:
+      case ast::NodeKind::Unbundle:
+        std::unreachable();
     }
   }
 

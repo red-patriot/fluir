@@ -52,6 +52,9 @@ namespace fluir {
           return checkType(ctx, node->as<ast::Call>());
         case ast::NodeKind::Conditional:
           return checkType(ctx, node->as<ast::Conditional>());
+        case ast::NodeKind::Bundle:
+        case ast::NodeKind::Unbundle:
+          std::unreachable();
       }
       diagnostic::emitInternalError("Unknown node kind encountered");
     }

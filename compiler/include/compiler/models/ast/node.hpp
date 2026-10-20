@@ -15,7 +15,18 @@
 #include "compiler/utility/context.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead, Call, Conditional };
+  enum class NodeKind {
+    Constant,
+    BinaryOperator,
+    UnaryOperator,
+    Cast,
+    LocalWrite,
+    LocalRead,
+    Call,
+    Conditional,
+    Bundle,
+    Unbundle
+  };
 
   class Node {
    public:
@@ -279,6 +290,34 @@ namespace fluir::ast {
     std::vector<ID> outputs_;
     DataFlowGraph then_;
     DataFlowGraph else_;
+  };
+
+  class Bundle : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Bundle; }
+
+    Bundle(FullID id, const FlowGraphLocation& location, std::vector<Dependency> children) :
+      Node(NodeKind::Bundle, std::move(id), location), children_(std::move(children)) { }
+
+    [[nodiscard]] const std::vector<Dependency>& children() const { return children_; }
+
+   private:
+    std::vector<Dependency> children_;
+  };
+
+  class Unbundle : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Unbundle; }
+
+    Unbundle(FullID id, const FlowGraphLocation& location, Dependency child, size_t index) :
+      Node(NodeKind::Unbundle, std::move(id), location), child_(std::move(child)), index_(index) { }
+
+    [[nodiscard]] const Dependency& child() const { return child_; }
+    [[nodiscard]] size_t index() const { return index_; }
+
+   private:
+    Dependency child_;
+    size_t index_;  // TODO: Should this be a string or other identifier?
   };
 
   class LocalWrite : public Node {

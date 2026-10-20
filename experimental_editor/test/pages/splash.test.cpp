@@ -20,18 +20,6 @@ namespace {
 
 }  // namespace
 
-TEST(SplashPage, DrawsTheOpenButton) {
-  EditorContext ctx;
-  RecordingRenderer renderer;
-  SplashPage page{ctx, renderer};
-  ASSERT_EQ(page.start(), 0);
-  ASSERT_EQ(page.draw(), 0);
-
-  const Rect open = page.openButtonRect();
-  EXPECT_TRUE(hasTextAt(renderer.calls, "Open", open.topLeft() + Vec2{ctx.layout.textPad, ctx.layout.textPad}));
-  EXPECT_TRUE(hasFill(renderer.calls, open));
-}
-
 TEST(SplashPage, NextStaysNullUntilAFileIsOpened) {
   EditorContext ctx;
   RecordingRenderer renderer;

@@ -186,7 +186,7 @@ namespace fluir {
     Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency) {
       if (const auto t = checkType(ctx, &dependency.get()); t.has_value()) {
         const auto type = *t;
-        dependency.setType(type, ctx);
+        dependency.setType(type);
         return dependency.type();
       }
       return NoResult;

@@ -32,20 +32,7 @@ TEST(TestDependency, SetTypeInvalidDoesNotCrash) {
   fluir::Context ctx{.diagnosticSink = sink};
   auto uut = i32Constant();
 
-  uut.setType(fluir::types::ID_INVALID, ctx);
+  uut.setType(fluir::types::ID_INVALID);
 
   EXPECT_EQ(fluir::types::ID_INVALID, uut.type());
-}
-
-TEST(TestDependency, IndexedResolvesProductElement) {
-  fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diagnosticSink = sink};
-  const auto product =
-    ctx.symbolTable.addType(fluir::types::Product("P", {fluir::types::ID_I32, fluir::types::ID_BOOL}));
-  auto uut = i32Constant(1);
-
-  uut.setType(product, ctx);
-
-  EXPECT_EQ(fluir::types::ID_BOOL, uut.type());
-  EXPECT_EQ(product, uut.fullType());
 }

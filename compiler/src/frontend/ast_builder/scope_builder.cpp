@@ -224,7 +224,7 @@ namespace fluir::fe {
     auto dependency = process(dependencyId, pt);
     // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
-    return ast::Dependency{std::move(dependency), index ? std::optional(dependencyIdx) : std::nullopt};
+    return ast::Dependency{std::move(dependency)};
   }
 
   std::unordered_set<fluir::ID> ScopeBuilder::getIdsPromotedToLocal() const {

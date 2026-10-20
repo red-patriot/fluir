@@ -446,6 +446,9 @@ namespace fluir {
         return generate(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
         return generate(*node.as<ast::Conditional>());
+      case ast::NodeKind::Bundle:
+      case ast::NodeKind::Unbundle:
+        std::unreachable();
     }
     diagnostic::emitInternalError("Unknown node kind encountered");
   }

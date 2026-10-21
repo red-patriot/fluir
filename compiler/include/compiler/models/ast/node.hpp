@@ -78,6 +78,8 @@ namespace fluir::ast {
 
     [[nodiscard]] Node& get() { return *child_; }
     [[nodiscard]] const Node& get() const { return *child_; }
+    [[nodiscard]] const UniqueNode& child() const { return child_; }
+    [[nodiscard]] UniqueNode& child() { return child_; }
     [[nodiscard]] const FullID& fullId() const { return child_->fullId(); }
     [[nodiscard]] ID id() const { return child_->id(); }
     [[nodiscard]] FlowGraphLocation location() const { return child_->location(); }

@@ -23,6 +23,8 @@ namespace fluir::debug {
     void operator()(const ast::LocalRead& read);
     void operator()(const ast::Call& call);
     void operator()(const ast::Conditional& conditional);
+    void operator()(const ast::Bundle& bundle);
+    void operator()(const ast::Unbundle& unbundle);
 
    private:
     std::ostream& out_;

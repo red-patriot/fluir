@@ -147,6 +147,19 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::operator()(const ast::Bundle& bundle) {
+    out_ << formatIndented("Bundle({}):\n", bundle.id());
+    FLUIR_SCOPED_INDENT;
+    for (const auto& dependency : bundle.children()) {
+      print(dependency);
+    }
+  }
+  void AstPrinter::operator()(const ast::Unbundle& unbundle) {
+    out_ << formatIndented("Unbundle({})[{}]:\n", unbundle.id(), unbundle.index());
+    FLUIR_SCOPED_INDENT;
+    print(unbundle.child());
+  }
+
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
     for (const auto& node : graph) {
       print(*node);
@@ -189,8 +202,9 @@ namespace fluir::debug {
       case ast::NodeKind::Conditional:
         return (*this)(*node.as<ast::Conditional>());
       case ast::NodeKind::Bundle:
+        return (*this)(*node.as<ast::Bundle>());
       case ast::NodeKind::Unbundle:
-        std::unreachable();
+        return (*this)(*node.as<ast::Unbundle>());
     }
   }
 

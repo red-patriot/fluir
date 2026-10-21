@@ -6,14 +6,12 @@ Function(1): 'main'
       Input
       Output4,7
       Then
-        LocalWrite(4)
+        Bundle(1):
           ConstantI32(2): 0
-        LocalWrite(7)
           ConstantF64(8): 0.0000
       Else
-        LocalWrite(4)
+        Bundle(2):
           ConstantI32(3): 12
-        LocalWrite(7)
           ConstantF64(10): -1.0000
   Call(4): 'print'
     Arg(1):

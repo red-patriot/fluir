@@ -311,19 +311,18 @@ namespace fluir {
       }
     }
 
-    // TODO CONDITIONAL
-    // auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
-    // generate(conditional.thenBody(), inputs, outputs);
-    // auto elseJump = emitJump(Instruction::JUMP_BY);
-    // patchJump(thenJump, current_->code.size());
-    //
-    // generate(conditional.elseBody(), inputs, outputs);
-    // patchJump(elseJump, current_->code.size());
-    //
-    // // Push the outputs onto the stack
-    // for (const auto& id : conditional.outputs()) {
-    //   emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
-    // }
+    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+    generate(conditional.thenBody(), inputs, outputs);
+    auto elseJump = emitJump(Instruction::JUMP_BY);
+    patchJump(thenJump, current_->code.size());
+
+    generate(conditional.elseBody(), inputs, outputs);
+    patchJump(elseJump, current_->code.size());
+
+    // Push the outputs onto the stack
+    for (const auto& id : conditional.outputs()) {
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
+    }
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
@@ -394,7 +393,28 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const ast::DataFlowGraph& subgraph,
+  void BytecodeGenerator::generate(const ast::DataFlowGraph& dfg,
+                                   const std::vector<WithID<types::TypeID>>& inputs,
+                                   const std::vector<WithID<types::TypeID>>& outputs) {
+    // TODO: Deprecate for SubGraph?
+    auto outputCount = outputs.size();
+    if (outputCount >= UINT8_MAX) {
+      diagnostic::emitInternalError(
+        fmt::format("Too many outputs from subgraph. Found {}, only up to {} allowed.", outputCount, UINT8_MAX));
+    }
+
+    for (const auto& [id, type] : outputs) {
+      addLocalSlot(id, type);
+    }
+    for (const auto& [id, type] : inputs) {
+      addLocalSlot(id, type);
+    }
+    for (const auto& node : dfg) {
+      generateTopLevel(*node);
+    }
+  }
+
+  void BytecodeGenerator::generate(const ast::SubGraph& subgraph,
                                    const std::vector<WithID<types::TypeID>>& inputs,
                                    const std::vector<WithID<types::TypeID>>& outputs) {
     auto outputCount = outputs.size();
@@ -409,9 +429,10 @@ namespace fluir {
     for (const auto& [id, type] : inputs) {
       addLocalSlot(id, type);
     }
-    for (const auto& node : subgraph) {
+    for (const auto& node : subgraph.sinks) {
       generateTopLevel(*node);
     }
+    // TODO: Output
   }
 
   void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) { doGenerate(dependency.get()); }

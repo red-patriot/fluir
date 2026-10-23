@@ -1631,7 +1631,6 @@ TEST_F(TestBytecodeGenerator, GeneratesLogicalOperators) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
-  GTEST_SKIP();
   fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
@@ -1685,7 +1684,6 @@ TEST_F(TestBytecodeGenerator, GeneratesEmptyConditionalJumps) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
-  GTEST_SKIP();
   fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
@@ -1772,8 +1770,6 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithBody) {
 }
 
 TEST_F(TestBytecodeGenerator, GeneratesConditionalWithInputs) {
-  GTEST_SKIP();
-
   fa::AST input;
   input.declarations.emplace_back([&]() {
     fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};

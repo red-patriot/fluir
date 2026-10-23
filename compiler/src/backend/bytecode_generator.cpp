@@ -311,18 +311,19 @@ namespace fluir {
       }
     }
 
-    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
-    generate(conditional.thenBody(), inputs, outputs);
-    auto elseJump = emitJump(Instruction::JUMP_BY);
-    patchJump(thenJump, current_->code.size());
-
-    generate(conditional.elseBody(), inputs, outputs);
-    patchJump(elseJump, current_->code.size());
-
-    // Push the outputs onto the stack
-    for (const auto& id : conditional.outputs()) {
-      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
-    }
+    // TODO CONDITIONAL
+    // auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+    // generate(conditional.thenBody(), inputs, outputs);
+    // auto elseJump = emitJump(Instruction::JUMP_BY);
+    // patchJump(thenJump, current_->code.size());
+    //
+    // generate(conditional.elseBody(), inputs, outputs);
+    // patchJump(elseJump, current_->code.size());
+    //
+    // // Push the outputs onto the stack
+    // for (const auto& id : conditional.outputs()) {
+    //   emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
+    // }
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :

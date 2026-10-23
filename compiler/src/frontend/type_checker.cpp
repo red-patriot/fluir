@@ -17,10 +17,10 @@ namespace fluir {
     Results<types::TypeID> checkType(Context& ctx, ast::LocalRead* read);
     Results<types::TypeID> checkType(Context& ctx, ast::Call* call);
     Results<types::TypeID> checkType(Context& ctx, ast::Conditional* conditional);
-    Results<types::TypeID> checkType(Context& ctx,
-                                     ast::DataFlowGraph& dfg,
-                                     const std::vector<ast::ScopeInput>& inputs,
-                                     const std::vector<ID>& outputs);
+    Results<types::TypeID> checkType(Context& ctx, ast::Bundle* bundle);
+    Results<types::TypeID> checkType(Context& ctx, ast::Unbundle* unbundle);
+
+    Results<types::TypeID> checkType(Context& ctx, ast::SubGraph& graph, const std::vector<ast::ScopeInput>& inputs);
     Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
@@ -53,8 +53,9 @@ namespace fluir {
         case ast::NodeKind::Conditional:
           return checkType(ctx, node->as<ast::Conditional>());
         case ast::NodeKind::Bundle:
+          return checkType(ctx, node->as<ast::Bundle>());
         case ast::NodeKind::Unbundle:
-          return NoResult;
+          return checkType(ctx, node->as<ast::Unbundle>());
       }
       diagnostic::emitInternalError("Unknown node kind encountered");
     }
@@ -307,12 +308,6 @@ namespace fluir {
       }
 
       auto typeId = ctx.symbolTable.getLocalVariableType(read->variable());
-      if (const auto typeDescriptor = ctx.symbolTable.getType(typeId);
-          typeDescriptor && typeDescriptor->is<types::Product>()) {
-        // To read product types, use the index
-        const auto* product = typeDescriptor->as<types::Product>();
-        typeId = product->at(read->varIndex());
-      }
       read->setType(typeId);
       if (typeId == types::ID_INVALID) {
         ctx.diagnosticSink.emitAtElement(
@@ -406,8 +401,8 @@ namespace fluir {
         return NoResult;
       }
 
-      auto thenType = checkType(ctx, conditional->thenBody(), conditional->inputs(), conditional->outputs());
-      auto elseType = checkType(ctx, conditional->elseBody(), conditional->inputs(), conditional->outputs());
+      auto thenType = checkType(ctx, conditional->thenBody(), conditional->inputs());
+      auto elseType = checkType(ctx, conditional->elseBody(), conditional->inputs());
       if (!thenType && !elseType) {
         return NoResult;
       }
@@ -416,7 +411,7 @@ namespace fluir {
         ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
                                          ctx.currentFile,
                                          conditional->fullId(),
-                                         "then and else branche outputs are different types, types must be identical");
+                                         "then and else branch outputs are different types, types must be identical");
 
         return NoResult;
       }
@@ -425,10 +420,58 @@ namespace fluir {
       return thenType;
     }
 
-    Results<types::TypeID> checkType(Context& ctx,
-                                     ast::DataFlowGraph& dfg,
-                                     const std::vector<ast::ScopeInput>& inputs,
-                                     const std::vector<ID>& outputs) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Bundle* bundle) {
+      bool succeeded = true;
+
+      for (auto& child : bundle->children()) {
+        if (!checkType(ctx, child)) {
+          succeeded = false;
+        }
+      }
+
+      if (!succeeded) {
+        return NoResult;
+      }
+
+      std::vector<types::TypeID> elements;
+      std::ranges::transform(bundle->children(), std::back_inserter(elements), [](const auto& c) { return c.type(); });
+      auto productType = ctx.symbolTable.addType(types::Product::createFromTypes(elements));
+      bundle->setType(productType);
+      return productType;
+    }
+
+    Results<types::TypeID> checkType(Context& ctx, ast::Unbundle* unbundle) {
+      if (!checkType(ctx, unbundle->child())) {
+        return NoResult;
+      }
+
+      auto childType = ctx.symbolTable.getType(unbundle->child().type());
+      if (!childType->is<types::Product>()) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                         ctx.currentFile,
+                                         unbundle->fullId(),
+                                         "Unbundle can only be used on product types, found {}",
+                                         childType->name());
+        return NoResult;
+      }
+
+      const auto* productType = childType->as<types::Product>();
+      if (productType->count() <= unbundle->index()) {
+        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                         ctx.currentFile,
+                                         unbundle->fullId(),
+                                         "Product type only has {} elements, attempted to unbundle element at {}",
+                                         productType->count(),
+                                         unbundle->index());
+        return NoResult;
+      }
+
+      auto unbundledType = productType->at(unbundle->index());
+      unbundle->setType(unbundledType);
+      return unbundledType;
+    }
+
+    Results<types::TypeID> checkType(Context& ctx, ast::SubGraph& graph, const std::vector<ast::ScopeInput>& inputs) {
       ctx.symbolTable.pushScope();
       FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
       // Add all the input types as locals
@@ -440,32 +483,20 @@ namespace fluir {
       }
 
       bool succeeded = true;
-      for (auto& node : dfg) {
+      for (auto& node : graph.sinks) {
         if (!checkType(ctx, node.get())) {
           succeeded = false;
         }
       }
-
-      std::vector<types::TypeID> outputTypes;
-      for (auto& output : outputs) {
-        auto type = ctx.symbolTable.getLocalVariableType(output);
-        if (type == types::ID_INVALID) {
-          succeeded = false;
-        }
-        outputTypes.push_back(type);
-      }
-      if (succeeded) {
-        switch (outputTypes.size()) {
-          case 0:
-            return types::ID_EMPTY;
-          case 1:
-            return outputTypes.front();
-          default:
-            return ctx.symbolTable.addType(types::Product::createFromTypes(std::move(outputTypes)));
-        }
+      if (!succeeded) {
+        return NoResult;
       }
 
-      return NoResult;
+      if (!graph.output) {
+        return types::ID_EMPTY;
+      }
+      auto output = checkType(ctx, &*graph.output);
+      return output;
     }
 
   }  // namespace

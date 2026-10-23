@@ -15,7 +15,9 @@ Function(1): 'main'
           ConstantF64(10): -1.0000
   Call(4): 'print'
     Arg(1):
-      LocalRead(4): 1
+      Unbundle(4)[0]:
+        LocalRead(4): 1
   Call(6): 'print'
     Arg(1):
-      LocalRead(6): 1.1
+      Unbundle(6)[1]:
+        LocalRead(6): 1

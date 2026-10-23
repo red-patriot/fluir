@@ -13,6 +13,7 @@ namespace fluir::debug {
 
     void print(const ast::AST& ast);
     void print(const ast::DataFlowGraph& graph);
+    void print(const ast::SubGraph& subgraph);
 
     void operator()(const ast::FunctionDecl& func);
     void operator()(const ast::BinaryOp& binary);

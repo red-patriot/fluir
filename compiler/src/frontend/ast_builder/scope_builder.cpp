@@ -235,6 +235,10 @@ namespace fluir::fe {
     auto dependency = process(dependencyId, pt);
     // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
+    if (bundledIds_.contains(dependencyId)) {
+      dependency = ast::createNode<ast::Unbundle>(
+        currentID_, FlowGraphLocation{}, ast::Dependency{std::move(dependency)}, static_cast<size_t>(dependencyIdx));
+    }
     return ast::Dependency{std::move(dependency)};
   }
 

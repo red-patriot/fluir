@@ -56,6 +56,8 @@ namespace fluir::types {
     Product(std::string name, std::vector<TypeID> elements);
 
     [[nodiscard]] TypeID at(size_t index) const { return elements_.at(index); }
+    /** Returns the number of elements in this product. */
+    [[nodiscard]] size_t count() const { return elements_.size(); }
     /** Returns the number of elements in the product type*/
     [[nodiscard]] size_t elements() const { return elements_.size(); }
 

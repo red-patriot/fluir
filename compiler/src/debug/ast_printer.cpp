@@ -33,6 +33,13 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::print(const ast::SubGraph& subgraph) {
+    print(subgraph.sinks);
+    if (subgraph.output) {
+      print(*subgraph.output);
+    }
+  }
+
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
@@ -105,9 +112,7 @@ namespace fluir::debug {
     print(write.child());
   }
   void AstPrinter::operator()(const ast::LocalRead& read) {
-    auto target = read.varIndex() == 0 ? fmt::format("{}", read.variable()) :
-                                         fmt::format("{}.{}", read.variable(), read.varIndex());
-    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), target);
+    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), read.variable());
   }
 
   void AstPrinter::operator()(const ast::Call& call) {

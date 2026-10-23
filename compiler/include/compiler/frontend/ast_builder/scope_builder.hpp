@@ -17,6 +17,11 @@ namespace fluir::fe {
                                                 const std::unordered_set<ID>& inputs,
                                                 const std::vector<ID>& outputs,
                                                 FullID id);
+    static Results<ast::SubGraph> buildSubGraph(Context& ctx,
+                                                const pt::Block& block,
+                                                const std::unordered_set<ID>& inputs,
+                                                const std::vector<ID>& outputs,
+                                                FullID id);
 
     ast::UniqueNode operator()(const pt::Binary& pt);
     ast::UniqueNode operator()(const pt::Unary& pt);
@@ -32,6 +37,7 @@ namespace fluir::fe {
     FullID currentID_{};
     std::unordered_set<ID> alreadyFound_;
     std::unordered_set<ID> promotedIds_;
+    std::unordered_set<ID> bundledIds_;
     std::unordered_set<ID> inputs_;
     std::vector<ID> outputs_;
     std::vector<ID> inProgressNodes_;

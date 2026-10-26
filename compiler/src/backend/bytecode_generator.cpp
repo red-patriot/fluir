@@ -288,42 +288,61 @@ namespace fluir {
     generateDependency(conditional.condition());
     inputs.emplace_back(1, types::ID_BOOL);  // Inner ID of the condition
 
-    auto lastScope = currentScope_;
-    auto scope = currentScope_->pushScope();
-    currentScope_ = &scope;
-    FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
-    for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
-      auto slot = addLocalSlot(id, type);
+    {
+      auto lastScope = currentScope_;
+      auto scope = currentScope_->pushScope();
+      currentScope_ = &scope;
+      FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
+      for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
+        auto slot = addLocalSlot(id, type);
+        emitBytes(Instruction::SET_VAL, slot);
+      }
+      // Read the condition back to the stack to use it
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
+
+      std::vector<WithID<types::TypeID>> outputs;
+      if (conditional.outputs().size() == 0) {
+      } else if (conditional.outputs().size() == 1) {
+        outputs.emplace_back(conditional.outputs().front(), conditional.type());
+      }
+
+      auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+      generate(conditional.thenBody(), inputs, outputs);
+      auto elseJump = emitJump(Instruction::JUMP_BY);
+      patchJump(thenJump, current_->code.size());
+
+      generate(conditional.elseBody(), inputs, outputs);
+      patchJump(elseJump, current_->code.size());
+    }
+
+    // Handle outputs in a separate scope from the bodies, so outputs persist in the caller's scope
+    const auto* type = ctx_.symbolTable.getType(conditional.type());
+    if (!type->is<types::Product>()) {
+      // There is only 1 output, so just leave it on the stack normally
+      return;
+    }
+    const auto* product = type->as<types::Product>();
+    if (product->count() == 0) {
+      // No outputs, do nothing
+      return;
+    }
+
+    // HACK: If there are multiple outputs, push them as locals.
+    // TODO: handle multiple outputs more generically?
+    auto baseSlot =
+      static_cast<uint8_t>(currentScope_->addLocalSlot(conditional.id(), *product));  // TODO: Handle too many?
+    // Loop backwards over all the product's elements and push them to the correct offset
+    for (auto slot = baseSlot + product->count() - 1; slot >= baseSlot && slot < baseSlot + product->count(); --slot) {
       emitBytes(Instruction::SET_VAL, slot);
     }
-    // Read the condition back to the stack to use it
-    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
+  }
 
-    std::vector<WithID<types::TypeID>> outputs;
-    if (conditional.outputs().size() == 0) {
-    } else if (conditional.outputs().size() == 1) {
-      outputs.emplace_back(conditional.outputs().front(), conditional.type());
-    } else {
-      auto product = ctx_.symbolTable.getType(conditional.type())->as<types::Product>();
-      for (const auto& [idx, id] : std::ranges::views::enumerate(conditional.outputs())) {
-        outputs.emplace_back(id, product->at(idx));
-        addLocalSlot(id, product->at(idx));
-      }
-    }
-
-    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
-    generate(conditional.thenBody(), inputs, outputs);
-    auto elseJump = emitJump(Instruction::JUMP_BY);
-    patchJump(thenJump, current_->code.size());
-
-    generate(conditional.elseBody(), inputs, outputs);
-    patchJump(elseJump, current_->code.size());
-
-    // Push the outputs onto the stack
-    for (const auto& id : conditional.outputs()) {
-      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
+  void BytecodeGenerator::generate(const ast::Bundle& bundle) {
+    for (const auto& dependency : bundle.children()) {
+      generateDependency(dependency);
     }
   }
+  void BytecodeGenerator::generate(const ast::Unbundle&) { assert(false); }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
     ctx_(ctx), graph_(graph), writer_(writer) { }
@@ -423,16 +442,15 @@ namespace fluir {
         fmt::format("Too many outputs from subgraph. Found {}, only up to {} allowed.", outputCount, UINT8_MAX));
     }
 
-    for (const auto& [id, type] : outputs) {
-      addLocalSlot(id, type);
-    }
     for (const auto& [id, type] : inputs) {
       addLocalSlot(id, type);
     }
     for (const auto& node : subgraph.sinks) {
       generateTopLevel(*node);
     }
-    // TODO: Output
+    if (subgraph.output) {
+      doGenerate(*subgraph.output);
+    }
   }
 
   void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) { doGenerate(dependency.get()); }
@@ -446,7 +464,8 @@ namespace fluir {
     } else if (slotCount == 1) {
       emitByte(Instruction::POP);
     } else {
-      emitBytes(Instruction::MULTIPOP, slotCount);
+      // TODO: Handle this case better. For now, all multi-output nodes use locals
+      //  to store their outputs, so nothing to pop
     }
   }
 
@@ -469,8 +488,9 @@ namespace fluir {
       case ast::NodeKind::Conditional:
         return generate(*node.as<ast::Conditional>());
       case ast::NodeKind::Bundle:
+        return generate(*node.as<ast::Bundle>());
       case ast::NodeKind::Unbundle:
-        std::unreachable();
+        return generate(*node.as<ast::Unbundle>());
     }
     diagnostic::emitInternalError("Unknown node kind encountered");
   }

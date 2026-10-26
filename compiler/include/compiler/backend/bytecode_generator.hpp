@@ -25,6 +25,8 @@ namespace fluir {
     void generate(const ast::LocalRead& read);
     void generate(const ast::Call& call);
     void generate(const ast::Conditional& conditional);
+    void generate(const ast::Bundle& bundle);
+    void generate(const ast::Unbundle& unbundle);
 
    private:
     Context& ctx_;

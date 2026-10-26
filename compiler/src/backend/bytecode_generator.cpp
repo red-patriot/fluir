@@ -342,7 +342,25 @@ namespace fluir {
       generateDependency(dependency);
     }
   }
-  void BytecodeGenerator::generate(const ast::Unbundle&) { assert(false); }
+  void BytecodeGenerator::generate(const ast::Unbundle& unbundle) {
+    generateDependency(unbundle.child());
+    const auto* type = ctx_.symbolTable.getType(unbundle.child().type());
+    if (!type->is<types::Product>()) {
+      diagnostic::emitInternalError(
+        fmt::format("Can only unbundle a product type, attempted to unbundle {}", type->name()));
+    }
+    const auto* product = type->as<types::Product>();
+    if (unbundle.index() >= product->count()) {
+      diagnostic::emitInternalError(fmt::format(
+        "Attempted to unbundle item {} from a product with {} elements", unbundle.index(), product->count()));
+    }
+
+    // All bundles resolve to storing temporaries in slots, so get the index at the correct offset
+    auto baseSlot = currentScope_->getLocalSlot(unbundle.child().id());
+    // TODO: Handle too many slots
+    auto slot = static_cast<uint8_t>(baseSlot + unbundle.index());
+    emitBytes(Instruction::GET_VAL, slot);
+  }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
     ctx_(ctx), graph_(graph), writer_(writer) { }

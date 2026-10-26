@@ -2061,3 +2061,129 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
   ASSERT_EQ(1, writer.chunks.size());
   EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
+
+TEST_F(TestBytecodeGenerator, GeneratesUpstreamNodesOfConditionalWithMultipleOutputs) {
+  fa::AST input;
+  input.declarations.emplace_back([&]() {
+    fa::FunctionDecl decl{.id = 3, .name = "cond", .statements = {}};
+    decl.statements.push_back(std::move(fa::createNode<fa::Call>(
+      "print",
+      []() {
+        std::vector<fa::Dependency> deps;
+        deps.push_back(std::move(fa::createDependency<fa::Unbundle>(
+          FullID{3, 1},
+          fluir::FlowGraphLocation{},
+          std::move(fa::createDependency<fa::Conditional>(
+            FullID{3, 1},
+            fluir::FlowGraphLocation{},
+            fa::createDependency<fa::Constant>(true, FullID{3, 2}, fluir::FlowGraphLocation{}),
+            std::vector<fa::ScopeInput>{[]() {
+              std::vector<fa::ScopeInput> inputs;
+              inputs.emplace_back(fa::createDependency<fa::Constant>(1, FullID{3, 3}, fluir::FlowGraphLocation{}), 14);
+              return inputs;
+            }()},
+            std::vector<fluir::ID>{12, 13},
+            // THEN
+            fa::SubGraph{[]() {
+              fa::SubGraph graph;
+              graph.output = fa::createNode<fa::Bundle>(FullID{3, 1, 1}, fluir::FlowGraphLocation{}, []() {
+                std::vector<fa::Dependency> deps;
+                deps.emplace_back(std::move(fa::createDependency<fa::BinaryOp>(
+                  fluir::Operator::PLUS,
+                  fa::createDependency<fa::Constant>(7, FullID{3, 0, 1}, fluir::FlowGraphLocation{}),
+                  fa::createDependency<fa::LocalRead>(14, FullID{3, 0, 2}, fluir::FlowGraphLocation{}),  // 1
+                  FullID{3, 1, 3},
+                  fluir::FlowGraphLocation{})));
+                deps.emplace_back(
+                  std::move(fa::createDependency<fa::Constant>(false, FullID{3, 0, 4}, fluir::FlowGraphLocation{})));
+                return deps;
+              }());
+              return graph;
+            }()},
+            // ELSE
+            fa::SubGraph{[]() {
+              fa::SubGraph graph;
+              graph.output = fa::createNode<fa::Bundle>(FullID{3, 1, 2}, fluir::FlowGraphLocation{}, []() {
+                std::vector<fa::Dependency> deps;
+                deps.emplace_back(
+                  std::move(fa::createDependency<fa::Constant>(13, FullID{3, 1, 19}, fluir::FlowGraphLocation{})));
+                deps.emplace_back(
+                  std::move(fa::createDependency<fa::Constant>(true, FullID{3, 1, 21}, fluir::FlowGraphLocation{})));
+                return deps;
+              }());
+              return graph;
+            }()})),
+          1)));
+        return deps;
+      }(),
+      FullID{3, 26},
+      fluir::FlowGraphLocation{})));
+    return decl;
+  }());
+
+  fc::Header expectedHeader{.filetype = '\0', .major = 0, .minor = 1, .patch = 3, .entryOffset = 0};
+  // Constants: 1, true, 7, false, 13, "print"
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x2,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::SET_VAL,
+        0x1,  // input 0
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xC,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x1,  // input 0
+        fc::Instruction::I64_ADD,
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x4,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x4,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::Instruction::GET_VAL,
+        0x1,
+        fc::DYN_CALL,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::MULTIPOP,
+        0x2,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  input = prepare(std::move(input));
+  TestWriter writer;
+  fluir::generateCode(ctx_, input, writer);
+  EXPECT_FALSE(sink_.containsErrors());
+  EXPECT_BC_HEADER_EQ(expectedHeader, writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}

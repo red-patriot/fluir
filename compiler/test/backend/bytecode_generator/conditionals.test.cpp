@@ -279,10 +279,8 @@ TEST_F(TestBytecodeGenerator, GeneratesConditionalWithMultipleOutputs) {
         0x4,
         fc::Instruction::PUSH,
         0x1,
-        fc::Instruction::SET_VAL,
-        0x1,
-        fc::Instruction::SET_VAL,
-        0x0,
+        fc::Instruction::MULTIPOP,
+        0x2,
         fc::Instruction::MULTIPOP,
         0x2,
         fc::Instruction::RETURN,
@@ -390,6 +388,95 @@ TEST_F(TestBytecodeGenerator, GeneratesUpstreamNodesOfConditionalWithMultipleOut
                                 output(bundle({3, 1, 2}, deps(constant(13, {3, 1, 19}), constant(true, {3, 1, 21}))))),
                     1)),
       {3, 26}))));
+
+  EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}
+
+TEST_F(TestBytecodeGenerator, GeneratesMultipleUpstreamNodesOfConditionalWithMultipleOutputs) {
+  // Constants: 1, true, 7, false, 13, "print"
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x2,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::SET_VAL,
+        0x1,  // input 0
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0xC,
+        // THEN
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::GET_VAL,
+        0x1,  // input 0
+        fc::Instruction::I64_ADD,
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x4,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x4,
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::Instruction::GET_VAL,
+        0x1,
+        fc::DYN_CALL,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::GET_VAL,
+        0x0,
+        fc::DYN_CALL,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::MULTIPOP,
+        0x2,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  auto writer = generate(program(function(
+    3,
+    "cond",
+    localWrite(conditional({3, 1},
+                           constant(true, {3, 2}),
+                           inputs(scopeInput(constant(1, {3, 3}), 14)),
+                           {12, 13},
+                           // THEN
+                           output(bundle({3, 1, 1},
+                                         deps(binary(fluir::Operator::PLUS,
+                                                     constant(7, {3, 0, 1}),
+                                                     localRead(14, {3, 0, 2}),  // 1
+                                                     {3, 1, 3}),
+                                              constant(false, {3, 0, 4})))),
+                           // ELSE
+                           output(bundle({3, 1, 2}, deps(constant(13, {3, 1, 19}), constant(true, {3, 1, 21})))))),
+    call("print", deps(unbundle({3, 4}, localRead(1, {3, 4}), 1)), {3, 4}),
+    call("print", deps(unbundle({3, 5}, localRead(1, {3, 5}), 0)), {3, 5}))));
 
   EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
   ASSERT_EQ(1, writer.chunks.size());

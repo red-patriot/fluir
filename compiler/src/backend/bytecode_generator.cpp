@@ -222,6 +222,10 @@ namespace fluir {
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
     generateDependency(write.child());
 
+    if (ctx_.symbolTable.getType(write.storedType())->is<types::Product>()) {
+      // Products are already written to slots, so skip it here so we don't double write
+      return;
+    }
     auto slot = addLocalSlot(write.variable(), write.storedType());
     emitBytes(Instruction::SET_VAL, slot);
   }
@@ -314,27 +318,6 @@ namespace fluir {
       generate(conditional.elseBody(), inputs, outputs);
       patchJump(elseJump, current_->code.size());
     }
-
-    // Handle outputs in a separate scope from the bodies, so outputs persist in the caller's scope
-    const auto* type = ctx_.symbolTable.getType(conditional.type());
-    if (!type->is<types::Product>()) {
-      // There is only 1 output, so just leave it on the stack normally
-      return;
-    }
-    const auto* product = type->as<types::Product>();
-    if (product->count() == 0) {
-      // No outputs, do nothing
-      return;
-    }
-
-    // HACK: If there are multiple outputs, push them as locals.
-    // TODO: handle multiple outputs more generically?
-    auto baseSlot =
-      static_cast<uint8_t>(currentScope_->addLocalSlot(conditional.id(), *product));  // TODO: Handle too many?
-    // Loop backwards over all the product's elements and push them to the correct offset
-    for (auto slot = baseSlot + product->count() - 1; slot >= baseSlot && slot < baseSlot + product->count(); --slot) {
-      emitBytes(Instruction::SET_VAL, slot);
-    }
   }
 
   void BytecodeGenerator::generate(const ast::Bundle& bundle) {
@@ -343,7 +326,14 @@ namespace fluir {
     }
   }
   void BytecodeGenerator::generate(const ast::Unbundle& unbundle) {
-    generateDependency(unbundle.child());
+    if (unbundle.child().get().is<ast::LocalRead>()) {
+      // Skip local read generation because a Product is already stored in slots,
+      // we will read directly from the correct slot instead because the bytecode
+      // doesn't have good support for stack management that would be necessary
+      // to handle management differently.
+    } else {
+      generateDependency(unbundle.child());
+    }
     const auto* type = ctx_.symbolTable.getType(unbundle.child().type());
     if (!type->is<types::Product>()) {
       diagnostic::emitInternalError(
@@ -355,8 +345,11 @@ namespace fluir {
         "Attempted to unbundle item {} from a product with {} elements", unbundle.index(), product->count()));
     }
 
+    const auto local = unbundle.child().get().is<ast::LocalRead>() ?
+                         unbundle.child().get().as<ast::LocalRead>()->variable() :
+                         unbundle.child().id();
     // All bundles resolve to storing temporaries in slots, so get the index at the correct offset
-    auto baseSlot = currentScope_->getLocalSlot(unbundle.child().id());
+    auto baseSlot = currentScope_->getLocalSlot(local);
     // TODO: Handle too many slots
     auto slot = static_cast<uint8_t>(baseSlot + unbundle.index());
     emitBytes(Instruction::GET_VAL, slot);
@@ -471,19 +464,39 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) { doGenerate(dependency.get()); }
+  void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) {
+    doGenerate(dependency.get());
+
+    const auto* type = ctx_.symbolTable.getType(dependency.type());
+    if (!type->is<types::Product>()) {
+      // There is only 1 output, so just leave it on the stack normally
+      return;
+    }
+    const auto* product = type->as<types::Product>();
+    if (product->count() == 0) {
+      // No outputs, do nothing
+      return;
+    }
+
+    // HACK: If there are multiple outputs, push them as locals.
+    // TODO: handle multiple outputs more generically?
+    auto baseSlot =
+      static_cast<uint8_t>(currentScope_->addLocalSlot(dependency.id(), *product));  // TODO: Handle too many?
+    // Loop backwards over all the product's elements and push them to the correct offset
+    for (auto slot = baseSlot + product->count() - 1; slot >= baseSlot && slot < baseSlot + product->count(); --slot) {
+      emitBytes(Instruction::SET_VAL, slot);
+    }
+  }
 
   void BytecodeGenerator::generateTopLevel(const ast::Node& node) {
     doGenerate(node);
-    // TODO: Handle sizes generically based by type
     const auto* type = ctx_.symbolTable.getType(node.type());
     if (uint8_t slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
       // No emit for no slots
     } else if (slotCount == 1) {
       emitByte(Instruction::POP);
     } else {
-      // TODO: Handle this case better. For now, all multi-output nodes use locals
-      //  to store their outputs, so nothing to pop
+      emitBytes(Instruction::MULTIPOP, slotCount);
     }
   }
 

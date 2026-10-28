@@ -25,8 +25,15 @@ set(FLUIR_AST_TEST_SOURCES
     # TODO: Restore this file in a minute ast/ast.test.cpp
 )
 
-set(FLUIR_BACKEND_TEST_SOURCES backend/bytecode_generator.test.cpp
-                               backend/inspect_writer.test.cpp
+set(FLUIR_BACKEND_TEST_SOURCES
+    backend/bytecode_generator/arithmetic.test.cpp
+    backend/bytecode_generator/casts.test.cpp
+    backend/bytecode_generator/comparisons.test.cpp
+    backend/bytecode_generator/conditionals.test.cpp
+    backend/bytecode_generator/constants.test.cpp
+    backend/bytecode_generator/functions.test.cpp
+    backend/bytecode_generator/locals.test.cpp
+    backend/inspect_writer.test.cpp
 )
 
 set(FLUIR_TYPES_TEST_SOURCES

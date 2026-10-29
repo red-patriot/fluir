@@ -1,4 +1,5 @@
 find_package(GTest REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Test)
 
 add_executable(fluir.editor.test)
 
@@ -69,6 +70,8 @@ target_sources(
             ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
             input.test.cpp
+            main.cpp
+            qt_platform.test.cpp
 )
 
 target_include_directories(
@@ -81,7 +84,10 @@ target_compile_definitions(
 )
 
 target_link_libraries(
-    fluir.editor.test PRIVATE fluir.libeditor GTest::gtest_main
+    fluir.editor.test
+    PRIVATE fluir.libeditor
+            Qt6::Test
+            GTest::gtest
 )
 
 include(GoogleTest)

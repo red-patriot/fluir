@@ -178,8 +178,16 @@
       }
     },
     {
-      "name": "gcc-debug",
+      "name": "_maxsan-test",
+      "hidden": true,
       "inherits": "_test_base",
+      "environment": {
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/experimental_editor/lsan.supp"
+      }
+    },
+    {
+      "name": "gcc-debug",
+      "inherits": "_maxsan-test",
       "configurePreset": "gcc-debug"
     },
     {
@@ -194,7 +202,7 @@
     },
     {
       "name": "llvm-debug",
-      "inherits": "_test_base",
+      "inherits": "_maxsan-test",
       "configurePreset": "llvm-debug"
     },
     {

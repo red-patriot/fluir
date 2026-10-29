@@ -1,0 +1,4 @@
+# LeakSanitizer suppressions for third-party leaks under the MaxSan presets.
+# Qt 6.4's Wayland platform plugin never frees its registry globals.
+leak:libQt6WaylandClient.so
+leak:libwayland-client.so

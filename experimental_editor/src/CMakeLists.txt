@@ -130,9 +130,13 @@ if (TARGET plutosvg)
     set_target_properties(plutosvg PROPERTIES SYSTEM TRUE)
 endif ()
 
+find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
+
 include(strict-warnings)
 
 add_library(fluir.libeditor)
+
+set_target_properties(fluir.libeditor PROPERTIES AUTOMOC ON)
 
 target_include_directories(
     fluir.libeditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
@@ -241,6 +245,24 @@ target_sources(
 add_subdirectory(assets/fonts)
 add_subdirectory(assets/images)
 
+# Keeps these resources linked through the static library without
+# Q_INIT_RESOURCE.
+qt_add_resources(
+    fluir.libeditor
+    "editor_assets"
+    PREFIX
+    "/"
+    BASE
+    "assets"
+    FILES
+    "assets/fonts/DejaVuSansMono.ttf"
+    "assets/images/branchArrow.svg"
+    "assets/images/dragHandle.svg"
+    "assets/images/false.svg"
+    "assets/images/true.svg"
+    "assets/images/XYResizeHandle.svg"
+)
+
 target_link_libraries(
     fluir.libeditor
     PUBLIC fmt::fmt
@@ -248,6 +270,8 @@ target_link_libraries(
            SDL3_ttf::SDL3_ttf
            nfd
            plutosvg
+           Qt6::Widgets
+           Qt6::Svg
            fluir::compiler
            fluir::utility
 )

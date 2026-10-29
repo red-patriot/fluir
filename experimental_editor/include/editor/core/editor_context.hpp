@@ -1,4 +1,5 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_EDITOR_CONTEXT_HPP
+#define FLUIR_EDITOR_CORE_EDITOR_CONTEXT_HPP
 
 #include <cstdint>
 
@@ -25,8 +26,6 @@ namespace fluir::editor {
       double returnInsetUnits = 5.0;
       // Gap between a selected actor's rect and its outline, in world px.
       double selectionPad = 2.0;
-      // App-level chrome bar height, in screen px (not world units).
-      double chromeHeaderPx = 32.0;
 
       constexpr double headerH() const { return headerUnits * unitPx; }
       constexpr double railStep() const { return railUnits * unitPx; }
@@ -69,7 +68,8 @@ namespace fluir::editor {
     Zoom zoom;
     Theme theme;
     Window window;
-    bool running = true;
   };
 
 }  // namespace fluir::editor
+
+#endif

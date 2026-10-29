@@ -3,6 +3,12 @@ find_package(Qt6 REQUIRED COMPONENTS Test)
 
 add_executable(fluir.editor.test)
 
+set(FLUIR_EDITOR_APP_TEST_SOURCES
+    app/main_window.test.cpp
+    app/module_document.test.cpp
+    app/splash_widget.test.cpp
+)
+
 set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
                                          components/text_field.test.cpp
 )
@@ -22,8 +28,6 @@ set(FLUIR_EDITOR_CORE_TEST_SOURCES
     core/tree_path.test.cpp
     core/viewport.test.cpp
 )
-
-set(FLUIR_EDITOR_PAGES_TEST_SOURCES pages/module.test.cpp pages/splash.test.cpp)
 
 set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/bool_toggle_tool.test.cpp
@@ -58,18 +62,16 @@ set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/graph_geometry.test.cpp
     view/graph_draw.test.cpp
     view/graph_layout.test.cpp
-    view/toolbar.test.cpp
 )
 
 target_sources(
     fluir.editor.test
-    PRIVATE ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
+    PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
+            ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
-            ${FLUIR_EDITOR_PAGES_TEST_SOURCES}
             ${FLUIR_EDITOR_TOOLS_TEST_SOURCES}
             ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
-            input.test.cpp
             main.cpp
             qt_platform.test.cpp
 )

@@ -4,132 +4,6 @@ find_package(
     REQUIRED
 )
 
-include(FetchContent)
-set(SDL_SHARED
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(SDL_STATIC
-    ON
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(SDL_TEST
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(SDL_EXAMPLES
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    SDL3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG release-3.2.24
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(SDL3)
-
-# SDL3's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET SDL3-static)
-    set_target_properties(SDL3-static PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(NFD_BUILD_TESTS
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    nfd
-    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
-    GIT_TAG v1.2.1
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(nfd)
-
-# NFD's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET nfd)
-    set_target_properties(nfd PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(SDLTTF_VENDORED
-    ON
-    CACHE BOOL
-          ""
-          FORCE
-)
-foreach (
-    opt
-    SDLTTF_HARFBUZZ
-    SDLTTF_PLUTOSVG
-    SDLTTF_SAMPLES
-    SDLTTF_INSTALL
-)
-    set(${opt}
-        OFF
-        CACHE BOOL
-              ""
-              FORCE
-    )
-endforeach ()
-set(BUILD_SHARED_LIBS
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    SDL3_ttf
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-    GIT_TAG release-3.2.2
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES "external/freetype"
-)
-FetchContent_MakeAvailable(SDL3_ttf)
-
-# SDL_ttf's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET SDL3_ttf-static)
-    set_target_properties(SDL3_ttf-static PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(PLUTOSVG_ENABLE_FREETYPE
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(PLUTOSVG_BUILD_EXAMPLES
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    plutosvg
-    GIT_REPOSITORY https://github.com/sammycage/plutosvg.git
-    GIT_TAG v0.0.7
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(plutosvg)
-
-# plutosvg's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET plutosvg)
-    set_target_properties(plutosvg PROPERTIES SYSTEM TRUE)
-endif ()
-
 find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
 
 include(strict-warnings)
@@ -180,11 +54,17 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
     "transaction/update_func_param.cpp"
 )
 
-set(FLUIR_EDITOR_PAGE_SOURCES
-    "pages/module.cpp"
-    "pages/page.cpp"
-    "pages/splash.cpp"
+# Q_OBJECT headers are listed so AUTOMOC finds them outside src/.
+set(FLUIR_EDITOR_APP_SOURCES
+    "app/main_window.cpp"
+    "app/module_document.cpp"
+    "app/splash_widget.cpp"
+    "../include/editor/app/main_window.hpp"
+    "../include/editor/app/module_document.hpp"
+    "../include/editor/app/splash_widget.hpp"
 )
+
+set(FLUIR_EDITOR_SCENE_SOURCES "scene/graph_view.cpp")
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
                                    "components/text_field.cpp"
@@ -203,7 +83,6 @@ set(FLUIR_EDITOR_VIEW_SOURCES
     "view/draw/function.cpp"
     "view/draw/unary.cpp"
     "view/node_view.cpp"
-    "view/toolbar.cpp"
 )
 
 set(FLUIR_EDITOR_TOOL_SOURCES
@@ -236,13 +115,10 @@ target_sources(
             ${FLUIR_EDITOR_TRANSACTION_SOURCES}
             ${FLUIR_EDITOR_VIEW_SOURCES}
             ${FLUIR_EDITOR_TOOL_SOURCES}
-            ${FLUIR_EDITOR_PAGE_SOURCES}
-            "sdl_renderer.cpp"
-            "input.cpp"
-            "app.cpp"
+            ${FLUIR_EDITOR_APP_SOURCES}
+            ${FLUIR_EDITOR_SCENE_SOURCES}
 )
 
-add_subdirectory(assets/fonts)
 add_subdirectory(assets/images)
 
 # Keeps these resources linked through the static library without
@@ -266,10 +142,6 @@ qt_add_resources(
 target_link_libraries(
     fluir.libeditor
     PUBLIC fmt::fmt
-           SDL3::SDL3
-           SDL3_ttf::SDL3_ttf
-           nfd
-           plutosvg
            Qt6::Widgets
            Qt6::Svg
            fluir::compiler

@@ -24,9 +24,9 @@ namespace fluir::fe {
   }
 
   Results<ast::FunctionDecl> FunctionAstBuilder::run() {
-    std::unordered_set<ID> outputs;
+    std::vector<ID> outputs;
     if (pt_.output && pt_.output->ret) {
-      outputs.insert(pt_.output->ret->id);
+      outputs.emplace_back(pt_.output->ret->id);
     }
 
     std::optional<ast::FunctionDecl::Return> returnVal{std::nullopt};
@@ -49,7 +49,18 @@ namespace fluir::fe {
       return std::nullopt;
     }
 
-    // TODO: Store some type information for type checking
+    // TODO: Store some type information for type checking?
+    // TODO: Update functions to use bundle/unbundle for multiple return values
+    if (pt_.output.has_value()) {
+      // HACK: Current behavior for function decls is only 0 or 1 return and it is written to a local slot,
+      //  Wrap the last node in a LocalWrite so that stays for now
+      auto outputNode = std::move(graph->back());
+      auto outputId = outputNode->fullId();
+      outputId.back() = outputs.back();  // Replace the internal ID of the node to write to the return value
+      auto write = ast::createNode<ast::LocalWrite>(
+        std::move(outputId), ast::Dependency(std::move(outputNode)), fluir::FlowGraphLocation{});
+      graph->back() = std::move(write);
+    }
 
     ast::FunctionDecl ast{.id = pt_.id,
                           .location = pt_.location,

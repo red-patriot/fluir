@@ -15,7 +15,12 @@ namespace fluir::fe {
     static Results<ast::DataFlowGraph> buildAst(Context& ctx,
                                                 const pt::Block& block,
                                                 const std::unordered_set<ID>& inputs,
-                                                const std::unordered_set<ID>& outputs,
+                                                const std::vector<ID>& outputs,
+                                                FullID id);
+    static Results<ast::SubGraph> buildSubGraph(Context& ctx,
+                                                const pt::Block& block,
+                                                const std::unordered_set<ID>& inputs,
+                                                const std::vector<ID>& outputs,
                                                 FullID id);
 
     ast::UniqueNode operator()(const pt::Binary& pt);
@@ -32,16 +37,14 @@ namespace fluir::fe {
     FullID currentID_{};
     std::unordered_set<ID> alreadyFound_;
     std::unordered_set<ID> promotedIds_;
+    std::unordered_set<ID> bundledIds_;
     std::unordered_set<ID> inputs_;
-    std::unordered_set<ID> outputs_;
+    std::vector<ID> outputs_;
     std::vector<ID> inProgressNodes_;
     dag::NodeSet<ID> dependencies_;
 
-    explicit ScopeBuilder(Context& ctx,
-                          pt::Block block,
-                          const std::unordered_set<ID>& inputs,
-                          const std::unordered_set<ID>& outputs,
-                          FullID id);
+    explicit ScopeBuilder(
+      Context& ctx, pt::Block block, const std::unordered_set<ID>& inputs, const std::vector<ID>& outputs, FullID id);
 
     Results<ast::DataFlowGraph> run();
 
@@ -49,6 +52,15 @@ namespace fluir::fe {
     ast::UniqueNode process(ID id, pt::Node pt);
     /** Returns the dependency node with the given ID+index, processing it if necessary */
     ast::Dependency getDependency(ID dependentId, std::optional<unsigned> index);
+    /** Returns the dependencies of all outputs.
+     * \return based on output size:
+     *     0 => nullopt
+     *     1 => the node that generates the output
+     *     N > 1 => a Bundle of all nodes generating the output
+     */
+    std::optional<ast::UniqueNode> processOutputs(const std::vector<ID>& outputIDs,
+                                                  FullID id,
+                                                  FlowGraphLocation location);
 
     /** Returns the IDs of all nodes that are promoted to local variables because they have multiple dependents*/
     std::unordered_set<ID> getIdsPromotedToLocal() const;

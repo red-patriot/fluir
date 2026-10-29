@@ -40,7 +40,7 @@ namespace fluir {
         os << value.asI64();
         break;
       case code::PrimitiveType::U8:
-        os << value.asU8();
+        os << (int)value.asU8();
         break;
       case code::PrimitiveType::U16:
         os << value.asU16();

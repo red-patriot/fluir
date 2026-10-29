@@ -222,6 +222,10 @@ namespace fluir {
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
     generateDependency(write.child());
 
+    if (ctx_.symbolTable.getType(write.storedType())->is<types::Product>()) {
+      // Products are already written to slots, so skip it here so we don't double write
+      return;
+    }
     auto slot = addLocalSlot(write.variable(), write.storedType());
     emitBytes(Instruction::SET_VAL, slot);
   }
@@ -288,41 +292,67 @@ namespace fluir {
     generateDependency(conditional.condition());
     inputs.emplace_back(1, types::ID_BOOL);  // Inner ID of the condition
 
-    auto lastScope = currentScope_;
-    auto scope = currentScope_->pushScope();
-    currentScope_ = &scope;
-    FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
-    for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
-      auto slot = addLocalSlot(id, type);
-      emitBytes(Instruction::SET_VAL, slot);
-    }
-    // Read the condition back to the stack to use it
-    emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
-
-    std::vector<WithID<types::TypeID>> outputs;
-    if (conditional.outputs().size() == 0) {
-    } else if (conditional.outputs().size() == 1) {
-      outputs.emplace_back(conditional.outputs().front(), conditional.type());
-    } else {
-      auto product = ctx_.symbolTable.getType(conditional.type())->as<types::Product>();
-      for (const auto& [idx, id] : std::ranges::views::enumerate(conditional.outputs())) {
-        outputs.emplace_back(id, product->at(idx));
-        addLocalSlot(id, product->at(idx));
+    {
+      auto lastScope = currentScope_;
+      auto scope = currentScope_->pushScope();
+      currentScope_ = &scope;
+      FLUIR_SCOPE_EXIT { currentScope_ = lastScope; };
+      for (const auto& [id, type] : inputs | std::ranges::views::reverse) {
+        auto slot = addLocalSlot(id, type);
+        emitBytes(Instruction::SET_VAL, slot);
       }
+      // Read the condition back to the stack to use it
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
+
+      std::vector<WithID<types::TypeID>> outputs;
+      if (conditional.outputs().size() == 0) {
+      } else if (conditional.outputs().size() == 1) {
+        outputs.emplace_back(conditional.outputs().front(), conditional.type());
+      }
+
+      auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
+      generate(conditional.thenBody(), inputs, outputs);
+      auto elseJump = emitJump(Instruction::JUMP_BY);
+      patchJump(thenJump, current_->code.size());
+
+      generate(conditional.elseBody(), inputs, outputs);
+      patchJump(elseJump, current_->code.size());
+    }
+  }
+
+  void BytecodeGenerator::generate(const ast::Bundle& bundle) {
+    for (const auto& dependency : bundle.children()) {
+      generateDependency(dependency);
+    }
+  }
+  void BytecodeGenerator::generate(const ast::Unbundle& unbundle) {
+    if (unbundle.child().get().is<ast::LocalRead>()) {
+      // Skip local read generation because a Product is already stored in slots,
+      // we will read directly from the correct slot instead because the bytecode
+      // doesn't have good support for stack management that would be necessary
+      // to handle management differently.
+    } else {
+      generateDependency(unbundle.child());
+    }
+    const auto* type = ctx_.symbolTable.getType(unbundle.child().type());
+    if (!type->is<types::Product>()) {
+      diagnostic::emitInternalError(
+        fmt::format("Can only unbundle a product type, attempted to unbundle {}", type->name()));
+    }
+    const auto* product = type->as<types::Product>();
+    if (unbundle.index() >= product->count()) {
+      diagnostic::emitInternalError(fmt::format(
+        "Attempted to unbundle item {} from a product with {} elements", unbundle.index(), product->count()));
     }
 
-    auto thenJump = emitJump(Instruction::JUMP_IF_FALSE);
-    generate(conditional.thenBody(), inputs, outputs);
-    auto elseJump = emitJump(Instruction::JUMP_BY);
-    patchJump(thenJump, current_->code.size());
-
-    generate(conditional.elseBody(), inputs, outputs);
-    patchJump(elseJump, current_->code.size());
-
-    // Push the outputs onto the stack
-    for (const auto& id : conditional.outputs()) {
-      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(id)));
-    }
+    const auto local = unbundle.child().get().is<ast::LocalRead>() ?
+                         unbundle.child().get().as<ast::LocalRead>()->variable() :
+                         unbundle.child().id();
+    // All bundles resolve to storing temporaries in slots, so get the index at the correct offset
+    auto baseSlot = currentScope_->getLocalSlot(local);
+    // TODO: Handle too many slots
+    auto slot = static_cast<uint8_t>(baseSlot + unbundle.index());
+    emitBytes(Instruction::GET_VAL, slot);
   }
 
   BytecodeGenerator::BytecodeGenerator(Context& ctx, CodeWriter& writer, const ast::AST& graph) :
@@ -393,9 +423,10 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::generate(const ast::DataFlowGraph& subgraph,
+  void BytecodeGenerator::generate(const ast::DataFlowGraph& dfg,
                                    const std::vector<WithID<types::TypeID>>& inputs,
                                    const std::vector<WithID<types::TypeID>>& outputs) {
+    // TODO: Deprecate for SubGraph?
     auto outputCount = outputs.size();
     if (outputCount >= UINT8_MAX) {
       diagnostic::emitInternalError(
@@ -408,16 +439,57 @@ namespace fluir {
     for (const auto& [id, type] : inputs) {
       addLocalSlot(id, type);
     }
-    for (const auto& node : subgraph) {
+    for (const auto& node : dfg) {
       generateTopLevel(*node);
     }
   }
 
-  void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) { doGenerate(dependency.get()); }
+  void BytecodeGenerator::generate(const ast::SubGraph& subgraph,
+                                   const std::vector<WithID<types::TypeID>>& inputs,
+                                   const std::vector<WithID<types::TypeID>>& outputs) {
+    auto outputCount = outputs.size();
+    if (outputCount >= UINT8_MAX) {
+      diagnostic::emitInternalError(
+        fmt::format("Too many outputs from subgraph. Found {}, only up to {} allowed.", outputCount, UINT8_MAX));
+    }
+
+    for (const auto& [id, type] : inputs) {
+      addLocalSlot(id, type);
+    }
+    for (const auto& node : subgraph.sinks) {
+      generateTopLevel(*node);
+    }
+    if (subgraph.output) {
+      doGenerate(*subgraph.output);
+    }
+  }
+
+  void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) {
+    doGenerate(dependency.get());
+
+    const auto* type = ctx_.symbolTable.getType(dependency.type());
+    if (!type->is<types::Product>()) {
+      // There is only 1 output, so just leave it on the stack normally
+      return;
+    }
+    const auto* product = type->as<types::Product>();
+    if (product->count() == 0) {
+      // No outputs, do nothing
+      return;
+    }
+
+    // HACK: If there are multiple outputs, push them as locals.
+    // TODO: handle multiple outputs more generically?
+    auto baseSlot =
+      static_cast<uint8_t>(currentScope_->addLocalSlot(dependency.id(), *product));  // TODO: Handle too many?
+    // Loop backwards over all the product's elements and push them to the correct offset
+    for (auto slot = baseSlot + product->count() - 1; slot >= baseSlot && slot < baseSlot + product->count(); --slot) {
+      emitBytes(Instruction::SET_VAL, slot);
+    }
+  }
 
   void BytecodeGenerator::generateTopLevel(const ast::Node& node) {
     doGenerate(node);
-    // TODO: Handle sizes generically based by type
     const auto* type = ctx_.symbolTable.getType(node.type());
     if (uint8_t slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
       // No emit for no slots
@@ -446,6 +518,10 @@ namespace fluir {
         return generate(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
         return generate(*node.as<ast::Conditional>());
+      case ast::NodeKind::Bundle:
+        return generate(*node.as<ast::Bundle>());
+      case ast::NodeKind::Unbundle:
+        return generate(*node.as<ast::Unbundle>());
     }
     diagnostic::emitInternalError("Unknown node kind encountered");
   }

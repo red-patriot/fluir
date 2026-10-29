@@ -11,12 +11,12 @@ namespace fluir::types {
   Product::Product(std::string name, std::vector<TypeID> elements) :
     Type(std::move(name), Category::Product), elements_(std::move(elements)) { }
 
-  std::string Product::anonymousName(const std::vector<TypeID>& elements) {
-    return fmt::format("__product_{}", fmt::join(elements, "_"));
+  std::string Product::nameFromTypes(const std::vector<TypeID>& elements) {
+    return fmt::format("({})", fmt::join(elements, ","));
   }
 
-  Product Product::anonymous(std::vector<TypeID> elements) {
-    auto name = anonymousName(elements);
+  Product Product::createFromTypes(std::vector<TypeID> elements) {
+    auto name = nameFromTypes(elements);
     return Product{std::move(name), std::move(elements)};
   }
 

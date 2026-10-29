@@ -34,16 +34,19 @@ namespace fluir::be {
   Scope::Scope(BytecodeFrame* frame) : frame_(frame) { }
 
   Scope::~Scope() {
+    // The frame will reserve once up front the max number of slots needed by any of its scope,
+    // so recalc the max before popping this scope's slots
+    frame_->maxSlots_ = std::max(frame_->maxSlots_, frame_->currentSlots_);
     auto localsInScope = slots_.size();
     frame_->currentSlots_ -= localsInScope;
   }
 
   size_t Scope::addLocalSlot(ID id, const types::Type& type) {
     if (!slots_.contains(id)) {
-      auto slot = frame_->currentSlots_;
-      frame_->maxSlots_ = std::max(frame_->maxSlots_, slot + 1);  // Handle off by one due to indexing
-      frame_->currentSlots_ += slotsOf(type);
-      slots_.emplace(id, slot);
+      auto baseSlot = frame_->currentSlots_;
+      auto slots = slotsOf(type);
+      frame_->currentSlots_ += slots;
+      slots_.emplace(id, baseSlot);
     }
 
     return slots_.at(id);

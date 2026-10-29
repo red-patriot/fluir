@@ -482,3 +482,82 @@ TEST_F(TestBytecodeGenerator, GeneratesMultipleUpstreamNodesOfConditionalWithMul
   ASSERT_EQ(1, writer.chunks.size());
   EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
 }
+
+// There was a bug where using multiple outputs with no inputs would produce incorrect output because it saved the
+// incorrect number of slots. This test replicates the bug
+TEST_F(TestBytecodeGenerator, MultiOutputNoInputBug) {
+  // Constants: true, 1, 2, 3, 4, "print"
+  fc::Chunk expectedChunk{
+    .name = "cond",
+    .code =
+      {
+        fc::Instruction::RESERVE,
+        0x2,
+        fc::Instruction::PUSH,
+        0x0,
+        fc::SET_VAL,
+        0x0,  // condition
+        fc::GET_VAL,
+        0x0,
+        fc::Instruction::JUMP_IF_FALSE,
+        0x0,
+        0x0,
+        0x0,
+        0x9,
+        // THEN
+        fc::Instruction::PUSH,
+        0x1,
+        fc::Instruction::PUSH,
+        0x2,
+        fc::Instruction::JUMP_BY,
+        0x0,
+        0x0,
+        0x0,
+        0x4,
+        // ELSE
+        fc::Instruction::PUSH,
+        0x3,
+        fc::Instruction::PUSH,
+        0x4,
+        fc::Instruction::SET_VAL,
+        0x1,
+        fc::Instruction::SET_VAL,
+        0x0,
+        fc::Instruction::GET_VAL,
+        0x1,
+        fc::DYN_CALL,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::GET_VAL,
+        0x0,
+        fc::DYN_CALL,
+        0x0,
+        0x0,
+        0x0,
+        0x5,
+        fc::Instruction::MULTIPOP,
+        0x2,
+        fc::Instruction::RETURN,
+      },
+  };
+
+  auto writer = generate(program(
+    function(3,
+             "cond",
+             localWrite(conditional({3, 1},
+                                    constant(true, {3, 2}),
+                                    inputs(),
+                                    {},
+                                    // THEN
+                                    output(bundle({3, 1, 1}, deps(constant(1, {3, 0, 5}), constant(2, {3, 0, 4})))),
+                                    // ELSE
+                                    output(bundle({3, 1, 2}, deps(constant(3, {3, 1, 19}), constant(4, {3, 1, 21})))))),
+             call("print", deps(unbundle({3, 4}, localRead(1, {3, 4}), 1)), {3, 4}),
+             call("print", deps(unbundle({3, 5}, localRead(1, {3, 5}), 0)), {3, 5}))));
+
+  EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
+  ASSERT_EQ(1, writer.chunks.size());
+  EXPECT_CHUNK_EQ(expectedChunk, writer.chunks.front());
+}

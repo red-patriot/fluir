@@ -7,7 +7,6 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
 #include "editor/core/tree.hpp"
-#include "editor/core/viewport.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 #include "editor/view/graph_layout.hpp"
 
@@ -24,9 +23,6 @@ namespace fluir::editor {
 
   /** The grip that resizes `node`, if any. */
   std::optional<Part> nodeResizePart(const et::Node& node);
-
-  /** Draws `node`'s body at `world`: fill, border and label. */
-  void drawNode(const et::Node& node, Rect world, const Subview& view, const EditorContext& ctx);
 
   /** `node`'s fill color. */
   Color nodeColor(const et::Node& node, const EditorContext::Theme& theme);

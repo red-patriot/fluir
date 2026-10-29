@@ -16,6 +16,9 @@ namespace fluir::editor {
    *  body content is rendered below the header so nodes don't render over it. */
   Vec2 bodyOrigin(Vec2 functionOrigin, double headerH);
 
+  /** A container's region under its header band: where a function's body or a conditional's branch lays out. */
+  Rect contentRect(const Rect& frame, double headerH);
+
   /** Shift a local-space rect by `origin`, keeping its size. */
   Rect atOrigin(Vec2 origin, Rect local);
 

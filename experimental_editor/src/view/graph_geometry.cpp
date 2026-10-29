@@ -17,6 +17,11 @@ namespace fluir::editor {
 
   Vec2 bodyOrigin(Vec2 functionOrigin, double headerH) { return functionOrigin + Vec2{0.0, headerH}; }
 
+  Rect contentRect(const Rect& frame, double headerH) {
+    const Vec2 origin = bodyOrigin(frame.topLeft(), headerH);
+    return {frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
+  }
+
   Rect atOrigin(Vec2 origin, Rect local) { return {origin.x + local.x, origin.y + local.y, local.w, local.h}; }
 
   Rect dotRect(Vec2 anchor, double terminalDot) {

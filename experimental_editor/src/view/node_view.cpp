@@ -31,8 +31,4 @@ namespace fluir::editor {
     return std::visit([&](const auto& n) { return draw::color(n, theme); }, node);
   }
 
-  void drawNode(const et::Node& node, Rect world, const Subview& view, const EditorContext& ctx) {
-    std::visit([&](const auto& n) { draw::draw(n, world, view, ctx); }, node);
-  }
-
 }  // namespace fluir::editor

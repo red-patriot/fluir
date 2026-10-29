@@ -2,8 +2,9 @@
 
 #include <string>
 
-#include "editor/core/renderer.hpp"
+#include "editor/core/node_access.hpp"
 #include "editor/core/tree_path.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor::draw {
   namespace {
@@ -35,6 +36,23 @@ namespace fluir::editor::draw {
     return isReturn ? TerminalSet{{Vec2{rail.x, midY}}, {}} : TerminalSet{{}, {Vec2{rail.x + rail.w, midY}}};
   }
 
+  Rect railRect(const et::FunctionDecl& fn, fluir::ID railId, const Rect& frame, const EditorContext::Layout& layout) {
+    const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
+    if (fn.output && fn.output->ret && fn.output->ret->id == railId) {
+      return {origin.x + (fn.location.width - layout.returnInsetUnits) * layout.unitPx,
+              origin.y,
+              layout.railStep(),
+              layout.railStep()};
+    }
+    const std::vector<const et::FunctionDecl::Parameter*> params = sortedParameters(fn);
+    for (std::size_t row = 0; row < params.size(); ++row) {
+      if (params[row]->id == railId) {
+        return {origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
+      }
+    }
+    return {};
+  }
+
   Color color(const et::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
 
   Limits<Vec2i> sizeLimits(const et::FunctionDecl&) { return SIZE_LIMITS; }
@@ -57,28 +75,6 @@ namespace fluir::editor::draw {
       return {{{Field::Kind::ReturnType}, split.tag}};
     }
     return {{{Field::Kind::ParamType, param->index}, split.tag}, {{Field::Kind::ParamName, param->index}, split.text}};
-  }
-
-  void drawBody(const et::FunctionDecl&, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    view.renderer().fillRect(view.toScreen(world), ctx.theme.background);
-  }
-
-  void drawRail(
-    const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail, const Subview& view, const EditorContext& ctx) {
-    const std::string* typeName = railTypeAt(fn, railId);
-    drawShell(rail, color(fn, ctx.theme), view, ctx);
-    drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, ctx);
-    if (const et::FunctionDecl::Parameter* param = paramOf(fn, railId)) {
-      drawTitle(param->name, labels(fn, railId, rail, ctx.layout).back().rect, view, ctx);
-    }
-  }
-
-  void drawFrame(const et::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx) {
-    const Rect header = headerOf(frame, ctx.layout);
-    view.renderer().fillRect(view.toScreen(header), color(fn, ctx.theme));
-    view.renderer().drawRect(view.toScreen(frame), ctx.theme.border);
-    drawSplitLabel(view, header, FN_TAG, ctx);
-    drawTitle(fn.name, labels(fn, frame, ctx.layout).front().rect, view, ctx);
   }
 
 }  // namespace fluir::editor::draw

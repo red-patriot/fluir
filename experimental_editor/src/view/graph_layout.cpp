@@ -17,17 +17,10 @@
 
 namespace fluir::editor {
   namespace {
-    // A resize edge's thickness, in grid units.
-    constexpr double GRIP_THICKNESS = 0.8;
     // A terminal's hit square side, in grid units.
     constexpr double PORT_HIT_UNITS = 1;
 
     using Terminals = std::unordered_map<fluir::ID, TerminalSet>;
-
-    // A draggable edge is a thick line lying just inside the rect's border; the whole line is the grip.
-    Rect resizeEdgeX(const Rect& r, double unit) {
-      return {r.x + r.w - GRIP_THICKNESS * unit, r.y, GRIP_THICKNESS * unit, r.h};
-    }
 
     FullID childOf(const FullID& parent, fluir::ID id) {
       FullID out = parent;
@@ -70,7 +63,7 @@ namespace fluir::editor {
       out.push_back({path, Part::Body, rect, clip});
       pushLabels(path, labels, clip, out);
       if (resize) {
-        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeEdgeX(rect, unit);
+        const Rect grip = *resize == Part::ResizeXY ? resizeCorner(rect, unit) : resizeEdge(rect, unit);
         out.push_back({path, *resize, grip, clip});
       }
       out.push_back({path, Part::MoveGrip, moveGrip(rect, unit), clip});
@@ -96,7 +89,7 @@ namespace fluir::editor {
 
       // One frame, one header band, one visible branch: the branch is the frame under its header.
       const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
-      const Rect content{frame.x, origin.y, frame.w, frame.y + frame.h - origin.y};
+      const Rect content = contentRect(frame, layout.headerH());
       const FullID branchPath = childOf(path, conditional.annotation.shownBranch);
       const et::Block* branch = branchBlock(conditional, conditional.annotation.shownBranch);
       const Terminals inner = draw::innerAnchors(conditional, frame, layout);
@@ -180,15 +173,14 @@ namespace fluir::editor {
       const double unit = layout.unitPx;
       const Rect frame = localRect(fn.location, unit);
       const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
-      const Rect clip{frame.x, origin.y, frame.w, frame.h - layout.headerH()};
+      const Rect clip = contentRect(frame, layout.headerH());
       out.push_back({path, Part::Body, frame, std::nullopt});
 
       Terminals terminals;
       if (fn.input) {
         const std::vector<const et::FunctionDecl::Parameter*> params = sortedParameters(fn);
         for (std::size_t row = 0; row < params.size(); ++row) {
-          const Rect rail{
-            origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
+          const Rect rail = draw::railRect(fn, params[row]->id, frame, layout);
           const FullID railPath = childOf(path, params[row]->id);
           out.push_back({railPath, Part::Rail, rail, clip});
           pushLabels(path, draw::labels(fn, params[row]->id, rail, layout), clip, out);
@@ -197,10 +189,7 @@ namespace fluir::editor {
         }
       }
       if (fn.output && fn.output->ret) {
-        const Rect rail{origin.x + (fn.location.width - layout.returnInsetUnits) * unit,
-                        origin.y,
-                        layout.railStep(),
-                        layout.railStep()};
+        const Rect rail = draw::railRect(fn, fn.output->ret->id, frame, layout);
         const FullID railPath = childOf(path, fn.output->ret->id);
         out.push_back({railPath, Part::Rail, rail, clip});
         pushLabels(path, draw::labels(fn, fn.output->ret->id, rail, layout), clip, out);

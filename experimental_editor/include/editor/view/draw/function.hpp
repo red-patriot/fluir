@@ -16,6 +16,10 @@ namespace fluir::editor::draw {
   /** A rail's terminal: the return's input at left-mid, a parameter's output at right-mid. */
   TerminalSet anchors(const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail);
 
+  /** Rail `railId`'s rect: parameters stack down the body's left edge, the return sits at its top right. Empty for
+   *  an id that is no rail of `fn`. */
+  Rect railRect(const et::FunctionDecl& fn, fluir::ID railId, const Rect& frame, const EditorContext::Layout& layout);
+
   Color color(const et::FunctionDecl& fn, const EditorContext::Theme& theme);
 
   /** How far the function may be resized, in grid units. */
@@ -29,18 +33,6 @@ namespace fluir::editor::draw {
                                  fluir::ID railId,
                                  const Rect& rail,
                                  const EditorContext::Layout& layout);
-
-  // A function paints in parts at different depths, so each part has its own draw.
-
-  /** The body background, under the function's nodes. */
-  void drawBody(const et::FunctionDecl& fn, const Rect& world, const Subview& view, const EditorContext& ctx);
-
-  /** Rail `railId` at `rail`: shell, type and name label, terminal dot. */
-  void drawRail(
-    const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail, const Subview& view, const EditorContext& ctx);
-
-  /** Header and frame chrome, over the function's nodes; selection outlines belong to the caller. */
-  void drawFrame(const et::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw
 

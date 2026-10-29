@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <variant>
 
-#include "editor/assets/images.hpp"
 #include "editor/core/literal_text.hpp"
-#include "editor/core/renderer.hpp"
 
 namespace fluir::editor::draw {
   namespace {
@@ -59,20 +57,6 @@ namespace fluir::editor::draw {
 
   Color color(const et::Constant& c, const EditorContext::Theme& theme) {
     return std::visit(LiteralColor{theme}, c.value);
-  }
-
-  void draw(const et::Constant& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(n, ctx.theme), view, ctx);
-    // A bool shows its value as a checkbox instead of a label: outlined when false, filled when true.
-    const Rect label = labels(n, world, ctx.layout).front().rect;
-    if (const auto* flag = std::get_if<BOOL>(&n.value)) {
-      view.renderer().drawIcon(
-        view.toScreen(label), *flag ? assets::trueIcon() : assets::falseIcon(), ctx.theme.border);
-
-    } else {
-      drawSplitLabel(view, world, literalTypeName(n.value), ctx);
-      drawTitle(renderLiteral(n.value), label, view, ctx);
-    }
   }
 
 }  // namespace fluir::editor::draw

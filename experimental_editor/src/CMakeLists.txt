@@ -57,21 +57,47 @@ set(FLUIR_EDITOR_TRANSACTION_SOURCES
 # Q_OBJECT headers are listed so AUTOMOC finds them outside src/.
 set(FLUIR_EDITOR_APP_SOURCES
     "app/main_window.cpp"
+    "app/module_page.cpp"
     "app/module_document.cpp"
     "app/splash_widget.cpp"
     "../include/editor/app/main_window.hpp"
     "../include/editor/app/module_document.hpp"
+    "../include/editor/app/module_page.hpp"
     "../include/editor/app/splash_widget.hpp"
 )
 
-set(FLUIR_EDITOR_SCENE_SOURCES "scene/graph_view.cpp")
+set(FLUIR_EDITOR_SCENE_SOURCES
+    "scene/components/branch_arrow.cpp"
+    "scene/components/choice.cpp"
+    "scene/components/frame.cpp"
+    "scene/components/move_grip.cpp"
+    "scene/components/port.cpp"
+    "scene/components/resize_grip.cpp"
+    "scene/components/scope_region.cpp"
+    "scene/components/terminal.cpp"
+    "scene/components/text_edit.cpp"
+    "scene/components/toggle.cpp"
+    "scene/elements/binary_element.cpp"
+    "scene/elements/branch_element.cpp"
+    "scene/elements/call_element.cpp"
+    "scene/elements/comment_element.cpp"
+    "scene/elements/conditional_element.cpp"
+    "scene/elements/conduit_element.cpp"
+    "scene/elements/constant_element.cpp"
+    "scene/elements/element.cpp"
+    "scene/elements/function_element.cpp"
+    "scene/elements/rail_element.cpp"
+    "scene/elements/unary_element.cpp"
+    "scene/graph_scene.cpp"
+    "scene/graph_view.cpp"
+    "scene/item_style.cpp"
+)
 
 set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
                                    "components/text_field.cpp"
 )
 
 set(FLUIR_EDITOR_VIEW_SOURCES
-    "view/graph_draw.cpp"
     "view/graph_geometry.cpp"
     "view/graph_layout.cpp"
     "view/draw/binary.cpp"
@@ -98,7 +124,6 @@ set(FLUIR_EDITOR_TOOL_SOURCES
     "tools/function_header_menu.cpp"
     "tools/grid_steps.cpp"
     "tools/menu_popup.cpp"
-    "tools/pan_zoom_tool.cpp"
     "tools/popup_tool.cpp"
     "tools/port_drag_tool.cpp"
     "tools/port_menu.cpp"

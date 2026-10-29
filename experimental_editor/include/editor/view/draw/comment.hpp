@@ -32,8 +32,6 @@ namespace fluir::editor {
     /** The text, over the body below the header band. */
     std::vector<FieldLabel> labels(const et::Comment& node, const Rect& world, const EditorContext::Layout& layout);
 
-    /** Draws the body only; selection outlines belong to the caller. */
-    void draw(const et::Comment& node, const Rect& world, const Subview& view, const EditorContext& ctx);
   }  // namespace draw
 
 }  // namespace fluir::editor

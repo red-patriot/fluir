@@ -46,15 +46,4 @@ namespace fluir::editor::draw {
     return out;
   }
 
-  void draw(const et::Call& call, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(call, ctx.theme), view, ctx);
-    // Rows follow `labels`' order: the target, then each argument by index.
-    const std::vector<FieldLabel> rows = labels(call, world, ctx.layout);
-    const std::vector<const et::Call::Argument*> args = sortedArguments(call);
-    drawTitle(call.target, rows.front().rect, view, ctx);
-    for (std::size_t row = 0; row < args.size(); ++row) {
-      drawTitle(args[row]->name, rows[row + 1].rect, view, ctx);
-    }
-  }
-
 }  // namespace fluir::editor::draw

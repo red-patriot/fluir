@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <string_view>
 
-#include "editor/core/renderer.hpp"
-
 namespace fluir::editor {
   namespace {
 
@@ -36,18 +34,6 @@ namespace fluir::editor {
 
     std::vector<FieldLabel> labels(const et::Comment&, const Rect& world, const EditorContext::Layout& layout) {
       return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
-    }
-
-    void draw(const et::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
-      drawShell(world, color(comment, ctx.theme), view, ctx);
-      drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, ctx);
-      if (comment.text.empty()) {
-        return;
-      }
-      const Rect textRect = commentTextRect(labels(comment, world, ctx.layout).front().rect, ctx.layout);
-      const Subview clipped = view.child(textRect);
-      clipped.renderer().drawTextWrapped(
-        clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);
     }
 
   }  // namespace draw

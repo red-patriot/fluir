@@ -16,7 +16,6 @@
 #include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
 #include "editor/transaction/delete.hpp"
-#include "editor/view/graph_draw.hpp"
 #include "recording_renderer.hpp"
 #include "tool_harness.hpp"
 
@@ -161,22 +160,10 @@ namespace {
       testutil::RecordingRenderer r;
       const auto boxes = fluir::editor::layoutGraph(state.editor.tree(), kCtx.layout);
       const fluir::editor::Subview root{state.view, Rect{0, 0, 800, 600}, r};
-      fluir::editor::drawGraph(root, state.editor.tree(), boxes, std::nullopt, kCtx);
       tool.draw(root, state, boxes);
       return r.calls;
     }
   };
-
-  // Index of the first Text call drawing `s` at `at`, or -1.
-  long textIndex(const std::vector<testutil::DrawCall>& calls, std::string_view s, Vec2 at) {
-    for (std::size_t i = 0; i < calls.size(); ++i) {
-      if (calls[i].op == testutil::DrawCall::Op::Text && calls[i].text == s && std::abs(calls[i].a.x - at.x) <= 1e-6 &&
-          std::abs(calls[i].a.y - at.y) <= 1e-6) {
-        return static_cast<long>(i);
-      }
-    }
-    return -1;
-  }
 
 }  // namespace
 
@@ -372,24 +359,6 @@ TEST(TextEditTool, TheDraftClosesWhenItsConstantVanishes) {
   EXPECT_FALSE(h.send(text("7")));
 
   EXPECT_EQ(h.tool.field(), nullptr);
-}
-
-TEST(TextEditTool, TheDraftIsDrawnOverTheCommittedValue) {
-  Harness h;
-  h.send(down(kTextOrigin));
-  h.send(text("7"));
-
-  const auto calls = h.draw();
-
-  const long value = textIndex(calls, "42", kTextOrigin);
-  const long draft = textIndex(calls, "742", kTextOrigin);
-  ASSERT_GE(draft, 0);
-  EXPECT_GT(draft, value);
-  // A fill of the node's rect between the two hides the committed value.
-  const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [](const testutil::DrawCall& c) {
-    return c.op == testutil::DrawCall::Op::Fill && testutil::detail::rectNear(c.rect, kIntRect, 1e-6);
-  });
-  EXPECT_NE(cover, calls.begin() + draft);
 }
 
 TEST(TextEditTool, AnInvalidDraftDrawsAnExtraErrorOutline) {
@@ -615,35 +584,6 @@ TEST(TextEditTool, TheNameDraftClosesWhenItsFunctionVanishes) {
   EXPECT_EQ(h.tool.field(), nullptr);
 }
 
-TEST(TextEditTool, NameDraftsAreDrawnOverTheirCommittedLabels) {
-  struct Case {
-    Vec2 at;
-    Vec2 textAt;
-    std::string_view committed;
-    std::string_view draft;
-    Rect cover;
-  };
-  for (const Case& c : {Case{kFnName, kFnName, "f", "xf", kHeaderRect},
-                        Case{kCallLabel, kCallLabel, "g", "xg", kCallLabelRect},
-                        Case{kParamRail1, kParamRail1Text, "y", "yx", kParamRail1Rect},
-                        Case{kCallArgRow1, kCallArgRow1, "b", "xb", kCallArgRow1Rect}}) {
-    Harness h;
-    h.send(down(c.at));
-    h.send(text("x"));
-
-    const auto calls = h.draw();
-
-    const long value = textIndex(calls, c.committed, c.textAt);
-    const long draft = textIndex(calls, c.draft, c.textAt);
-    ASSERT_GE(value, 0) << c.committed;
-    ASSERT_GT(draft, value) << c.committed;
-    const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [&](const testutil::DrawCall& d) {
-      return d.op == testutil::DrawCall::Op::Fill && testutil::detail::rectNear(d.rect, c.cover, 1e-6);
-    });
-    EXPECT_NE(cover, calls.begin() + draft) << c.committed;
-  }
-}
-
 TEST(TextEditTool, APressOnACommentOpensItsTextWithTheCaretAtThePress) {
   Harness h;
 
@@ -767,33 +707,6 @@ TEST(TextEditTool, AnInBodyCommentOpensAndCommits) {
   EXPECT_EQ(h.commentText(kInnerComment), "inner text");
   ASSERT_TRUE(h.state.editor.undo());
   EXPECT_EQ(h.commentText(kInnerComment), "inner");
-}
-
-TEST(TextEditTool, TheCommentDraftIsDrawnWrappedOverTheCommittedText) {
-  Harness h;
-  h.send(down(kCommentText));
-  h.send(text("x"));
-
-  const auto calls = h.draw();
-
-  const auto wrappedIndex = [&](std::string_view s) {
-    for (std::size_t i = 0; i < calls.size(); ++i) {
-      if (calls[i].op == testutil::DrawCall::Op::TextWrapped && calls[i].text == s &&
-          calls[i].rect == kCommentTextRect && calls[i].scale == 1.0) {
-        return static_cast<long>(i);
-      }
-    }
-    return -1L;
-  };
-  const long value = wrappedIndex("hi there");
-  const long draft = wrappedIndex("hix there");
-  ASSERT_GE(value, 0);
-  ASSERT_GT(draft, value);
-  const auto cover = std::find_if(calls.begin() + value + 1, calls.begin() + draft, [](const testutil::DrawCall& c) {
-    return c.op == testutil::DrawCall::Op::Fill && c.rect == kCommentRect;
-  });
-  EXPECT_NE(cover, calls.begin() + draft);
-  EXPECT_TRUE(testutil::hasFill(calls, h.recorder.wrappedCaretRect(kCommentTextRect, "hix there", 1.0, 3)));
 }
 
 TEST(TextEditTool, CaretHitTestingIsZoomInvariant) {

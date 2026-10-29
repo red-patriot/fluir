@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "editor/assets/images.hpp"
 #include "editor/core/renderer.hpp"
 #include "editor/view/graph_geometry.hpp"
 
@@ -15,6 +14,7 @@ namespace fluir::editor {
     constexpr double DRAG_SIZE = 3;
     constexpr double DRAG_INSET = 1;
     constexpr double RESIZE_CORNER_SIZE = 3;
+    constexpr double RESIZE_EDGE_THICKNESS = 0.8;
 
     // A lone terminal sits at the centre; more spread top-to-bottom down the edge.
     double terminalFraction(int count, int index) {
@@ -28,6 +28,10 @@ namespace fluir::editor {
             frame.y + DRAG_INSET * unit,
             DRAG_SIZE * unit,
             DRAG_SIZE * unit};
+  }
+
+  Rect resizeEdge(const Rect& frame, double unit) {
+    return {frame.x + frame.w - RESIZE_EDGE_THICKNESS * unit, frame.y, RESIZE_EDGE_THICKNESS * unit, frame.h};
   }
 
   Rect resizeCorner(const Rect& frame, double unit) {
@@ -49,16 +53,6 @@ namespace fluir::editor {
     return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
   }
 
-  void drawSplitLabel(const Subview& view, Rect box, std::string_view tag, const EditorContext& ctx) {
-    Renderer& r = view.renderer();
-    const double pad = ctx.layout.textPad;
-    const double s = view.composed().scale;
-    const Vec2 tagBottom = view.toScreen(Vec2{box.x + pad, box.y + box.h - pad});
-    // `measureText` reports unscaled px, so the baseline lift scales with the tag.
-    r.drawText(
-      Vec2{tagBottom.x, tagBottom.y - r.measureText(tag).y * kTagScale * s}, tag, ctx.theme.text, kTagScale * s);
-  }
-
   namespace draw {
 
     std::vector<Vec2> edgeAnchors(double edgeX, const Rect& rect, int count) {
@@ -67,37 +61,6 @@ namespace fluir::editor {
         out.push_back(Vec2{edgeX, rect.y + terminalFraction(count, i) * rect.h});
       }
       return out;
-    }
-
-    void drawShell(const Rect& world, Color fill, const Subview& view, const EditorContext& ctx) {
-      view.renderer().fillRect(view.toScreen(world), fill);
-      view.renderer().drawRect(view.toScreen(world), ctx.theme.border);
-    }
-
-    // Fitting happens after the map to screen space, so a non-uniform view can never squash the icon.
-    void drawImage(SvgView svg, const Rect& world, const Subview& view, const Color& tint) {
-      Renderer& r = view.renderer();
-      const Rect screen = view.toScreen(world);
-      r.drawIcon(fitInto(screen, r.imageSize(svg)), svg, tint);
-    }
-
-    void drawMoveGrip(const Rect& rect, const Subview& view, const EditorContext& ctx) {
-      drawImage(assets::dragHandle(), rect, view, ctx.theme.border);
-    }
-
-    void drawXyResizeHandle(const Rect& rect, const Subview& view, const EditorContext& ctx) {
-      drawImage(assets::xyResizeIcon(), rect, view, ctx.theme.border);
-    }
-
-    void drawResizeEdge(const Rect& rect, const Subview& view, const EditorContext& ctx) {
-      view.renderer().fillRect(view.toScreen(rect), ctx.theme.border);
-    }
-
-    void drawTitle(std::string_view text, const Rect& world, const Subview& view, const EditorContext& ctx) {
-      if (!text.empty()) {
-        const Vec2 textPos{world.x + ctx.layout.textPad, world.y + ctx.layout.textPad};
-        view.renderer().drawText(view.toScreen(textPos), text, ctx.theme.text, view.composed().scale);
-      }
     }
 
   }  // namespace draw

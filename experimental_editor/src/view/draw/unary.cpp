@@ -24,9 +24,4 @@ namespace fluir::editor::draw {
     return {{{Field::Kind::Operator}, world}};
   }
 
-  void draw(const et::Unary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(n, ctx.theme), view, ctx);
-    drawTitle(stringify(n.op), labels(n, world, ctx.layout).front().rect, view, ctx);
-  }
-
 }  // namespace fluir::editor::draw

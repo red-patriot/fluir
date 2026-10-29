@@ -5,8 +5,13 @@ add_executable(fluir.editor.test)
 
 set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/main_window.test.cpp
+    app/module_page.test.cpp
     app/module_document.test.cpp
     app/splash_widget.test.cpp
+)
+
+set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_scene.test.cpp
+                                    scene/graph_view.test.cpp
 )
 
 set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
@@ -42,7 +47,6 @@ set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
     tools/function_header_menu.test.cpp
     tools/grid_steps.test.cpp
     tools/menu_popup.test.cpp
-    tools/pan_zoom_tool.test.cpp
     tools/popup_tool.test.cpp
     tools/port_drag_tool.test.cpp
     tools/port_menu.test.cpp
@@ -60,7 +64,6 @@ set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/labels.test.cpp
     view/draw/size.test.cpp
     view/graph_geometry.test.cpp
-    view/graph_draw.test.cpp
     view/graph_layout.test.cpp
 )
 
@@ -69,6 +72,7 @@ target_sources(
     PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
             ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
+            ${FLUIR_EDITOR_SCENE_TEST_SOURCES}
             ${FLUIR_EDITOR_TOOLS_TEST_SOURCES}
             ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}

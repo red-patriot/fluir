@@ -10,24 +10,16 @@
 #include "compiler/models/location.hpp"
 #include "editor/core/tree.hpp"
 #include "editor/core/tree_path.hpp"
-#include "editor/core/viewport.hpp"
 #include "recording_renderer.hpp"
 
-// A conditional paints in parts at different depths, so each part is driven on its own here.
-// Contracts only: which primitive lands where, never how many.
+// A conditional's pure geometry: anchors, ports, tags and size limits.
 
 namespace {
 
   using fluir::editor::EditorContext;
   using fluir::editor::ELSE_BRANCH_ID;
   using fluir::editor::Rect;
-  using fluir::editor::Subview;
   using fluir::editor::THEN_BRANCH_ID;
-  using fluir::editor::Viewport;
-  using testutil::hasFill;
-  using testutil::hasRect;
-  using testutil::RecordingRenderer;
-  using testutil::textStrings;
 
   const EditorContext kCtx;
   constexpr double kHeaderH = 25;  // headerUnits 5 * unitPx 5
@@ -40,16 +32,6 @@ namespace {
                                           .outputs = {},
                                           .thenScope = xyz::indirect<fluir::editor::et::Block>{},
                                           .elseScope = xyz::indirect<fluir::editor::et::Block>{}};
-  }
-
-  // An identity view: world px are screen px, so the rects asserted below are the ones passed in.
-  Subview rootView(RecordingRenderer& r, const Viewport& viewport) {
-    return Subview{viewport, Rect{0, 0, r.outputSize().x, r.outputSize().y}, r};
-  }
-
-  bool hasText(const RecordingRenderer& r, std::string_view text) {
-    const std::vector<std::string> texts = textStrings(r.calls);
-    return std::find(texts.begin(), texts.end(), std::string{text}) != texts.end();
   }
 
 }  // namespace
@@ -107,46 +89,12 @@ TEST(DrawConditional, AnUnsetInnerIdHasNoInnerAnchors) {
       .empty());
 }
 
-TEST(DrawConditional, BodyFillsItsWholeFrame) {
-  RecordingRenderer r;
-  const Viewport viewport;
-
-  fluir::editor::draw::drawBody(makeConditional(), Rect{10, 35, 100, 90}, rootView(r, viewport), kCtx);
-
-  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, 90}));
-}
-
 TEST(DrawConditional, BranchTagNamesTheBranchIndex) {
   EXPECT_EQ(fluir::editor::draw::branchTag(THEN_BRANCH_ID), fluir::editor::draw::THEN_TAG);
   EXPECT_EQ(fluir::editor::draw::branchTag(ELSE_BRANCH_ID), fluir::editor::draw::ELSE_TAG);
 }
 
 // One frame, one header band: the frame labels the branch it shows.
-TEST(DrawConditional, FrameFillsItsHeaderBandAndTagsIt) {
-  RecordingRenderer r;
-  const Viewport viewport;
-
-  fluir::editor::draw::drawFrame(makeConditional(), Rect{10, 35, 100, 90}, rootView(r, viewport), kCtx);
-
-  EXPECT_TRUE(hasFill(r.calls, Rect{10, 35, 100, kHeaderH}));
-  EXPECT_TRUE(hasRect(r.calls, Rect{10, 35, 100, 90}));  // the border spans the whole frame
-  EXPECT_TRUE(hasText(r, fluir::editor::draw::THEN_TAG));
-}
-
-// The tag is the annotation's, not a fixed one: that is all the header says about which branch is shown.
-TEST(DrawConditional, FrameTagsTheBranchTheAnnotationShows) {
-  RecordingRenderer r;
-  const Viewport viewport;
-  fluir::editor::et::Conditional node = makeConditional();
-  node.annotation.shownBranch = ELSE_BRANCH_ID;
-
-  fluir::editor::draw::drawFrame(node, Rect{10, 35, 100, 90}, rootView(r, viewport), kCtx);
-
-  EXPECT_TRUE(hasText(r, fluir::editor::draw::ELSE_TAG));
-  EXPECT_FALSE(hasText(r, fluir::editor::draw::THEN_TAG));
-}
-
-// The port sits on the wall, half outside the frame and half in.
 TEST(DrawConditional, ConditionPortStraddlesTheLeftWall) {
   const Rect frame{10, 35, 100, 90};
 
@@ -171,23 +119,6 @@ TEST(DrawConditional, ConditionPortTopIsItsYBelowTheFrameTop) {
 }
 
 // The condition keeps its bool color; every other wall port is neutral.
-TEST(DrawConditional, ConditionPortFillsBoolAndWallPortsFillPort) {
-  RecordingRenderer r;
-  const Viewport viewport;
-  const Rect world{5, 50, 15, 15};
-
-  fluir::editor::draw::drawPort({}, world, rootView(r, viewport), kCtx);
-  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.boolNode));
-
-  r.calls.clear();
-  fluir::editor::draw::drawPort({.output = false, .index = 1}, world, rootView(r, viewport), kCtx);
-  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.port));
-
-  r.calls.clear();
-  fluir::editor::draw::drawPort({.output = true, .index = 0}, world, rootView(r, viewport), kCtx);
-  EXPECT_TRUE(testutil::hasFillColored(r.calls, world, kCtx.theme.port));
-}
-
 namespace {
 
   // Condition at 6, inputs at 10 and 14 (inner 2, 3), outputs at 8 and 12 (inner 4, 5).
@@ -204,7 +135,6 @@ namespace {
 
 }  // namespace
 
-// Each port's top edge sits its own `y` units below the frame top, whichever wall it is on.
 TEST(DrawConditional, EveryPortTopIsItsYBelowTheFrameTop) {
   const Rect frame{10, 35, 100, 90};
   const fluir::editor::et::Conditional node = withWallPorts();

@@ -29,9 +29,6 @@ namespace fluir::editor::draw {
   /** Limits for a port location in grid units. */
   Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout);
 
-  /** Draws the given `port`. */
-  void drawPort(PortRef port, const Rect& world, const Subview& view, const EditorContext& ctx);
-
   /** The outer side of the conditional ports. */
   TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
 
@@ -50,17 +47,6 @@ namespace fluir::editor::draw {
 
   /** None: a conditional has no editable text. */
   std::vector<FieldLabel> labels(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
-
-  // A conditional paints in parts at different depths, so each part has its own draw.
-
-  /** The body background, under the conditional's branches and their nodes. */
-  void drawBody(const et::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
-
-  /** The header band over the visible branch, its tag, and the border around the frame. */
-  void drawFrame(const et::Conditional& node, const Rect& frame, const Subview& view, const EditorContext& ctx);
-
-  /** A node-variant entry point. */
-  void draw(const et::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
 
 }  // namespace fluir::editor::draw
 

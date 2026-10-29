@@ -24,9 +24,6 @@ namespace fluir::editor::draw {
   /** The target on the header row, then one row per argument in index order. */
   std::vector<FieldLabel> labels(const et::Call& node, const Rect& world, const EditorContext::Layout& layout);
 
-  /** Draws the body only; selection outlines belong to the caller. */
-  void draw(const et::Call& node, const Rect& world, const Subview& view, const EditorContext& ctx);
-
 }  // namespace fluir::editor::draw
 
 #endif

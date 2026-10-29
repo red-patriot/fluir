@@ -28,9 +28,6 @@ namespace fluir::editor::draw {
   /** A bool's toggle square, or any other literal's text after its type tag. */
   std::vector<FieldLabel> labels(const et::Constant& node, const Rect& world, const EditorContext::Layout& layout);
 
-  /** Draws the body only; selection outlines belong to the caller. */
-  void draw(const et::Constant& node, const Rect& world, const Subview& view, const EditorContext& ctx);
-
 }  // namespace fluir::editor::draw
 
 #endif

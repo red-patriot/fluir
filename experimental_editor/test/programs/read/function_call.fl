@@ -20,8 +20,8 @@
                     <arg name="a"/>
                     <arg name="b"/>
                 </call>
-                <conduit id="4" input="1"><output target="3" index="1"/></conduit>
-                <conduit id="5" input="2"><output target="3" index="2"/></conduit>
+                <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+                <conduit id="5" input="2"><output target="3" index="1"/></conduit>
             </body>
         </function>
     </fluir>

@@ -1,11 +1,8 @@
 #ifndef FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
 #define FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
 
-#include <vector>
-
 #include "compiler/models/location.hpp"
 #include "editor/core/geometry.hpp"
-#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
@@ -24,15 +21,6 @@ namespace fluir::editor {
 
   /** A `terminalDot`-sized square centered on `anchor`. */
   Rect dotRect(Vec2 anchor, double terminalDot);
-
-  /** `tree`'s declarations, ordered ascending by (location.z, id). */
-  std::vector<const et::Declaration*> sortedDeclarations(const et::ParseTree& tree);
-
-  /** `block`'s nodes, ordered ascending by (location.z, id). */
-  std::vector<const et::Node*> sortedNodes(const et::Block& block);
-
-  /** `block`'s conduits, ordered ascending by id. */
-  std::vector<const et::Conduit*> sortedConduits(const et::Block& block);
 
 }  // namespace fluir::editor
 

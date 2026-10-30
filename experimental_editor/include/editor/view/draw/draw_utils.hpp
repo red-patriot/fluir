@@ -11,6 +11,12 @@
 
 namespace fluir::editor {
 
+  /** Estimated world px per monospace glyph. */
+  inline constexpr double GLYPH_PX = 8.0;
+
+  /** Which way a node's resize grip stretches it. */
+  enum class ResizeAxes { X, XY };
+
   /** A node's terminal anchors, in world space. */
   struct TerminalSet {
     std::vector<Vec2> inputs;

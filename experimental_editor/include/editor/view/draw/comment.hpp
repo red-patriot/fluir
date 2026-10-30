@@ -4,9 +4,8 @@
 #include <optional>
 #include <vector>
 
-#include "editor/core/tree.hpp"
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/view/draw/draw_utils.hpp"
-#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor {
 
@@ -19,18 +18,18 @@ namespace fluir::editor {
   namespace draw {
 
     /** Comments have no terminals. */
-    TerminalSet anchors(const et::Comment& node, const Rect& world, const EditorContext::Layout& layout);
+    TerminalSet anchors(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);
 
-    Color color(const et::Comment& node, const EditorContext::Theme& theme);
+    Color color(const pt::Comment& node, const EditorContext::Theme& theme);
 
     /** How far the comment may be resized, in grid units. */
-    Limits<Vec2i> sizeLimits(const et::Comment& node);
+    Limits<Vec2i> sizeLimits(const pt::Comment& node);
 
     /** The grip that resizes the comment, if any. */
-    std::optional<Part> resizePart(const et::Comment& node);
+    std::optional<ResizeAxes> resizePart(const pt::Comment& node);
 
     /** The text, over the body below the header band. */
-    std::vector<FieldLabel> labels(const et::Comment& node, const Rect& world, const EditorContext::Layout& layout);
+    std::vector<FieldLabel> labels(const pt::Comment& node, const Rect& world, const EditorContext::Layout& layout);
 
   }  // namespace draw
 

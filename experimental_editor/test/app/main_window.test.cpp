@@ -7,15 +7,14 @@
 #include <QPointer>
 #include <QPushButton>
 #include <QTest>
+#include <QUndoCommand>
+#include <QUndoStack>
 #include <string>
 
 #include <gtest/gtest.h>
 
-#include "compiler/models/id.hpp"
-#include "editor/app/module_document.hpp"
 #include "editor/app/module_page.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/transaction/move.hpp"
 
 namespace {
 
@@ -23,11 +22,14 @@ namespace {
 
   using fluir::editor::MainWindow;
   using fluir::editor::ModulePage;
-  using fluir::editor::moveTo;
 
   const fs::path kIntConstants = fs::path(TEST_FOLDER) / "read/int_constants.fl";
-  // int_constants.fl: constant 1 of function 1 sits at units (2, 20).
-  const fluir::FullID kConstant{1, 1};
+
+  // Stands in for an edit until the commands land.
+  struct NoopCommand : QUndoCommand {
+    void redo() override { }
+    void undo() override { }
+  };
 
   struct Harness {
     fluir::editor::EditorContext ctx;
@@ -44,10 +46,9 @@ namespace {
 
 }  // namespace
 
-TEST(MainWindow, StartsOnTheSplashWithNoDocument) {
+TEST(MainWindow, StartsOnTheSplashWithNoPage) {
   Harness h;
 
-  EXPECT_EQ(h.window.document(), nullptr);
   EXPECT_EQ(h.page(), nullptr);
 }
 
@@ -64,9 +65,8 @@ TEST(MainWindow, TheSplashNewButtonOpensAnUnsavedModule) {
 
   QTest::mouseClick(h.window.findChild<QPushButton*>("new"), Qt::LeftButton);
 
-  ASSERT_NE(h.window.document(), nullptr);
-  EXPECT_FALSE(h.window.document()->editor().program().has_value());
   ASSERT_NE(h.page(), nullptr);
+  EXPECT_FALSE(h.page()->program().has_value());
   EXPECT_TRUE(h.page()->isVisibleTo(&h.window));
   EXPECT_TRUE(h.window.windowTitle().contains("<new file>"));
 }
@@ -76,10 +76,9 @@ TEST(MainWindow, OpenModuleShowsTheProgram) {
 
   ASSERT_TRUE(h.window.openModule(kIntConstants));
 
-  ASSERT_NE(h.window.document(), nullptr);
-  EXPECT_EQ(h.window.document()->editor().program(), kIntConstants);
-  EXPECT_TRUE(h.window.windowTitle().contains("int_constants.fl"));
   ASSERT_NE(h.page(), nullptr);
+  EXPECT_EQ(h.page()->program(), kIntConstants);
+  EXPECT_TRUE(h.window.windowTitle().contains("int_constants.fl"));
   EXPECT_TRUE(h.page()->isVisibleTo(&h.window));
 }
 
@@ -88,18 +87,19 @@ TEST(MainWindow, AFileThatFailsToLoadStaysOnTheSplash) {
 
   EXPECT_FALSE(h.window.openModule(fs::path(TEST_FOLDER) / "load_fails/conduits.fl"));
 
-  EXPECT_EQ(h.window.document(), nullptr);
   EXPECT_EQ(h.page(), nullptr);
 }
 
-TEST(MainWindow, ANewDocumentStartsWithNoHistoryToUndo) {
+TEST(MainWindow, ANewPageStartsWithNoHistoryToUndo) {
   Harness h;
   ASSERT_TRUE(h.window.openModule(kIntConstants));
-  h.window.document()->apply(moveTo(kConstant, 4, 20));
+  h.page()->undoStack().push(new NoopCommand);
 
   ASSERT_TRUE(h.window.openModule(kIntConstants));
+  QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
-  EXPECT_FALSE(h.window.document()->editor().canUndo());
+  ASSERT_NE(h.page(), nullptr);
+  EXPECT_FALSE(h.page()->undoStack().canUndo());
 }
 
 TEST(MainWindow, TheTitleFollowsSaveAs) {
@@ -124,6 +124,6 @@ TEST(MainWindow, ExitReturnsToTheSplash) {
   QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
   EXPECT_EQ(page, nullptr);
-  EXPECT_EQ(h.window.document(), nullptr);
+  EXPECT_EQ(h.page(), nullptr);
   EXPECT_EQ(h.window.windowTitle(), "Fluir");
 }

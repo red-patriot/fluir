@@ -38,7 +38,7 @@ namespace fluir::editor {
 
     // Round-trip formatting, not display formatting: F64 keeps `{:f}` so the
     // written text reparses as the same value (`renderLiteral` is for labels).
-    std::string literalText(const et::Literal& v) {
+    std::string literalText(const pt::Literal& v) {
       return std::visit(
         [](auto x) -> std::string {
           using T = std::decay_t<decltype(x)>;
@@ -56,11 +56,11 @@ namespace fluir::editor {
 
   }  // namespace
 
-  void write(std::ostream& out, const et::ParseTree& tree) { ParseTreeWriter(out).write(tree); }
+  void write(std::ostream& out, const pt::ParseTree& tree) { ParseTreeWriter(out).write(tree); }
 
   ParseTreeWriter::ParseTreeWriter(std::ostream& out) : out_(out) { }
 
-  void ParseTreeWriter::write(const et::ParseTree& tree) {
+  void ParseTreeWriter::write(const pt::ParseTree& tree) {
     doc_.Clear();
     doc_.InsertEndChild(doc_.NewDeclaration("xml version='1.0' encoding='UTF-8'"));
 
@@ -79,7 +79,7 @@ namespace fluir::editor {
 
   bool ParseTreeWriter::good() const { return out_.good(); }
 
-  void ParseTreeWriter::header(Element* parent, const et::Header& value) {
+  void ParseTreeWriter::header(Element* parent, const pt::Header& value) {
     Element* el = parent->InsertNewChildElement("header");
     version(el, value.version);
   }
@@ -91,15 +91,15 @@ namespace fluir::editor {
     el->InsertNewChildElement("patch")->SetText(int(value.patch));
   }
 
-  void ParseTreeWriter::declaration(Element* parent, const et::Declaration& value) {
+  void ParseTreeWriter::declaration(Element* parent, const pt::Declaration& value) {
     std::visit(util::Overloaded{
-                 [&](const et::FunctionDecl& fn) { functionDecl(parent, fn); },
-                 [&](const et::Comment& c) { comment(parent, c); },
+                 [&](const pt::FunctionDecl& fn) { functionDecl(parent, fn); },
+                 [&](const pt::Comment& c) { comment(parent, c); },
                },
                value);
   }
 
-  void ParseTreeWriter::functionDecl(Element* parent, const et::FunctionDecl& value) {
+  void ParseTreeWriter::functionDecl(Element* parent, const pt::FunctionDecl& value) {
     Element* el = parent->InsertNewChildElement("function");
     el->SetAttribute("name", value.name.c_str());
     setId(el, value.id);
@@ -110,75 +110,75 @@ namespace fluir::editor {
     block(el, value.body);
   }
 
-  void ParseTreeWriter::funcInputs(Element* parent, const et::FunctionDecl::InputBlock& value) {
+  void ParseTreeWriter::funcInputs(Element* parent, const pt::FunctionDecl::InputBlock& value) {
     Element* el = parent->InsertNewChildElement("input");
     for (const auto& param : value.parameters)
       funcParameter(el, param);
   }
 
-  void ParseTreeWriter::funcParameter(Element* parent, const et::FunctionDecl::Parameter& value) {
+  void ParseTreeWriter::funcParameter(Element* parent, const pt::FunctionDecl::Parameter& value) {
     Element* el = parent->InsertNewChildElement("param");
     el->SetAttribute("name", value.name.c_str());
     setId(el, value.id);
     if (!value.typeName.empty()) el->SetAttribute("type", value.typeName.c_str());
   }
 
-  void ParseTreeWriter::funcOutputs(Element* parent, const et::FunctionDecl::OutputBlock& value) {
+  void ParseTreeWriter::funcOutputs(Element* parent, const pt::FunctionDecl::OutputBlock& value) {
     Element* el = parent->InsertNewChildElement("output");
     funcReturn(el, *value.ret);
   }
 
-  void ParseTreeWriter::funcReturn(Element* parent, const et::FunctionDecl::Return& value) {
+  void ParseTreeWriter::funcReturn(Element* parent, const pt::FunctionDecl::Return& value) {
     Element* el = parent->InsertNewChildElement("return");
     setId(el, value.id);
     if (!value.typeName.empty()) el->SetAttribute("type", value.typeName.c_str());
   }
 
-  void ParseTreeWriter::block(Element* parent, const et::Block& value) {
+  void ParseTreeWriter::block(Element* parent, const pt::Block& value) {
     blockContents(parent->InsertNewChildElement("body"), value);
   }
 
-  void ParseTreeWriter::blockContents(Element* element, const et::Block& value) {
+  void ParseTreeWriter::blockContents(Element* element, const pt::Block& value) {
     for (fluir::ID id : sortedIds(value.nodes))
       node(element, value.nodes.at(id));
     for (fluir::ID id : sortedIds(value.conduits))
       conduit(element, value.conduits.at(id));
   }
 
-  void ParseTreeWriter::node(Element* parent, const et::Node& value) {
+  void ParseTreeWriter::node(Element* parent, const pt::Node& value) {
     std::visit(util::Overloaded{
-                 [&](const et::Constant& n) { constant(parent, n); },
-                 [&](const et::Binary& n) { binary(parent, n); },
-                 [&](const et::Unary& n) { unary(parent, n); },
-                 [&](const et::Call& n) { call(parent, n); },
-                 [&](const et::Comment& n) { comment(parent, n); },
-                 [&](const et::Conditional& n) { conditional(parent, n); },
+                 [&](const pt::Constant& n) { constant(parent, n); },
+                 [&](const pt::Binary& n) { binary(parent, n); },
+                 [&](const pt::Unary& n) { unary(parent, n); },
+                 [&](const pt::Call& n) { call(parent, n); },
+                 [&](const pt::Comment& n) { comment(parent, n); },
+                 [&](const pt::Conditional& n) { conditional(parent, n); },
                },
                value);
   }
 
-  void ParseTreeWriter::constant(Element* parent, const et::Constant& value) {
+  void ParseTreeWriter::constant(Element* parent, const pt::Constant& value) {
     Element* el = parent->InsertNewChildElement("constant");
     setId(el, value.id);
     setLocation(el, value.location);
     literal(el, value.value);
   }
 
-  void ParseTreeWriter::binary(Element* parent, const et::Binary& value) {
+  void ParseTreeWriter::binary(Element* parent, const pt::Binary& value) {
     Element* el = parent->InsertNewChildElement("binary");
     setId(el, value.id);
     setLocation(el, value.location);
     el->SetAttribute("operator", std::string(fluir::stringify(value.op)).c_str());
   }
 
-  void ParseTreeWriter::unary(Element* parent, const et::Unary& value) {
+  void ParseTreeWriter::unary(Element* parent, const pt::Unary& value) {
     Element* el = parent->InsertNewChildElement("unary");
     setId(el, value.id);
     setLocation(el, value.location);
     el->SetAttribute("operator", std::string(fluir::stringify(value.op)).c_str());
   }
 
-  void ParseTreeWriter::call(Element* parent, const et::Call& value) {
+  void ParseTreeWriter::call(Element* parent, const pt::Call& value) {
     Element* el = parent->InsertNewChildElement("call");
     el->SetAttribute("target", value.target.c_str());
     setId(el, value.id);
@@ -190,7 +190,7 @@ namespace fluir::editor {
     }
   }
 
-  void ParseTreeWriter::conditional(Element* parent, const et::Conditional& conditional) {
+  void ParseTreeWriter::conditional(Element* parent, const pt::Conditional& conditional) {
     auto* e = parent->InsertNewChildElement("conditional");
     setId(e, conditional.id);
     setLocation(e, conditional.location);
@@ -212,20 +212,20 @@ namespace fluir::editor {
     blockContents(e->InsertNewChildElement("else"), *conditional.elseScope);
   }
 
-  void ParseTreeWriter::comment(Element* parent, const et::Comment& value) {
+  void ParseTreeWriter::comment(Element* parent, const pt::Comment& value) {
     Element* el = parent->InsertNewChildElement("comment");
     setId(el, value.id);
     setLocation(el, value.location);
     el->SetText(value.text.c_str());
   }
 
-  void ParseTreeWriter::blockPort(Element* parent, const et::BlockPort& port, std::string_view name) {
+  void ParseTreeWriter::blockPort(Element* parent, const pt::BlockPort& port, std::string_view name) {
     Element* e = parent->InsertNewChildElement(name.data());
     setIdReference(e, port.innerId, "inner"sv);
     setInt(e, "y"sv, port.y);
   }
 
-  void ParseTreeWriter::conduit(Element* parent, const et::Conduit& value) {
+  void ParseTreeWriter::conduit(Element* parent, const pt::Conduit& value) {
     Element* el = parent->InsertNewChildElement("conduit");
     setId(el, value.id);
     el->SetAttribute("input", std::to_string(value.input).c_str());
@@ -234,13 +234,13 @@ namespace fluir::editor {
       conduitOutput(el, child);
   }
 
-  void ParseTreeWriter::conduitOutput(Element* parent, const et::Conduit::Output& value) {
+  void ParseTreeWriter::conduitOutput(Element* parent, const pt::Conduit::Output& value) {
     Element* el = parent->InsertNewChildElement("output");
     el->SetAttribute("target", std::to_string(value.target).c_str());
     setInt(el, "index", value.index);
   }
 
-  void ParseTreeWriter::literal(Element* parent, const et::Literal& value) {
+  void ParseTreeWriter::literal(Element* parent, const pt::Literal& value) {
     Element* el = parent->InsertNewChildElement(std::string(literalTypeName(value)).c_str());
     el->SetText(literalText(value).c_str());
   }

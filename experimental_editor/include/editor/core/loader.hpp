@@ -1,17 +1,18 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_LOADER_HPP
+#define FLUIR_EDITOR_CORE_LOADER_HPP
 
 #include <filesystem>
 #include <optional>
 #include <string_view>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"
-#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
   /** The outcome of loading a fluir file. */
   struct LoadResult {
-    std::optional<et::ParseTree> tree; /**< std::nullopt => parse failed */
+    std::optional<pt::ParseTree> tree; /**< std::nullopt => parse failed */
   };
 
   /** Parses a fluir file at `path`.
@@ -31,3 +32,5 @@ namespace fluir::editor {
   LoadResult loadString(fluir::Context& ctx, std::string_view source);
 
 }  // namespace fluir::editor
+
+#endif

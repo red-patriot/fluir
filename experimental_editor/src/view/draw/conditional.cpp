@@ -3,8 +3,6 @@
 #include <algorithm>
 #include <cmath>
 
-#include "editor/core/tree_path.hpp"
-
 namespace fluir::editor::draw {
   namespace {
 
@@ -32,7 +30,7 @@ namespace fluir::editor::draw {
     // A port's side rounded up to whole grid units, so a port on the grid never pokes past one.
     constexpr int PORT_GRID_UNITS = dumb_ceil(PORT_UNITS);
 
-    PortAnchors portAnchors(const et::Conditional& node,
+    PortAnchors portAnchors(const pt::Conditional& node,
                             PortRef ref,
                             const Rect& frame,
                             const EditorContext::Layout& layout) {
@@ -45,7 +43,28 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout) {
+  const pt::BlockPort* portOf(const pt::Conditional& conditional, PortRef port) {
+    if (port.output) {
+      return port.index < conditional.outputs.size() ? &conditional.outputs[port.index] : nullptr;
+    }
+    if (port.index == 0) {
+      return &conditional.condition;
+    }
+    return port.index <= conditional.inputs.size() ? &conditional.inputs[port.index - 1] : nullptr;
+  }
+
+  std::vector<PortRef> portRefs(const pt::Conditional& conditional) {
+    std::vector<PortRef> refs;
+    for (std::size_t i = 0; i <= conditional.inputs.size(); ++i) {
+      refs.push_back({.output = false, .index = i});
+    }
+    for (std::size_t i = 0; i < conditional.outputs.size(); ++i) {
+      refs.push_back({.output = true, .index = i});
+    }
+    return refs;
+  }
+
+  TerminalSet anchors(const pt::Conditional& node, const Rect& world, const EditorContext::Layout& layout) {
     TerminalSet set;
     for (const PortRef ref : portRefs(node)) {
       (ref.output ? set.outputs : set.inputs).push_back(portAnchors(node, ref, world, layout).outer);
@@ -54,7 +73,7 @@ namespace fluir::editor::draw {
   }
 
   // Inside, an input port is a source for its branch and an output port a sink.
-  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const et::Conditional& node,
+  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const pt::Conditional& node,
                                                           const Rect& frame,
                                                           const EditorContext::Layout& layout) {
     std::unordered_map<fluir::ID, TerminalSet> inner;
@@ -69,12 +88,12 @@ namespace fluir::editor::draw {
     return inner;
   }
 
-  Color color(const et::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
+  Color color(const pt::Conditional&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
 
-  Limits<Vec2i> sizeLimits(const et::Conditional& node) {
+  Limits<Vec2i> sizeLimits(const pt::Conditional& node) {
     int lowest = node.condition.y;
-    for (const et::BlockPorts* wall : {&node.inputs, &node.outputs}) {
-      for (const et::BlockPort& port : *wall) {
+    for (const pt::BlockPorts* wall : {&node.inputs, &node.outputs}) {
+      for (const pt::BlockPort& port : *wall) {
         lowest = std::max(lowest, port.y);
       }
     }
@@ -83,13 +102,13 @@ namespace fluir::editor::draw {
     return limits;
   }
 
-  Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout) {
+  Limits<int> portYLimits(const pt::Conditional& node, const EditorContext::Layout& layout) {
     return {.lower = static_cast<int>(std::ceil(layout.headerUnits)), .upper = node.location.height - PORT_GRID_UNITS};
   }
 
-  std::optional<Part> resizePart(const et::Conditional&) { return Part::ResizeXY; }
+  std::optional<ResizeAxes> resizePart(const pt::Conditional&) { return ResizeAxes::XY; }
 
-  std::vector<FieldLabel> labels(const et::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
+  std::vector<FieldLabel> labels(const pt::Conditional&, const Rect&, const EditorContext::Layout&) { return {}; }
 
   Rect branchArrowRect(const Rect& header, const EditorContext::Layout& layout) {
     const double side = BRANCH_ARROW_UNITS * layout.unitPx;
@@ -97,12 +116,10 @@ namespace fluir::editor::draw {
     return {tag.x + tag.w, header.y + (header.h - side) / 2, side, side};
   }
 
-  Rect portRect(const et::Conditional& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout) {
+  Rect portRect(const pt::Conditional& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout) {
     const double side = PORT_UNITS * layout.unitPx;
     const double wall = port.output ? frame.x + frame.w : frame.x;
     return {wall - side / 2, frame.y + portOf(node, port)->y * layout.unitPx, side, side};
   }
-
-  std::string_view branchTag(fluir::ID branchId) { return branchId == ELSE_BRANCH_ID ? ELSE_TAG : THEN_TAG; }
 
 }  // namespace fluir::editor::draw

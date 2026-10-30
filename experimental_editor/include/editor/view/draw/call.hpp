@@ -4,25 +4,24 @@
 #include <optional>
 #include <vector>
 
-#include "editor/core/tree.hpp"
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/view/draw/draw_utils.hpp"
-#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
 
   /** One input per argument row; an output only when the call returns. */
-  TerminalSet anchors(const et::Call& node, const Rect& world, const EditorContext::Layout& layout);
+  TerminalSet anchors(const pt::Call& node, const Rect& world, const EditorContext::Layout& layout);
 
-  Color color(const et::Call& node, const EditorContext::Theme& theme);
+  Color color(const pt::Call& node, const EditorContext::Theme& theme);
 
   /** How far the node may be resized, in grid units. */
-  Limits<Vec2i> sizeLimits(const et::Call& node);
+  Limits<Vec2i> sizeLimits(const pt::Call& node);
 
   /** The grip that resizes the node, if any. */
-  std::optional<Part> resizePart(const et::Call& node);
+  std::optional<ResizeAxes> resizePart(const pt::Call& node);
 
   /** The target on the header row, then one row per argument in index order. */
-  std::vector<FieldLabel> labels(const et::Call& node, const Rect& world, const EditorContext::Layout& layout);
+  std::vector<FieldLabel> labels(const pt::Call& node, const Rect& world, const EditorContext::Layout& layout);
 
 }  // namespace fluir::editor::draw
 

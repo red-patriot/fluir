@@ -10,17 +10,17 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  TerminalSet anchors(const et::Unary&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
     return {edgeAnchors(r.x, r, 1), edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const et::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
+  Color color(const pt::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
 
-  Limits<Vec2i> sizeLimits(const et::Unary&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const pt::Unary&) { return SIZE_LIMITS; }
 
-  std::optional<Part> resizePart(const et::Unary&) { return Part::ResizeX; }
+  std::optional<ResizeAxes> resizePart(const pt::Unary&) { return ResizeAxes::X; }
 
-  std::vector<FieldLabel> labels(const et::Unary&, const Rect& world, const EditorContext::Layout&) {
+  std::vector<FieldLabel> labels(const pt::Unary&, const Rect& world, const EditorContext::Layout&) {
     return {{{Field::Kind::Operator}, world}};
   }
 

@@ -1,9 +1,8 @@
 #include "editor/view/draw/function.hpp"
 
+#include <algorithm>
 #include <string>
 
-#include "editor/core/node_access.hpp"
-#include "editor/core/tree_path.hpp"
 #include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor::draw {
@@ -13,7 +12,7 @@ namespace fluir::editor::draw {
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
 
     // The parameter a rail shows; the return rail has none.
-    const et::FunctionDecl::Parameter* paramOf(const et::FunctionDecl& fn, fluir::ID railId) {
+    const pt::FunctionDecl::Parameter* paramOf(const pt::FunctionDecl& fn, fluir::ID railId) {
       if (fn.input) {
         for (const auto& param : fn.input->parameters) {
           if (param.id == railId) {
@@ -24,19 +23,40 @@ namespace fluir::editor::draw {
       return nullptr;
     }
 
+    // `fn`'s parameters, ascending by index.
+    std::vector<const pt::FunctionDecl::Parameter*> sortedParameters(const pt::FunctionDecl& fn) {
+      std::vector<const pt::FunctionDecl::Parameter*> out;
+      if (fn.input) {
+        for (const auto& param : fn.input->parameters) {
+          out.push_back(&param);
+        }
+      }
+      std::ranges::sort(out, {}, &pt::FunctionDecl::Parameter::index);
+      return out;
+    }
+
+    // The type name of `fn`'s param or return with id `railId`, or nullptr.
+    const std::string* railTypeAt(const pt::FunctionDecl& fn, fluir::ID railId) {
+      if (fn.output && fn.output->ret && fn.output->ret->id == railId) {
+        return &fn.output->ret->typeName;
+      }
+      const pt::FunctionDecl::Parameter* param = paramOf(fn, railId);
+      return param == nullptr ? nullptr : &param->typeName;
+    }
+
     Rect headerOf(const Rect& frame, const EditorContext::Layout& layout) {
       return {frame.x, frame.y, frame.w, layout.headerH()};
     }
 
   }  // namespace
 
-  TerminalSet anchors(const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail) {
+  TerminalSet anchors(const pt::FunctionDecl& fn, fluir::ID railId, const Rect& rail) {
     const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == railId;
     const double midY = rail.y + rail.h * 0.5;
     return isReturn ? TerminalSet{{Vec2{rail.x, midY}}, {}} : TerminalSet{{}, {Vec2{rail.x + rail.w, midY}}};
   }
 
-  Rect railRect(const et::FunctionDecl& fn, fluir::ID railId, const Rect& frame, const EditorContext::Layout& layout) {
+  Rect railRect(const pt::FunctionDecl& fn, fluir::ID railId, const Rect& frame, const EditorContext::Layout& layout) {
     const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
     if (fn.output && fn.output->ret && fn.output->ret->id == railId) {
       return {origin.x + (fn.location.width - layout.returnInsetUnits) * layout.unitPx,
@@ -44,7 +64,7 @@ namespace fluir::editor::draw {
               layout.railStep(),
               layout.railStep()};
     }
-    const std::vector<const et::FunctionDecl::Parameter*> params = sortedParameters(fn);
+    const std::vector<const pt::FunctionDecl::Parameter*> params = sortedParameters(fn);
     for (std::size_t row = 0; row < params.size(); ++row) {
       if (params[row]->id == railId) {
         return {origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
@@ -53,15 +73,15 @@ namespace fluir::editor::draw {
     return {};
   }
 
-  Color color(const et::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
+  Color color(const pt::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
 
-  Limits<Vec2i> sizeLimits(const et::FunctionDecl&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const pt::FunctionDecl&) { return SIZE_LIMITS; }
 
-  std::vector<FieldLabel> labels(const et::FunctionDecl&, const Rect& frame, const EditorContext::Layout& layout) {
+  std::vector<FieldLabel> labels(const pt::FunctionDecl&, const Rect& frame, const EditorContext::Layout& layout) {
     return {{{Field::Kind::Name}, splitLabel(headerOf(frame, layout), FN_TAG, layout).text}};
   }
 
-  std::vector<FieldLabel> labels(const et::FunctionDecl& fn,
+  std::vector<FieldLabel> labels(const pt::FunctionDecl& fn,
                                  fluir::ID railId,
                                  const Rect& rail,
                                  const EditorContext::Layout& layout) {
@@ -70,7 +90,7 @@ namespace fluir::editor::draw {
       return {};
     }
     const SplitLabel split = splitLabel(rail, *typeName, layout);
-    const et::FunctionDecl::Parameter* param = paramOf(fn, railId);
+    const pt::FunctionDecl::Parameter* param = paramOf(fn, railId);
     if (param == nullptr) {
       return {{{Field::Kind::ReturnType}, split.tag}};
     }

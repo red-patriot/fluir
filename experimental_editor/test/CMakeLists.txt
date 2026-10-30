@@ -6,57 +6,18 @@ add_executable(fluir.editor.test)
 set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/main_window.test.cpp
     app/module_page.test.cpp
-    app/module_document.test.cpp
     app/splash_widget.test.cpp
 )
 
-set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_scene.test.cpp
-                                    scene/graph_view.test.cpp
-)
-
-set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
-                                         components/text_field.test.cpp
-)
+set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_view.test.cpp)
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
-    core/annotate.test.cpp
-    core/fields.test.cpp
     core/geometry.test.cpp
     core/identifier.test.cpp
-    core/intelligence.test.cpp
     core/literal_text.test.cpp
-    core/node_access.test.cpp
     core/loader.test.cpp
-    core/module_editor.test.cpp
     core/parse_tree_writer.test.cpp
-    core/tree_edit.test.cpp
-    core/tree_path.test.cpp
-    core/viewport.test.cpp
 )
-
-set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
-    tools/bool_toggle_tool.test.cpp
-    tools/branch_toggle_tool.test.cpp
-    tools/choice_tool.test.cpp
-    tools/completion_modal.test.cpp
-    tools/completion_tool.test.cpp
-    tools/conduit_tool.test.cpp
-    tools/conditional_header_menu.test.cpp
-    tools/context_menu_tool.test.cpp
-    tools/drag_tool.test.cpp
-    tools/function_header_menu.test.cpp
-    tools/grid_steps.test.cpp
-    tools/menu_popup.test.cpp
-    tools/popup_tool.test.cpp
-    tools/port_drag_tool.test.cpp
-    tools/port_menu.test.cpp
-    tools/rail_menu.test.cpp
-    tools/select_tool.test.cpp
-    tools/text_edit_tool.test.cpp
-    tools/tool_chain.test.cpp
-)
-
-set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)
 
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/conditional.test.cpp
@@ -64,17 +25,13 @@ set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/labels.test.cpp
     view/draw/size.test.cpp
     view/graph_geometry.test.cpp
-    view/graph_layout.test.cpp
 )
 
 target_sources(
     fluir.editor.test
     PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
-            ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
             ${FLUIR_EDITOR_SCENE_TEST_SOURCES}
-            ${FLUIR_EDITOR_TOOLS_TEST_SOURCES}
-            ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
             main.cpp
             qt_platform.test.cpp

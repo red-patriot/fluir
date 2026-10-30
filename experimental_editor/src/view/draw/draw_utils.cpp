@@ -2,9 +2,6 @@
 
 #include <algorithm>
 
-#include "editor/core/renderer.hpp"
-#include "editor/view/graph_geometry.hpp"
-
 namespace fluir::editor {
   namespace {
 

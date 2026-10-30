@@ -2,14 +2,18 @@
 
 #include <gtest/gtest.h>
 
-#include "recording_renderer.hpp"
-
 namespace {
 
   using fluir::editor::fitInto;
   using fluir::editor::Rect;
   using fluir::editor::Vec2;
-  using testutil::expectRectNear;
+
+  void expectRectNear(const Rect& got, const Rect& want, double tol = 1e-6) {
+    EXPECT_NEAR(got.x, want.x, tol);
+    EXPECT_NEAR(got.y, want.y, tol);
+    EXPECT_NEAR(got.w, want.w, tol);
+    EXPECT_NEAR(got.h, want.h, tol);
+  }
 
   TEST(Grips, MoveGripSitsInsideTheTopRightCorner) {
     const Rect frame{10, 20, 100, 50};

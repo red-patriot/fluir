@@ -24,15 +24,15 @@ namespace fluir::editor {
 
   namespace draw {
 
-    TerminalSet anchors(const et::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
+    TerminalSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
 
-    Color color(const et::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
+    Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 
-    Limits<Vec2i> sizeLimits(const et::Comment&) { return SIZE_LIMITS; }
+    Limits<Vec2i> sizeLimits(const pt::Comment&) { return SIZE_LIMITS; }
 
-    std::optional<Part> resizePart(const et::Comment&) { return Part::ResizeXY; }
+    std::optional<ResizeAxes> resizePart(const pt::Comment&) { return ResizeAxes::XY; }
 
-    std::vector<FieldLabel> labels(const et::Comment&, const Rect& world, const EditorContext::Layout& layout) {
+    std::vector<FieldLabel> labels(const pt::Comment&, const Rect& world, const EditorContext::Layout& layout) {
       return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
     }
 

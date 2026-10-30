@@ -37,25 +37,25 @@ namespace fluir::editor::draw {
     return {world.x + TOGGLE_PAD, world.y + (world.h - side) / 2, side, side};
   }
 
-  std::vector<FieldLabel> labels(const et::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
+  std::vector<FieldLabel> labels(const pt::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
     if (std::holds_alternative<BOOL>(n.value)) {
       return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
     }
     return {{{Field::Kind::Literal}, splitLabel(world, literalTypeName(n.value), layout).text}};
   }
 
-  Limits<Vec2i> sizeLimits(const et::Constant&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }
 
   // A bool draws a fixed-size toggle square, so there is nothing to widen.
-  std::optional<Part> resizePart(const et::Constant& c) {
-    return std::holds_alternative<BOOL>(c.value) ? std::nullopt : std::optional{Part::ResizeX};
+  std::optional<ResizeAxes> resizePart(const pt::Constant& c) {
+    return std::holds_alternative<BOOL>(c.value) ? std::nullopt : std::optional{ResizeAxes::X};
   }
 
-  TerminalSet anchors(const et::Constant&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const et::Constant& c, const EditorContext::Theme& theme) {
+  Color color(const pt::Constant& c, const EditorContext::Theme& theme) {
     return std::visit(LiteralColor{theme}, c.value);
   }
 

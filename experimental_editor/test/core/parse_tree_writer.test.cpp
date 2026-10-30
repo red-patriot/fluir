@@ -5,15 +5,15 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/core/collecting_sink.hpp"
 #include "editor/core/loader.hpp"
-#include "editor/core/tree.hpp"
-#include "editor/transaction/edit_comment.hpp"
 #include "file_utility.hpp"
 
 namespace {
@@ -64,13 +64,13 @@ INSTANTIATE_TEST_SUITE_P(Fixtures,
                          fluir::test::filePathName);
 
 TEST(ParseTreeWriter, WritesEmptyFunctionFromHandBuiltTree) {
-  fluir::editor::et::ParseTree tree;
+  fluir::pt::ParseTree tree;
   tree.header.version = {0, 1, 3};
-  fluir::editor::et::FunctionDecl fn;
+  fluir::pt::FunctionDecl fn;
   fn.id = 1;
   fn.location = {.x = 10, .y = 10, .z = 3, .width = 100, .height = 100};
   fn.name = "foo";
-  tree.declarations.emplace(fn.id, fluir::editor::et::Declaration{fn});
+  tree.declarations.emplace(fn.id, fluir::pt::Declaration{fn});
 
   std::ostringstream out;
   fluir::editor::ParseTreeWriter(out).write(tree);
@@ -98,10 +98,10 @@ TEST(ParseTreeWriter, WritesEditedCommentsBackReadably) {
   fluir::editor::CollectingSink sink;
   auto loaded = parse(sink, readFile(fs::path(TEST_FOLDER) / "write" / "nested_comments.fl"));
   ASSERT_TRUE(loaded.tree.has_value());
-  fluir::editor::et::ParseTree edited = *loaded.tree;
-  ASSERT_TRUE((fluir::editor::EditCommentTransaction{fluir::FullID{2}, "Top, edited: <&> 'quoted'!"}).execute(edited));
-  ASSERT_TRUE(
-    (fluir::editor::EditCommentTransaction{fluir::FullID{1, 1}, "  body edit, with spaces  "}).execute(edited));
+  fluir::pt::ParseTree edited = *loaded.tree;
+  std::get<fluir::pt::Comment>(edited.declarations.at(2)).text = "Top, edited: <&> 'quoted'!";
+  std::get<fluir::pt::Comment>(std::get<fluir::pt::FunctionDecl>(edited.declarations.at(1)).body.nodes.at(1)).text =
+    "  body edit, with spaces  ";
 
   std::ostringstream out;
   fluir::editor::ParseTreeWriter(out).write(edited);
@@ -114,17 +114,15 @@ TEST(ParseTreeWriter, WritesEditedCommentsBackReadably) {
 namespace {
 
   // Writes `tree` and parses the result back, as saving and reopening a file does.
-  fluir::editor::LoadResult roundTrip(fluir::editor::CollectingSink& sink, const fluir::editor::et::ParseTree& tree) {
+  fluir::editor::LoadResult roundTrip(fluir::editor::CollectingSink& sink, const fluir::pt::ParseTree& tree) {
     std::ostringstream out;
     fluir::editor::ParseTreeWriter(out).write(tree);
     return parse(sink, out.str());
   }
 
-  const fluir::editor::et::Conditional& conditionalOf(const fluir::editor::et::ParseTree& tree,
-                                                      fluir::ID fn,
-                                                      fluir::ID id) {
-    return std::get<fluir::editor::et::Conditional>(
-      std::get<fluir::editor::et::FunctionDecl>(tree.declarations.at(fn)).body.nodes.at(id));
+  const fluir::pt::Conditional& conditionalOf(const fluir::pt::ParseTree& tree, fluir::ID fn, fluir::ID id) {
+    return std::get<fluir::pt::Conditional>(
+      std::get<fluir::pt::FunctionDecl>(tree.declarations.at(fn)).body.nodes.at(id));
   }
 
 }  // namespace
@@ -152,8 +150,8 @@ TEST(ParseTreeWriter, BranchesAndTheirContentsSurviveARoundTrip) {
   const auto reloaded = roundTrip(reloadSink, *loaded.tree);
   ASSERT_TRUE(reloaded.tree.has_value());
 
-  const fluir::editor::et::Conditional& before = conditionalOf(*loaded.tree, 1, 2);
-  const fluir::editor::et::Conditional& after = conditionalOf(*reloaded.tree, 1, 2);
+  const fluir::pt::Conditional& before = conditionalOf(*loaded.tree, 1, 2);
+  const fluir::pt::Conditional& after = conditionalOf(*reloaded.tree, 1, 2);
   EXPECT_EQ(after.location, before.location);
   EXPECT_EQ(after.condition, before.condition);
   for (const auto& [b, a] :

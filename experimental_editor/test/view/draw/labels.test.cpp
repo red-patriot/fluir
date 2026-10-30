@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/field.hpp"
-#include "editor/core/tree.hpp"
 #include "editor/view/draw/binary.hpp"
 #include "editor/view/draw/call.hpp"
 #include "editor/view/draw/comment.hpp"
@@ -52,22 +52,22 @@ namespace {
     return *it;
   }
 
-  fluir::editor::et::Call makeCall() {
-    return fluir::editor::et::Call{.id = 1,
-                                   .location = {},
-                                   .target = "foo",
-                                   ._return = std::nullopt,
-                                   .arguments = {{.name = "b", .index = 1}, {.name = "a", .index = 0}}};
+  fluir::pt::Call makeCall() {
+    return fluir::pt::Call{.id = 1,
+                           .location = {},
+                           .target = "foo",
+                           ._return = std::nullopt,
+                           .arguments = {{.name = "b", .index = 1}, {.name = "a", .index = 0}}};
   }
 
-  fluir::editor::et::FunctionDecl makeFunction() {
-    fluir::editor::et::FunctionDecl fn;
+  fluir::pt::FunctionDecl makeFunction() {
+    fluir::pt::FunctionDecl fn;
     fn.id = 1;
     fn.name = "main";
-    fn.input = fluir::editor::et::FunctionDecl::InputBlock{
-      .parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}};
-    fn.output = fluir::editor::et::FunctionDecl::OutputBlock{
-      .ret = fluir::editor::et::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
+    fn.input =
+      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}};
+    fn.output =
+      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
     return fn;
   }
 
@@ -75,9 +75,9 @@ namespace {
 
 TEST(Labels, BinaryAndUnaryLabelTheirOperator) {
   const auto binary =
-    fluir::editor::draw::labels(fluir::editor::et::Binary{.id = 1, .op = fluir::Operator::PLUS}, kRect, kCtx.layout);
+    fluir::editor::draw::labels(fluir::pt::Binary{.id = 1, .op = fluir::Operator::PLUS}, kRect, kCtx.layout);
   const auto unary =
-    fluir::editor::draw::labels(fluir::editor::et::Unary{.id = 1, .op = fluir::Operator::MINUS}, kRect, kCtx.layout);
+    fluir::editor::draw::labels(fluir::pt::Unary{.id = 1, .op = fluir::Operator::MINUS}, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(binary), std::vector<Field>{{Kind::Operator}});
   EXPECT_EQ(fieldsOf(unary), std::vector<Field>{{Kind::Operator}});
@@ -102,7 +102,7 @@ TEST(Labels, CallRowsDoNotOverlap) {
 }
 
 TEST(Labels, ConstantLabelsItsLiteral) {
-  const fluir::editor::et::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::I32{7}};
+  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::I32{7}};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Literal}});
@@ -110,7 +110,7 @@ TEST(Labels, ConstantLabelsItsLiteral) {
 }
 
 TEST(Labels, BoolConstantLabelsItsToggle) {
-  const fluir::editor::et::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
+  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Bool}});
@@ -118,7 +118,7 @@ TEST(Labels, BoolConstantLabelsItsToggle) {
 }
 
 TEST(Labels, CommentLabelsItsText) {
-  const fluir::editor::et::Comment comment{.id = 1, .location = {}, .text = "note"};
+  const fluir::pt::Comment comment{.id = 1, .location = {}, .text = "note"};
   const auto labels = fluir::editor::draw::labels(comment, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Text}});
@@ -126,19 +126,19 @@ TEST(Labels, CommentLabelsItsText) {
 }
 
 TEST(Labels, ConditionalHasNoLabels) {
-  const fluir::editor::et::Conditional conditional{.id = 1,
-                                                   .location = {},
-                                                   .condition = {},
-                                                   .inputs = {},
-                                                   .outputs = {},
-                                                   .thenScope = xyz::indirect<fluir::editor::et::Block>{},
-                                                   .elseScope = xyz::indirect<fluir::editor::et::Block>{}};
+  const fluir::pt::Conditional conditional{.id = 1,
+                                           .location = {},
+                                           .condition = {},
+                                           .inputs = {},
+                                           .outputs = {},
+                                           .thenScope = xyz::indirect<fluir::pt::Block>{},
+                                           .elseScope = xyz::indirect<fluir::pt::Block>{}};
 
   EXPECT_TRUE(fluir::editor::draw::labels(conditional, kRect, kCtx.layout).empty());
 }
 
 TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
-  const fluir::editor::et::FunctionDecl fn = makeFunction();
+  const fluir::pt::FunctionDecl fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Name}});
@@ -146,7 +146,7 @@ TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
 }
 
 TEST(Labels, ParameterRailLabelsItsTypeAndNameByParameterIndex) {
-  const fluir::editor::et::FunctionDecl fn = makeFunction();
+  const fluir::pt::FunctionDecl fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamType, 3}, {Kind::ParamName, 3}}));

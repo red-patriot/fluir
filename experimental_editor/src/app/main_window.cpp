@@ -7,7 +7,20 @@
 #include <QStackedWidget>
 #include <utility>
 
+#include "bytecode/version.hpp"
+#include "compiler/utility/context.hpp"
+#include "editor/core/loader.hpp"
+
 namespace fluir::editor {
+  namespace {
+
+    pt::ParseTree newModule() {
+      pt::ParseTree tree;
+      tree.header.version = fluir::CURRENT_VERSION;
+      return tree;
+    }
+
+  }  // namespace
 
   MainWindow::MainWindow(const EditorContext& ctx, QWidget* parent) :
     QMainWindow(parent), ctx_(ctx), pages_(new QStackedWidget(this)), splash_(new SplashWidget(pages_)) {
@@ -15,28 +28,29 @@ namespace fluir::editor {
     setCentralWidget(pages_);
     resize(ctx.window.width, ctx.window.height);
 
-    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(newModule()); });
+    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
     connect(splash_, &SplashWidget::openRequested, this, &MainWindow::openDialog);
 
     retitle();
   }
 
   bool MainWindow::openModule(const std::filesystem::path& program) {
-    std::optional<ModuleEditor> editor = fluir::editor::openModule(program);
-    if (!editor) {
+    fluir::Context ctx{.currentFile = program, .ignoreVersionChecks = true};
+    LoadResult result = loadFile(ctx, program);
+    if (!result.tree) {
       return false;
     }
-    openPage(std::move(*editor));
+    openPage(program, std::move(*result.tree));
     return true;
   }
 
-  void MainWindow::openPage(ModuleEditor editor) {
+  void MainWindow::openPage(std::optional<std::filesystem::path> program, pt::ParseTree tree) {
     closePage();
-    page_ = new ModulePage(ctx_, std::move(editor), pages_);
+    page_ = new ModulePage(ctx_, std::move(program), std::move(tree), pages_);
     pages_->addWidget(page_);
     pages_->setCurrentWidget(page_);
     connect(page_, &ModulePage::closeRequested, this, &MainWindow::closePage);
-    connect(&page_->document(), &ModuleDocument::programChanged, this, &MainWindow::retitle);
+    connect(page_, &ModulePage::programChanged, this, &MainWindow::retitle);
     retitle();
   }
 
@@ -61,7 +75,7 @@ namespace fluir::editor {
   void MainWindow::retitle() {
     QString title = tr("Fluir");
     if (page_ != nullptr) {
-      const auto& program = page_->document().editor().program();
+      const auto& program = page_->program();
       title += " - " + (program ? QString::fromStdU16String(program->filename().u16string()) : tr("<new file>"));
     }
     setWindowTitle(title);

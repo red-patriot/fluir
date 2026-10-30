@@ -1,6 +1,7 @@
 #include "editor/app/module_page.hpp"
 
 #include <filesystem>
+#include <fstream>
 #include <QAction>
 #include <QFileDialog>
 #include <QKeySequence>
@@ -10,27 +11,48 @@
 #include <QVBoxLayout>
 #include <utility>
 
+#include "editor/core/parse_tree_writer.hpp"
+
 namespace fluir::editor {
   namespace {
 
     const QString FILTER = QObject::tr("Fluir Program (*.fl)");
 
-    QAction* toolbarAction(QToolBar* bar, const QString& text, const char* name, const QKeySequence& shortcut = {}) {
-      QAction* action = bar->addAction(text);
+    QAction* toolbarAction(QToolBar* bar,
+                           QAction* action,
+                           const std::string_view name,
+                           const QKeySequence& shortcut = {}) {
+      bar->addAction(action);
       action->setObjectName(name);
       action->setShortcut(shortcut);
       return action;
     }
 
+    QAction* toolbarAction(QToolBar* bar,
+                           const QString& text,
+                           const std::string_view name,
+                           const QKeySequence& shortcut = {}) {
+      return toolbarAction(bar, new QAction(text, bar), name, shortcut);
+    }
+
   }  // namespace
 
-  ModulePage::ModulePage(const EditorContext& ctx, ModuleEditor editor, QWidget* parent) :
-    QWidget(parent), document_(std::move(editor)), scene_(new GraphScene(ctx, this)), view_(new GraphView(ctx, this)) {
+  ModulePage::ModulePage(const EditorContext& ctx,
+                         std::optional<std::filesystem::path> program,
+                         pt::ParseTree tree,
+                         QWidget* parent) :
+    QWidget(parent),
+    program_(std::move(program)),
+    tree_(std::move(tree)),
+    undoStack_(new QUndoStack(this)),
+    scene_(new ModuleScene(this)),
+    view_(new GraphView(ctx, this)) {
     auto* bar = new QToolBar(tr("File"), this);
     QAction* save = toolbarAction(bar, tr("Save"), "save", QKeySequence::Save);
     QAction* saveAs = toolbarAction(bar, tr("Save As"), "saveAs", QKeySequence::SaveAs);
-    QAction* undo = toolbarAction(bar, tr("Undo"), "undo", QKeySequence::Undo);
-    QAction* redo = toolbarAction(bar, tr("Redo"), "redo", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+    toolbarAction(bar, undoStack_->createUndoAction(bar, tr("Undo")), "undo", QKeySequence::Undo);
+    toolbarAction(
+      bar, undoStack_->createRedoAction(bar, tr("Redo")), "redo", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
     auto* spacer = new QWidget(bar);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     bar->addWidget(spacer);
@@ -42,18 +64,10 @@ namespace fluir::editor {
     layout->addWidget(bar);
     layout->addWidget(view_);
 
-    undo->setEnabled(document_.editor().canUndo());
-    redo->setEnabled(document_.editor().canRedo());
     connect(save, &QAction::triggered, this, &ModulePage::save);
     connect(saveAs, &QAction::triggered, this, &ModulePage::saveAsDialog);
-    connect(undo, &QAction::triggered, &document_, &ModuleDocument::undo);
-    connect(redo, &QAction::triggered, &document_, &ModuleDocument::redo);
     connect(exit, &QAction::triggered, this, &ModulePage::closeRequested);
-    connect(&document_, &ModuleDocument::canUndoChanged, undo, &QAction::setEnabled);
-    connect(&document_, &ModuleDocument::canRedoChanged, redo, &QAction::setEnabled);
-    connect(&document_, &ModuleDocument::changed, scene_, [this] { scene_->reconcile(document_.editor().tree()); });
 
-    scene_->reconcile(document_.editor().tree());
     view_->setScene(scene_);
     view_->fit();
   }
@@ -62,13 +76,18 @@ namespace fluir::editor {
     if (!program.has_extension()) {
       program.replace_extension("fl");
     }
-    return document_.saveAs(program);
+    if (!write(program)) {
+      return false;
+    }
+    program_ = std::move(program);
+    emit programChanged();
+    return true;
   }
 
   void ModulePage::save() {
-    if (!document_.editor().program()) {
+    if (!program_) {
       saveAsDialog();
-    } else if (!document_.save()) {
+    } else if (!write(*program_)) {
       QMessageBox::warning(this, tr("Save"), tr("The module could not be saved."));
     }
   }
@@ -78,6 +97,20 @@ namespace fluir::editor {
     if (!chosen.isEmpty() && !saveAs(chosen.toStdU16String())) {
       QMessageBox::warning(this, tr("Save As"), tr("The module could not be saved to %1.").arg(chosen));
     }
+  }
+
+  bool ModulePage::write(const std::filesystem::path& program) {
+    std::ofstream ofs(program);
+    if (!ofs) {
+      return false;
+    }
+    ParseTreeWriter writer(ofs);
+    writer.write(tree_);
+    if (!writer.good()) {
+      return false;
+    }
+    undoStack_->setClean();
+    return true;
   }
 
 }  // namespace fluir::editor

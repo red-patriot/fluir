@@ -2,13 +2,14 @@
 #define FLUIR_EDITOR_APP_MODULE_PAGE_HPP
 
 #include <filesystem>
+#include <optional>
+#include <QUndoStack>
 #include <QWidget>
 
-#include "editor/app/module_document.hpp"
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/core/module_editor.hpp"
-#include "editor/scene/graph_scene.hpp"
 #include "editor/scene/graph_view.hpp"
+#include "editor/scene/module_scene.hpp"
 
 namespace fluir::editor {
 
@@ -17,22 +18,32 @@ namespace fluir::editor {
     Q_OBJECT
 
    public:
-    ModulePage(const EditorContext& ctx, ModuleEditor editor, QWidget* parent = nullptr);
+    ModulePage(const EditorContext& ctx,
+               std::optional<std::filesystem::path> program,
+               pt::ParseTree tree,
+               QWidget* parent = nullptr);
 
-    ModuleDocument& document() { return document_; }
+    const std::optional<std::filesystem::path>& program() const { return program_; }
+
+    QUndoStack& undoStack() { return *undoStack_; }
 
     /** Saves the module to `program`, adds the .fl extension if it has none. */
     bool saveAs(std::filesystem::path program);
 
    signals:
     void closeRequested();
+    void programChanged();
 
    private:
     void save();
     void saveAsDialog();
+    bool write(const std::filesystem::path& program);
 
-    ModuleDocument document_;
-    GraphScene* scene_;
+    std::optional<std::filesystem::path> program_;
+    // Saved unchanged until the scene is built from it and exported (stage 2).
+    pt::ParseTree tree_;
+    QUndoStack* undoStack_;
+    ModuleScene* scene_;
     GraphView* view_;
   };
 

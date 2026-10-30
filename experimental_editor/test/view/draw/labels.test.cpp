@@ -60,15 +60,11 @@ namespace {
                            .arguments = {{.name = "b", .index = 1}, {.name = "a", .index = 0}}};
   }
 
-  fluir::pt::FunctionDecl makeFunction() {
-    fluir::pt::FunctionDecl fn;
-    fn.id = 1;
-    fn.name = "main";
-    fn.input =
-      fluir::pt::FunctionDecl::InputBlock{.parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}};
-    fn.output =
-      fluir::pt::FunctionDecl::OutputBlock{.ret = fluir::pt::FunctionDecl::Return{.id = 25, .typeName = "I32"}};
-    return fn;
+  fluir::editor::draw::Signature makeFunction() {
+    return {
+      .name = "main",
+      .input = fluir::pt::FunctionInputBlock{.parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}},
+      .output = fluir::pt::FunctionOutputBlock{.ret = fluir::pt::FunctionReturn{.id = 25, .typeName = "I32"}}};
   }
 
 }  // namespace
@@ -126,19 +122,13 @@ TEST(Labels, CommentLabelsItsText) {
 }
 
 TEST(Labels, ConditionalHasNoLabels) {
-  const fluir::pt::Conditional conditional{.id = 1,
-                                           .location = {},
-                                           .condition = {},
-                                           .inputs = {},
-                                           .outputs = {},
-                                           .thenScope = xyz::indirect<fluir::pt::Block>{},
-                                           .elseScope = xyz::indirect<fluir::pt::Block>{}};
+  const fluir::editor::draw::Ports conditional{};
 
   EXPECT_TRUE(fluir::editor::draw::labels(conditional, kRect, kCtx.layout).empty());
 }
 
 TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
-  const fluir::pt::FunctionDecl fn = makeFunction();
+  const fluir::editor::draw::Signature fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Name}});
@@ -146,7 +136,7 @@ TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
 }
 
 TEST(Labels, ParameterRailLabelsItsTypeAndNameByParameterIndex) {
-  const fluir::pt::FunctionDecl fn = makeFunction();
+  const fluir::editor::draw::Signature fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamType, 3}, {Kind::ParamName, 3}}));

@@ -17,7 +17,7 @@
         <output/>
         <then>
           <binary
-              id="1"
+              id="16"
               x="0" y="20" z="2" w="7" h="7"
               lhs="2"
               rhs="3"
@@ -38,10 +38,10 @@
           <constant id="2" x="9" y="12" z="10" w="12" h="5">
             <f64>1.2345</f64>
           </constant>
-          <constant id="1" x="9" y="5" z="0" w="12" h="5">
+          <constant id="15" x="9" y="5" z="0" w="12" h="5">
             <f64>6.7891</f64>
           </constant>
-          <conduit id="7" input="1">
+          <conduit id="7" input="15">
             <output target="3" index="0"/>
           </conduit>
           <conduit id="8" input="2" index="0">

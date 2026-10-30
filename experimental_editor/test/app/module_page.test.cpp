@@ -1,9 +1,11 @@
 #include "editor/app/module_page.hpp"
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <QAction>
 #include <QKeySequence>
+#include <QPointer>
 #include <QSignalSpy>
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -14,6 +16,7 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/diagram/build.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
 #include "fixture_loader.hpp"
@@ -46,12 +49,19 @@ namespace {
     void undo() override { --*runs; }
   };
 
+  std::unique_ptr<fluir::editor::ModuleScene> sceneOf(const fluir::editor::EditorContext& ctx,
+                                                      const fluir::pt::ParseTree& tree) {
+    auto scene = std::make_unique<fluir::editor::ModuleScene>(ctx);
+    EXPECT_TRUE(fluir::editor::diagram::buildScene(tree, *scene));
+    return scene;
+  }
+
   struct Harness {
     fluir::editor::EditorContext ctx;
     ModulePage page;
 
-    Harness(std::optional<fs::path> program, fluir::pt::ParseTree tree) :
-      page(ctx, std::move(program), std::move(tree)) { }
+    Harness(std::optional<fs::path> program, const fluir::pt::ParseTree& tree) :
+      page(ctx, std::move(program), sceneOf(ctx, tree)) { }
 
     explicit Harness(const fs::path& program) : Harness(program, load(program)) { }
 
@@ -98,6 +108,17 @@ TEST(ModulePage, ShowsItsSceneInTheView) {
   const auto* view = h.page.findChild<fluir::editor::GraphView*>();
   ASSERT_NE(view, nullptr);
   EXPECT_NE(dynamic_cast<fluir::editor::ModuleScene*>(view->scene()), nullptr);
+}
+
+TEST(ModulePage, OwnsItsScene) {
+  const fluir::editor::EditorContext ctx;
+  auto* page = new ModulePage(ctx, std::nullopt, sceneOf(ctx, fluir::pt::ParseTree{}));
+  const QPointer<QObject> scene = page->findChild<fluir::editor::GraphView*>()->scene();
+  ASSERT_NE(scene, nullptr);
+
+  delete page;
+
+  EXPECT_EQ(scene, nullptr);
 }
 
 TEST(ModulePage, SaveWritesTheModuleToTheProgram) {

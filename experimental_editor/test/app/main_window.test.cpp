@@ -90,6 +90,14 @@ TEST(MainWindow, AFileThatFailsToLoadStaysOnTheSplash) {
   EXPECT_EQ(h.page(), nullptr);
 }
 
+TEST(MainWindow, AFileThatFailsToBuildStaysOnTheSplash) {
+  Harness h;
+
+  EXPECT_FALSE(h.window.openModule(fs::path(TEST_FOLDER) / "build_fails/dangling_sink.fl"));
+
+  EXPECT_EQ(h.page(), nullptr);
+}
+
 TEST(MainWindow, ANewPageStartsWithNoHistoryToUndo) {
   Harness h;
   ASSERT_TRUE(h.window.openModule(kIntConstants));

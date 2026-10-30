@@ -34,6 +34,25 @@ set(FLUIR_EDITOR_APP_SOURCES
     "../include/editor/app/splash_widget.hpp"
 )
 
+set(FLUIR_EDITOR_DIAGRAM_SOURCES
+    "diagram/binary.cpp"
+    "diagram/build.cpp"
+    "diagram/call.cpp"
+    "diagram/comment.cpp"
+    "diagram/conditional.cpp"
+    "diagram/conduit.cpp"
+    "diagram/constant.cpp"
+    "diagram/export.cpp"
+    "diagram/function.cpp"
+    "diagram/node.cpp"
+    "diagram/parameter.cpp"
+    "diagram/port.cpp"
+    "diagram/return.cpp"
+    "diagram/scope.cpp"
+    "diagram/terminal.cpp"
+    "diagram/unary.cpp"
+)
+
 set(FLUIR_EDITOR_SCENE_SOURCES "scene/graph_view.cpp" "scene/item_style.cpp")
 
 set(FLUIR_EDITOR_VIEW_SOURCES
@@ -51,6 +70,7 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 target_sources(
     fluir.libeditor
     PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
+            ${FLUIR_EDITOR_DIAGRAM_SOURCES}
             ${FLUIR_EDITOR_VIEW_SOURCES}
             ${FLUIR_EDITOR_APP_SOURCES}
             ${FLUIR_EDITOR_SCENE_SOURCES}

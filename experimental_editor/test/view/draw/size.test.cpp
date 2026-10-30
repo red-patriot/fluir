@@ -29,13 +29,7 @@ namespace {
   const pt::Constant kI32{.id = 1, .location = {}, .value = fluir::literals_types::I32{0}};
   const pt::Constant kBool{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
   const pt::Comment kComment{.id = 1, .location = {}, .text = ""};
-  const pt::Conditional kConditional{.id = 1,
-                                     .location = {},
-                                     .condition = {},
-                                     .inputs = {},
-                                     .outputs = {},
-                                     .thenScope = xyz::indirect<pt::Block>{},
-                                     .elseScope = xyz::indirect<pt::Block>{}};
+  const draw::Ports kConditional{};
 
   Rect atLeast(const Limits<Vec2i>& limits) {
     const double unit = kCtx.layout.unitPx;
@@ -66,7 +60,7 @@ TEST(SizeFacts, EveryLowerLimitIsWithinItsUpper) {
                                       draw::sizeLimits(kI32),
                                       draw::sizeLimits(kComment),
                                       draw::sizeLimits(kConditional),
-                                      draw::sizeLimits(pt::FunctionDecl{})}) {
+                                      draw::sizeLimits(draw::Signature{})}) {
     EXPECT_LE(limits.lower.x, limits.upper.x);
     EXPECT_LE(limits.lower.y, limits.upper.y);
   }

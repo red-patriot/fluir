@@ -12,70 +12,17 @@
 
 #include "compiler/utility/context.hpp"
 #include "editor/core/collecting_sink.hpp"
+#include "fixture_loader.hpp"
 
 namespace {
 
   namespace fs = std::filesystem;
-
-  // Fixtures the current compiler frontend cannot parse yet. P1a pins them as
-  // expected failures; when the relevant parser support lands, the matching
-  // entry must be deliberately removed so the fixture moves into the load set.
-  //
-  //   branching_conduits, conduits            -- use <segment>, which the parser rejects
-  //                                              with ERROR_UNEXPECTED_ELEMENT.
-  //   function_with_input_and_output,         -- declare two <return> elements in one
-  //   inputs_and_outputs                         <output>; the parser allows a single
-  //                                              return only (ERROR_TOO_MANY_RETURNS).
-  const std::vector<std::string> kExpectedFailures{"branching_conduits", "conduits", "function_with_input_and_output"};
 
   std::string readFile(const fs::path& path) {
     std::ifstream in(path);
     std::stringstream ss;
     ss << in.rdbuf();
     return ss.str();
-  }
-
-  std::vector<fs::path> collectFixtures() {
-    std::vector<fs::path> fixtures;
-    for (const char* sub : {"read", "write"}) {
-      const fs::path dir = fs::path(TEST_FOLDER) / sub;
-      for (const auto& entry : fs::directory_iterator(dir)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".fl") {
-          fixtures.push_back(entry.path());
-        }
-      }
-    }
-    std::sort(fixtures.begin(), fixtures.end());
-    return fixtures;
-  }
-
-  bool isExpectedFailure(const fs::path& path) {
-    return std::find(kExpectedFailures.begin(), kExpectedFailures.end(), path.stem().string()) !=
-           kExpectedFailures.end();
-  }
-
-  std::vector<fs::path> loadSet() {
-    std::vector<fs::path> fixtures;
-    for (const auto& path : collectFixtures()) {
-      if (!isExpectedFailure(path)) {
-        fixtures.push_back(path);
-      }
-    }
-    return fixtures;
-  }
-
-  std::vector<fs::path> failSet() {
-    std::vector<fs::path> fixtures;
-    for (const auto& path : collectFixtures()) {
-      if (isExpectedFailure(path)) {
-        fixtures.push_back(path);
-      }
-    }
-    return fixtures;
-  }
-
-  std::string paramName(const testing::TestParamInfo<fs::path>& info) {
-    return info.param.parent_path().filename().string() + "_" + info.param.stem().string();
   }
 
   // Each load needs its own fluir::Context + CollectingSink. The loader does not
@@ -124,20 +71,26 @@ TEST_P(LoaderLoadSet, ParsesSuccessfully) {
   EXPECT_TRUE(l.result.tree.has_value()) << "failed to load " << GetParam().string();
 }
 
-INSTANTIATE_TEST_SUITE_P(Fixtures, LoaderLoadSet, testing::ValuesIn(loadSet()), paramName);
+INSTANTIATE_TEST_SUITE_P(Fixtures,
+                         LoaderLoadSet,
+                         testing::ValuesIn(testutil::readWriteFixtures(true)),
+                         testutil::fixtureName);
 
 class LoaderFailSet : public testing::TestWithParam<fs::path> { };
 
 // These fixtures exercise constructs the current parser rejects (see
-// kExpectedFailures for the per-fixture reason). If parser support lands for
-// one, drop it from kExpectedFailures so it is asserted to load instead.
+// testutil::UNPARSEABLE for the per-fixture reason). If parser support lands for
+// one, drop it from UNPARSEABLE so it is asserted to load instead.
 TEST_P(LoaderFailSet, FailsWithDiagnostics) {
   const Loaded l = loadFixtureFile(GetParam());
   EXPECT_FALSE(l.result.tree.has_value()) << "unexpectedly loaded " << GetParam().string();
   EXPECT_FALSE(l.sink.empty()) << "no diagnostics for " << GetParam().string();
 }
 
-INSTANTIATE_TEST_SUITE_P(Fixtures, LoaderFailSet, testing::ValuesIn(failSet()), paramName);
+INSTANTIATE_TEST_SUITE_P(Fixtures,
+                         LoaderFailSet,
+                         testing::ValuesIn(testutil::readWriteFixtures(false)),
+                         testutil::fixtureName);
 
 TEST(LoaderString, ParsesSimpleBinaryExpr) {
   const std::string source = readFile(fs::path(TEST_FOLDER) / "read" / "simple_binary_expr.fl");

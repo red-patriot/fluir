@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "editor/core/parse_tree_writer.hpp"
+#include "editor/diagram/export.hpp"
 
 namespace fluir::editor {
   namespace {
@@ -39,14 +40,14 @@ namespace fluir::editor {
 
   ModulePage::ModulePage(const EditorContext& ctx,
                          std::optional<std::filesystem::path> program,
-                         pt::ParseTree tree,
+                         std::unique_ptr<ModuleScene> scene,
                          QWidget* parent) :
     QWidget(parent),
     program_(std::move(program)),
-    tree_(std::move(tree)),
     undoStack_(new QUndoStack(this)),
-    scene_(new ModuleScene(this)),
+    scene_(scene.release()),
     view_(new GraphView(ctx, this)) {
+    scene_->setParent(this);
     auto* bar = new QToolBar(tr("File"), this);
     QAction* save = toolbarAction(bar, tr("Save"), "save", QKeySequence::Save);
     QAction* saveAs = toolbarAction(bar, tr("Save As"), "saveAs", QKeySequence::SaveAs);
@@ -105,7 +106,7 @@ namespace fluir::editor {
       return false;
     }
     ParseTreeWriter writer(ofs);
-    writer.write(tree_);
+    writer.write(diagram::exportTree(*scene_));
     if (!writer.good()) {
       return false;
     }

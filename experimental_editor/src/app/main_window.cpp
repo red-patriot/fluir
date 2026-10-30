@@ -1,6 +1,7 @@
 #include "editor/app/main_window.hpp"
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -10,14 +11,15 @@
 #include "bytecode/version.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
+#include "editor/diagram/build.hpp"
 
 namespace fluir::editor {
   namespace {
 
-    pt::ParseTree newModule() {
-      pt::ParseTree tree;
-      tree.header.version = fluir::CURRENT_VERSION;
-      return tree;
+    std::unique_ptr<ModuleScene> newModule(const EditorContext& ctx) {
+      auto scene = std::make_unique<ModuleScene>(ctx);
+      scene->setHeader({.version = fluir::CURRENT_VERSION});
+      return scene;
     }
 
   }  // namespace
@@ -28,7 +30,7 @@ namespace fluir::editor {
     setCentralWidget(pages_);
     resize(ctx.window.width, ctx.window.height);
 
-    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
+    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule(ctx_)); });
     connect(splash_, &SplashWidget::openRequested, this, &MainWindow::openDialog);
 
     retitle();
@@ -40,13 +42,17 @@ namespace fluir::editor {
     if (!result.tree) {
       return false;
     }
-    openPage(program, std::move(*result.tree));
+    auto scene = std::make_unique<ModuleScene>(ctx_);
+    if (!diagram::buildScene(*result.tree, *scene)) {
+      return false;
+    }
+    openPage(program, std::move(scene));
     return true;
   }
 
-  void MainWindow::openPage(std::optional<std::filesystem::path> program, pt::ParseTree tree) {
+  void MainWindow::openPage(std::optional<std::filesystem::path> program, std::unique_ptr<ModuleScene> scene) {
     closePage();
-    page_ = new ModulePage(ctx_, std::move(program), std::move(tree), pages_);
+    page_ = new ModulePage(ctx_, std::move(program), std::move(scene), pages_);
     pages_->addWidget(page_);
     pages_->setCurrentWidget(page_);
     connect(page_, &ModulePage::closeRequested, this, &MainWindow::closePage);

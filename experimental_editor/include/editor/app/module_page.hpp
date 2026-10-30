@@ -2,11 +2,11 @@
 #define FLUIR_EDITOR_APP_MODULE_PAGE_HPP
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <QUndoStack>
 #include <QWidget>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
@@ -18,9 +18,10 @@ namespace fluir::editor {
     Q_OBJECT
 
    public:
+    /** Shows `scene`. */
     ModulePage(const EditorContext& ctx,
                std::optional<std::filesystem::path> program,
-               pt::ParseTree tree,
+               std::unique_ptr<ModuleScene> scene,
                QWidget* parent = nullptr);
 
     const std::optional<std::filesystem::path>& program() const { return program_; }
@@ -40,8 +41,6 @@ namespace fluir::editor {
     bool write(const std::filesystem::path& program);
 
     std::optional<std::filesystem::path> program_;
-    // Saved unchanged until the scene is built from it and exported (stage 2).
-    pt::ParseTree tree_;
     QUndoStack* undoStack_;
     ModuleScene* scene_;
     GraphView* view_;

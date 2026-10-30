@@ -9,6 +9,10 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/splash_widget.test.cpp
 )
 
+set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES diagram/build.test.cpp
+                                      diagram/export.test.cpp
+)
+
 set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_view.test.cpp)
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
@@ -31,6 +35,7 @@ target_sources(
     fluir.editor.test
     PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
+            ${FLUIR_EDITOR_DIAGRAM_TEST_SOURCES}
             ${FLUIR_EDITOR_SCENE_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
             main.cpp

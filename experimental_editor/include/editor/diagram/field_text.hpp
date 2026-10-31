@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_FIELD_TEXT_HPP
 #define FLUIR_EDITOR_DIAGRAM_FIELD_TEXT_HPP
 
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsTextItem>
 
 #include "editor/core/editor_context.hpp"
@@ -26,6 +27,7 @@ namespace fluir::editor::diagram {
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override { event->ignore(); }
 
    private:
     bool multiline() const { return field().kind == Field::Kind::Text; }

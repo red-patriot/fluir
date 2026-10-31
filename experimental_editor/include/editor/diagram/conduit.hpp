@@ -2,6 +2,7 @@
 #define FLUIR_EDITOR_DIAGRAM_CONDUIT_HPP
 
 #include <QGraphicsPathItem>
+#include <QPointF>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -39,8 +40,11 @@ namespace fluir::editor::diagram {
 
    protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
    private:
+    /** Whether `scenePos` is on one of its end terminals. */
+    bool endsAt(QPointF scenePos) const;
     fluir::ID id_;
     Terminal* source_;
     std::vector<Terminal*> sinks_;

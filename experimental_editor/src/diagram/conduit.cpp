@@ -1,13 +1,20 @@
 #include "editor/diagram/conduit.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <QGraphicsScene>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
+#include <QMenu>
 #include <QPainterPath>
 #include <QPainterPathStroker>
 #include <QPen>
 #include <utility>
 
+#include "editor/commands/delete_selection.hpp"
+#include "editor/diagram/context_menu.hpp"
 #include "editor/scene/item_style.hpp"
+#include "editor/scene/module_scene.hpp"
 
 namespace fluir::editor::diagram {
   namespace {
@@ -69,9 +76,25 @@ namespace fluir::editor::diagram {
     return QGraphicsPathItem::collidesWithPath(path, mode) && shape().intersects(path);
   }
 
+  bool Conduit::endsAt(QPointF scenePos) const {
+    const auto under = [scenePos](const Terminal* end) { return end->sceneBoundingRect().contains(scenePos); };
+    return under(source_) || std::ranges::any_of(sinks_, under);
+  }
+
+  void Conduit::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
+    if (endsAt(event->scenePos())) {
+      event->ignore();
+      return;
+    }
+    scene()->clearSelection();
+    setSelected(true);
+    auto menu = std::make_unique<QMenu>();
+    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteSelection({this})); });
+    popUp(std::move(menu), event->screenPos());
+  }
+
   void Conduit::mousePressEvent(QGraphicsSceneMouseEvent* event) {
-    const auto under = [event](const Terminal* end) { return end->sceneBoundingRect().contains(event->scenePos()); };
-    if (under(source_) || std::ranges::any_of(sinks_, under)) {
+    if (endsAt(event->scenePos())) {
       event->ignore();
       return;
     }

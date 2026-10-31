@@ -1,16 +1,22 @@
 #include "editor/diagram/node.hpp"
 
 #include <functional>
+#include <memory>
 #include <QGraphicsScene>
+#include <QGraphicsSceneContextMenuEvent>
+#include <QMenu>
 #include <utility>
 
+#include "editor/commands/delete_selection.hpp"
 #include "editor/core/field.hpp"
 #include "editor/diagram/choice.hpp"
+#include "editor/diagram/context_menu.hpp"
 #include "editor/diagram/field_text.hpp"
 #include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/resize_grip.hpp"
 #include "editor/diagram/scope.hpp"
 #include "editor/diagram/toggle.hpp"
+#include "editor/scene/module_scene.hpp"
 
 namespace fluir::editor::diagram {
 
@@ -28,6 +34,22 @@ namespace fluir::editor::diagram {
   void FluirNode::selectAlone() {
     scene()->clearSelection();
     setSelected(true);
+  }
+
+  bool FluirNode::addMenuEntries(QMenu&, QPointF) { return true; }
+
+  void FluirNode::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
+    auto menu = std::make_unique<QMenu>();
+    if (!addMenuEntries(*menu, event->pos())) {
+      event->ignore();
+      return;
+    }
+    if (!menu->isEmpty()) {
+      menu->addSeparator();
+    }
+    selectAlone();
+    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteSelection({this})); });
+    popUp(std::move(menu), event->screenPos());
   }
 
   std::string FluirNode::text(Field) const { return {}; }

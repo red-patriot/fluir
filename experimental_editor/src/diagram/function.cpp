@@ -3,17 +3,22 @@
 #include <algorithm>
 #include <iterator>
 #include <QGraphicsScene>
+#include <QMenu>
 #include <QPainter>
 #include <string>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
+#include "editor/commands/add_parameter.hpp"
+#include "editor/commands/add_return.hpp"
 #include "editor/core/choices.hpp"
 #include "editor/core/identifier.hpp"
+#include "editor/diagram/context_menu.hpp"
 #include "editor/diagram/parameter.hpp"
 #include "editor/diagram/return.hpp"
 #include "editor/scene/item_style.hpp"
+#include "editor/scene/module_scene.hpp"
 #include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor::diagram {
@@ -227,6 +232,17 @@ namespace fluir::editor::diagram {
         signature_.output->ret->typeName = text;
         break;
     }
+  }
+
+  bool Function::addMenuEntries(QMenu& menu, QPointF local) {
+    if (local.y() >= frame().y + ctx_.layout.headerH()) {
+      return false;
+    }
+    addEntry(menu, "Add parameter", [this] { ModuleScene::of(*this).undoStack().push(new AddParameter(*this)); });
+    addEntry(menu, "Add return", [this] {
+      ModuleScene::of(*this).undoStack().push(new AddReturn(*this));
+    })->setEnabled(!hasReturn(signature_));
+    return true;
   }
 
   void Function::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {

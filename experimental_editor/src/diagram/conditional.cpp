@@ -4,11 +4,15 @@
 #include <cstddef>
 #include <iterator>
 #include <QGraphicsScene>
+#include <QMenu>
 #include <QPainter>
 #include <utility>
 
+#include "editor/commands/add_port.hpp"
 #include "editor/diagram/branch_arrow.hpp"
+#include "editor/diagram/context_menu.hpp"
 #include "editor/scene/item_style.hpp"
+#include "editor/scene/module_scene.hpp"
 #include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor::diagram {
@@ -120,6 +124,18 @@ namespace fluir::editor::diagram {
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(boundingRect());
     style::tag(*painter, band, else_->isVisible() ? draw::ELSE_TAG : draw::THEN_TAG, ctx_);
+  }
+
+  bool Conditional::addMenuEntries(QMenu& menu, QPointF local) {
+    if (local.y() >= frame().y + ctx_.layout.headerH()) {
+      return false;
+    }
+    for (const bool output : {false, true}) {
+      addEntry(menu, output ? "Add output" : "Add input", [this, output] {
+        ModuleScene::of(*this).undoStack().push(new AddPort(*this, output));
+      });
+    }
+    return true;
   }
 
 }  // namespace fluir::editor::diagram

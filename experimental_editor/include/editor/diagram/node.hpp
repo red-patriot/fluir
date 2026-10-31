@@ -4,6 +4,8 @@
 #include <functional>
 #include <optional>
 #include <QGraphicsItem>
+#include <QMenu>
+#include <QPointF>
 #include <QRectF>
 #include <string>
 #include <string_view>
@@ -49,6 +51,13 @@ namespace fluir::editor::diagram {
 
    protected:
     FluirNode(const EditorContext& ctx, QGraphicsItem* parent);
+
+    /** Adds entries for a right-click at `local`.
+     * \return true if a menu should be displayed, false otherwise
+     */
+    virtual bool addMenuEntries(QMenu& menu, QPointF local);
+    /** Selects this node and pops its menu. */
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
     /** Places this node and adds its grips. Call once from the kind's constructor, after its location is set. */
     void init(std::optional<ResizeAxes> axes);

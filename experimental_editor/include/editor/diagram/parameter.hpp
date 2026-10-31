@@ -29,6 +29,9 @@ namespace fluir::editor::diagram {
     QRectF boundingRect() const override { return rect_; }
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
+   protected:
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+
    private:
     const EditorContext& ctx_;
     Color color_;

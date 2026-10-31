@@ -51,6 +51,9 @@ namespace fluir::editor::diagram {
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
+   protected:
+    bool addMenuEntries(QMenu& menu, QPointF local) override;
+
    private:
     void storeLocation(const FlowGraphLocation& location) override { location_ = location; }
     void arrange() override;

@@ -1,11 +1,16 @@
 #include "editor/diagram/port.hpp"
 
+#include <memory>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
+#include <QMenu>
 #include <QPainter>
 
+#include "editor/commands/delete_port.hpp"
 #include "editor/commands/move_port.hpp"
 #include "editor/diagram/conditional.hpp"
+#include "editor/diagram/context_menu.hpp"
 #include "editor/diagram/grid.hpp"
 #include "editor/scene/item_style.hpp"
 #include "editor/scene/module_scene.hpp"
@@ -79,5 +84,16 @@ namespace fluir::editor::diagram {
   Conditional& Port::conditional() const { return static_cast<Conditional&>(*parentItem()); }
 
   int Port::y() const { return draw::portOf(conditional().ports(), ref_)->y; }
+
+  void Port::contextMenuEvent(QGraphicsSceneContextMenuEvent* event) {
+    if (ref_ == draw::PortRef{}) {
+      return;
+    }
+    conditional().selectAlone();
+    auto menu = std::make_unique<QMenu>();
+    addEntry(
+      *menu, "Delete port", [this] { ModuleScene::of(*this).undoStack().push(new DeletePort(conditional(), ref_)); });
+    popUp(std::move(menu), event->screenPos());
+  }
 
 }  // namespace fluir::editor::diagram

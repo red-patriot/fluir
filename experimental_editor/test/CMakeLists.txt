@@ -9,14 +9,20 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/splash_widget.test.cpp
 )
 
+set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES commands/port_commands.test.cpp
+                                       commands/signature_commands.test.cpp
+)
+
 set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/branch_arrow.test.cpp
     diagram/build.test.cpp
     diagram/choice.test.cpp
+    diagram/conduit_drag.test.cpp
     diagram/delete.test.cpp
     diagram/export.test.cpp
     diagram/field_text.test.cpp
     diagram/fields.test.cpp
+    diagram/ids.test.cpp
     diagram/move_grip.test.cpp
     diagram/port_drag.test.cpp
     diagram/resize_grip.test.cpp
@@ -46,6 +52,7 @@ set(FLUIR_EDITOR_VIEW_TEST_SOURCES
 target_sources(
     fluir.editor.test
     PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
+            ${FLUIR_EDITOR_COMMANDS_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
             ${FLUIR_EDITOR_DIAGRAM_TEST_SOURCES}
             ${FLUIR_EDITOR_SCENE_TEST_SOURCES}

@@ -12,6 +12,7 @@
 #include <QUndoStack>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -25,6 +26,7 @@
 #include "editor/diagram/export.hpp"
 #include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/node.hpp"
+#include "editor/diagram/terminal.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
 #include "fixture_loader.hpp"
@@ -100,6 +102,12 @@ namespace testutil {
       return view().mapFromScene(target);
     }
 
+    /** Centers the view between scene points `a` and `b` and returns where each lands on the viewport. */
+    std::pair<QPoint, QPoint> aimAt(QPointF a, QPointF b) {
+      view().centerOn((a + b) / 2);
+      return {view().mapFromScene(a), view().mapFromScene(b)};
+    }
+
     /** Aims at `item`'s center, plus `offset` scene px. */
     QPoint aim(const QGraphicsItem& item, QPointF offset = {}) {
       return aimAt(item.sceneBoundingRect().center() + offset);
@@ -124,6 +132,23 @@ namespace testutil {
         throw std::logic_error("expected one field part");
       }
       return *found.front();
+    }
+
+    /** `owner`'s terminal on the `output` side at `index`. */
+    static fluir::editor::diagram::Terminal& terminalOf(const QGraphicsItem& owner, bool output, int index) {
+      for (QGraphicsItem* child : owner.childItems()) {
+        auto* terminal = dynamic_cast<fluir::editor::diagram::Terminal*>(child);
+        if (terminal != nullptr && terminal->isOutput() == output && terminal->index() == index) {
+          return *terminal;
+        }
+      }
+      throw std::logic_error("no such terminal");
+    }
+
+    /** Drags from terminal `from` to terminal `to`. */
+    void wire(const fluir::editor::diagram::Terminal& from, const fluir::editor::diagram::Terminal& to) {
+      const auto [a, b] = aimAt(centerOf(&from), centerOf(&to));
+      drag(a, b);
     }
 
     /** Selects `node` with a click on its move grip. */

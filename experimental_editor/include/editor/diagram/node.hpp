@@ -68,10 +68,10 @@ namespace fluir::editor::diagram {
     virtual void write(Field field, std::string_view text);
 
     void place();
+    std::vector<FieldPart*> fieldParts() const;
 
     MoveGrip* moveGrip_ = nullptr;
     ResizeGrip* resizeGrip_ = nullptr;
-    std::vector<FieldPart*> fields_;
   };
 
 }  // namespace fluir::editor::diagram

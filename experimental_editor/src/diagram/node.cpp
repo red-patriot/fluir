@@ -7,6 +7,7 @@
 #include "editor/diagram/field_text.hpp"
 #include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/resize_grip.hpp"
+#include "editor/diagram/scope.hpp"
 #include "editor/diagram/toggle.hpp"
 
 namespace fluir::editor::diagram {
@@ -36,7 +37,7 @@ namespace fluir::editor::diagram {
       return false;
     }
     write(field, text);
-    for (FieldPart* part : fields_) {
+    for (FieldPart* part : fieldParts()) {
       if (part->field() == field) {
         part->refresh();
       }
@@ -69,25 +70,43 @@ namespace fluir::editor::diagram {
 
   void FluirNode::addFields(const std::vector<FieldLabel>& labels, QGraphicsItem& parent) {
     for (const FieldLabel& label : labels) {
+      FieldPart* part = nullptr;
       if (label.field.kind == Field::Kind::Bool) {
-        fields_.push_back(new Toggle(*this, label.field, ctx_, parent));
+        part = new Toggle(*this, label.field, ctx_, parent);
       } else if (isChoice(label.field.kind)) {
-        fields_.push_back(new Choice(*this, label.field, ctx_, parent));
+        part = new Choice(*this, label.field, ctx_, parent);
       } else {
-        fields_.push_back(new FieldText(*this, label.field, ctx_, parent));
+        part = new FieldText(*this, label.field, ctx_, parent);
       }
-      fields_.back()->place(label.rect);
+      part->place(label.rect);
     }
   }
 
   void FluirNode::placeFields(const std::vector<FieldLabel>& labels) {
     for (const FieldLabel& label : labels) {
-      for (FieldPart* part : fields_) {
+      for (FieldPart* part : fieldParts()) {
         if (part->field() == label.field) {
           part->place(label.rect);
         }
       }
     }
+  }
+
+  std::vector<FieldPart*> FluirNode::fieldParts() const {
+    std::vector<FieldPart*> parts;
+    QList<QGraphicsItem*> pending = childItems();
+    while (!pending.isEmpty()) {
+      QGraphicsItem* item = pending.takeLast();
+      // Nested nodes, and the scopes that hold them, own their own fields.
+      if (dynamic_cast<FluirNode*>(item) != nullptr || dynamic_cast<Scope*>(item) != nullptr) {
+        continue;
+      }
+      if (auto* part = dynamic_cast<FieldPart*>(item)) {
+        parts.push_back(part);
+      }
+      pending.append(item->childItems());
+    }
+    return parts;
   }
 
   void FluirNode::place() {

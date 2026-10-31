@@ -35,7 +35,13 @@ set(FLUIR_EDITOR_APP_SOURCES
     "../include/editor/app/splash_widget.hpp"
 )
 
-set(FLUIR_EDITOR_COMMANDS_SOURCES "commands/delete_selection.cpp")
+set(FLUIR_EDITOR_COMMANDS_SOURCES
+    "commands/add_conduit.cpp" "commands/add_parameter.cpp"
+    "commands/add_port.cpp" "commands/add_return.cpp"
+    "commands/conduit_cut.cpp" "commands/delete_parameter.cpp"
+    "commands/delete_port.cpp" "commands/delete_return.cpp"
+    "commands/delete_selection.cpp"
+)
 
 set(FLUIR_EDITOR_DIAGRAM_SOURCES
     "diagram/binary.cpp"
@@ -50,6 +56,7 @@ set(FLUIR_EDITOR_DIAGRAM_SOURCES
     "diagram/export.cpp"
     "diagram/field_text.cpp"
     "diagram/function.cpp"
+    "diagram/ids.cpp"
     "diagram/grip.cpp"
     "diagram/move_grip.cpp"
     "diagram/node.cpp"

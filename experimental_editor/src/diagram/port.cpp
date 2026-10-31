@@ -32,6 +32,11 @@ namespace fluir::editor::diagram {
     }
   }
 
+  void Port::setRef(draw::PortRef ref) {
+    ref_ = ref;
+    outer_->setIndex(static_cast<int>(ref.index));
+  }
+
   void Port::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
     // The condition is the bool port; every other port is a plain value port.
     style::shell(*painter, rect_, ref_ == draw::PortRef{} ? ctx_.theme.boolNode : ctx_.theme.port, ctx_);

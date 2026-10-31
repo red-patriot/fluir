@@ -27,6 +27,8 @@ namespace fluir::editor::diagram {
          QGraphicsItem* conditional);
 
     draw::PortRef ref() const { return ref_; }
+    /** Takes `ref` after a port before it on its side came or went. */
+    void setRef(draw::PortRef ref);
     fluir::ID innerId() const { return innerId_; }
     /** The outer scope's terminal. */
     Terminal* outer() const { return outer_; }

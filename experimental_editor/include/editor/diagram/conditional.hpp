@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_CONDITIONAL_HPP
 #define FLUIR_EDITOR_DIAGRAM_CONDITIONAL_HPP
 
+#include <memory>
 #include <vector>
 
 #include "compiler/models/id.hpp"
@@ -16,6 +17,13 @@ namespace fluir::editor::diagram {
   /** Display element for a conditional node. */
   class Conditional : public FluirNode {
    public:
+    /** Data about a removed port, so it could be restored later */
+    struct RemovedPort {
+      std::unique_ptr<Port> item;
+      pt::BlockPort data;
+      draw::PortRef ref;
+    };
+
     Conditional(
       fluir::ID id, FlowGraphLocation location, draw::Ports ports, const EditorContext& ctx, QGraphicsItem* parent);
 
@@ -31,6 +39,13 @@ namespace fluir::editor::diagram {
     /** Shows the branch that is hidden and hides the one that shows. */
     void switchBranch();
 
+    /** Appends a port with `data` on the `output` side; returns its ref. */
+    draw::PortRef addPort(bool output, pt::BlockPort data);
+    /** Removes the given port. */
+    RemovedPort removePort(draw::PortRef ref);
+    /** Puts a `removed` port back. */
+    void restorePort(RemovedPort removed);
+
     /** Slides `port` to `y` grid units below the frame's top. */
     void setPortY(draw::PortRef port, int y);
 
@@ -40,6 +55,11 @@ namespace fluir::editor::diagram {
     void storeLocation(const FlowGraphLocation& location) override { location_ = location; }
     void arrange() override;
     Rect portRect(draw::PortRef port) const;
+    pt::BlockPorts& side(bool output) { return output ? ports_.outputs : ports_.inputs; }
+    /** Shifts the indices of `output`-side ports from `from` on by `by`. */
+    void shiftPorts(bool output, std::size_t from, int by);
+    /** Sorts the wall ports into `draw::portRefs` order and places them. */
+    void settlePorts();
 
     fluir::ID id_;
     FlowGraphLocation location_;

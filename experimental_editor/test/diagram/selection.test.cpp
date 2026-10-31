@@ -112,6 +112,22 @@ TEST(Selection, APressOnAConduitSelectsIt) {
   EXPECT_EQ(h.scene().selectedItems(), only(conduit));
 }
 
+TEST(Selection, APressInAConduitsBoundsButOffItsLinesMissesIt) {
+  Interaction h("interaction/fan_out.fl");
+  auto& conduit = h.find<diagram::Conduit>(4);
+  const QPointF source = testutil::centerOf(conduit.source());
+  const QPointF lowest =
+    testutil::centerOf(conduit.sinks().front()).y() > testutil::centerOf(conduit.sinks().back()).y() ?
+      testutil::centerOf(conduit.sinks().front()) :
+      testutil::centerOf(conduit.sinks().back());
+  const QPointF corner(source.x() + 2 * h.unit(), lowest.y());
+  ASSERT_TRUE(conduit.sceneBoundingRect().contains(corner));
+
+  h.click(h.aimAt(corner));
+
+  EXPECT_FALSE(conduit.isSelected());
+}
+
 TEST(Selection, GripsShowWhetherOrNotTheirNodeIsSelected) {
   Interaction h("read/simple_binary_expr.fl");
   auto& binary = h.find<diagram::Binary>(1);

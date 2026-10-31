@@ -1,6 +1,8 @@
 #include "editor/diagram/function.hpp"
 
 #include <algorithm>
+#include <iterator>
+#include <QGraphicsScene>
 #include <QPainter>
 #include <string>
 #include <type_traits>
@@ -22,6 +24,15 @@ namespace fluir::editor::diagram {
 
     Rect localRect(const QGraphicsItem& rail) {
       return {0, 0, rail.boundingRect().width(), rail.boundingRect().height()};
+    }
+
+    // Takes `part` out of its function and the scene, for its taker to own.
+    void takeOut(QGraphicsItem& part) {
+      QGraphicsScene* scene = part.scene();
+      part.setParentItem(nullptr);
+      if (scene) {
+        scene->removeItem(&part);
+      }
     }
 
     bool hasReturn(const draw::Signature& signature) { return signature.output && signature.output->ret; }
@@ -64,6 +75,82 @@ namespace fluir::editor::diagram {
       addFields(draw::labels(signature_, return_->id(), localRect(*return_), ctx.layout), *return_);
     }
     init(ResizeAxes::XY);
+  }
+
+  void Function::addParameter(pt::FunctionParameter data) {
+    if (!signature_.input) {
+      signature_.input.emplace();
+    }
+    signature_.input->parameters.push_back(data);
+    auto* parameter = new Parameter(signature_, data.id, frame(), ctx_, this);
+    parameter->setZValue(SIGNATURE_Z);
+    addFields(draw::labels(signature_, data.id, localRect(*parameter), ctx_.layout), *parameter);
+    parameters_.push_back(parameter);
+    arrange();
+  }
+
+  Function::RemovedParameter Function::removeParameter(fluir::ID id) {
+    std::vector<pt::FunctionParameter>& params = signature_.input->parameters;
+    const auto data = std::ranges::find(params, id, &pt::FunctionParameter::id);
+    RemovedParameter removed{
+      .item = nullptr, .data = *data, .position = static_cast<std::size_t>(std::distance(params.begin(), data))};
+    params.erase(data);
+    const auto item = std::ranges::find(parameters_, id, &Parameter::id);
+    removed.item.reset(*item);
+    parameters_.erase(item);
+    takeOut(*removed.item);
+    arrange();
+    return removed;
+  }
+
+  void Function::restoreParameter(RemovedParameter removed) {
+    if (!signature_.input) {
+      signature_.input.emplace();
+    }
+    std::vector<pt::FunctionParameter>& params = signature_.input->parameters;
+    params.insert(std::next(params.begin(), static_cast<std::ptrdiff_t>(removed.position)), removed.data);
+    parameters_.push_back(removed.item.get());
+    removed.item.release()->setParentItem(this);
+    arrange();
+  }
+
+  void Function::dropEmptyInput() {
+    if (signature_.input && signature_.input->parameters.empty()) {
+      signature_.input.reset();
+    }
+  }
+
+  void Function::addReturn(pt::FunctionReturn data) {
+    if (!signature_.output) {
+      signature_.output.emplace();
+    }
+    signature_.output->ret = data;
+    return_ = new Return(signature_, data.id, frame(), ctx_, this);
+    return_->setZValue(SIGNATURE_Z);
+    addFields(draw::labels(signature_, data.id, localRect(*return_), ctx_.layout), *return_);
+  }
+
+  Function::RemovedReturn Function::removeReturn() {
+    RemovedReturn removed{.item = std::unique_ptr<Return>(return_), .data = *signature_.output->ret};
+    signature_.output->ret.reset();
+    return_ = nullptr;
+    takeOut(*removed.item);
+    return removed;
+  }
+
+  void Function::restoreReturn(RemovedReturn removed) {
+    if (!signature_.output) {
+      signature_.output.emplace();
+    }
+    signature_.output->ret = removed.data;
+    return_ = removed.item.get();
+    removed.item.release()->setParentItem(this);
+  }
+
+  void Function::dropEmptyOutput() {
+    if (signature_.output && !signature_.output->ret) {
+      signature_.output.reset();
+    }
   }
 
   void Function::arrange() {

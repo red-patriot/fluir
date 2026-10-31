@@ -10,7 +10,7 @@
 
 namespace fluir::editor::diagram {
 
-  /** Display element for a conduit. Its terminals re-route it whenever they move. */
+  /** Display element for a conduit. */
   class Conduit : public QGraphicsPathItem {
    public:
     /** A conduit attached to its terminals. */
@@ -32,10 +32,19 @@ namespace fluir::editor::diagram {
     /** Redraws a line from the source to each sink, wherever they now are. */
     void route();
 
+    /** Only a band around its lines, not the area they enclose. */
+    QPainterPath shape() const override;
+    QRectF boundingRect() const override;
+    bool collidesWithPath(const QPainterPath& path, Qt::ItemSelectionMode mode) const override;
+
+   protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+
    private:
     fluir::ID id_;
     Terminal* source_;
     std::vector<Terminal*> sinks_;
+    double hitPx_;
   };
 
 }  // namespace fluir::editor::diagram

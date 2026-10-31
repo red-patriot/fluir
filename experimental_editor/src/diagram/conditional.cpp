@@ -1,5 +1,9 @@
 #include "editor/diagram/conditional.hpp"
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <QGraphicsScene>
 #include <QPainter>
 #include <utility>
 
@@ -34,6 +38,58 @@ namespace fluir::editor::diagram {
     then_->setVisible(!then_->isVisible());
     else_->setVisible(!else_->isVisible());
     update();
+  }
+
+  draw::PortRef Conditional::addPort(bool output, pt::BlockPort data) {
+    side(output).push_back(data);
+    const draw::PortRef ref{.output = output, .index = output ? ports_.outputs.size() - 1 : ports_.inputs.size()};
+    wallPorts_.push_back(new Port(ports_, ref, frame(), ctx_, this));
+    wallPorts_.back()->setZValue(PORT_Z);
+    settlePorts();
+    return ref;
+  }
+
+  Conditional::RemovedPort Conditional::removePort(draw::PortRef ref) {
+    // Inputs start after the condition.
+    const auto at = static_cast<std::ptrdiff_t>(ref.output ? ref.index : ref.index - 1);
+    pt::BlockPorts& ports = side(ref.output);
+    RemovedPort removed{.item = nullptr, .data = ports[static_cast<std::size_t>(at)], .ref = ref};
+    ports.erase(std::next(ports.begin(), at));
+    const auto item = std::ranges::find(wallPorts_, ref, &Port::ref);
+    removed.item.reset(*item);
+    wallPorts_.erase(item);
+    removed.item->setParentItem(nullptr);
+    scene()->removeItem(removed.item.get());
+    shiftPorts(ref.output, ref.index + 1, -1);
+    settlePorts();
+    return removed;
+  }
+
+  void Conditional::restorePort(RemovedPort removed) {
+    const auto at = static_cast<std::ptrdiff_t>(removed.ref.output ? removed.ref.index : removed.ref.index - 1);
+    pt::BlockPorts& ports = side(removed.ref.output);
+    shiftPorts(removed.ref.output, removed.ref.index, 1);
+    ports.insert(std::next(ports.begin(), at), removed.data);
+    removed.item->setRef(removed.ref);
+    wallPorts_.push_back(removed.item.get());
+    removed.item.release()->setParentItem(this);
+    settlePorts();
+  }
+
+  void Conditional::shiftPorts(bool output, std::size_t from, int by) {
+    for (Port* port : wallPorts_) {
+      if (port->ref().output == output && port->ref().index >= from) {
+        port->setRef({.output = output, .index = static_cast<std::size_t>(static_cast<int>(port->ref().index) + by)});
+      }
+    }
+  }
+
+  void Conditional::settlePorts() {
+    std::ranges::sort(
+      wallPorts_, {}, [](const Port* port) { return std::pair{port->ref().output, port->ref().index}; });
+    for (Port* port : wallPorts_) {
+      port->place(portRect(port->ref()));
+    }
   }
 
   void Conditional::setPortY(draw::PortRef port, int y) {

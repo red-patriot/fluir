@@ -2,12 +2,14 @@
 #define FLUIR_EDITOR_DIAGRAM_TERMINAL_HPP
 
 #include <QGraphicsItem>
+#include <QGraphicsLineItem>
 #include <QRectF>
 #include <QVariant>
 #include <vector>
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/diagram/scope.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor::diagram {
@@ -23,6 +25,14 @@ namespace fluir::editor::diagram {
     bool isOutput() const { return output_; }
     /** Its index on its side of its endpoint. */
     int index() const { return index_; }
+    void setIndex(int index) { index_ = index; }
+
+    /** The scope its conduits live in. */
+    Scope* scope() const;
+    /** The item it is an end of. */
+    const QGraphicsItem* endpoint() const;
+    /** Whether a conduit already carries this output to `sink`. */
+    bool feeds(const Terminal& sink) const;
 
     /** Moves the terminal's center to `anchor`, in its owner's coordinates. */
     void setAnchor(Vec2 anchor) { setPos(anchor.x, anchor.y); }
@@ -35,10 +45,19 @@ namespace fluir::editor::diagram {
 
    protected:
     QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
+    void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseMoveEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
 
    private:
+    Terminal* partnerAt(QPointF scenePos) const;
+    void endPreview();
+
     const EditorContext& ctx_;
     std::vector<Conduit*> conduits_;
+    // A preview line to the cursor while dragging.
+    QGraphicsLineItem* preview_ = nullptr;
     QRectF rect_;
     bool output_;
     int index_;

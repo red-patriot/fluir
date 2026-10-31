@@ -21,8 +21,30 @@ namespace fluir::editor::diagram {
     fluir::ID id, Terminal* source, std::vector<Terminal*> sinks, const EditorContext& ctx, QGraphicsItem* scope) :
     QGraphicsPathItem(scope), id_(id), source_(source), sinks_(std::move(sinks)) {
     setPen(QPen(style::color(ctx.theme.conduit), PEN_PX));
+    setFlag(ItemIsSelectable);
     setZValue(CONDUIT_Z);
+    attach();
+  }
+
+  void Conduit::setSinks(std::vector<Terminal*> sinks) {
+    detach();
+    sinks_ = std::move(sinks);
+    attach();
+  }
+
+  void Conduit::attach() {
+    source_->attach(this);
+    for (Terminal* sink : sinks_) {
+      sink->attach(this);
+    }
     route();
+  }
+
+  void Conduit::detach() {
+    source_->detach(this);
+    for (Terminal* sink : sinks_) {
+      sink->detach(this);
+    }
   }
 
   void Conduit::route() {

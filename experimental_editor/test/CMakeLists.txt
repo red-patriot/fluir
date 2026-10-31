@@ -9,13 +9,25 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/splash_widget.test.cpp
 )
 
-set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES diagram/build.test.cpp
-                                      diagram/export.test.cpp
+set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
+    diagram/branch_arrow.test.cpp
+    diagram/build.test.cpp
+    diagram/choice.test.cpp
+    diagram/delete.test.cpp
+    diagram/export.test.cpp
+    diagram/field_text.test.cpp
+    diagram/fields.test.cpp
+    diagram/move_grip.test.cpp
+    diagram/port_drag.test.cpp
+    diagram/resize_grip.test.cpp
+    diagram/selection.test.cpp
+    diagram/toggle.test.cpp
 )
 
 set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_view.test.cpp)
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
+    core/choices.test.cpp
     core/geometry.test.cpp
     core/identifier.test.cpp
     core/literal_text.test.cpp

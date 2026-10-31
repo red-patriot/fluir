@@ -17,6 +17,7 @@ target_include_directories(
 )
 
 set(FLUIR_EDITOR_CORE_SOURCES
+    "core/choices.cpp"
     "core/collecting_sink.cpp"
     "core/identifier.cpp"
     "core/literal_text.cpp"
@@ -34,26 +35,39 @@ set(FLUIR_EDITOR_APP_SOURCES
     "../include/editor/app/splash_widget.hpp"
 )
 
+set(FLUIR_EDITOR_COMMANDS_SOURCES "commands/delete_selection.cpp")
+
 set(FLUIR_EDITOR_DIAGRAM_SOURCES
     "diagram/binary.cpp"
+    "diagram/branch_arrow.cpp"
     "diagram/build.cpp"
     "diagram/call.cpp"
+    "diagram/choice.cpp"
     "diagram/comment.cpp"
     "diagram/conditional.cpp"
     "diagram/conduit.cpp"
     "diagram/constant.cpp"
     "diagram/export.cpp"
+    "diagram/field_text.cpp"
     "diagram/function.cpp"
+    "diagram/grip.cpp"
+    "diagram/move_grip.cpp"
     "diagram/node.cpp"
     "diagram/parameter.cpp"
     "diagram/port.cpp"
+    "diagram/resize_grip.cpp"
     "diagram/return.cpp"
     "diagram/scope.cpp"
     "diagram/terminal.cpp"
+    "diagram/toggle.cpp"
     "diagram/unary.cpp"
 )
 
-set(FLUIR_EDITOR_SCENE_SOURCES "scene/graph_view.cpp" "scene/item_style.cpp")
+set(FLUIR_EDITOR_SCENE_SOURCES
+    "scene/graph_view.cpp"
+    "scene/item_style.cpp"
+    "scene/module_scene.cpp"
+)
 
 set(FLUIR_EDITOR_VIEW_SOURCES
     "view/graph_geometry.cpp"
@@ -69,7 +83,8 @@ set(FLUIR_EDITOR_VIEW_SOURCES
 
 target_sources(
     fluir.libeditor
-    PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
+    PRIVATE ${FLUIR_EDITOR_COMMANDS_SOURCES}
+            ${FLUIR_EDITOR_CORE_SOURCES}
             ${FLUIR_EDITOR_DIAGRAM_SOURCES}
             ${FLUIR_EDITOR_VIEW_SOURCES}
             ${FLUIR_EDITOR_APP_SOURCES}

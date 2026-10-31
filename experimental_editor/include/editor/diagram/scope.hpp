@@ -14,6 +14,9 @@ namespace fluir::editor::diagram {
     /** A scope over `local`, in its container's coordinates. */
     Scope(const Rect& local, QGraphicsItem* container);
 
+    /** Covers `local`, in its container's coordinates. */
+    void setRect(const Rect& local);
+
     QRectF boundingRect() const override { return rect_; }
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 

@@ -2,7 +2,9 @@
 
 #include <cstddef>
 #include <QPainter>
+#include <vector>
 
+#include "editor/diagram/conduit.hpp"
 #include "editor/scene/item_style.hpp"
 
 namespace fluir::editor::diagram {
@@ -17,7 +19,21 @@ namespace fluir::editor::diagram {
     QGraphicsItem(owner), ctx_(ctx), output_(output), index_(index) {
     const double side = HIT_UNITS * ctx.layout.unitPx;
     rect_ = QRectF(-side / 2, -side / 2, side, side);
-    setPos(anchor.x, anchor.y);
+    setFlag(ItemSendsScenePositionChanges);
+    setAnchor(anchor);
+  }
+
+  void Terminal::attach(Conduit* conduit) { conduits_.push_back(conduit); }
+
+  void Terminal::detach(Conduit* conduit) { std::erase(conduits_, conduit); }
+
+  QVariant Terminal::itemChange(GraphicsItemChange change, const QVariant& value) {
+    if (change == ItemScenePositionHasChanged) {
+      for (Conduit* conduit : conduits_) {
+        conduit->route();
+      }
+    }
+    return QGraphicsItem::itemChange(change, value);
   }
 
   void Terminal::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
@@ -36,6 +52,15 @@ namespace fluir::editor::diagram {
       out.outputs.push_back(new Terminal(true, static_cast<int>(i), anchors.outputs[i], ctx, &owner));
     }
     return out;
+  }
+
+  void moveTerminals(const Terminals& terminals, const TerminalSet& anchors) {
+    for (std::size_t i = 0; i < terminals.inputs.size(); ++i) {
+      terminals.inputs[i]->setAnchor(anchors.inputs[i]);
+    }
+    for (std::size_t i = 0; i < terminals.outputs.size(); ++i) {
+      terminals.outputs[i]->setAnchor(anchors.outputs[i]);
+    }
   }
 
 }  // namespace fluir::editor::diagram

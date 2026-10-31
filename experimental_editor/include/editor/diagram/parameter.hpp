@@ -23,6 +23,9 @@ namespace fluir::editor::diagram {
 
     fluir::ID id() const { return id_; }
 
+    /** Moves to `placed`'s top-left, in the function's coordinates. */
+    void place(const Rect& placed) { setPos(placed.x, placed.y); }
+
     QRectF boundingRect() const override { return rect_; }
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 

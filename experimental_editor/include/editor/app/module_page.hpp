@@ -2,11 +2,11 @@
 #define FLUIR_EDITOR_APP_MODULE_PAGE_HPP
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <QUndoStack>
 #include <QWidget>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
@@ -18,10 +18,10 @@ namespace fluir::editor {
     Q_OBJECT
 
    public:
-    /** Shows `scene`. */
+    /** Shows `tree`'s diagram. Throws std::invalid_argument if `tree` describes no valid diagram. */
     ModulePage(const EditorContext& ctx,
                std::optional<std::filesystem::path> program,
-               std::unique_ptr<ModuleScene> scene,
+               const pt::ParseTree& tree,
                QWidget* parent = nullptr);
 
     const std::optional<std::filesystem::path>& program() const { return program_; }

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <utility>
 
 namespace fluir::editor::draw {
   namespace {
@@ -16,12 +17,6 @@ namespace fluir::editor::draw {
     // Both tags are the same width, so the arrow sits at one place whichever branch shows.
     static_assert(THEN_TAG.size() == ELSE_TAG.size());
 
-    // A port's outer and inner anchors.
-    struct PortAnchors {
-      Vec2 outer;
-      Vec2 inner;
-    };
-
     constexpr int dumb_ceil(double x) {
       // HACK: Do a stupid version of ceil here because MSVC doesn't implement std::ceil as constexpr
       return static_cast<int>((x - static_cast<int>(x)) > 0 ? x + 1 : x);
@@ -29,14 +24,6 @@ namespace fluir::editor::draw {
 
     // A port's side rounded up to whole grid units, so a port on the grid never pokes past one.
     constexpr int PORT_GRID_UNITS = dumb_ceil(PORT_UNITS);
-
-    PortAnchors portAnchors(const Ports& node, PortRef ref, const Rect& frame, const EditorContext::Layout& layout) {
-      const Rect port = portRect(node, ref, frame, layout);
-      const double midY = port.y + port.h / 2;
-      const Vec2 left{port.x, midY};
-      const Vec2 right{port.x + port.w, midY};
-      return ref.output ? PortAnchors{right, left} : PortAnchors{left, right};
-    }
 
   }  // namespace
 
@@ -50,6 +37,10 @@ namespace fluir::editor::draw {
     return port.index <= conditional.inputs.size() ? &conditional.inputs[port.index - 1] : nullptr;
   }
 
+  pt::BlockPort* portOf(Ports& conditional, PortRef port) {
+    return const_cast<pt::BlockPort*>(portOf(std::as_const(conditional), port));
+  }
+
   std::vector<PortRef> portRefs(const Ports& conditional) {
     std::vector<PortRef> refs;
     for (std::size_t i = 0; i <= conditional.inputs.size(); ++i) {
@@ -59,30 +50,6 @@ namespace fluir::editor::draw {
       refs.push_back({.output = true, .index = i});
     }
     return refs;
-  }
-
-  TerminalSet anchors(const Ports& node, const Rect& world, const EditorContext::Layout& layout) {
-    TerminalSet set;
-    for (const PortRef ref : portRefs(node)) {
-      (ref.output ? set.outputs : set.inputs).push_back(portAnchors(node, ref, world, layout).outer);
-    }
-    return set;
-  }
-
-  // Inside, an input port is a source for its branch and an output port a sink.
-  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const Ports& node,
-                                                          const Rect& frame,
-                                                          const EditorContext::Layout& layout) {
-    std::unordered_map<fluir::ID, TerminalSet> inner;
-    for (const PortRef ref : portRefs(node)) {
-      const fluir::ID innerId = portOf(node, ref)->innerId;
-      if (innerId == INVALID_ID) {
-        continue;
-      }
-      const Vec2 anchor = portAnchors(node, ref, frame, layout).inner;
-      inner[innerId] = ref.output ? TerminalSet{.inputs = {anchor}} : TerminalSet{.outputs = {anchor}};
-    }
-    return inner;
   }
 
   Color color(const Ports&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }

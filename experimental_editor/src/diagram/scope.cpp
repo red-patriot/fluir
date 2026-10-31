@@ -2,9 +2,15 @@
 
 namespace fluir::editor::diagram {
 
-  Scope::Scope(const Rect& local, QGraphicsItem* container) : QGraphicsItem(container), rect_(0, 0, local.w, local.h) {
+  Scope::Scope(const Rect& local, QGraphicsItem* container) : QGraphicsItem(container) {
     setFlag(ItemClipsChildrenToShape);
     setFlag(ItemHasNoContents);
+    setRect(local);
+  }
+
+  void Scope::setRect(const Rect& local) {
+    prepareGeometryChange();
+    rect_ = QRectF(0, 0, local.w, local.h);
     setPos(local.x, local.y);
   }
 

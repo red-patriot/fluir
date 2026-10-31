@@ -1,26 +1,21 @@
 #include "editor/app/main_window.hpp"
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStackedWidget>
+#include <stdexcept>
 #include <utility>
 
 #include "bytecode/version.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
-#include "editor/diagram/build.hpp"
 
 namespace fluir::editor {
   namespace {
 
-    std::unique_ptr<ModuleScene> newModule(const EditorContext& ctx) {
-      auto scene = std::make_unique<ModuleScene>(ctx);
-      scene->setHeader({.version = fluir::CURRENT_VERSION});
-      return scene;
-    }
+    pt::ParseTree newModule() { return {.header = {.version = fluir::CURRENT_VERSION}, .declarations = {}}; }
 
   }  // namespace
 
@@ -30,7 +25,7 @@ namespace fluir::editor {
     setCentralWidget(pages_);
     resize(ctx.window.width, ctx.window.height);
 
-    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule(ctx_)); });
+    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
     connect(splash_, &SplashWidget::openRequested, this, &MainWindow::openDialog);
 
     retitle();
@@ -42,17 +37,18 @@ namespace fluir::editor {
     if (!result.tree) {
       return false;
     }
-    auto scene = std::make_unique<ModuleScene>(ctx_);
-    if (!diagram::buildScene(*result.tree, *scene)) {
+    try {
+      openPage(program, *result.tree);
+    } catch (const std::invalid_argument&) {
       return false;
     }
-    openPage(program, std::move(scene));
     return true;
   }
 
-  void MainWindow::openPage(std::optional<std::filesystem::path> program, std::unique_ptr<ModuleScene> scene) {
+  void MainWindow::openPage(std::optional<std::filesystem::path> program, const pt::ParseTree& tree) {
+    auto* page = new ModulePage(ctx_, std::move(program), tree, pages_);
     closePage();
-    page_ = new ModulePage(ctx_, std::move(program), std::move(scene), pages_);
+    page_ = page;
     pages_->addWidget(page_);
     pages_->setCurrentWidget(page_);
     connect(page_, &ModulePage::closeRequested, this, &MainWindow::closePage);

@@ -22,7 +22,7 @@
           <port inner="4" y="10"/>
         </output>
         <then>
-          <binary id="3" x="35" y="3" z="2" w="5" h="5" operator="/"/>
+          <binary id="3" x="35" y="3" z="2" w="7" h="5" operator="/"/>
           <conduit id="7" input="4">
             <output target="3" index="0"/>
           </conduit>

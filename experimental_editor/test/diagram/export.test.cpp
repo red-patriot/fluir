@@ -1,6 +1,7 @@
 #include "editor/diagram/export.hpp"
 
 #include <filesystem>
+#include <QUndoStack>
 #include <sstream>
 
 #include <gtest/gtest.h>
@@ -21,7 +22,8 @@ namespace {
 
   struct Harness {
     fluir::editor::EditorContext ctx;
-    fluir::editor::ModuleScene scene{ctx};
+    QUndoStack stack;
+    fluir::editor::ModuleScene scene{ctx, stack};
   };
 
   fluir::pt::ParseTree load(const fs::path& fixture) {

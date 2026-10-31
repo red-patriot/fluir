@@ -4,7 +4,6 @@
 #include <cstddef>
 #include <optional>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
@@ -35,6 +34,7 @@ namespace fluir::editor::draw {
 
   /** The port `port` names on `conditional` if it exists, or nullptr. */
   const pt::BlockPort* portOf(const Ports& conditional, PortRef port);
+  pt::BlockPort* portOf(Ports& conditional, PortRef port);
 
   /** Every port on `conditional`. */
   std::vector<PortRef> portRefs(const Ports& conditional);
@@ -47,14 +47,6 @@ namespace fluir::editor::draw {
 
   /** Limits for a port location in grid units, on a conditional `height` grid units tall. */
   Limits<int> portYLimits(int height, const EditorContext::Layout& layout);
-
-  /** The outer side of the conditional ports. */
-  TerminalSet anchors(const Ports& node, const Rect& world, const EditorContext::Layout& layout);
-
-  /** The inner side of the conditional ports by inner id. */
-  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const Ports& node,
-                                                          const Rect& frame,
-                                                          const EditorContext::Layout& layout);
 
   Color color(const Ports& node, const EditorContext::Theme& theme);
 

@@ -29,7 +29,7 @@
           <constant id="2" x="9" y="12" z="10" w="12" h="5">
             <f64>1.234500</f64>
           </constant>
-          <binary id="3" x="35" y="3" z="2" w="5" h="5" operator="/"/>
+          <binary id="3" x="35" y="3" z="2" w="7" h="5" operator="/"/>
           <constant id="15" x="9" y="5" z="0" w="12" h="5">
             <f64>6.789100</f64>
           </constant>

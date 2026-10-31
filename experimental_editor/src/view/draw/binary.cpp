@@ -6,7 +6,7 @@ namespace fluir::editor::draw {
   namespace {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{7, 0}, .upper = Vec2i{1000, 1000}};
 
   }  // namespace
 

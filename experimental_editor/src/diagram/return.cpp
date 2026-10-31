@@ -14,8 +14,9 @@ namespace fluir::editor::diagram {
                  QGraphicsItem* function) :
     QGraphicsItem(function), ctx_(ctx), color_(draw::color(signature, ctx.theme)), id_(id) {
     const Rect placed = draw::railRect(signature, id, frame, ctx.layout);
-    setPos(placed.x, placed.y);
+    place(placed);
     rect_ = QRectF(0, 0, placed.w, placed.h);
+    setAcceptedMouseButtons(Qt::NoButton);
     addTerminals(*this, draw::anchors(signature, id, Rect{0, 0, placed.w, placed.h}), ctx);
   }
 

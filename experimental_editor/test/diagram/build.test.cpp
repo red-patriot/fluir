@@ -4,13 +4,13 @@
 #include <filesystem>
 #include <memory>
 #include <QGraphicsItem>
-#include <QPainterPath>
-#include <QPointF>
 #include <QRectF>
+#include <QUndoStack>
 #include <vector>
 
 #include <gtest/gtest.h>
 
+#include "diagram_probe.hpp"
 #include "editor/core/editor_context.hpp"
 #include "editor/diagram/binary.hpp"
 #include "editor/diagram/call.hpp"
@@ -19,6 +19,8 @@
 #include "editor/diagram/conduit.hpp"
 #include "editor/diagram/constant.hpp"
 #include "editor/diagram/function.hpp"
+#include "editor/diagram/grip.hpp"
+#include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/node.hpp"
 #include "editor/diagram/scope.hpp"
 #include "editor/diagram/terminal.hpp"
@@ -30,10 +32,14 @@ namespace {
 
   namespace fs = std::filesystem;
   namespace diagram = fluir::editor::diagram;
+  using testutil::all;
+  using testutil::centerOf;
+  using testutil::hasLine;
 
   struct Built {
     fluir::editor::EditorContext ctx;
-    fluir::editor::ModuleScene scene{ctx};
+    QUndoStack stack;
+    fluir::editor::ModuleScene scene{ctx, stack};
     bool ok = false;
   };
 
@@ -48,17 +54,6 @@ namespace {
     return built;
   }
 
-  template <typename T>
-  std::vector<T*> all(const QGraphicsScene& scene) {
-    std::vector<T*> out;
-    for (QGraphicsItem* item : scene.items()) {
-      if (auto* t = dynamic_cast<T*>(item)) {
-        out.push_back(t);
-      }
-    }
-    return out;
-  }
-
   bool isNode(const QGraphicsItem* item) { return dynamic_cast<const diagram::FluirNode*>(item) != nullptr; }
 
   // The function scope a node lives in, null if at the top level.
@@ -69,25 +64,6 @@ namespace {
       }
     }
     return nullptr;
-  }
-
-  bool near(double a, double b) { return std::abs(a - b) < 1e-6; }
-
-  bool near(QPointF a, QPointF b) { return near(a.x(), b.x()) && near(a.y(), b.y()); }
-
-  QPointF centerOf(const diagram::Terminal* terminal) { return terminal->sceneBoundingRect().center(); }
-
-  // Whether `path` (in `item`'s coordinates) has a line from `from` to `to` (in scene coordinates).
-  bool hasLine(const QGraphicsItem& item, const QPainterPath& path, QPointF from, QPointF to) {
-    for (int i = 0; i + 1 < path.elementCount(); ++i) {
-      const QPainterPath::Element a = path.elementAt(i);
-      const QPainterPath::Element b = path.elementAt(i + 1);
-      if (a.isMoveTo() && b.isLineTo() && near(item.mapToScene(QPointF(a)), from) &&
-          near(item.mapToScene(QPointF(b)), to)) {
-        return true;
-      }
-    }
-    return false;
   }
 
 }  // namespace
@@ -149,6 +125,28 @@ TEST_P(BuildEachFixture, ConduitsRunFromTheirSourceToEachSink) {
       EXPECT_FALSE(sink->isOutput());
       EXPECT_TRUE(hasLine(*conduit, conduit->path(), centerOf(conduit->source()), centerOf(sink)));
     }
+  }
+}
+
+TEST_P(BuildEachFixture, EveryNodeHasOneMoveGrip) {
+  const auto built = build(GetParam());
+  ASSERT_TRUE(built->ok);
+
+  for (const diagram::FluirNode* node : all<diagram::FluirNode>(built->scene)) {
+    int grips = 0;
+    for (const QGraphicsItem* child : node->childItems()) {
+      grips += dynamic_cast<const diagram::MoveGrip*>(child) != nullptr ? 1 : 0;
+    }
+    EXPECT_EQ(grips, 1) << "node " << node->id();
+  }
+}
+
+TEST_P(BuildEachFixture, GripsShowWithTheirNode) {
+  const auto built = build(GetParam());
+  ASSERT_TRUE(built->ok);
+
+  for (const diagram::Grip* grip : all<diagram::Grip>(built->scene)) {
+    EXPECT_EQ(grip->isVisible(), grip->parentItem()->isVisible());
   }
 }
 

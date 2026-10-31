@@ -1,7 +1,6 @@
 #include "editor/app/module_page.hpp"
 
 #include <filesystem>
-#include <memory>
 #include <optional>
 #include <QAction>
 #include <QKeySequence>
@@ -9,6 +8,7 @@
 #include <QSignalSpy>
 #include <QUndoCommand>
 #include <QUndoStack>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -16,7 +16,6 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
-#include "editor/diagram/build.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
 #include "fixture_loader.hpp"
@@ -49,19 +48,11 @@ namespace {
     void undo() override { --*runs; }
   };
 
-  std::unique_ptr<fluir::editor::ModuleScene> sceneOf(const fluir::editor::EditorContext& ctx,
-                                                      const fluir::pt::ParseTree& tree) {
-    auto scene = std::make_unique<fluir::editor::ModuleScene>(ctx);
-    EXPECT_TRUE(fluir::editor::diagram::buildScene(tree, *scene));
-    return scene;
-  }
-
   struct Harness {
     fluir::editor::EditorContext ctx;
     ModulePage page;
 
-    Harness(std::optional<fs::path> program, const fluir::pt::ParseTree& tree) :
-      page(ctx, std::move(program), sceneOf(ctx, tree)) { }
+    Harness(std::optional<fs::path> program, const fluir::pt::ParseTree& tree) : page(ctx, std::move(program), tree) { }
 
     explicit Harness(const fs::path& program) : Harness(program, load(program)) { }
 
@@ -80,7 +71,17 @@ TEST(ModulePage, ActionsCarryTheStandardShortcuts) {
   EXPECT_EQ(h.action("save")->shortcut(), QKeySequence(QKeySequence::Save));
   EXPECT_EQ(h.action("saveAs")->shortcut(), QKeySequence(QKeySequence::SaveAs));
   EXPECT_EQ(h.action("undo")->shortcut(), QKeySequence(QKeySequence::Undo));
-  EXPECT_EQ(h.action("redo")->shortcut(), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+  EXPECT_EQ(h.action("redo")->shortcut(), QKeySequence(QKeySequence::Redo));
+}
+
+TEST(ModulePage, UndoAndRedoKeepTheirNames) {
+  Harness h(kIntConstants);
+  int runs = 0;
+
+  h.page.undoStack().push(new CountingCommand(&runs));
+  EXPECT_EQ(h.action("undo")->text(), "Undo");
+  h.action("undo")->trigger();
+  EXPECT_EQ(h.action("redo")->text(), "Redo");
 }
 
 TEST(ModulePage, UndoAndRedoFollowTheStack) {
@@ -112,13 +113,28 @@ TEST(ModulePage, ShowsItsSceneInTheView) {
 
 TEST(ModulePage, OwnsItsScene) {
   const fluir::editor::EditorContext ctx;
-  auto* page = new ModulePage(ctx, std::nullopt, sceneOf(ctx, fluir::pt::ParseTree{}));
+  auto* page = new ModulePage(ctx, std::nullopt, fluir::pt::ParseTree{});
   const QPointer<QObject> scene = page->findChild<fluir::editor::GraphView*>()->scene();
   ASSERT_NE(scene, nullptr);
 
   delete page;
 
   EXPECT_EQ(scene, nullptr);
+}
+
+TEST(ModulePage, ItsSceneEditsGoOnItsStack) {
+  Harness h(kIntConstants);
+
+  auto* scene = h.page.findChild<fluir::editor::ModuleScene*>();
+  ASSERT_NE(scene, nullptr);
+  EXPECT_EQ(&scene->undoStack(), &h.page.undoStack());
+}
+
+TEST(ModulePage, AnInvalidDiagramThrows) {
+  const fluir::editor::EditorContext ctx;
+  const fluir::pt::ParseTree tree = load(fs::path(TEST_FOLDER) / "build_fails/dangling_sink.fl");
+
+  EXPECT_THROW(ModulePage(ctx, std::nullopt, tree), std::invalid_argument);
 }
 
 TEST(ModulePage, SaveWritesTheModuleToTheProgram) {

@@ -10,7 +10,7 @@
 #include "compiler/models/id.hpp"
 #include "compiler/models/location.hpp"
 
-// A conditional's pure geometry: anchors, ports, tags and size limits.
+// A conditional's pure geometry: ports, tags and size limits.
 
 namespace {
 
@@ -30,55 +30,6 @@ namespace {
 
 TEST(DrawConditional, ColorIsTheConditionalHeaderTheme) {
   EXPECT_EQ(fluir::editor::draw::color(makeConditional(), kCtx.theme), kCtx.theme.conditionalNodeHeader);
-}
-
-namespace {
-
-  bool inside(fluir::editor::Vec2 p, const Rect& r) {
-    return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
-  }
-
-  fluir::editor::draw::Ports withConditionPort(fluir::ID innerId) {
-    fluir::editor::draw::Ports node = makeConditional();
-    node.condition = {.innerId = innerId, .y = 10};
-    return node;
-  }
-
-}  // namespace
-
-// Outside, the condition is the conditional's own input 0, anchored on the port left of the wall.
-TEST(DrawConditional, AnchorsAreTheConditionPortOutsideTheWall) {
-  const Rect frame{10, 35, 100, 90};
-  const fluir::editor::draw::Ports node = withConditionPort(5);
-
-  const fluir::editor::TerminalSet terminals = fluir::editor::draw::anchors(node, frame, kCtx.layout);
-
-  ASSERT_EQ(terminals.inputs.size(), 1u);
-  EXPECT_TRUE(terminals.outputs.empty());
-  EXPECT_TRUE(inside(terminals.inputs[0], fluir::editor::draw::portRect(node, {}, frame, kCtx.layout)));
-  EXPECT_LT(terminals.inputs[0].x, frame.x);
-}
-
-// Inside, the condition feeds its branch as an output keyed by the port's inner id, right of the wall.
-TEST(DrawConditional, InnerAnchorsAreTheConditionPortInsideTheWall) {
-  const Rect frame{10, 35, 100, 90};
-  const fluir::editor::draw::Ports node = withConditionPort(5);
-
-  const auto inner = fluir::editor::draw::innerAnchors(node, frame, kCtx.layout);
-
-  ASSERT_EQ(inner.size(), 1u);
-  ASSERT_TRUE(inner.contains(5));
-  const fluir::editor::TerminalSet& port = inner.at(5);
-  ASSERT_EQ(port.outputs.size(), 1u);
-  EXPECT_TRUE(port.inputs.empty());
-  EXPECT_TRUE(inside(port.outputs[0], fluir::editor::draw::portRect(node, {}, frame, kCtx.layout)));
-  EXPECT_GT(port.outputs[0].x, frame.x);
-}
-
-TEST(DrawConditional, AnUnsetInnerIdHasNoInnerAnchors) {
-  EXPECT_TRUE(
-    fluir::editor::draw::innerAnchors(withConditionPort(fluir::INVALID_ID), Rect{10, 35, 100, 90}, kCtx.layout)
-      .empty());
 }
 
 // One frame, one header band: the frame labels the branch it shows.
@@ -117,9 +68,6 @@ namespace {
     return node;
   }
 
-  bool onLeftEdge(fluir::editor::Vec2 p, const Rect& r) { return p.x == r.x && p.y > r.y && p.y < r.y + r.h; }
-  bool onRightEdge(fluir::editor::Vec2 p, const Rect& r) { return p.x == r.x + r.w && p.y > r.y && p.y < r.y + r.h; }
-
 }  // namespace
 
 TEST(DrawConditional, EveryPortTopIsItsYBelowTheFrameTop) {
@@ -142,61 +90,6 @@ TEST(DrawConditional, InputPortsStraddleTheLeftWallAndOutputPortsTheRight) {
   EXPECT_DOUBLE_EQ(input.x + input.w / 2, frame.x);
   const Rect output = fluir::editor::draw::portRect(node, {.output = true, .index = 1}, frame, kCtx.layout);
   EXPECT_DOUBLE_EQ(output.x + output.w / 2, frame.x + frame.w);
-}
-
-// Outside, input i+1 anchors on its port's left edge and output i on its port's right edge.
-TEST(DrawConditional, AnchorsAreEveryPortOutsideItsWall) {
-  const Rect frame{10, 35, 100, 90};
-  const fluir::editor::draw::Ports node = withWallPorts();
-
-  const fluir::editor::TerminalSet terminals = fluir::editor::draw::anchors(node, frame, kCtx.layout);
-
-  ASSERT_EQ(terminals.inputs.size(), 3u);
-  ASSERT_EQ(terminals.outputs.size(), 2u);
-  for (std::size_t i = 0; i < terminals.inputs.size(); ++i) {
-    const Rect port = fluir::editor::draw::portRect(node, {.output = false, .index = i}, frame, kCtx.layout);
-    EXPECT_TRUE(onLeftEdge(terminals.inputs[i], port));
-  }
-  for (std::size_t i = 0; i < terminals.outputs.size(); ++i) {
-    const Rect port = fluir::editor::draw::portRect(node, {.output = true, .index = i}, frame, kCtx.layout);
-    EXPECT_TRUE(onRightEdge(terminals.outputs[i], port));
-  }
-}
-
-// Inside, an input port is a source in the branch and an output port a sink, each keyed by its inner id.
-TEST(DrawConditional, InnerAnchorsAreEveryPortInsideItsWall) {
-  const Rect frame{10, 35, 100, 90};
-  const fluir::editor::draw::Ports node = withWallPorts();
-
-  const auto inner = fluir::editor::draw::innerAnchors(node, frame, kCtx.layout);
-
-  ASSERT_EQ(inner.size(), 5u);
-  for (const fluir::editor::draw::PortRef ref : fluir::editor::draw::portRefs(node)) {
-    const fluir::ID innerId = fluir::editor::draw::portOf(node, ref)->innerId;
-    ASSERT_TRUE(inner.contains(innerId));
-    const fluir::editor::TerminalSet& set = inner.at(innerId);
-    const Rect port = fluir::editor::draw::portRect(node, ref, frame, kCtx.layout);
-    if (ref.output) {
-      ASSERT_EQ(set.inputs.size(), 1u);
-      EXPECT_TRUE(set.outputs.empty());
-      EXPECT_TRUE(onLeftEdge(set.inputs[0], port));
-    } else {
-      ASSERT_EQ(set.outputs.size(), 1u);
-      EXPECT_TRUE(set.inputs.empty());
-      EXPECT_TRUE(onRightEdge(set.outputs[0], port));
-    }
-  }
-}
-
-TEST(DrawConditional, WallPortsWithAnUnsetInnerIdHaveNoInnerAnchors) {
-  fluir::editor::draw::Ports node = withWallPorts();
-  node.inputs[0].innerId = fluir::INVALID_ID;
-  node.outputs[1].innerId = fluir::INVALID_ID;
-
-  const auto inner = fluir::editor::draw::innerAnchors(node, Rect{10, 35, 100, 90}, kCtx.layout);
-
-  EXPECT_EQ(inner.size(), 3u);
-  EXPECT_FALSE(inner.contains(fluir::INVALID_ID));
 }
 
 namespace {

@@ -1,25 +1,37 @@
 #ifndef FLUIR_EDITOR_SCENE_MODULE_SCENE_HPP
 #define FLUIR_EDITOR_SCENE_MODULE_SCENE_HPP
 
+#include <QGraphicsItem>
 #include <QGraphicsScene>
+#include <QUndoStack>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
 
 namespace fluir::editor {
 
-  /** A module's data-flow diagram. */
+  /** A module's data-flow diagram. Its items push their edits onto `undoStack`. */
   class ModuleScene : public QGraphicsScene {
    public:
-    explicit ModuleScene(const EditorContext& ctx, QObject* parent = nullptr) : QGraphicsScene(parent), ctx_(ctx) { }
+    ModuleScene(const EditorContext& ctx, QUndoStack& undoStack, QObject* parent = nullptr) :
+      QGraphicsScene(parent), ctx_(ctx), undoStack_(undoStack) { }
+
+    /** The scene `item` is in. */
+    static ModuleScene& of(const QGraphicsItem& item) { return static_cast<ModuleScene&>(*item.scene()); }
 
     const EditorContext& context() const { return ctx_; }
+    QUndoStack& undoStack() const { return undoStack_; }
 
     const pt::Header& header() const { return header_; }
     void setHeader(const pt::Header& header) { header_ = header; }
 
+   protected:
+    /** Escape clears the selection and Delete removes it, unless the focused item took the key. */
+    void keyPressEvent(QKeyEvent* event) override;
+
    private:
     const EditorContext& ctx_;
+    QUndoStack& undoStack_;
     pt::Header header_;
   };
 

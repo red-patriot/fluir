@@ -9,9 +9,11 @@
 #include <QSizePolicy>
 #include <QToolBar>
 #include <QVBoxLayout>
+#include <stdexcept>
 #include <utility>
 
 #include "editor/core/parse_tree_writer.hpp"
+#include "editor/diagram/build.hpp"
 #include "editor/diagram/export.hpp"
 
 namespace fluir::editor {
@@ -40,20 +42,21 @@ namespace fluir::editor {
 
   ModulePage::ModulePage(const EditorContext& ctx,
                          std::optional<std::filesystem::path> program,
-                         std::unique_ptr<ModuleScene> scene,
+                         const pt::ParseTree& tree,
                          QWidget* parent) :
     QWidget(parent),
     program_(std::move(program)),
     undoStack_(new QUndoStack(this)),
-    scene_(scene.release()),
+    scene_(new ModuleScene(ctx, *undoStack_, this)),
     view_(new GraphView(ctx, this)) {
-    scene_->setParent(this);
+    if (!diagram::buildScene(tree, *scene_)) {
+      throw std::invalid_argument("not a valid diagram");
+    }
     auto* bar = new QToolBar(tr("File"), this);
     QAction* save = toolbarAction(bar, tr("Save"), "save", QKeySequence::Save);
     QAction* saveAs = toolbarAction(bar, tr("Save As"), "saveAs", QKeySequence::SaveAs);
     toolbarAction(bar, undoStack_->createUndoAction(bar, tr("Undo")), "undo", QKeySequence::Undo);
-    toolbarAction(
-      bar, undoStack_->createRedoAction(bar, tr("Redo")), "redo", QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_Z));
+    toolbarAction(bar, undoStack_->createRedoAction(bar, tr("Redo")), "redo", QKeySequence::Redo);
     auto* spacer = new QWidget(bar);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
     bar->addWidget(spacer);

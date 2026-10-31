@@ -21,15 +21,26 @@ namespace fluir::editor::diagram {
 
     fluir::ID id() const override { return id_; }
     const FlowGraphLocation& location() const override { return location_; }
+    Limits<Vec2i> sizeLimits() const override { return draw::sizeLimits(ports_); }
     const draw::Ports& ports() const { return ports_; }
     /** Its wall ports, in `draw::portRefs` order. */
     const std::vector<Port*>& wallPorts() const { return wallPorts_; }
     Scope* thenBranch() const { return then_; }
     Scope* elseBranch() const { return else_; }
 
+    /** Shows the branch that is hidden and hides the one that shows. */
+    void switchBranch();
+
+    /** Slides `port` to `y` grid units below the frame's top. */
+    void setPortY(draw::PortRef port, int y);
+
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
    private:
+    void storeLocation(const FlowGraphLocation& location) override { location_ = location; }
+    void arrange() override;
+    Rect portRect(draw::PortRef port) const;
+
     fluir::ID id_;
     FlowGraphLocation location_;
     draw::Ports ports_;

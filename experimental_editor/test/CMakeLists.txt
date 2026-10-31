@@ -18,6 +18,7 @@ set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/build.test.cpp
     diagram/choice.test.cpp
     diagram/conduit_drag.test.cpp
+    diagram/context_menu.test.cpp
     diagram/delete.test.cpp
     diagram/export.test.cpp
     diagram/field_text.test.cpp

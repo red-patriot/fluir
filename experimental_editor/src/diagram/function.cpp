@@ -41,12 +41,10 @@ namespace fluir::editor::diagram {
     template <typename Signature>
     auto* parameterAt(Signature& signature, int index) {
       using Param = std::conditional_t<std::is_const_v<Signature>, const pt::FunctionParameter, pt::FunctionParameter>;
-      if (!signature.input) {
+      if (!signature.input || index < 0 || index >= static_cast<int>(signature.input->parameters.size())) {
         return static_cast<Param*>(nullptr);
       }
-      auto& params = signature.input->parameters;
-      const auto it = std::ranges::find(params, index, &pt::FunctionParameter::index);
-      return it == params.end() ? static_cast<Param*>(nullptr) : &*it;
+      return &signature.input->parameters[static_cast<std::size_t>(index)];
     }
 
   }  // namespace
@@ -69,7 +67,7 @@ namespace fluir::editor::diagram {
     }
     addFields(draw::labels(signature_, frame(), ctx.layout), *this);
     for (Parameter* parameter : parameters_) {
-      addFields(draw::labels(signature_, parameter->id(), localRect(*parameter), ctx.layout), *parameter);
+      addParameterFields(*parameter);
     }
     if (return_ != nullptr) {
       addFields(draw::labels(signature_, return_->id(), localRect(*return_), ctx.layout), *return_);
@@ -84,7 +82,7 @@ namespace fluir::editor::diagram {
     signature_.input->parameters.push_back(data);
     auto* parameter = new Parameter(signature_, data.id, frame(), ctx_, this);
     parameter->setZValue(SIGNATURE_Z);
-    addFields(draw::labels(signature_, data.id, localRect(*parameter), ctx_.layout), *parameter);
+    addParameterFields(*parameter);
     parameters_.push_back(parameter);
     arrange();
   }
@@ -112,6 +110,19 @@ namespace fluir::editor::diagram {
     parameters_.push_back(removed.item.get());
     removed.item.release()->setParentItem(this);
     arrange();
+  }
+
+  void Function::addParameterFields(Parameter& parameter) {
+    const fluir::ID id = parameter.id();
+    addFields(draw::labels(signature_, id, localRect(parameter), ctx_.layout), parameter, [this, id](Field labelled) {
+      // A removed parameter's position is past the end, so its fields name no parameter.
+      return [this, id, kind = labelled.kind] {
+        static const std::vector<pt::FunctionParameter> NONE;
+        const std::vector<pt::FunctionParameter>& params = signature_.input ? signature_.input->parameters : NONE;
+        return Field{kind,
+                     static_cast<int>(std::ranges::find(params, id, &pt::FunctionParameter::id) - params.begin())};
+      };
+    });
   }
 
   void Function::dropEmptyInput() {

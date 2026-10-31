@@ -12,7 +12,7 @@ namespace fluir::editor::diagram {
    *  and leaving commits it if valid. Shift+Enter breaks a line in comment text and commits elsewhere. */
   class FieldText : public QGraphicsTextItem, public FieldPart {
    public:
-    FieldText(FluirNode& node, Field field, const EditorContext& ctx, QGraphicsItem& parent);
+    FieldText(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent);
 
     /** Whether the draft would commit. */
     bool isValid() const { return valid_; }

@@ -1,6 +1,7 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_NODE_HPP
 #define FLUIR_EDITOR_DIAGRAM_NODE_HPP
 
+#include <functional>
 #include <optional>
 #include <QGraphicsItem>
 #include <QRectF>
@@ -13,11 +14,11 @@
 #include "editor/core/editor_context.hpp"
 #include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/diagram/field_part.hpp"
 #include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor::diagram {
 
-  class FieldPart;
   class MoveGrip;
   class ResizeGrip;
 
@@ -53,8 +54,11 @@ namespace fluir::editor::diagram {
     void init(std::optional<ResizeAxes> axes);
     /** This node's rect in its own coordinates. */
     Rect frame() const;
-    /** Adds a part under `parent` for each of `labels`, in `parent`'s coordinates. */
-    void addFields(const std::vector<FieldLabel>& labels, QGraphicsItem& parent);
+    /** Adds a part under `parent` for each of `labels`, in `parent`'s coordinates, keyed by `key` (default: as
+     * labelled). */
+    void addFields(const std::vector<FieldLabel>& labels,
+                   QGraphicsItem& parent,
+                   const std::function<FieldKey(Field)>& key = {});
     /** Moves each part named in `labels` onto its rect. */
     void placeFields(const std::vector<FieldLabel>& labels);
 

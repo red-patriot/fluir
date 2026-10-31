@@ -1,6 +1,9 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_FIELD_PART_HPP
 #define FLUIR_EDITOR_DIAGRAM_FIELD_PART_HPP
 
+#include <functional>
+#include <utility>
+
 #include "editor/core/field.hpp"
 #include "editor/core/geometry.hpp"
 
@@ -8,13 +11,16 @@ namespace fluir::editor::diagram {
 
   class FluirNode;
 
+  /** Names a part's field now; a parameter's field follows its parameter's position. */
+  using FieldKey = std::function<Field()>;
+
   /** A part that shows and edits one field of its node. */
   class FieldPart {
    public:
     virtual ~FieldPart() = default;
 
     FluirNode& node() const { return node_; }
-    Field field() const { return field_; }
+    Field field() const { return key_(); }
 
     /** Shows the node's current value. */
     virtual void refresh() = 0;
@@ -22,11 +28,11 @@ namespace fluir::editor::diagram {
     virtual void place(const Rect& rect) = 0;
 
    protected:
-    FieldPart(FluirNode& node, Field field) : node_(node), field_(field) { }
+    FieldPart(FluirNode& node, FieldKey key) : node_(node), key_(std::move(key)) { }
 
    private:
     FluirNode& node_;
-    Field field_;
+    FieldKey key_;
   };
 
 }  // namespace fluir::editor::diagram

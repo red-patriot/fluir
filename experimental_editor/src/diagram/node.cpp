@@ -1,6 +1,8 @@
 #include "editor/diagram/node.hpp"
 
+#include <functional>
 #include <QGraphicsScene>
+#include <utility>
 
 #include "editor/core/field.hpp"
 #include "editor/diagram/choice.hpp"
@@ -68,15 +70,18 @@ namespace fluir::editor::diagram {
     return {0, 0, location().width * unit, location().height * unit};
   }
 
-  void FluirNode::addFields(const std::vector<FieldLabel>& labels, QGraphicsItem& parent) {
+  void FluirNode::addFields(const std::vector<FieldLabel>& labels,
+                            QGraphicsItem& parent,
+                            const std::function<FieldKey(Field)>& key) {
     for (const FieldLabel& label : labels) {
+      FieldKey keyed = key ? key(label.field) : [field = label.field] { return field; };
       FieldPart* part = nullptr;
       if (label.field.kind == Field::Kind::Bool) {
-        part = new Toggle(*this, label.field, ctx_, parent);
+        part = new Toggle(*this, std::move(keyed), ctx_, parent);
       } else if (isChoice(label.field.kind)) {
-        part = new Choice(*this, label.field, ctx_, parent);
+        part = new Choice(*this, std::move(keyed), ctx_, parent);
       } else {
-        part = new FieldText(*this, label.field, ctx_, parent);
+        part = new FieldText(*this, std::move(keyed), ctx_, parent);
       }
       part->place(label.rect);
     }

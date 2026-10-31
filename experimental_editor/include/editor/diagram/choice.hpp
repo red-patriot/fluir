@@ -14,7 +14,7 @@ namespace fluir::editor::diagram {
    *  one command. */
   class Choice : public QGraphicsItem, public FieldPart {
    public:
-    Choice(FluirNode& node, Field field, const EditorContext& ctx, QGraphicsItem& parent);
+    Choice(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent);
 
     /** The value it shows. */
     const QString& text() const { return text_; }

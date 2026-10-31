@@ -1,6 +1,7 @@
 #include "editor/view/draw/function.hpp"
 
 #include <algorithm>
+#include <optional>
 #include <string>
 
 #include "editor/view/graph_geometry.hpp"
@@ -23,16 +24,16 @@ namespace fluir::editor::draw {
       return nullptr;
     }
 
-    // `fn`'s parameters, ascending by index.
-    std::vector<const pt::FunctionParameter*> sortedParameters(const Signature& fn) {
-      std::vector<const pt::FunctionParameter*> out;
+    // The position of the parameter a rail shows; the return rail has none.
+    std::optional<int> positionOf(const Signature& fn, fluir::ID railId) {
       if (fn.input) {
-        for (const auto& param : fn.input->parameters) {
-          out.push_back(&param);
+        const auto& params = fn.input->parameters;
+        const auto it = std::ranges::find(params, railId, &pt::FunctionParameter::id);
+        if (it != params.end()) {
+          return static_cast<int>(it - params.begin());
         }
       }
-      std::ranges::sort(out, {}, &pt::FunctionParameter::index);
-      return out;
+      return std::nullopt;
     }
 
     // The type name of `fn`'s param or return with id `railId`, or nullptr.
@@ -62,13 +63,11 @@ namespace fluir::editor::draw {
       return {
         origin.x + frame.w - layout.returnInsetUnits * layout.unitPx, origin.y, layout.railStep(), layout.railStep()};
     }
-    const std::vector<const pt::FunctionParameter*> params = sortedParameters(fn);
-    for (std::size_t row = 0; row < params.size(); ++row) {
-      if (params[row]->id == railId) {
-        return {origin.x, origin.y + static_cast<double>(row) * layout.railStep(), layout.paramW(), layout.railStep()};
-      }
+    const std::optional<int> row = positionOf(fn, railId);
+    if (!row) {
+      return {};
     }
-    return {};
+    return {origin.x, origin.y + static_cast<double>(*row) * layout.railStep(), layout.paramW(), layout.railStep()};
   }
 
   Color color(const Signature&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
@@ -88,11 +87,11 @@ namespace fluir::editor::draw {
       return {};
     }
     const SplitLabel split = splitLabel(rail, *typeName, layout);
-    const pt::FunctionParameter* param = paramOf(fn, railId);
-    if (param == nullptr) {
+    const std::optional<int> position = positionOf(fn, railId);
+    if (!position) {
       return {{{Field::Kind::ReturnType}, split.tag}};
     }
-    return {{{Field::Kind::ParamType, param->index}, split.tag}, {{Field::Kind::ParamName, param->index}, split.text}};
+    return {{{Field::Kind::ParamType, *position}, split.tag}, {{Field::Kind::ParamName, *position}, split.text}};
   }
 
 }  // namespace fluir::editor::draw

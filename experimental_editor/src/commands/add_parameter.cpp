@@ -12,10 +12,7 @@ namespace fluir::editor {
   AddParameter::AddParameter(diagram::Function& function) :
     function_(function), hadInput_(function.signature().input.has_value()) {
     const int position = hadInput_ ? static_cast<int>(function.signature().input->parameters.size()) : 0;
-    data_ = {.id = diagram::nextId(*function.body()),
-             .index = position,
-             .name = fmt::format("param{}", position + 1),
-             .typeName = "I32"};
+    data_ = {.id = diagram::nextId(*function.body()), .name = fmt::format("param{}", position + 1), .typeName = "I32"};
   }
 
   void AddParameter::redo() {

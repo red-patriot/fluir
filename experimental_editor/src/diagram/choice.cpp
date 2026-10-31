@@ -5,6 +5,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <string>
+#include <utility>
 
 #include "editor/commands/set_field.hpp"
 #include "editor/diagram/node.hpp"
@@ -13,8 +14,8 @@
 
 namespace fluir::editor::diagram {
 
-  Choice::Choice(FluirNode& node, Field field, const EditorContext& ctx, QGraphicsItem& parent) :
-    QGraphicsItem(&parent), FieldPart(node, field), ctx_(ctx) {
+  Choice::Choice(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent) :
+    QGraphicsItem(&parent), FieldPart(node, std::move(key)), ctx_(ctx) {
     refresh();
   }
 

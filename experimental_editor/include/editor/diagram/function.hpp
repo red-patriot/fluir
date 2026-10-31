@@ -70,6 +70,8 @@ namespace fluir::editor::diagram {
     void storeLocation(const FlowGraphLocation& location) override { location_ = location; }
     void arrange() override;
     void write(Field field, std::string_view text) override;
+    /** Adds `parameter`'s fields, keyed by its position. */
+    void addParameterFields(Parameter& parameter);
 
     fluir::ID id_;
     FlowGraphLocation location_;

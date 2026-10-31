@@ -12,7 +12,7 @@ namespace fluir::editor::diagram {
   /** A bool field. A press selects its node and flips the value as one command. */
   class Toggle : public QGraphicsItem, public FieldPart {
    public:
-    Toggle(FluirNode& node, Field field, const EditorContext& ctx, QGraphicsItem& parent);
+    Toggle(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent);
 
     bool value() const { return value_; }
 

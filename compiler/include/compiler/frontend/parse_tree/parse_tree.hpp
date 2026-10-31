@@ -188,7 +188,6 @@ namespace fluir::pt {
 
   struct FunctionParameter {
     ID id;
-    int index;
 
     std::string name;
     std::string typeName;

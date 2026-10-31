@@ -5,6 +5,7 @@
 #include <QTextCursor>
 #include <QTextDocument>
 #include <string>
+#include <utility>
 
 #include "editor/commands/set_field.hpp"
 #include "editor/diagram/node.hpp"
@@ -13,8 +14,8 @@
 
 namespace fluir::editor::diagram {
 
-  FieldText::FieldText(FluirNode& node, Field field, const EditorContext& ctx, QGraphicsItem& parent) :
-    QGraphicsTextItem(&parent), FieldPart(node, field), ctx_(ctx) {
+  FieldText::FieldText(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent) :
+    QGraphicsTextItem(&parent), FieldPart(node, std::move(key)), ctx_(ctx) {
     setTextInteractionFlags(Qt::TextEditorInteraction);
     setDefaultTextColor(style::color(ctx.theme.text));
     setFont(style::uiFont());

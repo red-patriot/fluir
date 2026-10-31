@@ -35,7 +35,7 @@ TEST(AddParameter, AppendsAnI32ParameterAfterTheLastAndUndoRemovesIt) {
   auto& function = h.find<diagram::Function>(1);
   const pt::ParseTree before = h.tree();
   pt::ParseTree expected = before;
-  fnOf(expected).input->parameters.push_back({.id = 10, .index = 1, .name = "param2", .typeName = "I32"});
+  fnOf(expected).input->parameters.push_back({.id = 10, .name = "param2", .typeName = "I32"});
 
   h.stack().push(new AddParameter(function));
 
@@ -53,8 +53,7 @@ TEST(AddParameter, AddsAnInputBlockToAFunctionWithoutOne) {
   Interaction h("read/single_empty_function.fl");
   const pt::ParseTree before = h.tree();
   pt::ParseTree expected = before;
-  fnOf(expected).input =
-    pt::FunctionInputBlock{.parameters = {{.id = 1, .index = 0, .name = "param1", .typeName = "I32"}}};
+  fnOf(expected).input = pt::FunctionInputBlock{.parameters = {{.id = 1, .name = "param1", .typeName = "I32"}}};
 
   h.stack().push(new AddParameter(h.find<diagram::Function>(1)));
 
@@ -111,4 +110,29 @@ TEST(DeleteReturn, DropsTheConduitsLandingOnIt) {
   h.stack().undo();
   EXPECT_EQ(h.tree(), before);
   EXPECT_TRUE(testutil::routed(h.find<diagram::Conduit>(7)));
+}
+
+TEST(DeleteParameter, LaterParametersMoveUpAndTheirFieldsFollow) {
+  Interaction h("read/function_with_input_only.fl");
+  auto& function = h.find<diagram::Function>(1);
+
+  h.stack().push(new DeleteParameter(function, 2));
+
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldText>(function, {Field::Kind::ParamName, 0}).toPlainText(), "b");
+  h.stack().undo();
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldText>(function, {Field::Kind::ParamName, 0}).toPlainText(), "a");
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldText>(function, {Field::Kind::ParamName, 1}).toPlainText(), "b");
+}
+
+TEST(DeleteParameter, EditingAParameterThatMovedUpEditsIt) {
+  Interaction h("read/function_with_input_only.fl");
+  auto& function = h.find<diagram::Function>(1);
+  h.stack().push(new DeleteParameter(function, 2));
+
+  h.typeInto(Interaction::fieldOf<diagram::FieldText>(function, {Field::Kind::ParamName, 0}), "c");
+  h.key(Qt::Key_Return);
+
+  pt::ParseTree tree = h.tree();
+  ASSERT_EQ(fnOf(tree).input->parameters.size(), 1U);
+  EXPECT_EQ(fnOf(tree).input->parameters.front().name, "c");
 }

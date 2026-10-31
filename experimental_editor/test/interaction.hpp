@@ -3,6 +3,7 @@
 
 #include <optional>
 #include <QApplication>
+#include <QContextMenuEvent>
 #include <QGraphicsItem>
 #include <QMenu>
 #include <QPoint>
@@ -190,6 +191,12 @@ namespace testutil {
       release(to);
     }
     void key(Qt::Key key, Qt::KeyboardModifiers modifiers = {}) { QTest::keyClick(&view(), key, modifiers); }
+
+    /** Sends the context-menu request Qt makes from a right press at `at`. */
+    void contextClick(QPoint at) {
+      QContextMenuEvent event(QContextMenuEvent::Mouse, at, view().viewport()->mapToGlobal(at));
+      QApplication::sendEvent(view().viewport(), &event);
+    }
 
    private:
     fluir::editor::EditorContext ctx_;

@@ -257,8 +257,6 @@ namespace fluir {
     static constexpr std::string_view paramTag = "param";
     std::vector<pt::FunctionDecl::Parameter> parameters;
     std::unordered_set<std::string> paramNames;
-    int idx = 0;
-
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
         panicIf(child->Name() != paramTag,
@@ -270,21 +268,19 @@ namespace fluir {
         auto name = getAttribute(child, "name");
         panicIf(paramNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_PARAM_NAME);
         paramNames.insert(std::string(name));
-        parameters.push_back(funcParameter(child, idx));
-        idx++;
+        parameters.push_back(funcParameter(child));
       };
     }
 
     return pt::FunctionDecl::InputBlock{std::move(parameters)};
   }
 
-  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element, int index) {
+  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element) {
     auto name = getAttribute(element, "name");
     auto id = parseId(element);
     auto typeName = getAttribute(element, "type");
 
-    return pt::FunctionDecl::Parameter{
-      .id = id, .index = index, .name = std::string(name), .typeName = std::string(typeName)};
+    return pt::FunctionDecl::Parameter{.id = id, .name = std::string(name), .typeName = std::string(typeName)};
   }
 
   pt::FunctionDecl::OutputBlock Parser::funcOutputs(Element* section) {

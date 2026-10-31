@@ -61,10 +61,10 @@ namespace {
   }
 
   fluir::editor::draw::Signature makeFunction() {
-    return {
-      .name = "main",
-      .input = fluir::pt::FunctionInputBlock{.parameters = {{.id = 20, .index = 3, .name = "x", .typeName = "I32"}}},
-      .output = fluir::pt::FunctionOutputBlock{.ret = fluir::pt::FunctionReturn{.id = 25, .typeName = "I32"}}};
+    return {.name = "main",
+            .input = fluir::pt::FunctionInputBlock{.parameters = {{.id = 19, .name = "w", .typeName = "I32"},
+                                                                  {.id = 20, .name = "x", .typeName = "I32"}}},
+            .output = fluir::pt::FunctionOutputBlock{.ret = fluir::pt::FunctionReturn{.id = 25, .typeName = "I32"}}};
   }
 
 }  // namespace
@@ -135,14 +135,14 @@ TEST(Labels, FunctionFrameLabelsItsNameInTheHeaderBand) {
   expectAllInside(labels, Rect{kRect.x, kRect.y, kRect.w, kCtx.layout.headerH()});
 }
 
-TEST(Labels, ParameterRailLabelsItsTypeAndNameByParameterIndex) {
+TEST(Labels, ParameterLabelsItsTypeAndNameByItsPosition) {
   const fluir::editor::draw::Signature fn = makeFunction();
   const auto labels = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
 
-  EXPECT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamType, 3}, {Kind::ParamName, 3}}));
+  ASSERT_EQ(fieldsOf(labels), (std::vector<Field>{{Kind::ParamType, 1}, {Kind::ParamName, 1}}));
   expectAllInside(labels, kRect);
-  const Rect type = labelFor(labels, {Kind::ParamType, 3}).rect;
-  const Rect name = labelFor(labels, {Kind::ParamName, 3}).rect;
+  const Rect type = labelFor(labels, {Kind::ParamType, 1}).rect;
+  const Rect name = labelFor(labels, {Kind::ParamName, 1}).rect;
   EXPECT_LE(type.x + type.w, name.x) << "the type tag sits before the name";
 }
 

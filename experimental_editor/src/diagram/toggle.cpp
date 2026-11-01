@@ -1,28 +1,26 @@
 #include "editor/diagram/toggle.hpp"
 
+#include <memory>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
 #include <utility>
 
-#include "editor/commands/set_field.hpp"
+#include "editor/diagram/edits.hpp"
 #include "editor/diagram/node.hpp"
 #include "editor/scene/item_style.hpp"
-#include "editor/scene/module_scene.hpp"
 
 namespace fluir::editor::diagram {
-  namespace {
-
-    const char* spelled(bool value) { return value ? "true" : "false"; }
-
-  }  // namespace
 
   Toggle::Toggle(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent) :
-    QGraphicsItem(&parent), FieldPart(node, std::move(key)), ctx_(ctx) {
+    QGraphicsItem(&parent),
+    FieldPart(node, key),
+    ctx_(ctx),
+    target_(std::make_unique<FieldTarget>(node, std::move(key))) {
     refresh();
   }
 
   void Toggle::refresh() {
-    value_ = node().text(field()) == spelled(true);
+    value_ = target_->current() == "true";
     update();
   }
 
@@ -41,7 +39,7 @@ namespace fluir::editor::diagram {
       return;
     }
     node().selectAlone();
-    ModuleScene::of(*this).undoStack().push(new SetField(node(), field(), spelled(value_), spelled(!value_)));
+    flip(*target_);
   }
 
 }  // namespace fluir::editor::diagram

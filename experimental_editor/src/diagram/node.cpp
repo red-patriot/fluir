@@ -9,9 +9,10 @@
 
 #include "editor/commands/delete_selection.hpp"
 #include "editor/core/field.hpp"
-#include "editor/diagram/choice.hpp"
 #include "editor/diagram/context_menu.hpp"
+#include "editor/diagram/edits.hpp"
 #include "editor/diagram/field_text.hpp"
+#include "editor/diagram/field_view.hpp"
 #include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/resize_grip.hpp"
 #include "editor/diagram/scope.hpp"
@@ -101,9 +102,9 @@ namespace fluir::editor::diagram {
       if (label.field.kind == Field::Kind::Bool) {
         part = new Toggle(*this, std::move(keyed), ctx_, parent);
       } else if (isChoice(label.field.kind)) {
-        part = new Choice(*this, std::move(keyed), ctx_, parent);
+        part = new FieldView(*this, std::move(keyed), label.look, pick, ctx_, parent);
       } else {
-        part = new FieldText(*this, std::move(keyed), ctx_, parent);
+        part = new FieldText(*this, std::move(keyed), label.look, ctx_, parent);
       }
       part->place(label.rect);
     }

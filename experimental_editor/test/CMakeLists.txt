@@ -16,10 +16,11 @@ set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES commands/port_commands.test.cpp
 set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/branch_arrow.test.cpp
     diagram/build.test.cpp
-    diagram/choice.test.cpp
+    diagram/field_view.test.cpp
     diagram/conduit_drag.test.cpp
     diagram/context_menu.test.cpp
     diagram/delete.test.cpp
+    diagram/edits.test.cpp
     diagram/export.test.cpp
     diagram/field_text.test.cpp
     diagram/fields.test.cpp

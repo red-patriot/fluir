@@ -89,9 +89,10 @@ namespace fluir::editor::draw {
     const SplitLabel split = splitLabel(rail, *typeName, layout);
     const std::optional<int> position = positionOf(fn, railId);
     if (!position) {
-      return {{{Field::Kind::ReturnType}, split.tag}};
+      return {{{Field::Kind::ReturnType}, split.tag, FieldLook::Tag}};
     }
-    return {{{Field::Kind::ParamType, *position}, split.tag}, {{Field::Kind::ParamName, *position}, split.text}};
+    return {{{Field::Kind::ParamType, *position}, split.tag, FieldLook::Tag},
+            {{Field::Kind::ParamName, *position}, split.text}};
   }
 
 }  // namespace fluir::editor::draw

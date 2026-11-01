@@ -152,3 +152,21 @@ TEST(Labels, ReturnRailLabelsItsType) {
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::ReturnType}});
   expectAllInside(labels, kRect);
 }
+
+TEST(Labels, ATypeIsATagAndEveryOtherFieldIsText) {
+  using fluir::editor::FieldLook;
+  const fluir::editor::draw::Signature fn = makeFunction();
+  const auto parameter = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
+  const auto ret = fluir::editor::draw::labels(fn, 25, kRect, kCtx.layout);
+  const auto header = fluir::editor::draw::labels(fn, kRect, kCtx.layout);
+  const auto binary =
+    fluir::editor::draw::labels(fluir::pt::Binary{.id = 1, .op = fluir::Operator::PLUS}, kRect, kCtx.layout);
+  ASSERT_EQ(parameter.size(), 2U);
+  ASSERT_EQ(ret.size(), 1U);
+
+  EXPECT_EQ(labelFor(parameter, {Kind::ParamType, 1}).look, FieldLook::Tag);
+  EXPECT_EQ(labelFor(parameter, {Kind::ParamName, 1}).look, FieldLook::Text);
+  EXPECT_EQ(labelFor(ret, {Kind::ReturnType}).look, FieldLook::Tag);
+  EXPECT_EQ(labelFor(header, {Kind::Name}).look, FieldLook::Text);
+  EXPECT_EQ(labelFor(binary, {Kind::Operator}).look, FieldLook::Text);
+}

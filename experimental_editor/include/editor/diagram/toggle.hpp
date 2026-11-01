@@ -1,10 +1,12 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_TOGGLE_HPP
 #define FLUIR_EDITOR_DIAGRAM_TOGGLE_HPP
 
+#include <memory>
 #include <QGraphicsItem>
 #include <QRectF>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/diagram/edit_target.hpp"
 #include "editor/diagram/field_part.hpp"
 
 namespace fluir::editor::diagram {
@@ -27,6 +29,7 @@ namespace fluir::editor::diagram {
 
    private:
     const EditorContext& ctx_;
+    std::unique_ptr<EditTarget> target_;
     QRectF rect_;
     bool value_ = false;
   };

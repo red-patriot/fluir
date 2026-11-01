@@ -1,5 +1,6 @@
 #include "editor/diagram/field_text.hpp"
 
+#include <memory>
 #include <QKeyEvent>
 #include <QPainter>
 #include <QTextCursor>
@@ -7,26 +8,27 @@
 #include <string>
 #include <utility>
 
-#include "editor/commands/set_field.hpp"
 #include "editor/diagram/node.hpp"
 #include "editor/scene/item_style.hpp"
-#include "editor/scene/module_scene.hpp"
 
 namespace fluir::editor::diagram {
 
-  FieldText::FieldText(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent) :
-    QGraphicsTextItem(&parent), FieldPart(node, std::move(key)), ctx_(ctx) {
+  FieldText::FieldText(FluirNode& node, FieldKey key, FieldLook look, const EditorContext& ctx, QGraphicsItem& parent) :
+    QGraphicsTextItem(&parent),
+    FieldPart(node, key),
+    ctx_(ctx),
+    target_(std::make_unique<FieldTarget>(node, std::move(key))) {
     setTextInteractionFlags(Qt::TextEditorInteraction);
     setDefaultTextColor(style::color(ctx.theme.text));
-    setFont(style::uiFont());
+    setFont(style::font(look));
     refresh();
     connect(document(), &QTextDocument::contentsChanged, this, [this] {
-      valid_ = this->node().accepts(this->field(), toPlainText().toStdString());
+      valid_ = target_->validate(toPlainText().toStdString());
       update();
     });
   }
 
-  void FieldText::refresh() { setPlainText(QString::fromStdString(node().text(field()))); }
+  void FieldText::refresh() { setPlainText(QString::fromStdString(target_->current())); }
 
   void FieldText::place(const Rect& rect) {
     setPos(rect.x, rect.y);
@@ -74,9 +76,9 @@ namespace fluir::editor::diagram {
 
   void FieldText::commit() {
     const std::string draft = toPlainText().toStdString();
-    const std::string current = node().text(field());
+    const std::string current = target_->current();
     if (valid_ && draft != current) {
-      ModuleScene::of(*this).undoStack().push(new SetField(node(), field(), current, draft));
+      target_->commit(draft);
     } else if (draft != current) {
       refresh();
     }

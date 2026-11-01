@@ -37,6 +37,12 @@ namespace fluir::editor::style {
     return font;
   }
 
+  QFont font(FieldLook look) { return look == FieldLook::Tag ? tagFont() : uiFont(); }
+
+  Qt::Alignment alignment(FieldLook look) {
+    return look == FieldLook::Tag ? Qt::AlignLeft | Qt::AlignBottom : Qt::AlignLeft | Qt::AlignTop;
+  }
+
   void shell(QPainter& painter, const QRectF& local, Color fill, const EditorContext& ctx) {
     painter.fillRect(local, color(fill));
     painter.setPen(QPen(color(ctx.theme.border), 0));
@@ -48,11 +54,11 @@ namespace fluir::editor::style {
     if (tag.empty()) {
       return;
     }
-    painter.setFont(tagFont());
+    painter.setFont(font(FieldLook::Tag));
     painter.setPen(color(ctx.theme.text));
     const double pad = ctx.layout.textPad;
     painter.drawText(local.adjusted(pad, pad, -pad, -pad),
-                     Qt::AlignLeft | Qt::AlignBottom,
+                     alignment(FieldLook::Tag),
                      QString::fromUtf8(tag.data(), static_cast<qsizetype>(tag.size())));
   }
 

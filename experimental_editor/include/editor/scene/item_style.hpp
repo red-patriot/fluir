@@ -11,6 +11,7 @@
 
 #include "editor/core/editor_context.hpp"
 #include "editor/core/geometry.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor::style {
 
@@ -24,6 +25,10 @@ namespace fluir::editor::style {
   QFont uiFont();
   /** The font of a label tag. */
   QFont tagFont();
+  /** The font a field shows its value in. */
+  QFont font(FieldLook look);
+  /** Where in its rect a field's value sits. */
+  Qt::Alignment alignment(FieldLook look);
 
   /** Fills `local` with `fill` and draws its border. */
   void shell(QPainter& painter, const QRectF& local, Color fill, const EditorContext& ctx);

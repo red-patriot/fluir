@@ -1,4 +1,4 @@
-#include "editor/diagram/choice.hpp"
+#include "editor/diagram/field_view.hpp"
 
 #include <QAction>
 #include <QMenu>
@@ -14,10 +14,11 @@
 #include "editor/diagram/binary.hpp"
 #include "editor/diagram/function.hpp"
 #include "editor/diagram/unary.hpp"
+#include "editor/scene/item_style.hpp"
 #include "interaction.hpp"
 
-// A press on a choice selects its node and pops a menu of its options. Picking a different option pushes one command;
-// picking the current one or dismissing the menu changes nothing.
+// A press on a menu-picked field view selects its node and pops a menu of its options. Picking a different option
+// pushes one command; picking the current one or dismissing the menu changes nothing.
 
 namespace {
 
@@ -45,7 +46,7 @@ namespace {
 
   // The operator's text, left of the move grip that covers the node's center.
   QPoint operatorOf(Interaction& h, const diagram::FluirNode& node) {
-    const auto& choice = Interaction::fieldOf<diagram::Choice>(node, kOperator);
+    const auto& choice = Interaction::fieldOf<diagram::FieldView>(node, kOperator);
     return h.aim(choice, QPointF(-choice.sceneBoundingRect().width() / 4, 0));
   }
 
@@ -65,7 +66,7 @@ namespace {
 
 }  // namespace
 
-TEST(Choice, APressOnABinaryOffersItsOperatorsAndSelectsIt) {
+TEST(FieldView, APressOnABinaryOffersItsOperatorsAndSelectsIt) {
   Interaction h("read/simple_binary_expr.fl");
   auto& binary = h.find<diagram::Binary>(1);
 
@@ -76,7 +77,7 @@ TEST(Choice, APressOnABinaryOffersItsOperatorsAndSelectsIt) {
   EXPECT_EQ(h.scene().selectedItems(), QList<QGraphicsItem*>{&binary});
 }
 
-TEST(Choice, PickingAnotherOptionPushesOneUndoableEdit) {
+TEST(FieldView, PickingAnotherOptionPushesOneUndoableEdit) {
   Interaction h("read/simple_binary_expr.fl");
   auto& binary = h.find<diagram::Binary>(1);
   const fluir::pt::ParseTree before = h.tree();
@@ -88,10 +89,10 @@ TEST(Choice, PickingAnotherOptionPushesOneUndoableEdit) {
   ASSERT_EQ(h.stack().count(), 1);
   h.stack().undo();
   EXPECT_EQ(h.tree(), before);
-  EXPECT_EQ(Interaction::fieldOf<diagram::Choice>(binary, kOperator).text(), "+");
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(binary, kOperator).text(), "+");
 }
 
-TEST(Choice, PickingTheCurrentOptionPushesNothing) {
+TEST(FieldView, PickingTheCurrentOptionPushesNothing) {
   Interaction h("read/simple_binary_expr.fl");
 
   h.click(operatorOf(h, h.find<diagram::Binary>(1)));
@@ -100,7 +101,7 @@ TEST(Choice, PickingTheCurrentOptionPushesNothing) {
   EXPECT_EQ(h.stack().count(), 0);
 }
 
-TEST(Choice, DismissingTheMenuChangesNothing) {
+TEST(FieldView, DismissingTheMenuChangesNothing) {
   Interaction h("read/simple_binary_expr.fl");
   const fluir::pt::ParseTree before = h.tree();
 
@@ -113,7 +114,7 @@ TEST(Choice, DismissingTheMenuChangesNothing) {
   EXPECT_EQ(h.stack().count(), 0);
 }
 
-TEST(Choice, AUnaryOffersItsOperators) {
+TEST(FieldView, AUnaryOffersItsOperators) {
   Interaction h("read/simple_unary_expr.fl");
 
   h.click(operatorOf(h, h.find<diagram::Unary>(7)));
@@ -123,12 +124,12 @@ TEST(Choice, AUnaryOffersItsOperators) {
   Interaction::popup()->close();
 }
 
-TEST(Choice, AParameterTypeOffersTheBuiltinTypes) {
+TEST(FieldView, AParameterTypeOffersTheBuiltinTypes) {
   Interaction h("read/function_with_input_only.fl");
   auto& function = h.find<diagram::Function>(1);
   const Field type{Field::Kind::ParamType, 1};
 
-  h.click(h.aim(Interaction::fieldOf<diagram::Choice>(function, type)));
+  h.click(h.aim(Interaction::fieldOf<diagram::FieldView>(function, type)));
   ASSERT_NE(Interaction::popup(), nullptr);
   EXPECT_EQ(entries(*Interaction::popup()), listOf(fluir::editor::builtinTypes()));
   pick("U8");
@@ -137,14 +138,27 @@ TEST(Choice, AParameterTypeOffersTheBuiltinTypes) {
   EXPECT_EQ(h.scene().selectedItems(), QList<QGraphicsItem*>{&function});
 }
 
-TEST(Choice, AReturnTypeOffersTheBuiltinTypes) {
+TEST(FieldView, AReturnTypeOffersTheBuiltinTypes) {
   Interaction h("read/function_with_output_only.fl");
   auto& function = h.find<diagram::Function>(1);
 
-  h.click(h.aim(Interaction::fieldOf<diagram::Choice>(function, {Field::Kind::ReturnType})));
+  h.click(h.aim(Interaction::fieldOf<diagram::FieldView>(function, {Field::Kind::ReturnType})));
   ASSERT_NE(Interaction::popup(), nullptr);
   EXPECT_EQ(entries(*Interaction::popup()), listOf(fluir::editor::builtinTypes()));
   pick("BOOL");
 
   EXPECT_EQ(function.text({Field::Kind::ReturnType}), "BOOL");
+}
+
+TEST(FieldView, ATypeShowsInTheTagFontAndAnOperatorInTheUiFont) {
+  Interaction in("read/function_with_input_only.fl");
+  Interaction out("read/function_with_output_only.fl");
+  Interaction op("read/simple_binary_expr.fl");
+  namespace style = fluir::editor::style;
+
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(in.find<diagram::Function>(1), {Field::Kind::ParamType, 0}).font(),
+            style::tagFont());
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(out.find<diagram::Function>(1), {Field::Kind::ReturnType}).font(),
+            style::tagFont());
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(op.find<diagram::Binary>(1), kOperator).font(), style::uiFont());
 }

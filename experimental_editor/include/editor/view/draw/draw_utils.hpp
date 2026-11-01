@@ -23,10 +23,14 @@ namespace fluir::editor {
     std::vector<Vec2> outputs;
   };
 
-  /** Where `field`'s value draws and edits, in world space. */
+  /** How a field's value is shown: as main text, or as a small tag like a type. */
+  enum class FieldLook { Text, Tag };
+
+  /** Where `field`'s value draws and edits, in world space, and how it looks. */
   struct FieldLabel {
     Field field;
     Rect rect;
+    FieldLook look = FieldLook::Text;
   };
 
   /** A label's small tag and main text regions in world space; glyph cells are world px, so the split does not depend

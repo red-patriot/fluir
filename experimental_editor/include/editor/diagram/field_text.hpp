@@ -1,11 +1,14 @@
 #ifndef FLUIR_EDITOR_DIAGRAM_FIELD_TEXT_HPP
 #define FLUIR_EDITOR_DIAGRAM_FIELD_TEXT_HPP
 
+#include <memory>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsTextItem>
 
 #include "editor/core/editor_context.hpp"
+#include "editor/diagram/edit_target.hpp"
 #include "editor/diagram/field_part.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor::diagram {
 
@@ -13,7 +16,7 @@ namespace fluir::editor::diagram {
    *  and leaving commits it if valid. Shift+Enter breaks a line in comment text and commits elsewhere. */
   class FieldText : public QGraphicsTextItem, public FieldPart {
    public:
-    FieldText(FluirNode& node, FieldKey key, const EditorContext& ctx, QGraphicsItem& parent);
+    FieldText(FluirNode& node, FieldKey key, FieldLook look, const EditorContext& ctx, QGraphicsItem& parent);
 
     /** Whether the draft would commit. */
     bool isValid() const { return valid_; }
@@ -35,6 +38,7 @@ namespace fluir::editor::diagram {
     void commit();
 
     const EditorContext& ctx_;
+    std::unique_ptr<EditTarget> target_;
     bool valid_ = true;
   };
 

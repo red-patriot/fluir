@@ -9,10 +9,10 @@
 #include "editor/core/field.hpp"
 #include "editor/diagram/binary.hpp"
 #include "editor/diagram/call.hpp"
-#include "editor/diagram/choice.hpp"
 #include "editor/diagram/comment.hpp"
 #include "editor/diagram/constant.hpp"
 #include "editor/diagram/field_text.hpp"
+#include "editor/diagram/field_view.hpp"
 #include "editor/diagram/function.hpp"
 #include "editor/diagram/toggle.hpp"
 #include "editor/diagram/unary.hpp"
@@ -53,7 +53,7 @@ TEST_P(FieldsOnEachFixture, EveryFieldPartShowsItsNodesText) {
   for (const diagram::FieldText* part : testutil::all<diagram::FieldText>(h.scene())) {
     EXPECT_EQ(part->toPlainText().toStdString(), part->node().text(part->field())) << "node " << part->node().id();
   }
-  for (const diagram::Choice* part : testutil::all<diagram::Choice>(h.scene())) {
+  for (const diagram::FieldView* part : testutil::all<diagram::FieldView>(h.scene())) {
     EXPECT_EQ(part->text().toStdString(), part->node().text(part->field())) << "node " << part->node().id();
   }
   for (const diagram::Toggle* part : testutil::all<diagram::Toggle>(h.scene())) {
@@ -103,7 +103,7 @@ TEST(Fields, AParameterTypeIsABuiltinType) {
   ASSERT_TRUE(function.setText(type, "F64"));
 
   EXPECT_EQ(h.tree(), expected);
-  EXPECT_EQ(Interaction::fieldOf<diagram::Choice>(function, type).text(), "F64");
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(function, type).text(), "F64");
 }
 
 TEST(Fields, AReturnTypeIsABuiltinType) {
@@ -196,7 +196,7 @@ TEST(Fields, ABinaryTakesOnlyBinaryOperators) {
   ASSERT_TRUE(binary.setText(op, "*"));
 
   EXPECT_EQ(h.tree(), expected);
-  EXPECT_EQ(Interaction::fieldOf<diagram::Choice>(binary, op).text(), "*");
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldView>(binary, op).text(), "*");
 }
 
 TEST(Fields, AUnaryTakesOnlyUnaryOperators) {

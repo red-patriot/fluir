@@ -40,7 +40,8 @@ set(FLUIR_EDITOR_COMMANDS_SOURCES
     "commands/add_port.cpp" "commands/add_return.cpp"
     "commands/conduit_cut.cpp" "commands/delete_parameter.cpp"
     "commands/delete_port.cpp" "commands/delete_return.cpp"
-    "commands/delete_selection.cpp"
+    "commands/delete_conduit.cpp" "commands/delete_node.cpp"
+    "commands/removed_element.cpp"
 )
 
 set(FLUIR_EDITOR_DIAGRAM_SOURCES

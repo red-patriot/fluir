@@ -11,7 +11,7 @@
 #include <QPen>
 #include <utility>
 
-#include "editor/commands/delete_selection.hpp"
+#include "editor/commands/delete_conduit.hpp"
 #include "editor/diagram/context_menu.hpp"
 #include "editor/scene/item_style.hpp"
 #include "editor/scene/module_scene.hpp"
@@ -89,7 +89,7 @@ namespace fluir::editor::diagram {
     scene()->clearSelection();
     setSelected(true);
     auto menu = std::make_unique<QMenu>();
-    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteSelection({this})); });
+    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteConduit(*this)); });
     popUp(std::move(menu), event->screenPos());
   }
 

@@ -2,7 +2,10 @@
 
 #include <QKeyEvent>
 
-#include "editor/commands/delete_selection.hpp"
+#include "editor/commands/delete_conduit.hpp"
+#include "editor/commands/delete_node.hpp"
+#include "editor/diagram/conduit.hpp"
+#include "editor/diagram/node.hpp"
 
 namespace fluir::editor {
 
@@ -15,7 +18,13 @@ namespace fluir::editor {
       clearSelection();
       event->accept();
     } else if (event->key() == Qt::Key_Delete && !selectedItems().isEmpty()) {
-      undoStack_.push(new DeleteSelection(selectedItems()));
+      // One thing is selected at a time: a node or a conduit.
+      QGraphicsItem* selected = selectedItems().front();
+      if (auto* node = dynamic_cast<diagram::FluirNode*>(selected)) {
+        undoStack_.push(new DeleteNode(*node));
+      } else if (auto* conduit = dynamic_cast<diagram::Conduit*>(selected)) {
+        undoStack_.push(new DeleteConduit(*conduit));
+      }
       event->accept();
     }
   }

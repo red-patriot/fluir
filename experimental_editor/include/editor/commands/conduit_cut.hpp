@@ -2,10 +2,10 @@
 #define FLUIR_EDITOR_COMMANDS_CONDUIT_CUT_HPP
 
 #include <functional>
-#include <memory>
 #include <QGraphicsItem>
 #include <vector>
 
+#include "editor/commands/removed_element.hpp"
 #include "editor/diagram/conduit.hpp"
 #include "editor/diagram/terminal.hpp"
 
@@ -22,9 +22,7 @@ namespace fluir::editor {
    private:
     struct Removal {
       diagram::Conduit* conduit;
-      QGraphicsItem* scope;
-      // Holds the conduit while it is out of the scene.
-      std::unique_ptr<diagram::Conduit> taken;
+      RemovedElement removed;
     };
 
     struct Rewire {

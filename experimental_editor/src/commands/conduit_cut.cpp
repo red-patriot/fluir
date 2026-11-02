@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <iterator>
-#include <QGraphicsScene>
 
 namespace fluir::editor {
 
@@ -17,7 +16,7 @@ namespace fluir::editor {
         std::vector<diagram::Terminal*> sinks;
         std::ranges::copy_if(conduit->sinks(), std::back_inserter(sinks), [&](const auto* sink) { return !cut(sink); });
         if (cut(conduit->source()) || sinks.empty()) {
-          removals_.push_back({.conduit = conduit, .scope = scope, .taken = nullptr});
+          removals_.push_back({.conduit = conduit, .removed = RemovedElement(*conduit)});
         } else if (sinks.size() != conduit->sinks().size()) {
           rewires_.push_back({.conduit = conduit, .before = conduit->sinks(), .after = std::move(sinks)});
         }
@@ -31,14 +30,13 @@ namespace fluir::editor {
     }
     for (Removal& removal : removals_) {
       removal.conduit->detach();
-      removal.conduit->scene()->removeItem(removal.conduit);
-      removal.taken.reset(removal.conduit);
+      removal.removed.remove();
     }
   }
 
   void ConduitCut::restore() {
     for (Removal& removal : removals_) {
-      removal.taken.release()->setParentItem(removal.scope);
+      removal.removed.restore();
       removal.conduit->attach();
     }
     for (const Rewire& rewire : rewires_) {

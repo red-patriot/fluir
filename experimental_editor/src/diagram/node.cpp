@@ -7,7 +7,7 @@
 #include <QMenu>
 #include <utility>
 
-#include "editor/commands/delete_selection.hpp"
+#include "editor/commands/delete_node.hpp"
 #include "editor/core/field.hpp"
 #include "editor/diagram/context_menu.hpp"
 #include "editor/diagram/edits.hpp"
@@ -49,7 +49,7 @@ namespace fluir::editor::diagram {
       menu->addSeparator();
     }
     selectAlone();
-    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteSelection({this})); });
+    addEntry(*menu, "Delete", [this] { ModuleScene::of(*this).undoStack().push(new DeleteNode(*this)); });
     popUp(std::move(menu), event->screenPos());
   }
 

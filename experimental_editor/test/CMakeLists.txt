@@ -9,8 +9,9 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/splash_widget.test.cpp
 )
 
-set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES commands/port_commands.test.cpp
-                                       commands/signature_commands.test.cpp
+set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES
+    commands/delete_commands.test.cpp commands/port_commands.test.cpp
+    commands/signature_commands.test.cpp commands/removed_element.test.cpp
 )
 
 set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES

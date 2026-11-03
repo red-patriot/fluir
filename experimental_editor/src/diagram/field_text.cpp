@@ -18,6 +18,7 @@ namespace fluir::editor::diagram {
     FieldPart(node, key),
     ctx_(ctx),
     target_(std::make_unique<FieldTarget>(node, std::move(key))) {
+    setFlag(ItemClipsToShape);
     setTextInteractionFlags(Qt::TextEditorInteraction);
     setDefaultTextColor(style::color(ctx.theme.text));
     setFont(style::font(look));
@@ -31,10 +32,18 @@ namespace fluir::editor::diagram {
   void FieldText::refresh() { setPlainText(QString::fromStdString(target_->current())); }
 
   void FieldText::place(const Rect& rect) {
+    prepareGeometryChange();
+    size_ = {rect.w, rect.h};
     setPos(rect.x, rect.y);
     if (multiline()) {
       setTextWidth(rect.w);
     }
+  }
+
+  QPainterPath FieldText::shape() const {
+    QPainterPath path;
+    path.addRect(QRectF(QPointF{}, size_));
+    return path;
   }
 
   void FieldText::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) {
@@ -42,7 +51,7 @@ namespace fluir::editor::diagram {
     if (!valid_) {
       painter->setPen(QPen(style::color(ctx_.theme.error), 0));
       painter->setBrush(Qt::NoBrush);
-      painter->drawRect(boundingRect());
+      painter->drawRect(QRectF(QPointF{}, size_));
     }
   }
 

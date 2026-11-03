@@ -170,3 +170,42 @@ TEST(FieldText, ACallArgumentRenames) {
   EXPECT_EQ(call.text(second), "rhs");
   EXPECT_EQ(call.text({Field::Kind::Arg, 0}), "a");
 }
+
+namespace {
+
+  QRectF visibleIn(const QGraphicsItem& node, const diagram::FieldText& field) {
+    return field.mapToItem(&node, field.shape()).boundingRect();
+  }
+
+}  // namespace
+
+TEST(FieldText, LongTextStaysInsideItsNode) {
+  Harness h;
+
+  h.typeInto(h.field(), "1234567890123456789012345678901234567890");
+
+  EXPECT_TRUE(h.constant().boundingRect().contains(visibleIn(h.constant(), h.field())));
+}
+
+TEST(FieldText, TheVisibleAreaDoesNotGrowWithItsText) {
+  Harness h;
+  const QRectF before = visibleIn(h.constant(), h.field());
+
+  h.typeInto(h.field(), "1234567890123456789012345678901234567890");
+
+  EXPECT_EQ(visibleIn(h.constant(), h.field()), before);
+}
+
+TEST(FieldText, ALongCommentStaysInsideItsNode) {
+  Interaction h("read/top_level_comment_only.fl");
+  auto& comment = h.find<diagram::Comment>(1);
+  auto& field = Interaction::fieldOf<diagram::FieldText>(comment, {Field::Kind::Text});
+
+  h.typeInto(field, "a");
+  for (int i = 0; i < 30; ++i) {
+    h.key(Qt::Key_Return, Qt::ShiftModifier);
+    QTest::keyClicks(&h.view(), "b");
+  }
+
+  EXPECT_TRUE(comment.boundingRect().contains(visibleIn(comment, field)));
+}

@@ -4,6 +4,8 @@
 #include <memory>
 #include <QGraphicsSceneContextMenuEvent>
 #include <QGraphicsTextItem>
+#include <QPainterPath>
+#include <QSizeF>
 
 #include "editor/core/editor_context.hpp"
 #include "editor/diagram/edit_target.hpp"
@@ -24,6 +26,8 @@ namespace fluir::editor::diagram {
     void refresh() override;
     void place(const Rect& rect) override;
 
+    /** The placed rect: text past it is clipped and not hittable. */
+    QPainterPath shape() const override;
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
    protected:
@@ -40,6 +44,7 @@ namespace fluir::editor::diagram {
     const EditorContext& ctx_;
     std::unique_ptr<EditTarget> target_;
     bool valid_ = true;
+    QSizeF size_;
   };
 
 }  // namespace fluir::editor::diagram

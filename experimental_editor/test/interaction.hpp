@@ -109,9 +109,11 @@ namespace testutil {
       return {view().mapFromScene(a), view().mapFromScene(b)};
     }
 
-    /** Aims at `item`'s center, plus `offset` scene px. */
+    /** Aims at the center of what `item` shows (its clip, if any), plus `offset` scene px. */
     QPoint aim(const QGraphicsItem& item, QPointF offset = {}) {
-      return aimAt(item.sceneBoundingRect().center() + offset);
+      const QPainterPath clip = item.clipPath();
+      const QRectF shown = clip.isEmpty() ? item.boundingRect() : clip.boundingRect();
+      return aimAt(item.mapToScene(shown.center()) + offset);
     }
 
     /** `node`'s one field part of type `T` for `field`, among all its descendants. */

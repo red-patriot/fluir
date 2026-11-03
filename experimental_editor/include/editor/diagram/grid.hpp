@@ -15,6 +15,11 @@ namespace fluir::editor::diagram {
     return {static_cast<int>(std::trunc(delta.x())), static_cast<int>(std::trunc(delta.y()))};
   }
 
+  /** The grid point nearest `local`. */
+  inline Vec2i nearestGridPoint(QPointF local, double unit) {
+    return {static_cast<int>(std::lround(local.x() / unit)), static_cast<int>(std::lround(local.y() / unit))};
+  }
+
   inline int clamp(int value, Limits<int> limits) { return std::clamp(value, limits.lower, limits.upper); }
 
 }  // namespace fluir::editor::diagram

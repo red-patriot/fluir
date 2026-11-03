@@ -23,7 +23,8 @@ namespace {
   struct Harness {
     fluir::editor::EditorContext ctx;
     QUndoStack stack;
-    fluir::editor::ModuleScene scene{ctx, stack};
+    fluir::editor::Intelligence intelligence;
+    fluir::editor::ModuleScene scene{ctx, stack, intelligence};
   };
 
   fluir::pt::ParseTree load(const fs::path& fixture) {

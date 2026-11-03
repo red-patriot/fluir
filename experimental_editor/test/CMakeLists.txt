@@ -19,6 +19,7 @@ set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/branch_arrow.test.cpp
     diagram/build.test.cpp
     diagram/field_view.test.cpp
+    diagram/completion.test.cpp
     diagram/conduit_drag.test.cpp
     diagram/context_menu.test.cpp
     diagram/delete.test.cpp
@@ -30,11 +31,14 @@ set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/move_grip.test.cpp
     diagram/port_drag.test.cpp
     diagram/resize_grip.test.cpp
+    diagram/scope.test.cpp
     diagram/selection.test.cpp
     diagram/toggle.test.cpp
 )
 
-set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/graph_view.test.cpp)
+set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/completion_popup.test.cpp
+                                    scene/graph_view.test.cpp
+)
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
     core/choices.test.cpp

@@ -2,8 +2,10 @@
 #define FLUIR_EDITOR_DIAGRAM_SCOPE_HPP
 
 #include <QGraphicsItem>
+#include <QGraphicsSceneContextMenuEvent>
 #include <QRectF>
 
+#include "compiler/models/id.hpp"
 #include "editor/core/geometry.hpp"
 
 namespace fluir::editor::diagram {
@@ -20,9 +22,16 @@ namespace fluir::editor::diagram {
     QRectF boundingRect() const override { return rect_; }
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
+   protected:
+    /** Handles right click events. */
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+
    private:
     QRectF rect_;
   };
+
+  /** `scope`'s path in the exported tree. */
+  fluir::FullID pathOf(const Scope& scope);
 
 }  // namespace fluir::editor::diagram
 

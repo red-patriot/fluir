@@ -39,7 +39,8 @@ namespace {
   struct Built {
     fluir::editor::EditorContext ctx;
     QUndoStack stack;
-    fluir::editor::ModuleScene scene{ctx, stack};
+    fluir::editor::Intelligence intelligence;
+    fluir::editor::ModuleScene scene{ctx, stack, intelligence};
     bool ok = false;
   };
 

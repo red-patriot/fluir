@@ -47,7 +47,7 @@ namespace fluir::editor {
     QWidget(parent),
     program_(std::move(program)),
     undoStack_(new QUndoStack(this)),
-    scene_(new ModuleScene(ctx, *undoStack_, this)),
+    scene_(new ModuleScene(ctx, *undoStack_, intelligence_, this)),
     view_(new GraphView(ctx, this)) {
     if (!diagram::buildScene(tree, *scene_)) {
       throw std::invalid_argument("not a valid diagram");

@@ -8,6 +8,7 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/editor_context.hpp"
+#include "editor/core/intelligence.hpp"
 #include "editor/scene/graph_view.hpp"
 #include "editor/scene/module_scene.hpp"
 
@@ -41,6 +42,7 @@ namespace fluir::editor {
     bool write(const std::filesystem::path& program);
 
     std::optional<std::filesystem::path> program_;
+    Intelligence intelligence_;
     QUndoStack* undoStack_;
     ModuleScene* scene_;
     GraphView* view_;

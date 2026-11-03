@@ -76,6 +76,7 @@ set(FLUIR_EDITOR_DIAGRAM_SOURCES
 )
 
 set(FLUIR_EDITOR_SCENE_SOURCES
+    "scene/completion_popup.cpp"
     "scene/graph_view.cpp"
     "scene/item_style.cpp"
     "scene/module_scene.cpp"

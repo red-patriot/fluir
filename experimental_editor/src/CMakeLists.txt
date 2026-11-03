@@ -10,7 +10,7 @@ include(strict-warnings)
 
 add_library(fluir.libeditor)
 
-set_target_properties(fluir.libeditor PROPERTIES AUTOMOC ON)
+set_target_properties(fluir.libeditor PROPERTIES AUTOMOC ON AUTOUIC ON)
 
 target_include_directories(
     fluir.libeditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
@@ -30,8 +30,12 @@ set(FLUIR_EDITOR_CORE_SOURCES
 # Q_OBJECT headers are listed so AUTOMOC finds them outside src/.
 set(FLUIR_EDITOR_APP_SOURCES
     "app/main_window.cpp"
+    "app/main_window.ui"
     "app/module_page.cpp"
+    "app/module_page.ui"
     "app/splash_widget.cpp"
+    "app/style.cpp"
+    "app/splash_widget.ui"
     "../include/editor/app/main_window.hpp"
     "../include/editor/app/module_page.hpp"
     "../include/editor/app/splash_widget.hpp"
@@ -78,6 +82,7 @@ set(FLUIR_EDITOR_DIAGRAM_SOURCES
 
 set(FLUIR_EDITOR_SCENE_SOURCES
     "scene/completion_popup.cpp"
+    "scene/completion_popup.ui"
     "scene/graph_view.cpp"
     "scene/item_style.cpp"
     "scene/module_scene.cpp"
@@ -121,6 +126,7 @@ qt_add_resources(
     "assets/images/false.svg"
     "assets/images/true.svg"
     "assets/images/XYResizeHandle.svg"
+    "assets/style/editor.qss"
 )
 
 target_link_libraries(

@@ -6,6 +6,7 @@
 #include <QEvent>
 #include <QPointer>
 #include <QPushButton>
+#include <QStackedWidget>
 #include <QTest>
 #include <QUndoCommand>
 #include <QUndoStack>
@@ -69,6 +70,16 @@ TEST(MainWindow, TheSplashNewButtonOpensAnUnsavedModule) {
   EXPECT_FALSE(h.page()->program().has_value());
   EXPECT_TRUE(h.page()->isVisibleTo(&h.window));
   EXPECT_TRUE(h.window.windowTitle().contains("<new file>"));
+}
+
+TEST(MainWindow, ThePageStaysAChildInsideTheStack) {
+  Harness h;
+
+  QTest::mouseClick(h.window.findChild<QPushButton*>("new"), Qt::LeftButton);
+
+  ASSERT_NE(h.page(), nullptr);
+  EXPECT_FALSE(h.page()->isWindow());
+  EXPECT_EQ(h.window.findChild<QStackedWidget*>()->currentWidget(), h.page());
 }
 
 TEST(MainWindow, OpenModuleShowsTheProgram) {

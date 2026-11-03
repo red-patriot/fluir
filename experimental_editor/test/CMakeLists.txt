@@ -7,6 +7,7 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/main_window.test.cpp
     app/module_page.test.cpp
     app/splash_widget.test.cpp
+    app/style.test.cpp
 )
 
 set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES

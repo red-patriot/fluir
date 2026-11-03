@@ -1,0 +1,36 @@
+/* Selectors target the root objectNames in src/app/*.ui and src/scene/completion_popup.ui. */
+
+#splash {
+  background-color: rgb(24, 26, 31);
+  color: rgb(225, 225, 235);
+}
+
+#splash QPushButton {
+  background-color: rgb(24, 26, 31);
+  color: rgb(225, 225, 235);
+  border: 1px solid rgb(200, 200, 210);
+  padding: 4px 16px;
+}
+
+#modulePage QToolBar {
+  background-color: rgb(24, 26, 31);
+  color: rgb(225, 225, 235);
+  border-bottom: 1px solid rgb(200, 200, 210);
+}
+
+#modulePage QToolBar QToolButton {
+  color: rgb(225, 225, 235);
+}
+
+#completionPopup {
+  background-color: rgb(24, 26, 31);
+  color: rgb(225, 225, 235);
+  border: 1px solid rgb(200, 200, 210);
+}
+
+#completionPopup QLineEdit,
+#completionPopup QListView {
+  background-color: rgb(24, 26, 31);
+  color: rgb(225, 225, 235);
+  border: none;
+}

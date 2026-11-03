@@ -1,23 +1,16 @@
 #include "editor/app/splash_widget.hpp"
 
-#include <QPushButton>
-#include <QVBoxLayout>
+#include "ui_splash_widget.h"
 
 namespace fluir::editor {
 
-  SplashWidget::SplashWidget(QWidget* parent) : QWidget(parent) {
-    auto* newButton = new QPushButton(tr("New"), this);
-    newButton->setObjectName("new");
-    auto* openButton = new QPushButton(tr("Open"), this);
-    openButton->setObjectName("open");
-    connect(newButton, &QPushButton::clicked, this, &SplashWidget::newRequested);
-    connect(openButton, &QPushButton::clicked, this, &SplashWidget::openRequested);
-
-    auto* layout = new QVBoxLayout(this);
-    layout->addStretch();
-    layout->addWidget(newButton, 0, Qt::AlignHCenter);
-    layout->addWidget(openButton, 0, Qt::AlignHCenter);
-    layout->addStretch();
+  SplashWidget::SplashWidget(QWidget* parent) : QWidget(parent), ui_(std::make_unique<Ui::splash>()) {
+    ui_->setupUi(this);
+    ui_->newButton->setObjectName("new");  // `new` is a keyword, so uic cannot name the member.
+    connect(ui_->newButton, &QPushButton::clicked, this, &SplashWidget::newRequested);
+    connect(ui_->open, &QPushButton::clicked, this, &SplashWidget::openRequested);
   }
+
+  SplashWidget::~SplashWidget() = default;
 
 }  // namespace fluir::editor

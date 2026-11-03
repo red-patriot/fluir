@@ -1,7 +1,12 @@
 #ifndef FLUIR_EDITOR_APP_SPLASH_WIDGET_HPP
 #define FLUIR_EDITOR_APP_SPLASH_WIDGET_HPP
 
+#include <memory>
 #include <QWidget>
+
+namespace Ui {
+  class splash;
+}
 
 namespace fluir::editor {
 
@@ -11,10 +16,14 @@ namespace fluir::editor {
 
    public:
     explicit SplashWidget(QWidget* parent = nullptr);
+    ~SplashWidget() override;
 
    signals:
     void newRequested();
     void openRequested();
+
+   private:
+    std::unique_ptr<Ui::splash> ui_;
   };
 
 }  // namespace fluir::editor

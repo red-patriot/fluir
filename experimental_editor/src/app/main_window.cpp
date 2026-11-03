@@ -11,6 +11,7 @@
 #include "bytecode/version.hpp"
 #include "compiler/utility/context.hpp"
 #include "editor/core/loader.hpp"
+#include "ui_main_window.h"
 
 namespace fluir::editor {
   namespace {
@@ -20,16 +21,17 @@ namespace fluir::editor {
   }  // namespace
 
   MainWindow::MainWindow(const EditorContext& ctx, QWidget* parent) :
-    QMainWindow(parent), ctx_(ctx), pages_(new QStackedWidget(this)), splash_(new SplashWidget(pages_)) {
-    pages_->addWidget(splash_);
-    setCentralWidget(pages_);
+    QMainWindow(parent), ctx_(ctx), ui_(std::make_unique<Ui::mainWindow>()) {
+    ui_->setupUi(this);
     resize(ctx.window.width, ctx.window.height);
 
-    connect(splash_, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
-    connect(splash_, &SplashWidget::openRequested, this, &MainWindow::openDialog);
+    connect(ui_->splash, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
+    connect(ui_->splash, &SplashWidget::openRequested, this, &MainWindow::openDialog);
 
     retitle();
   }
+
+  MainWindow::~MainWindow() = default;
 
   bool MainWindow::openModule(const std::filesystem::path& program) {
     fluir::Context ctx{.currentFile = program, .ignoreVersionChecks = true};
@@ -46,11 +48,11 @@ namespace fluir::editor {
   }
 
   void MainWindow::openPage(std::optional<std::filesystem::path> program, const pt::ParseTree& tree) {
-    auto* page = new ModulePage(ctx_, std::move(program), tree, pages_);
+    auto* page = new ModulePage(ctx_, std::move(program), tree, ui_->pages);
     closePage();
     page_ = page;
-    pages_->addWidget(page_);
-    pages_->setCurrentWidget(page_);
+    ui_->pages->addWidget(page_);
+    ui_->pages->setCurrentWidget(page_);
     connect(page_, &ModulePage::closeRequested, this, &MainWindow::closePage);
     connect(page_, &ModulePage::programChanged, this, &MainWindow::retitle);
     retitle();
@@ -61,7 +63,7 @@ namespace fluir::editor {
     if (page_ == nullptr) {
       return;
     }
-    pages_->removeWidget(page_);
+    ui_->pages->removeWidget(page_);
     page_->deleteLater();
     page_ = nullptr;
     retitle();

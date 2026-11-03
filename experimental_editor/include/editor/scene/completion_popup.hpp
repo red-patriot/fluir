@@ -2,15 +2,18 @@
 #define FLUIR_EDITOR_SCENE_COMPLETION_POPUP_HPP
 
 #include <functional>
+#include <memory>
 #include <QEvent>
-#include <QLineEdit>
-#include <QListView>
 #include <QModelIndex>
 #include <QObject>
 #include <QPoint>
 #include <QSortFilterProxyModel>
 #include <QStringList>
 #include <QWidget>
+
+namespace Ui {
+  class completionPopup;
+}
 
 namespace fluir::editor {
 
@@ -19,6 +22,7 @@ namespace fluir::editor {
    public:
     /** Picking calls `onPick` with the picked label's index in `labels`. */
     CompletionPopup(QStringList labels, std::function<void(qsizetype)> onPick);
+    ~CompletionPopup() override;
 
    protected:
     /** Steers the list from the filter box's keys. */
@@ -31,8 +35,7 @@ namespace fluir::editor {
     void pick(const QModelIndex& shown);
 
     std::function<void(qsizetype)> onPick_;
-    QLineEdit* filter_;
-    QListView* list_;
+    std::unique_ptr<Ui::completionPopup> ui_;
     QSortFilterProxyModel* shown_;
   };
 

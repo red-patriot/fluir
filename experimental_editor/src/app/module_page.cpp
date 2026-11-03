@@ -8,35 +8,18 @@
 #include <QMessageBox>
 #include <QSizePolicy>
 #include <QToolBar>
-#include <QVBoxLayout>
 #include <stdexcept>
 #include <utility>
 
 #include "editor/core/parse_tree_writer.hpp"
 #include "editor/diagram/build.hpp"
 #include "editor/diagram/export.hpp"
+#include "ui_module_page.h"
 
 namespace fluir::editor {
   namespace {
 
     const QString FILTER = QObject::tr("Fluir Program (*.fl)");
-
-    QAction* toolbarAction(QToolBar* bar,
-                           QAction* action,
-                           const std::string_view name,
-                           const QKeySequence& shortcut = {}) {
-      bar->addAction(action);
-      action->setObjectName(name);
-      action->setShortcut(shortcut);
-      return action;
-    }
-
-    QAction* toolbarAction(QToolBar* bar,
-                           const QString& text,
-                           const std::string_view name,
-                           const QKeySequence& shortcut = {}) {
-      return toolbarAction(bar, new QAction(text, bar), name, shortcut);
-    }
 
   }  // namespace
 
@@ -44,7 +27,8 @@ namespace fluir::editor {
                          std::optional<std::filesystem::path> program,
                          const pt::ParseTree& tree,
                          QWidget* parent) :
-    QWidget(parent),
+    QMainWindow(parent),
+    ui_(std::make_unique<Ui::modulePage>()),
     program_(std::move(program)),
     undoStack_(new QUndoStack(this)),
     scene_(new ModuleScene(ctx, *undoStack_, intelligence_, this)),
@@ -52,29 +36,31 @@ namespace fluir::editor {
     if (!diagram::buildScene(tree, *scene_)) {
       throw std::invalid_argument("not a valid diagram");
     }
-    auto* bar = new QToolBar(tr("File"), this);
-    QAction* save = toolbarAction(bar, tr("Save"), "save", QKeySequence::Save);
-    QAction* saveAs = toolbarAction(bar, tr("Save As"), "saveAs", QKeySequence::SaveAs);
-    toolbarAction(bar, undoStack_->createUndoAction(bar, tr("Undo")), "undo", QKeySequence::Undo);
-    toolbarAction(bar, undoStack_->createRedoAction(bar, tr("Redo")), "redo", QKeySequence::Redo);
-    auto* spacer = new QWidget(bar);
+    setWindowFlags(Qt::Widget);  // QMainWindow always starts as a window.
+    ui_->setupUi(this);
+    // Platform-specific shortcuts are not in the .ui.
+    ui_->saveAs->setShortcut(QKeySequence::SaveAs);
+    ui_->undo->setShortcut(QKeySequence::Undo);
+    ui_->redo->setShortcut(QKeySequence::Redo);
+    // Designer cannot place a widget between actions, so the spacer is built here.
+    auto* spacer = new QWidget(this);
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
-    bar->addWidget(spacer);
-    QAction* exit = toolbarAction(bar, tr("Exit"), "exit");
+    ui_->toolBar->insertWidget(ui_->exit, spacer);
+    setCentralWidget(view_);
 
-    auto* layout = new QVBoxLayout(this);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    layout->addWidget(bar);
-    layout->addWidget(view_);
-
-    connect(save, &QAction::triggered, this, &ModulePage::save);
-    connect(saveAs, &QAction::triggered, this, &ModulePage::saveAsDialog);
-    connect(exit, &QAction::triggered, this, &ModulePage::closeRequested);
+    connect(ui_->save, &QAction::triggered, this, &ModulePage::save);
+    connect(ui_->saveAs, &QAction::triggered, this, &ModulePage::saveAsDialog);
+    connect(ui_->undo, &QAction::triggered, undoStack_, &QUndoStack::undo);
+    connect(ui_->redo, &QAction::triggered, undoStack_, &QUndoStack::redo);
+    connect(undoStack_, &QUndoStack::canUndoChanged, ui_->undo, &QAction::setEnabled);
+    connect(undoStack_, &QUndoStack::canRedoChanged, ui_->redo, &QAction::setEnabled);
+    connect(ui_->exit, &QAction::triggered, this, &ModulePage::closeRequested);
 
     view_->setScene(scene_);
     view_->fit();
   }
+
+  ModulePage::~ModulePage() = default;
 
   bool ModulePage::saveAs(std::filesystem::path program) {
     if (!program.has_extension()) {

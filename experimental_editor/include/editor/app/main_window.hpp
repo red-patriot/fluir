@@ -2,14 +2,17 @@
 #define FLUIR_EDITOR_APP_MAIN_WINDOW_HPP
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <QMainWindow>
-#include <QStackedWidget>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/app/module_page.hpp"
-#include "editor/app/splash_widget.hpp"
 #include "editor/core/editor_context.hpp"
+
+namespace Ui {
+  class mainWindow;
+}
 
 namespace fluir::editor {
 
@@ -19,6 +22,7 @@ namespace fluir::editor {
 
    public:
     explicit MainWindow(const EditorContext& ctx, QWidget* parent = nullptr);
+    ~MainWindow() override;
 
     /** Opens the module at `program`.
      * \return true when the module loaded successfully, false when it fails to load. */
@@ -31,8 +35,7 @@ namespace fluir::editor {
     void retitle();
 
     const EditorContext& ctx_;
-    QStackedWidget* pages_;
-    SplashWidget* splash_;
+    std::unique_ptr<Ui::mainWindow> ui_;
     ModulePage* page_ = nullptr;
   };
 

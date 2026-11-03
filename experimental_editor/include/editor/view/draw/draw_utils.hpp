@@ -60,6 +60,9 @@ namespace fluir::editor {
     /** `count` anchors down the vertical edge at `edgeX`; a lone one sits at the centre. */
     std::vector<Vec2> edgeAnchors(double edgeX, const Rect& rect, int count);
 
+    /** The rect covering a node's selection outline: `frame` outset by the selection pad plus the 2px line. */
+    Rect selectionOutline(const Rect& frame, const EditorContext::Layout& layout);
+
   }  // namespace draw
 
 }  // namespace fluir::editor

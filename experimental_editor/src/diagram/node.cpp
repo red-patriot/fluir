@@ -16,6 +16,7 @@
 #include "editor/diagram/move_grip.hpp"
 #include "editor/diagram/resize_grip.hpp"
 #include "editor/diagram/scope.hpp"
+#include "editor/diagram/selection_outline.hpp"
 #include "editor/diagram/toggle.hpp"
 #include "editor/scene/module_scene.hpp"
 
@@ -85,7 +86,15 @@ namespace fluir::editor::diagram {
     if (axes) {
       resizeGrip_ = new ResizeGrip(*axes, ctx_, *this);
     }
+    outline_ = new SelectionOutline(ctx_, *this);
     place();
+  }
+
+  QVariant FluirNode::itemChange(GraphicsItemChange change, const QVariant& value) {
+    if (change == ItemSelectedHasChanged && outline_ != nullptr) {
+      outline_->setVisible(isSelected());
+    }
+    return QGraphicsItem::itemChange(change, value);
   }
 
   Rect FluirNode::frame() const {
@@ -142,6 +151,7 @@ namespace fluir::editor::diagram {
     setPos(location().x * unit, location().y * unit);
     setZValue(location().z);
     moveGrip_->place(frame());
+    outline_->place(frame());
     if (resizeGrip_ != nullptr) {
       resizeGrip_->place(frame());
     }

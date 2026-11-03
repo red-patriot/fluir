@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QPointF>
 #include <QRectF>
+#include <QVariant>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -23,6 +24,7 @@ namespace fluir::editor::diagram {
 
   class MoveGrip;
   class ResizeGrip;
+  class SelectionOutline;
 
   /** Display element for a node in a Fluir data-flow diagram. */
   class FluirNode : public QGraphicsItem {
@@ -58,6 +60,8 @@ namespace fluir::editor::diagram {
     virtual bool addMenuEntries(QMenu& menu, QPointF local);
     /** Selects this node and pops its menu. */
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
+    /** Shows the outline while selected. */
+    QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
     /** Places this node and adds its grips. Call once from the kind's constructor, after its location is set. */
     void init(std::optional<ResizeAxes> axes);
@@ -85,6 +89,7 @@ namespace fluir::editor::diagram {
 
     MoveGrip* moveGrip_ = nullptr;
     ResizeGrip* resizeGrip_ = nullptr;
+    SelectionOutline* outline_ = nullptr;
   };
 
 }  // namespace fluir::editor::diagram

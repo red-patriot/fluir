@@ -52,6 +52,11 @@ namespace fluir::editor {
 
   namespace draw {
 
+    Rect selectionOutline(const Rect& frame, const EditorContext::Layout& layout) {
+      const double out = layout.selectionPad + 2;
+      return {frame.x - out, frame.y - out, frame.w + 2 * out, frame.h + 2 * out};
+    }
+
     std::vector<Vec2> edgeAnchors(double edgeX, const Rect& rect, int count) {
       std::vector<Vec2> out;
       for (int i = 0; i < count; ++i) {

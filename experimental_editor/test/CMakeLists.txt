@@ -33,6 +33,7 @@ set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
     diagram/resize_grip.test.cpp
     diagram/scope.test.cpp
     diagram/selection.test.cpp
+    diagram/selection_outline.test.cpp
     diagram/toggle.test.cpp
 )
 

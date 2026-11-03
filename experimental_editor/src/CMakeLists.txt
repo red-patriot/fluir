@@ -70,6 +70,7 @@ set(FLUIR_EDITOR_DIAGRAM_SOURCES
     "diagram/resize_grip.cpp"
     "diagram/return.cpp"
     "diagram/scope.cpp"
+    "diagram/selection_outline.cpp"
     "diagram/terminal.cpp"
     "diagram/toggle.cpp"
     "diagram/unary.cpp"

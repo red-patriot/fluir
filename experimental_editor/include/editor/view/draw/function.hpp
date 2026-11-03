@@ -36,6 +36,9 @@ namespace fluir::editor::draw {
   /** How far the function may be resized, in grid units. */
   Limits<Vec2i> sizeLimits(const Signature& fn);
 
+  /** The size a new function starts at, in grid units. */
+  Vec2i defaultSize(const Signature& node);
+
   /** The name, after the tag in the frame's header band. */
   std::vector<FieldLabel> labels(const Signature& fn, const Rect& frame, const EditorContext::Layout& layout);
 

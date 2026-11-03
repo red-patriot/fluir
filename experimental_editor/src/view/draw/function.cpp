@@ -11,6 +11,7 @@ namespace fluir::editor::draw {
 
     // In grid units.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{40, 30};
 
     // The parameter a rail shows; the return rail has none.
     const pt::FunctionParameter* paramOf(const Signature& fn, fluir::ID railId) {
@@ -71,6 +72,8 @@ namespace fluir::editor::draw {
   }
 
   Color color(const Signature&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
+
+  Vec2i defaultSize(const Signature&) { return DEFAULT_SIZE; }
 
   Limits<Vec2i> sizeLimits(const Signature&) { return SIZE_LIMITS; }
 

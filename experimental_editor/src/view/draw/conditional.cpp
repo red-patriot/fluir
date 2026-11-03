@@ -9,6 +9,7 @@ namespace fluir::editor::draw {
 
     // In grid units; deep enough that the conditional keeps room for a node under its header.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{10, 10}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{30, 40};
     // The branch arrow's side, in grid units.
     constexpr double BRANCH_ARROW_UNITS = 3;
     // A wall port's side, in grid units.
@@ -53,6 +54,8 @@ namespace fluir::editor::draw {
   }
 
   Color color(const Ports&, const EditorContext::Theme& theme) { return theme.conditionalNodeHeader; }
+
+  Vec2i defaultSize(const Ports&) { return DEFAULT_SIZE; }
 
   Limits<Vec2i> sizeLimits(const Ports& node) {
     int lowest = node.condition.y;

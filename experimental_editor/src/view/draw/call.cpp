@@ -9,6 +9,8 @@ namespace fluir::editor::draw {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr int DEFAULT_W = 14;
+    constexpr int ROW_H = 5;
 
     // One row per argument below the header row, each input at its row's centre.
     double argRowTop(const Rect& rect, std::size_t row, const EditorContext::Layout& layout) {
@@ -42,6 +44,8 @@ namespace fluir::editor::draw {
   Color color(const pt::Call&, const EditorContext::Theme& theme) { return theme.callNode; }
 
   Limits<Vec2i> sizeLimits(const pt::Call&) { return SIZE_LIMITS; }
+
+  Vec2i defaultSize(const pt::Call& node) { return {DEFAULT_W, ROW_H * (static_cast<int>(node.arguments.size()) + 1)}; }
 
   std::optional<ResizeAxes> resizePart(const pt::Call&) { return ResizeAxes::X; }
 

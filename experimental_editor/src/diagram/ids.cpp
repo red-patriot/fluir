@@ -48,4 +48,14 @@ namespace fluir::editor::diagram {
     return largest + 1;
   }
 
+  fluir::ID nextId(const ModuleScene& scene) {
+    fluir::ID largest = fluir::INVALID_ID;
+    for (const QGraphicsItem* item : scene.items()) {
+      if (const auto* node = dynamic_cast<const FluirNode*>(item); node != nullptr && node->parentItem() == nullptr) {
+        largest = std::max(largest, node->id());
+      }
+    }
+    return largest + 1;
+  }
+
 }  // namespace fluir::editor::diagram

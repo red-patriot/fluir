@@ -16,6 +16,9 @@ namespace fluir::editor::draw {
   /** How far the node may be resized, in grid units. */
   Limits<Vec2i> sizeLimits(const pt::Unary& node);
 
+  /** The size a new unary starts at, in grid units. */
+  Vec2i defaultSize(const pt::Unary& node);
+
   /** The grip that resizes the node, if any. */
   std::optional<ResizeAxes> resizePart(const pt::Unary& node);
 

@@ -20,9 +20,11 @@ set(FLUIR_EDITOR_CORE_SOURCES
     "core/choices.cpp"
     "core/collecting_sink.cpp"
     "core/identifier.cpp"
+    "core/intelligence.cpp"
     "core/literal_text.cpp"
     "core/loader.cpp"
     "core/parse_tree_writer.cpp"
+    "core/scope_path.cpp"
 )
 
 # Q_OBJECT headers are listed so AUTOMOC finds them outside src/.
@@ -36,12 +38,12 @@ set(FLUIR_EDITOR_APP_SOURCES
 )
 
 set(FLUIR_EDITOR_COMMANDS_SOURCES
-    "commands/add_conduit.cpp" "commands/add_parameter.cpp"
-    "commands/add_port.cpp" "commands/add_return.cpp"
-    "commands/conduit_cut.cpp" "commands/delete_parameter.cpp"
-    "commands/delete_port.cpp" "commands/delete_return.cpp"
-    "commands/delete_conduit.cpp" "commands/delete_node.cpp"
-    "commands/removed_element.cpp"
+    "commands/add_conduit.cpp" "commands/add_node.cpp"
+    "commands/add_parameter.cpp" "commands/add_port.cpp"
+    "commands/add_return.cpp" "commands/conduit_cut.cpp"
+    "commands/delete_parameter.cpp" "commands/delete_port.cpp"
+    "commands/delete_return.cpp" "commands/delete_conduit.cpp"
+    "commands/delete_node.cpp" "commands/removed_element.cpp"
 )
 
 set(FLUIR_EDITOR_DIAGRAM_SOURCES

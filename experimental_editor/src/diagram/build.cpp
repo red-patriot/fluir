@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <stdexcept>
 #include <unordered_map>
 #include <utility>
 #include <variant>
@@ -80,7 +81,38 @@ namespace fluir::editor::diagram {
      public:
       explicit Builder(const EditorContext& ctx) : ctx_(ctx) { }
 
-      bool function(const pt::FunctionDecl& fn, ModuleScene& scene) {
+      /** The built declaration, or null if its contents do not wire up. */
+      FluirNode* declaration(const pt::Declaration& decl, ModuleScene& scene) {
+        return std::visit(fluir::util::Overloaded{
+                            [&](const pt::FunctionDecl& fn) -> FluirNode* { return function(fn, scene); },
+                            [&](const pt::Comment& c) -> FluirNode* {
+                              auto* item = new Comment(c, ctx_, nullptr);
+                              scene.addItem(item);
+                              return item;
+                            },
+                          },
+                          decl);
+      }
+
+      /** The built node, or null if it or its contents do not wire up. */
+      FluirNode* node(const pt::Node& node, Endpoints& endpoints, QGraphicsItem& scope) {
+        const auto leaf = [&](FluirNode* item) {
+          return endpoints.claim(item->id(), terminalsOf(*item)) ? item : nullptr;
+        };
+        return std::visit(fluir::util::Overloaded{
+                            [&](const pt::Constant& n) { return leaf(new Constant(n, ctx_, &scope)); },
+                            [&](const pt::Binary& n) { return leaf(new Binary(n, ctx_, &scope)); },
+                            [&](const pt::Unary& n) { return leaf(new Unary(n, ctx_, &scope)); },
+                            [&](const pt::Call& n) { return leaf(new Call(n, ctx_, &scope)); },
+                            [&](const pt::Comment& n) { return leaf(new Comment(n, ctx_, &scope)); },
+                            [&](const pt::Conditional& n) { return conditional(n, endpoints, scope); },
+                          },
+                          node);
+      }
+
+     private:
+      /** The built function, or null if its contents do not wire up. */
+      Function* function(const pt::FunctionDecl& fn, ModuleScene& scene) {
         auto* item = new Function(fn.id, fn.location, {.name = fn.name, .input = fn.input, .output = fn.output}, ctx_);
         scene.addItem(item);
         Endpoints endpoints;
@@ -89,16 +121,15 @@ namespace fluir::editor::diagram {
           const auto* ret = dynamic_cast<Return*>(child);
           if ((param && !endpoints.claim(param->id(), terminalsOf(*param))) ||
               (ret && !endpoints.claim(ret->id(), terminalsOf(*ret)))) {
-            return false;
+            return nullptr;
           }
         }
-        return block(fn.body, std::move(endpoints), *item->body());
+        return block(fn.body, std::move(endpoints), *item->body()) ? item : nullptr;
       }
 
-     private:
       bool block(const pt::Block& block, Endpoints endpoints, QGraphicsItem& scope) {
         for (const pt::Node* node : stackOrder(block.nodes)) {
-          if (!this->node(*node, endpoints, scope)) {
+          if (this->node(*node, endpoints, scope) == nullptr) {
             return false;
           }
         }
@@ -115,20 +146,7 @@ namespace fluir::editor::diagram {
         return true;
       }
 
-      bool node(const pt::Node& node, Endpoints& endpoints, QGraphicsItem& scope) {
-        const auto leaf = [&](FluirNode* item) { return endpoints.claim(item->id(), terminalsOf(*item)); };
-        return std::visit(fluir::util::Overloaded{
-                            [&](const pt::Constant& n) { return leaf(new Constant(n, ctx_, &scope)); },
-                            [&](const pt::Binary& n) { return leaf(new Binary(n, ctx_, &scope)); },
-                            [&](const pt::Unary& n) { return leaf(new Unary(n, ctx_, &scope)); },
-                            [&](const pt::Call& n) { return leaf(new Call(n, ctx_, &scope)); },
-                            [&](const pt::Comment& n) { return leaf(new Comment(n, ctx_, &scope)); },
-                            [&](const pt::Conditional& n) { return conditional(n, endpoints, scope); },
-                          },
-                          node);
-      }
-
-      bool conditional(const pt::Conditional& node, Endpoints& endpoints, QGraphicsItem& scope) {
+      FluirNode* conditional(const pt::Conditional& node, Endpoints& endpoints, QGraphicsItem& scope) {
         auto* item = new Conditional(node.id,
                                      node.location,
                                      {.condition = node.condition, .inputs = node.inputs, .outputs = node.outputs},
@@ -142,12 +160,14 @@ namespace fluir::editor::diagram {
             Terminals terminals;
             collect(terminals, port->inner());
             if (!inner.claim(port->innerId(), std::move(terminals))) {
-              return false;
+              return nullptr;
             }
           }
         }
-        return endpoints.claim(node.id, std::move(outer)) && block(*node.thenScope, inner, *item->thenBranch()) &&
-               block(*node.elseScope, inner, *item->elseBranch());
+        const bool wired = endpoints.claim(node.id, std::move(outer)) &&
+                           block(*node.thenScope, inner, *item->thenBranch()) &&
+                           block(*node.elseScope, inner, *item->elseBranch());
+        return wired ? item : nullptr;
       }
 
       bool conduit(const pt::Conduit& conduit, Endpoints& endpoints, QGraphicsItem& scope) {
@@ -176,20 +196,29 @@ namespace fluir::editor::diagram {
     scene.setHeader(tree.header);
     Builder builder(scene.context());
     for (const pt::Declaration* decl : stackOrder(tree.declarations)) {
-      const bool built = std::visit(fluir::util::Overloaded{
-                                      [&](const pt::FunctionDecl& fn) { return builder.function(fn, scene); },
-                                      [&](const pt::Comment& c) {
-                                        scene.addItem(new Comment(c, scene.context(), nullptr));
-                                        return true;
-                                      },
-                                    },
-                                    *decl);
-      if (!built) {
+      if (builder.declaration(*decl, scene) == nullptr) {
         scene.clear();
         return false;
       }
     }
     return true;
+  }
+
+  FluirNode& buildNode(const pt::Node& node, Scope& scope) {
+    Endpoints endpoints;
+    FluirNode* item = Builder(ModuleScene::of(scope).context()).node(node, endpoints, scope);
+    if (item == nullptr) {
+      throw std::logic_error("node contents do not wire up");
+    }
+    return *item;
+  }
+
+  FluirNode& buildDeclaration(const pt::Declaration& decl, ModuleScene& scene) {
+    FluirNode* item = Builder(scene.context()).declaration(decl, scene);
+    if (item == nullptr) {
+      throw std::logic_error("declaration contents do not wire up");
+    }
+    return *item;
   }
 
 }  // namespace fluir::editor::diagram

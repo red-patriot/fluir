@@ -53,6 +53,9 @@ namespace fluir::editor::draw {
   /** How far the node may be resized in grid units. */
   Limits<Vec2i> sizeLimits(const Ports& node);
 
+  /** The size a new conditional starts at, in grid units. */
+  Vec2i defaultSize(const Ports& node);
+
   /** The grip that resizes the node, if any. */
   std::optional<ResizeAxes> resizePart(const Ports& node);
 

@@ -9,6 +9,7 @@ namespace fluir::editor {
     constexpr std::string_view COMMENT_TAG = "//";
     // In grid units; tall enough that the corner grip never overlaps the move grip.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{10, 10};
 
   }  // namespace
 
@@ -27,6 +28,8 @@ namespace fluir::editor {
     TerminalSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
 
     Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
+
+    Vec2i defaultSize(const pt::Comment&) { return DEFAULT_SIZE; }
 
     Limits<Vec2i> sizeLimits(const pt::Comment&) { return SIZE_LIMITS; }
 

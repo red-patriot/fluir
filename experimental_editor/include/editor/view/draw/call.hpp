@@ -17,6 +17,9 @@ namespace fluir::editor::draw {
   /** How far the node may be resized, in grid units. */
   Limits<Vec2i> sizeLimits(const pt::Call& node);
 
+  /** The size a new call starts at, in grid units: a row for its target and one per argument. */
+  Vec2i defaultSize(const pt::Call& node);
+
   /** The grip that resizes the node, if any. */
   std::optional<ResizeAxes> resizePart(const pt::Call& node);
 

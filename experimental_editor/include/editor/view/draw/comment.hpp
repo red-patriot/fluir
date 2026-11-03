@@ -25,6 +25,9 @@ namespace fluir::editor {
     /** How far the comment may be resized, in grid units. */
     Limits<Vec2i> sizeLimits(const pt::Comment& node);
 
+    /** The size a new comment starts at, in grid units. */
+    Vec2i defaultSize(const pt::Comment& node);
+
     /** The grip that resizes the comment, if any. */
     std::optional<ResizeAxes> resizePart(const pt::Comment& node);
 

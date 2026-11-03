@@ -10,8 +10,9 @@ set(FLUIR_EDITOR_APP_TEST_SOURCES
 )
 
 set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES
-    commands/delete_commands.test.cpp commands/port_commands.test.cpp
-    commands/signature_commands.test.cpp commands/removed_element.test.cpp
+    commands/add_node.test.cpp commands/delete_commands.test.cpp
+    commands/port_commands.test.cpp commands/signature_commands.test.cpp
+    commands/removed_element.test.cpp
 )
 
 set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
@@ -39,9 +40,11 @@ set(FLUIR_EDITOR_CORE_TEST_SOURCES
     core/choices.test.cpp
     core/geometry.test.cpp
     core/identifier.test.cpp
+    core/intelligence.test.cpp
     core/literal_text.test.cpp
     core/loader.test.cpp
     core/parse_tree_writer.test.cpp
+    core/scope_path.test.cpp
 )
 
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES

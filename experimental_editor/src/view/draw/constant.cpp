@@ -11,6 +11,8 @@ namespace fluir::editor::draw {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{12, 5};
+    constexpr Vec2i BOOL_DEFAULT_SIZE{8, 5};
 
     // Gap between the bool square and the node's edges, in world px.
     constexpr double TOGGLE_PAD = 4.0;
@@ -45,6 +47,10 @@ namespace fluir::editor::draw {
   }
 
   Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }
+
+  Vec2i defaultSize(const pt::Constant& c) {
+    return std::holds_alternative<BOOL>(c.value) ? BOOL_DEFAULT_SIZE : DEFAULT_SIZE;
+  }
 
   // A bool draws a fixed-size toggle square, so there is nothing to widen.
   std::optional<ResizeAxes> resizePart(const pt::Constant& c) {

@@ -1,5 +1,7 @@
 #include "editor/diagram/ids.hpp"
 
+#include <algorithm>
+
 #include <gtest/gtest.h>
 
 #include "editor/diagram/conditional.hpp"
@@ -39,4 +41,14 @@ TEST(NextId, ABranchExceedsIdsInItsSiblingBranch) {
   auto& conditional = h.find<diagram::Conditional>(2);
 
   EXPECT_EQ(nextId(*conditional.elseBranch()), 17);
+}
+
+TEST(NextId, TheTopLevelExceedsEveryDeclaration) {
+  Interaction h{"read/multiple_empty_functions.fl"};
+  fluir::ID largest = fluir::INVALID_ID;
+  for (const auto& [id, decl] : h.tree().declarations) {
+    largest = std::max(largest, id);
+  }
+
+  EXPECT_EQ(nextId(h.scene()), largest + 1);
 }

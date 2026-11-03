@@ -7,6 +7,7 @@ namespace fluir::editor::draw {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{7, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{8, 5};
 
   }  // namespace
 
@@ -15,6 +16,8 @@ namespace fluir::editor::draw {
   }
 
   Color color(const pt::Binary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
+
+  Vec2i defaultSize(const pt::Binary&) { return DEFAULT_SIZE; }
 
   Limits<Vec2i> sizeLimits(const pt::Binary&) { return SIZE_LIMITS; }
 

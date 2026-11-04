@@ -1,5 +1,7 @@
 #include "editor/diagram/constant.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <QPainter>
 #include <string>
 #include <utility>
@@ -30,7 +32,9 @@ namespace fluir::editor::diagram {
   void Constant::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
     style::shell(*painter, boundingRect(), draw::color(data_, ctx_.theme), ctx_);
     if (!std::holds_alternative<fluir::literals_types::BOOL>(data_.value)) {
-      style::tag(*painter, boundingRect(), literalTypeName(data_.value), ctx_);
+      std::string name{literalTypeName(data_.value)};
+      std::ranges::transform(name, name.begin(), [](auto c) { return std::toupper(c); });
+      style::tag(*painter, boundingRect(), name, ctx_);
     }
   }
 

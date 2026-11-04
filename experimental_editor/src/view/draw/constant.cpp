@@ -1,6 +1,8 @@
 #include "editor/view/draw/constant.hpp"
 
 #include <algorithm>
+#include <cctype>
+#include <string>
 #include <variant>
 
 #include "editor/core/literal_text.hpp"
@@ -43,7 +45,9 @@ namespace fluir::editor::draw {
     if (std::holds_alternative<BOOL>(n.value)) {
       return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
     }
-    return {{{Field::Kind::Literal}, splitLabel(world, literalTypeName(n.value), layout).text}};
+    std::string name{literalTypeName(n.value)};
+    std::ranges::transform(name, name.begin(), [](auto c) { return std::toupper(c); });
+    return {{{Field::Kind::Literal}, splitLabel(world, name, layout).text}};
   }
 
   Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }

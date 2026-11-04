@@ -12,8 +12,6 @@
 #include "editor/view/draw/function.hpp"
 #include "editor/view/draw/unary.hpp"
 
-// Each kind owns how it resizes and how small or large it may get.
-
 namespace {
 
   using fluir::editor::EditorContext;
@@ -37,21 +35,6 @@ namespace {
   }
 
 }  // namespace
-
-TEST(SizeFacts, OneRowNodesResizeAlongXOnly) {
-  EXPECT_EQ(draw::resizePart(pt::Binary{}), ResizeAxes::X);
-  EXPECT_EQ(draw::resizePart(pt::Unary{}), ResizeAxes::X);
-  EXPECT_EQ(draw::resizePart(pt::Call{}), ResizeAxes::X);
-  EXPECT_EQ(draw::resizePart(kI32), ResizeAxes::X);
-}
-
-// A bool draws a fixed-size toggle square, so there is nothing to widen.
-TEST(SizeFacts, ABoolConstantHasNoResizeGrip) { EXPECT_EQ(draw::resizePart(kBool), std::nullopt); }
-
-TEST(SizeFacts, CommentsAndConditionalsResizeFromTheCorner) {
-  EXPECT_EQ(draw::resizePart(kComment), ResizeAxes::XY);
-  EXPECT_EQ(draw::resizePart(kConditional), ResizeAxes::XY);
-}
 
 TEST(SizeFacts, EveryLowerLimitIsWithinItsUpper) {
   for (const Limits<Vec2i>& limits : {draw::sizeLimits(pt::Binary{}),

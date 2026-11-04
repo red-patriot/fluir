@@ -100,14 +100,14 @@ TEST_P(ResizeGripOnEachFixture, ANodeHasAGripExactlyWhenItsKindResizes) {
 
 TEST(ResizeGrip, AnXGripGrowsWidthOnlyLive) {
   Interaction h("read/simple_binary_expr.fl");
-  auto& binary = h.find<diagram::Binary>(1);
-  const FlowGraphLocation start = binary.location();
-  const QPoint from = grabResize(h, binary);
+  auto& constant = h.find<diagram::Constant>(2);
+  const FlowGraphLocation start = constant.location();
+  const QPoint from = grabResize(h, constant);
 
   h.press(from);
   h.moveTo(h.by(from, 3, 4));
 
-  EXPECT_EQ(binary.location(), sizedBy(start, 3, 0)) << "a resize never moves";
+  EXPECT_EQ(constant.location(), sizedBy(start, 3, 0)) << "a resize never moves";
   EXPECT_EQ(h.stack().count(), 0) << "nothing is pushed until release";
   h.release(h.by(from, 3, 4));
 }
@@ -125,15 +125,15 @@ TEST(ResizeGrip, AnXYGripResizesBothAxes) {
 
 TEST(ResizeGrip, ANodeClampsToItsKindsLimits) {
   Interaction h("read/simple_binary_expr.fl");
-  auto& binary = h.find<diagram::Binary>(1);
-  const auto limits = draw::sizeLimits(binary.data());
-  const QPoint from = grabResize(h, binary);
+  auto& constant = h.find<diagram::Constant>(2);
+  const auto limits = draw::sizeLimits(constant.data());
+  const QPoint from = grabResize(h, constant);
   h.press(from);
 
   h.moveTo(h.by(from, -100, 0));
-  EXPECT_EQ(binary.location().width, limits.lower.x);
+  EXPECT_EQ(constant.location().width, limits.lower.x);
   h.moveTo(h.by(from, limits.upper.x + 100, 0));
-  EXPECT_EQ(binary.location().width, limits.upper.x);
+  EXPECT_EQ(constant.location().width, limits.upper.x);
   h.release(h.by(from, limits.upper.x + 100, 0));
 }
 

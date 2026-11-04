@@ -130,26 +130,26 @@ TEST(Selection, APressInAConduitsBoundsButOffItsLinesMissesIt) {
 
 TEST(Selection, GripsShowWhetherOrNotTheirNodeIsSelected) {
   Interaction h("read/simple_binary_expr.fl");
-  auto& binary = h.find<diagram::Binary>(1);
-  const auto& move = Interaction::part<diagram::MoveGrip>(binary);
-  const auto& resize = Interaction::part<diagram::ResizeGrip>(binary);
+  auto& constant = h.find<diagram::Constant>(2);
+  const auto& move = Interaction::part<diagram::MoveGrip>(constant);
+  const auto& resize = Interaction::part<diagram::ResizeGrip>(constant);
   EXPECT_TRUE(move.isVisible());
   EXPECT_TRUE(resize.isVisible());
 
-  h.select(binary);
+  h.select(constant);
   EXPECT_TRUE(move.isVisible());
   EXPECT_TRUE(resize.isVisible());
 }
 
 TEST(Selection, APressOnAGripSelectsItsNode) {
   Interaction h("read/simple_binary_expr.fl");
-  auto& binary = h.find<diagram::Binary>(1);
-  h.click(h.body(h.find<diagram::Constant>(2)));
+  auto& constant = h.find<diagram::Constant>(2);
+  h.click(h.body(h.find<diagram::Constant>(3)));
 
-  h.click(h.aim(Interaction::part<diagram::MoveGrip>(binary)));
-  EXPECT_EQ(h.scene().selectedItems(), only(binary));
+  h.click(h.aim(Interaction::part<diagram::MoveGrip>(constant)));
+  EXPECT_EQ(h.scene().selectedItems(), only(constant));
 
-  h.click(h.body(h.find<diagram::Constant>(2)));
-  h.click(h.aim(Interaction::part<diagram::ResizeGrip>(binary)));
-  EXPECT_EQ(h.scene().selectedItems(), only(binary));
+  h.click(h.body(h.find<diagram::Constant>(3)));
+  h.click(h.aim(Interaction::part<diagram::ResizeGrip>(constant)));
+  EXPECT_EQ(h.scene().selectedItems(), only(constant));
 }

@@ -6,7 +6,7 @@ namespace fluir::editor::draw {
   namespace {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{7, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{8, 5}, .upper = Vec2i{8, 5}};
     constexpr Vec2i DEFAULT_SIZE{8, 5};
 
   }  // namespace
@@ -21,7 +21,7 @@ namespace fluir::editor::draw {
 
   Limits<Vec2i> sizeLimits(const pt::Binary&) { return SIZE_LIMITS; }
 
-  std::optional<ResizeAxes> resizePart(const pt::Binary&) { return ResizeAxes::X; }
+  std::optional<ResizeAxes> resizePart(const pt::Binary&) { return std::nullopt; }
 
   std::vector<FieldLabel> labels(const pt::Binary&, const Rect& world, const EditorContext::Layout&) {
     return {{{Field::Kind::Operator}, world}};

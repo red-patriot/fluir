@@ -11,9 +11,6 @@
 
 namespace fluir::editor {
 
-  /** Estimated world px per monospace glyph. */
-  inline constexpr double GLYPH_PX = 8.0;
-
   /** Which way a node's resize grip stretches it. */
   enum class ResizeAxes { X, XY };
 
@@ -33,8 +30,7 @@ namespace fluir::editor {
     FieldLook look = FieldLook::Text;
   };
 
-  /** A label's small tag and main text regions in world space; glyph cells are world px, so the split does not depend
-   *  on the view. */
+  /** A label's small tag and main text regions in world space. */
   struct SplitLabel {
     Rect tag;
     Rect text;

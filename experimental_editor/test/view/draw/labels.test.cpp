@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <QFontDatabase>
+#include <QFontMetricsF>
 #include <string>
 #include <vector>
 
@@ -6,6 +8,7 @@
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "editor/core/field.hpp"
+#include "editor/scene/item_style.hpp"
 #include "editor/view/draw/binary.hpp"
 #include "editor/view/draw/call.hpp"
 #include "editor/view/draw/comment.hpp"
@@ -169,4 +172,16 @@ TEST(Labels, ATypeIsATagAndEveryOtherFieldIsText) {
   EXPECT_EQ(labelFor(ret, {Kind::ReturnType}).look, FieldLook::Tag);
   EXPECT_EQ(labelFor(header, {Kind::Name}).look, FieldLook::Text);
   EXPECT_EQ(labelFor(binary, {Kind::Operator}).look, FieldLook::Text);
+}
+
+TEST(Labels, ATypeTagIsWideEnoughForItsWholeText) {
+  QFontDatabase::addApplicationFont(":/fonts/DejaVuSansMono.ttf");
+  const fluir::editor::draw::Signature fn = makeFunction();
+  const auto parameter = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
+  const auto ret = fluir::editor::draw::labels(fn, 25, kRect, kCtx.layout);
+  const double needed =
+    QFontMetricsF(fluir::editor::style::tagFont()).horizontalAdvance("I32") + 2 * kCtx.layout.textPad;
+
+  EXPECT_GE(labelFor(parameter, {Kind::ParamType, 1}).rect.w, needed);
+  EXPECT_GE(labelFor(ret, {Kind::ReturnType}).rect.w, needed);
 }

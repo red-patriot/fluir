@@ -1,12 +1,14 @@
 #include "editor/view/draw/draw_utils.hpp"
 
 #include <algorithm>
+#include <QFontMetricsF>
+#include <QString>
+
+#include "editor/scene/item_style.hpp"
 
 namespace fluir::editor {
   namespace {
 
-    // Split-label tags draw smaller than their text.
-    constexpr double kTagScale = 0.8;
     // Grip sizes, in grid units.
     constexpr double DRAG_SIZE = 3;
     constexpr double DRAG_INSET = 1;
@@ -46,7 +48,8 @@ namespace fluir::editor {
   }
 
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout) {
-    const double tagW = layout.textPad + static_cast<double>(tag.size()) * GLYPH_PX * kTagScale;
+    const QString text = QString::fromUtf8(tag.data(), static_cast<qsizetype>(tag.size()));
+    const double tagW = 2 * layout.textPad + QFontMetricsF(style::tagFont()).horizontalAdvance(text);
     return {Rect{box.x, box.y, tagW, box.h}, Rect{box.x + tagW, box.y, std::max(0.0, box.w - tagW), box.h}};
   }
 

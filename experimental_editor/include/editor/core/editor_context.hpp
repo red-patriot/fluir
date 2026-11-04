@@ -21,14 +21,14 @@ namespace fluir::editor {
       double textPad = 4.0;
       double terminalDot = 6.0;
       double headerUnits = 5.0;
-      double railUnits = 5.0;
+      double rowUnits = 5.0;
       double paramUnits = 15.0;
       double returnInsetUnits = 5.0;
       // Gap between a selected actor's rect and its outline, in world px.
       double selectionPad = 2.0;
 
       constexpr double headerH() const { return headerUnits * unitPx; }
-      constexpr double railStep() const { return railUnits * unitPx; }
+      constexpr double rowH() const { return rowUnits * unitPx; }
       constexpr double paramW() const { return paramUnits * unitPx; }
     };
 

@@ -24,12 +24,11 @@ namespace fluir::editor::draw {
   /** The small tag in a function's header label. */
   inline constexpr std::string_view FN_TAG = "fn";
 
-  /** A rail's terminal: the return's input at left-mid, a parameter's output at right-mid. */
-  TerminalSet anchors(const Signature& fn, fluir::ID railId, const Rect& rail);
+  /** A parameter's or the return's terminal. */
+  TerminalSet anchors(const Signature& fn, fluir::ID id, const Rect& rect);
 
-  /** Rail `railId`'s rect: parameters stack down the body's left edge, the return sits at its top right. Empty for
-   *  an id that is no rail of `fn`. */
-  Rect railRect(const Signature& fn, fluir::ID railId, const Rect& frame, const EditorContext::Layout& layout);
+  /** The rect of the parameter or return `id`. */
+  Rect paramOrReturnRect(const Signature& fn, fluir::ID id, const Rect& frame, const EditorContext::Layout& layout);
 
   Color color(const Signature& fn, const EditorContext::Theme& theme);
 
@@ -42,10 +41,10 @@ namespace fluir::editor::draw {
   /** The name, after the tag in the frame's header band. */
   std::vector<FieldLabel> labels(const Signature& fn, const Rect& frame, const EditorContext::Layout& layout);
 
-  /** A rail's type tag, then a parameter's name after it; the return rail has no name. */
+  /** The label of a function parameter or return */
   std::vector<FieldLabel> labels(const Signature& fn,
-                                 fluir::ID railId,
-                                 const Rect& rail,
+                                 fluir::ID id,
+                                 const Rect& rect,
                                  const EditorContext::Layout& layout);
 
 }  // namespace fluir::editor::draw

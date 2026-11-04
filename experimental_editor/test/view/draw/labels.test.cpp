@@ -149,7 +149,7 @@ TEST(Labels, ParameterLabelsItsTypeAndNameByItsPosition) {
   EXPECT_LE(type.x + type.w, name.x) << "the type tag sits before the name";
 }
 
-TEST(Labels, ReturnRailLabelsItsType) {
+TEST(Labels, ReturnLabelsItsType) {
   const auto labels = fluir::editor::draw::labels(makeFunction(), 25, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::ReturnType}});

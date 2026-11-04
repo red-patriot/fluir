@@ -225,16 +225,16 @@ TEST(ResizeGrip, EscapeCancelsALiveDrag) {
   EXPECT_EQ(h.stack().count(), 0);
 }
 
-TEST(ResizeGrip, AReturnRailKeepsToTheFunctionsTopRight) {
+TEST(ResizeGrip, AReturnKeepsToTheFunctionsTopRight) {
   Interaction h("read/function_with_output_only.fl");
   auto& function = h.find<diagram::Function>(1);
-  const auto& rail = h.find<diagram::Return>(4);
-  const QPointF offset = rail.sceneBoundingRect().topRight() - function.sceneBoundingRect().topRight();
+  const auto& ret = h.find<diagram::Return>(4);
+  const QPointF offset = ret.sceneBoundingRect().topRight() - function.sceneBoundingRect().topRight();
   const QPoint from = grabResize(h, function);
 
   h.drag(from, h.by(from, 4, 2));
 
-  EXPECT_EQ(rail.sceneBoundingRect().topRight() - function.sceneBoundingRect().topRight(), offset);
+  EXPECT_EQ(ret.sceneBoundingRect().topRight() - function.sceneBoundingRect().topRight(), offset);
 }
 
 TEST(ResizeGrip, OutputPortsAndTheirConduitsFollowTheRightWall) {

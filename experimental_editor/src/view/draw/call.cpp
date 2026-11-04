@@ -14,7 +14,7 @@ namespace fluir::editor::draw {
 
     // One row per argument below the header row, each input at its row's centre.
     double argRowTop(const Rect& rect, std::size_t row, const EditorContext::Layout& layout) {
-      return rect.y + (static_cast<double>(row) + 1.0) * layout.railStep();
+      return rect.y + (static_cast<double>(row) + 1.0) * layout.rowH();
     }
 
     // `call`'s arguments, ascending by index.
@@ -33,7 +33,7 @@ namespace fluir::editor::draw {
     TerminalSet out;
     const std::size_t count = call.arguments.size();
     for (std::size_t row = 0; row < count; ++row) {
-      out.inputs.push_back(Vec2{r.x, argRowTop(r, row, layout) + layout.railStep() * 0.5});
+      out.inputs.push_back(Vec2{r.x, argRowTop(r, row, layout) + layout.rowH() * 0.5});
     }
     if (call._return) {
       out.outputs = edgeAnchors(r.x + r.w, r, 1);
@@ -50,10 +50,10 @@ namespace fluir::editor::draw {
   std::optional<ResizeAxes> resizePart(const pt::Call&) { return ResizeAxes::X; }
 
   std::vector<FieldLabel> labels(const pt::Call& call, const Rect& r, const EditorContext::Layout& layout) {
-    std::vector<FieldLabel> out{{{Field::Kind::Target}, {r.x, r.y, r.w, std::min(r.h, layout.railStep())}}};
+    std::vector<FieldLabel> out{{{Field::Kind::Target}, {r.x, r.y, r.w, std::min(r.h, layout.rowH())}}};
     const std::vector<const pt::Call::Argument*> args = sortedArguments(call);
     for (std::size_t row = 0; row < args.size(); ++row) {
-      out.push_back({{Field::Kind::Arg, args[row]->index}, {r.x, argRowTop(r, row, layout), r.w, layout.railStep()}});
+      out.push_back({{Field::Kind::Arg, args[row]->index}, {r.x, argRowTop(r, row, layout), r.w, layout.rowH()}});
     }
     return out;
   }

@@ -27,8 +27,8 @@ namespace fluir::editor::diagram {
     // Parameters and the return paint under the body's nodes.
     constexpr double SIGNATURE_Z = -1;
 
-    Rect localRect(const QGraphicsItem& rail) {
-      return {0, 0, rail.boundingRect().width(), rail.boundingRect().height()};
+    Rect localRect(const QGraphicsItem& item) {
+      return {0, 0, item.boundingRect().width(), item.boundingRect().height()};
     }
 
     // Takes `part` out of its function and the scene, for its taker to own.
@@ -172,10 +172,10 @@ namespace fluir::editor::diagram {
   void Function::arrange() {
     body_->setRect(contentRect(frame(), ctx_.layout.headerH()));
     for (Parameter* parameter : parameters_) {
-      parameter->place(draw::railRect(signature_, parameter->id(), frame(), ctx_.layout));
+      parameter->place(draw::paramOrReturnRect(signature_, parameter->id(), frame(), ctx_.layout));
     }
     if (return_ != nullptr) {
-      return_->place(draw::railRect(signature_, return_->id(), frame(), ctx_.layout));
+      return_->place(draw::paramOrReturnRect(signature_, return_->id(), frame(), ctx_.layout));
     }
     placeFields(draw::labels(signature_, frame(), ctx_.layout));
   }

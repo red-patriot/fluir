@@ -20,7 +20,7 @@ namespace fluir::editor::diagram {
                        const EditorContext& ctx,
                        QGraphicsItem* function) :
     QGraphicsItem(function), ctx_(ctx), color_(draw::color(signature, ctx.theme)), id_(id) {
-    const Rect placed = draw::railRect(signature, id, frame, ctx.layout);
+    const Rect placed = draw::paramOrReturnRect(signature, id, frame, ctx.layout);
     place(placed);
     rect_ = QRectF(0, 0, placed.w, placed.h);
     setAcceptedMouseButtons(Qt::NoButton);

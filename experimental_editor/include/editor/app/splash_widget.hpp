@@ -22,6 +22,9 @@ namespace fluir::editor {
     void newRequested();
     void openRequested();
 
+   protected:
+    void resizeEvent(QResizeEvent* event) override;
+
    private:
     std::unique_ptr<Ui::splash> ui_;
   };

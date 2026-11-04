@@ -4,7 +4,12 @@ find_package(
     REQUIRED
 )
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Svg)
+find_package(
+    Qt6 REQUIRED
+    COMPONENTS Widgets
+               Svg
+               SvgWidgets
+)
 
 include(strict-warnings)
 
@@ -123,6 +128,7 @@ qt_add_resources(
     "assets/fonts/DejaVuSansMono.ttf"
     "assets/images/branchArrow.svg"
     "assets/images/dragHandle.svg"
+    "assets/images/fluir-logo.svg"
     "assets/images/false.svg"
     "assets/images/true.svg"
     "assets/images/XYResizeHandle.svg"
@@ -134,6 +140,7 @@ target_link_libraries(
     PUBLIC fmt::fmt
            Qt6::Widgets
            Qt6::Svg
+           Qt6::SvgWidgets
            fluir::compiler
            fluir::utility
 )

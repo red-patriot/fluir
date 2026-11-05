@@ -13,6 +13,8 @@ namespace fluir::editor {
 
   /** A module's data-flow diagram. Its items push their edits onto `undoStack` and ask `intelligence` what to offer. */
   class ModuleScene : public QGraphicsScene {
+    Q_OBJECT
+
    public:
     ModuleScene(const EditorContext& ctx,
                 QUndoStack& undoStack,

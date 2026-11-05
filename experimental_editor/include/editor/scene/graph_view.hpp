@@ -11,6 +11,8 @@ namespace fluir::editor {
 
   /** The canvas an open module's scene is shown in: wheel zooms about the cursor, middle drag pans, F fits. */
   class GraphView : public QGraphicsView {
+    Q_OBJECT
+
    public:
     explicit GraphView(const EditorContext& ctx, QWidget* parent = nullptr);
 

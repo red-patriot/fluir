@@ -91,6 +91,8 @@ set(FLUIR_EDITOR_SCENE_SOURCES
     "scene/graph_view.cpp"
     "scene/item_style.cpp"
     "scene/module_scene.cpp"
+    "../include/editor/scene/graph_view.hpp"
+    "../include/editor/scene/module_scene.hpp"
 )
 
 set(FLUIR_EDITOR_VIEW_SOURCES

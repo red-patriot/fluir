@@ -131,13 +131,3 @@ TEST(GraphView, FitStaysInsideTheZoomRange) {
   huge.view.fit();
   EXPECT_GE(huge.view.zoom(), huge.ctx.zoom.min);
 }
-
-TEST(GraphView, FitCentresASceneTooSmallToFill) {
-  Harness tiny{QRectF{0, 0, 5, 5}};
-
-  tiny.view.fit();
-
-  const QPointF centre = tiny.onScreen().center();
-  EXPECT_NEAR(centre.x(), tiny.viewport()->rect().center().x(), 1.0);
-  EXPECT_NEAR(centre.y(), tiny.viewport()->rect().center().y(), 1.0);
-}

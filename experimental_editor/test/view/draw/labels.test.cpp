@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <QFontDatabase>
 #include <QFontMetricsF>
 #include <string>
 #include <vector>
@@ -175,7 +174,6 @@ TEST(Labels, ATypeIsATagAndEveryOtherFieldIsText) {
 }
 
 TEST(Labels, ATypeTagIsWideEnoughForItsWholeText) {
-  QFontDatabase::addApplicationFont(":/fonts/DejaVuSansMono.ttf");
   const fluir::editor::draw::Signature fn = makeFunction();
   const auto parameter = fluir::editor::draw::labels(fn, 20, kRect, kCtx.layout);
   const auto ret = fluir::editor::draw::labels(fn, 25, kRect, kCtx.layout);

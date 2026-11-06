@@ -1,24 +1,19 @@
 #include "editor/view/draw/draw_utils.hpp"
 
-#include <array>
-
 #include <gtest/gtest.h>
-
-#include "editor/core/viewport.hpp"
-#include "recording_renderer.hpp"
 
 namespace {
 
   using fluir::editor::fitInto;
   using fluir::editor::Rect;
-  using fluir::editor::Subview;
   using fluir::editor::Vec2;
-  using fluir::editor::Viewport;
-  using testutil::expectRectNear;
-  using testutil::RecordingRenderer;
 
-  // Any bytes will do: an icon is identified downstream by its span's address.
-  constexpr std::array<unsigned char, 4> kSvgBytes{'a', 'b', 'c', 'd'};
+  void expectRectNear(const Rect& got, const Rect& want, double tol = 1e-6) {
+    EXPECT_NEAR(got.x, want.x, tol);
+    EXPECT_NEAR(got.y, want.y, tol);
+    EXPECT_NEAR(got.w, want.w, tol);
+    EXPECT_NEAR(got.h, want.h, tol);
+  }
 
   TEST(Grips, MoveGripSitsInsideTheTopRightCorner) {
     const Rect frame{10, 20, 100, 50};
@@ -55,26 +50,6 @@ namespace {
       expectRectNear(fitInto(Rect{10, 20, 100, 60}, intrinsic), Rect{60, 50, 0, 0});
     }
     expectRectNear(fitInto(Rect{10, 20, 0, 60}, Vec2{16, 16}), Rect{10, 50, 0, 0});
-  }
-
-  TEST(DrawImage, MapsThroughTheViewThenFitsInScreenSpace) {
-    RecordingRenderer r;
-    const Viewport vp{.pan = {5, 7}, .scale = 2.0};
-    const Subview view{vp, Rect{0, 0, 800, 600}, r};
-
-    // World {10,20,40,20} -> screen {25,47,80,40}; the 16x16 fake icon fits to 40x40 centred.
-    fluir::editor::draw::drawImage(kSvgBytes, Rect{10, 20, 40, 20}, view, {});
-
-    EXPECT_TRUE(testutil::hasIcon(r.calls, kSvgBytes, Rect{45, 47, 40, 40}));
-  }
-
-  TEST(DrawImage, ScalesWithTheView) {
-    RecordingRenderer r;
-    const Subview view{Viewport{.pan = {}, .scale = 0.5}, Rect{0, 0, 800, 600}, r};
-
-    fluir::editor::draw::drawImage(kSvgBytes, Rect{0, 0, 40, 40}, view, {});
-
-    EXPECT_TRUE(testutil::hasIcon(r.calls, kSvgBytes, Rect{0, 0, 20, 20}));
   }
 
 }  // namespace

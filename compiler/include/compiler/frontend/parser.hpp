@@ -41,7 +41,7 @@ namespace fluir {
     WithID<pt::Declaration> functionDecl(Element* element);
 
     pt::FunctionDecl::InputBlock funcInputs(Element* element);
-    pt::FunctionDecl::Parameter funcParameter(Element* element, int index);
+    pt::FunctionDecl::Parameter funcParameter(Element* element);
     pt::FunctionDecl::OutputBlock funcOutputs(Element* element);
     pt::FunctionDecl::Return funcReturn(Element* element);
 

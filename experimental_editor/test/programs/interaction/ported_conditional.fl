@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="200" h="150">
+    <body>
+      <constant id="1" x="2" y="10" z="0" w="8" h="5">
+        <bool>true</bool>
+      </constant>
+      <constant id="3" x="2" y="25" z="0" w="8" h="5">
+        <f64>1.0</f64>
+      </constant>
+      <conditional id="2" x="20" y="3" z="0" w="100" h="100">
+        <condition inner="1" y="10"/>
+        <input>
+          <port inner="2" y="20"/>
+          <port inner="3" y="30"/>
+        </input>
+        <output>
+          <port inner="4" y="20"/>
+        </output>
+        <then>
+          <unary id="5" x="30" y="15" z="0" w="7" h="5" operator="-"/>
+          <conduit id="6" input="3">
+            <output target="5" index="0"/>
+          </conduit>
+          <conduit id="7" input="5">
+            <output target="4" index="0"/>
+          </conduit>
+        </then>
+        <else>
+          <conduit id="8" input="2">
+            <output target="4" index="0"/>
+          </conduit>
+        </else>
+      </conditional>
+      <unary id="4" x="130" y="20" z="0" w="7" h="5" operator="-"/>
+      <conduit id="5" input="1">
+        <output target="2" index="0"/>
+      </conduit>
+      <conduit id="6" input="3">
+        <output target="2" index="2"/>
+      </conduit>
+      <conduit id="7" input="2">
+        <output target="4" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

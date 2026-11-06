@@ -1,53 +1,57 @@
 find_package(GTest REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Test)
 
 add_executable(fluir.editor.test)
 
-set(FLUIR_EDITOR_COMPONENTS_TEST_SOURCES components/menu.test.cpp
-                                         components/text_field.test.cpp
+set(FLUIR_EDITOR_APP_TEST_SOURCES
+    app/main_window.test.cpp
+    app/module_page.test.cpp
+    app/splash_widget.test.cpp
+    app/style.test.cpp
+)
+
+set(FLUIR_EDITOR_COMMANDS_TEST_SOURCES
+    commands/add_node.test.cpp commands/delete_commands.test.cpp
+    commands/port_commands.test.cpp commands/signature_commands.test.cpp
+    commands/removed_element.test.cpp
+)
+
+set(FLUIR_EDITOR_DIAGRAM_TEST_SOURCES
+    diagram/branch_arrow.test.cpp
+    diagram/build.test.cpp
+    diagram/field_view.test.cpp
+    diagram/completion.test.cpp
+    diagram/conduit_drag.test.cpp
+    diagram/context_menu.test.cpp
+    diagram/delete.test.cpp
+    diagram/edits.test.cpp
+    diagram/export.test.cpp
+    diagram/field_text.test.cpp
+    diagram/fields.test.cpp
+    diagram/ids.test.cpp
+    diagram/move_grip.test.cpp
+    diagram/port_drag.test.cpp
+    diagram/resize_grip.test.cpp
+    diagram/scope.test.cpp
+    diagram/selection.test.cpp
+    diagram/selection_outline.test.cpp
+    diagram/toggle.test.cpp
+)
+
+set(FLUIR_EDITOR_SCENE_TEST_SOURCES scene/completion_popup.test.cpp
+                                    scene/graph_view.test.cpp
 )
 
 set(FLUIR_EDITOR_CORE_TEST_SOURCES
-    core/annotate.test.cpp
-    core/fields.test.cpp
+    core/choices.test.cpp
     core/geometry.test.cpp
     core/identifier.test.cpp
     core/intelligence.test.cpp
     core/literal_text.test.cpp
-    core/node_access.test.cpp
     core/loader.test.cpp
-    core/module_editor.test.cpp
     core/parse_tree_writer.test.cpp
-    core/tree_edit.test.cpp
-    core/tree_path.test.cpp
-    core/viewport.test.cpp
+    core/scope_path.test.cpp
 )
-
-set(FLUIR_EDITOR_PAGES_TEST_SOURCES pages/module.test.cpp pages/splash.test.cpp)
-
-set(FLUIR_EDITOR_TOOLS_TEST_SOURCES
-    tools/bool_toggle_tool.test.cpp
-    tools/branch_toggle_tool.test.cpp
-    tools/choice_tool.test.cpp
-    tools/completion_modal.test.cpp
-    tools/completion_tool.test.cpp
-    tools/conduit_tool.test.cpp
-    tools/conditional_header_menu.test.cpp
-    tools/context_menu_tool.test.cpp
-    tools/drag_tool.test.cpp
-    tools/function_header_menu.test.cpp
-    tools/grid_steps.test.cpp
-    tools/menu_popup.test.cpp
-    tools/pan_zoom_tool.test.cpp
-    tools/popup_tool.test.cpp
-    tools/port_drag_tool.test.cpp
-    tools/port_menu.test.cpp
-    tools/rail_menu.test.cpp
-    tools/select_tool.test.cpp
-    tools/text_edit_tool.test.cpp
-    tools/tool_chain.test.cpp
-)
-
-set(FLUIR_EDITOR_TRANSACTION_TEST_SOURCES transaction/transaction.test.cpp)
 
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/conditional.test.cpp
@@ -55,20 +59,18 @@ set(FLUIR_EDITOR_VIEW_TEST_SOURCES
     view/draw/labels.test.cpp
     view/draw/size.test.cpp
     view/graph_geometry.test.cpp
-    view/graph_draw.test.cpp
-    view/graph_layout.test.cpp
-    view/toolbar.test.cpp
 )
 
 target_sources(
     fluir.editor.test
-    PRIVATE ${FLUIR_EDITOR_COMPONENTS_TEST_SOURCES}
+    PRIVATE ${FLUIR_EDITOR_APP_TEST_SOURCES}
+            ${FLUIR_EDITOR_COMMANDS_TEST_SOURCES}
             ${FLUIR_EDITOR_CORE_TEST_SOURCES}
-            ${FLUIR_EDITOR_PAGES_TEST_SOURCES}
-            ${FLUIR_EDITOR_TOOLS_TEST_SOURCES}
-            ${FLUIR_EDITOR_TRANSACTION_TEST_SOURCES}
+            ${FLUIR_EDITOR_DIAGRAM_TEST_SOURCES}
+            ${FLUIR_EDITOR_SCENE_TEST_SOURCES}
             ${FLUIR_EDITOR_VIEW_TEST_SOURCES}
-            input.test.cpp
+            main.cpp
+            qt_platform.test.cpp
 )
 
 target_include_directories(
@@ -81,7 +83,10 @@ target_compile_definitions(
 )
 
 target_link_libraries(
-    fluir.editor.test PRIVATE fluir.libeditor GTest::gtest_main
+    fluir.editor.test
+    PRIVATE fluir.libeditor
+            Qt6::Test
+            GTest::gtest
 )
 
 include(GoogleTest)

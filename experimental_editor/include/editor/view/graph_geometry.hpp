@@ -1,11 +1,8 @@
 #ifndef FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
 #define FLUIR_EDITOR_VIEW_GRAPH_GEOMETRY_HPP
 
-#include <vector>
-
 #include "compiler/models/location.hpp"
 #include "editor/core/geometry.hpp"
-#include "editor/core/tree.hpp"
 
 namespace fluir::editor {
 
@@ -16,20 +13,14 @@ namespace fluir::editor {
    *  body content is rendered below the header so nodes don't render over it. */
   Vec2 bodyOrigin(Vec2 functionOrigin, double headerH);
 
+  /** A container's region under its header band: where a function's body or a conditional's branch lays out. */
+  Rect contentRect(const Rect& frame, double headerH);
+
   /** Shift a local-space rect by `origin`, keeping its size. */
   Rect atOrigin(Vec2 origin, Rect local);
 
   /** A `terminalDot`-sized square centered on `anchor`. */
   Rect dotRect(Vec2 anchor, double terminalDot);
-
-  /** `tree`'s declarations, ordered ascending by (location.z, id). */
-  std::vector<const et::Declaration*> sortedDeclarations(const et::ParseTree& tree);
-
-  /** `block`'s nodes, ordered ascending by (location.z, id). */
-  std::vector<const et::Node*> sortedNodes(const et::Block& block);
-
-  /** `block`'s conduits, ordered ascending by id. */
-  std::vector<const et::Conduit*> sortedConduits(const et::Block& block);
 
 }  // namespace fluir::editor
 

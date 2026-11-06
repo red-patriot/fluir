@@ -6,7 +6,6 @@
 #include "compiler/frontend/parser.hpp"
 #include "compiler/utility/context.hpp"
 #include "compiler/utility/results.hpp"
-#include "editor/core/annotate.hpp"
 #include "editor/core/collecting_sink.hpp"
 
 namespace fluir::editor {
@@ -18,7 +17,7 @@ namespace fluir::editor {
       if (!result) {
         return LoadResult{std::nullopt};
       }
-      return LoadResult{annotate(*result)};
+      return LoadResult{std::move(*result)};
     }
 
   }  // namespace

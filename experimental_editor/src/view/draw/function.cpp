@@ -1,26 +1,49 @@
 #include "editor/view/draw/function.hpp"
 
+#include <algorithm>
+#include <optional>
 #include <string>
 
-#include "editor/core/renderer.hpp"
-#include "editor/core/tree_path.hpp"
+#include "editor/view/graph_geometry.hpp"
 
 namespace fluir::editor::draw {
   namespace {
 
     // In grid units.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{15, 15}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{40, 30};
 
-    // The parameter a rail shows; the return rail has none.
-    const et::FunctionDecl::Parameter* paramOf(const et::FunctionDecl& fn, fluir::ID railId) {
+    // The parameter a rect shows.
+    const pt::FunctionParameter* paramOf(const Signature& fn, fluir::ID id) {
       if (fn.input) {
         for (const auto& param : fn.input->parameters) {
-          if (param.id == railId) {
+          if (param.id == id) {
             return &param;
           }
         }
       }
       return nullptr;
+    }
+
+    // The position of the parameter a rect shows.
+    std::optional<int> positionOf(const Signature& fn, fluir::ID id) {
+      if (fn.input) {
+        const auto& params = fn.input->parameters;
+        const auto it = std::ranges::find(params, id, &pt::FunctionParameter::id);
+        if (it != params.end()) {
+          return static_cast<int>(it - params.begin());
+        }
+      }
+      return std::nullopt;
+    }
+
+    // The type name of `fn`'s param or return with id `id` or nullptr.
+    const std::string* typeNameAt(const Signature& fn, fluir::ID id) {
+      if (fn.output && fn.output->ret && fn.output->ret->id == id) {
+        return &fn.output->ret->typeName;
+      }
+      const pt::FunctionParameter* param = paramOf(fn, id);
+      return param == nullptr ? nullptr : &param->typeName;
     }
 
     Rect headerOf(const Rect& frame, const EditorContext::Layout& layout) {
@@ -29,56 +52,49 @@ namespace fluir::editor::draw {
 
   }  // namespace
 
-  TerminalSet anchors(const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail) {
-    const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == railId;
-    const double midY = rail.y + rail.h * 0.5;
-    return isReturn ? TerminalSet{{Vec2{rail.x, midY}}, {}} : TerminalSet{{}, {Vec2{rail.x + rail.w, midY}}};
+  TerminalSet anchors(const Signature& fn, fluir::ID id, const Rect& rect) {
+    const bool isReturn = fn.output && fn.output->ret && fn.output->ret->id == id;
+    const double midY = rect.y + rect.h * 0.5;
+    return isReturn ? TerminalSet{{Vec2{rect.x, midY}}, {}} : TerminalSet{{}, {Vec2{rect.x + rect.w, midY}}};
   }
 
-  Color color(const et::FunctionDecl&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
+  Rect paramOrReturnRect(const Signature& fn, fluir::ID id, const Rect& frame, const EditorContext::Layout& layout) {
+    const Vec2 origin = bodyOrigin(frame.topLeft(), layout.headerH());
+    if (fn.output && fn.output->ret && fn.output->ret->id == id) {
+      return {origin.x + frame.w - layout.returnInsetUnits * layout.unitPx, origin.y, layout.rowH(), layout.rowH()};
+    }
+    const std::optional<int> row = positionOf(fn, id);
+    if (!row) {
+      return {};
+    }
+    return {origin.x, origin.y + static_cast<double>(*row) * layout.rowH(), layout.paramW(), layout.rowH()};
+  }
 
-  Limits<Vec2i> sizeLimits(const et::FunctionDecl&) { return SIZE_LIMITS; }
+  Color color(const Signature&, const EditorContext::Theme& theme) { return theme.funcDeclHeader; }
 
-  std::vector<FieldLabel> labels(const et::FunctionDecl&, const Rect& frame, const EditorContext::Layout& layout) {
+  Vec2i defaultSize(const Signature&) { return DEFAULT_SIZE; }
+
+  Limits<Vec2i> sizeLimits(const Signature&) { return SIZE_LIMITS; }
+
+  std::vector<FieldLabel> labels(const Signature&, const Rect& frame, const EditorContext::Layout& layout) {
     return {{{Field::Kind::Name}, splitLabel(headerOf(frame, layout), FN_TAG, layout).text}};
   }
 
-  std::vector<FieldLabel> labels(const et::FunctionDecl& fn,
-                                 fluir::ID railId,
-                                 const Rect& rail,
+  std::vector<FieldLabel> labels(const Signature& fn,
+                                 fluir::ID id,
+                                 const Rect& rect,
                                  const EditorContext::Layout& layout) {
-    const std::string* typeName = railTypeAt(fn, railId);
+    const std::string* typeName = typeNameAt(fn, id);
     if (typeName == nullptr) {
       return {};
     }
-    const SplitLabel split = splitLabel(rail, *typeName, layout);
-    const et::FunctionDecl::Parameter* param = paramOf(fn, railId);
-    if (param == nullptr) {
-      return {{{Field::Kind::ReturnType}, split.tag}};
+    const SplitLabel split = splitLabel(rect, *typeName, layout);
+    const std::optional<int> position = positionOf(fn, id);
+    if (!position) {
+      return {{{Field::Kind::ReturnType}, split.tag, FieldLook::Tag}};
     }
-    return {{{Field::Kind::ParamType, param->index}, split.tag}, {{Field::Kind::ParamName, param->index}, split.text}};
-  }
-
-  void drawBody(const et::FunctionDecl&, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    view.renderer().fillRect(view.toScreen(world), ctx.theme.background);
-  }
-
-  void drawRail(
-    const et::FunctionDecl& fn, fluir::ID railId, const Rect& rail, const Subview& view, const EditorContext& ctx) {
-    const std::string* typeName = railTypeAt(fn, railId);
-    drawShell(rail, color(fn, ctx.theme), view, ctx);
-    drawSplitLabel(view, rail, typeName == nullptr ? std::string_view{} : *typeName, ctx);
-    if (const et::FunctionDecl::Parameter* param = paramOf(fn, railId)) {
-      drawTitle(param->name, labels(fn, railId, rail, ctx.layout).back().rect, view, ctx);
-    }
-  }
-
-  void drawFrame(const et::FunctionDecl& fn, const Rect& frame, const Subview& view, const EditorContext& ctx) {
-    const Rect header = headerOf(frame, ctx.layout);
-    view.renderer().fillRect(view.toScreen(header), color(fn, ctx.theme));
-    view.renderer().drawRect(view.toScreen(frame), ctx.theme.border);
-    drawSplitLabel(view, header, FN_TAG, ctx);
-    drawTitle(fn.name, labels(fn, frame, ctx.layout).front().rect, view, ctx);
+    return {{{Field::Kind::ParamType, *position}, split.tag, FieldLook::Tag},
+            {{Field::Kind::ParamName, *position}, split.text}};
   }
 
 }  // namespace fluir::editor::draw

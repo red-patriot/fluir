@@ -44,8 +44,7 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
     out_ << formatIndented("{}:\n", param.id);
     FLUIR_SCOPED_INDENT;
-    out_ << formatIndented("Param({})\n", param.name) << formatIndented("index {}\n", param.index)
-         << formatIndented("type {}\n", param.typeName);
+    out_ << formatIndented("Param({})\n", param.name) << formatIndented("type {}\n", param.typeName);
   }
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
     out_ << formatIndented("{}:\n", ret.id);

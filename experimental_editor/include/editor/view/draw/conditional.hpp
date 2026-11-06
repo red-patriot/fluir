@@ -1,66 +1,66 @@
 #ifndef FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
 #define FLUIR_EDITOR_VIEW_DRAW_CONDITIONAL_HPP
 
+#include <cstddef>
 #include <optional>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/id.hpp"
-#include "editor/core/tree.hpp"
-#include "editor/core/tree_path.hpp"
 #include "editor/view/draw/draw_utils.hpp"
-#include "editor/view/graph_layout.hpp"
 
 namespace fluir::editor::draw {
 
   inline constexpr std::string_view THEN_TAG = "then";
   inline constexpr std::string_view ELSE_TAG = "else";
 
-  /** The tag of the branch `branchId` names, by its 1-based branch index. */
-  std::string_view branchTag(fluir::ID branchId);
+  /** The ports that a conditional node has. */
+  struct Ports {
+    pt::BlockPort condition;
+    pt::BlockPorts inputs;
+    pt::BlockPorts outputs;
+
+    friend bool operator==(const Ports&, const Ports&) = default;
+  };
+
+  /** A container port: its side, and its index on that side (the condition is input 0). */
+  struct PortRef {
+    bool output = false;
+    std::size_t index = 0;
+
+    friend bool operator==(const PortRef&, const PortRef&) = default;
+  };
+
+  /** The port `port` names on `conditional` if it exists, or nullptr. */
+  const pt::BlockPort* portOf(const Ports& conditional, PortRef port);
+  pt::BlockPort* portOf(Ports& conditional, PortRef port);
+
+  /** Every port on `conditional`. */
+  std::vector<PortRef> portRefs(const Ports& conditional);
 
   /** The arrow that switches the shown branch, just right of the header's tag. `header` is the header band. */
   Rect branchArrowRect(const Rect& header, const EditorContext::Layout& layout);
 
   /** Creates a rect for the given `port` */
-  Rect portRect(const et::Conditional& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout);
+  Rect portRect(const Ports& node, PortRef port, const Rect& frame, const EditorContext::Layout& layout);
 
-  /** Limits for a port location in grid units. */
-  Limits<int> portYLimits(const et::Conditional& node, const EditorContext::Layout& layout);
+  /** Limits for a port location in grid units, on a conditional `height` grid units tall. */
+  Limits<int> portYLimits(int height, const EditorContext::Layout& layout);
 
-  /** Draws the given `port`. */
-  void drawPort(PortRef port, const Rect& world, const Subview& view, const EditorContext& ctx);
-
-  /** The outer side of the conditional ports. */
-  TerminalSet anchors(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
-
-  /** The inner side of the conditional ports by inner id. */
-  std::unordered_map<fluir::ID, TerminalSet> innerAnchors(const et::Conditional& node,
-                                                          const Rect& frame,
-                                                          const EditorContext::Layout& layout);
-
-  Color color(const et::Conditional& node, const EditorContext::Theme& theme);
+  Color color(const Ports& node, const EditorContext::Theme& theme);
 
   /** How far the node may be resized in grid units. */
-  Limits<Vec2i> sizeLimits(const et::Conditional& node);
+  Limits<Vec2i> sizeLimits(const Ports& node);
+
+  /** The size a new conditional starts at, in grid units. */
+  Vec2i defaultSize(const Ports& node);
 
   /** The grip that resizes the node, if any. */
-  std::optional<Part> resizePart(const et::Conditional& node);
+  std::optional<ResizeAxes> resizePart(const Ports& node);
 
   /** None: a conditional has no editable text. */
-  std::vector<FieldLabel> labels(const et::Conditional& node, const Rect& world, const EditorContext::Layout& layout);
-
-  // A conditional paints in parts at different depths, so each part has its own draw.
-
-  /** The body background, under the conditional's branches and their nodes. */
-  void drawBody(const et::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
-
-  /** The header band over the visible branch, its tag, and the border around the frame. */
-  void drawFrame(const et::Conditional& node, const Rect& frame, const Subview& view, const EditorContext& ctx);
-
-  /** A node-variant entry point. */
-  void draw(const et::Conditional& node, const Rect& world, const Subview& view, const EditorContext& ctx);
+  std::vector<FieldLabel> labels(const Ports& node, const Rect& world, const EditorContext::Layout& layout);
 
 }  // namespace fluir::editor::draw
 

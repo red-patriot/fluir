@@ -1,14 +1,15 @@
-#pragma once
+#ifndef FLUIR_EDITOR_CORE_PARSE_TREE_WRITER_HPP
+#define FLUIR_EDITOR_CORE_PARSE_TREE_WRITER_HPP
 
 #include <ostream>
 
 #include <tinyxml2.h>
 
-#include "editor/core/tree.hpp"
+#include "compiler/frontend/parse_tree/parse_tree.hpp"
 
 namespace fluir::editor {
 
-  void write(std::ostream& out, const et::ParseTree& tree);
+  void write(std::ostream& out, const pt::ParseTree& tree);
 
   /** Serializes a parse tree to XML matching the editor's on-disk format. */
   class ParseTreeWriter {
@@ -16,7 +17,7 @@ namespace fluir::editor {
     /** Writes to `out`, which the caller owns. */
     explicit ParseTreeWriter(std::ostream& out);
 
-    void write(const et::ParseTree& tree);
+    void write(const pt::ParseTree& tree);
 
     /** State of the underlying stream (false => a write or open failed). */
     [[nodiscard]] bool good() const;
@@ -27,33 +28,33 @@ namespace fluir::editor {
 
     using Element = tinyxml2::XMLElement;
 
-    void header(Element* parent, const et::Header& value);
+    void header(Element* parent, const pt::Header& value);
     void version(Element* parent, const Version& value);
 
-    void declaration(Element* parent, const et::Declaration& value);
-    void functionDecl(Element* parent, const et::FunctionDecl& value);
+    void declaration(Element* parent, const pt::Declaration& value);
+    void functionDecl(Element* parent, const pt::FunctionDecl& value);
 
-    void funcInputs(Element* parent, const et::FunctionDecl::InputBlock& value);
-    void funcParameter(Element* parent, const et::FunctionDecl::Parameter& value);
-    void funcOutputs(Element* parent, const et::FunctionDecl::OutputBlock& value);
-    void funcReturn(Element* parent, const et::FunctionDecl::Return& value);
+    void funcInputs(Element* parent, const pt::FunctionDecl::InputBlock& value);
+    void funcParameter(Element* parent, const pt::FunctionDecl::Parameter& value);
+    void funcOutputs(Element* parent, const pt::FunctionDecl::OutputBlock& value);
+    void funcReturn(Element* parent, const pt::FunctionDecl::Return& value);
 
-    void block(Element* parent, const et::Block& value);
-    void blockContents(Element* element, const et::Block& value);
-    void node(Element* parent, const et::Node& value);
-    void constant(Element* parent, const et::Constant& value);
-    void binary(Element* parent, const et::Binary& value);
-    void unary(Element* parent, const et::Unary& value);
-    void call(Element* parent, const et::Call& value);
-    void conditional(Element* parent, const et::Conditional& conditional);
-    void comment(Element* parent, const et::Comment& value);
+    void block(Element* parent, const pt::Block& value);
+    void blockContents(Element* element, const pt::Block& value);
+    void node(Element* parent, const pt::Node& value);
+    void constant(Element* parent, const pt::Constant& value);
+    void binary(Element* parent, const pt::Binary& value);
+    void unary(Element* parent, const pt::Unary& value);
+    void call(Element* parent, const pt::Call& value);
+    void conditional(Element* parent, const pt::Conditional& conditional);
+    void comment(Element* parent, const pt::Comment& value);
 
-    void blockPort(Element* parent, const et::BlockPort& value, std::string_view name = "port");
+    void blockPort(Element* parent, const pt::BlockPort& value, std::string_view name = "port");
 
-    void conduit(Element* parent, const et::Conduit& value);
-    void conduitOutput(Element* parent, const et::Conduit::Output& value);
+    void conduit(Element* parent, const pt::Conduit& value);
+    void conduitOutput(Element* parent, const pt::Conduit::Output& value);
 
-    void literal(Element* parent, const et::Literal& value);
+    void literal(Element* parent, const pt::Literal& value);
 
     void setId(Element* element, ID id);
     void setIdReference(Element* element, ID id, std::string_view attribute);
@@ -62,3 +63,5 @@ namespace fluir::editor {
   };
 
 }  // namespace fluir::editor
+
+#endif

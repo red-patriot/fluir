@@ -3,14 +3,13 @@
 #include <algorithm>
 #include <string_view>
 
-#include "editor/core/renderer.hpp"
-
 namespace fluir::editor {
   namespace {
 
     constexpr std::string_view COMMENT_TAG = "//";
     // In grid units; tall enough that the corner grip never overlaps the move grip.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{8, 8}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i DEFAULT_SIZE{10, 10};
 
   }  // namespace
 
@@ -26,28 +25,18 @@ namespace fluir::editor {
 
   namespace draw {
 
-    TerminalSet anchors(const et::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
+    TerminalSet anchors(const pt::Comment&, const Rect&, const EditorContext::Layout&) { return {}; }
 
-    Color color(const et::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
+    Color color(const pt::Comment&, const EditorContext::Theme& theme) { return theme.commentNode; }
 
-    Limits<Vec2i> sizeLimits(const et::Comment&) { return SIZE_LIMITS; }
+    Vec2i defaultSize(const pt::Comment&) { return DEFAULT_SIZE; }
 
-    std::optional<Part> resizePart(const et::Comment&) { return Part::ResizeXY; }
+    Limits<Vec2i> sizeLimits(const pt::Comment&) { return SIZE_LIMITS; }
 
-    std::vector<FieldLabel> labels(const et::Comment&, const Rect& world, const EditorContext::Layout& layout) {
+    std::optional<ResizeAxes> resizePart(const pt::Comment&) { return ResizeAxes::XY; }
+
+    std::vector<FieldLabel> labels(const pt::Comment&, const Rect& world, const EditorContext::Layout& layout) {
       return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
-    }
-
-    void draw(const et::Comment& comment, const Rect& world, const Subview& view, const EditorContext& ctx) {
-      drawShell(world, color(comment, ctx.theme), view, ctx);
-      drawSplitLabel(view, {world.x, world.y, world.w, ctx.layout.headerH()}, COMMENT_TAG, ctx);
-      if (comment.text.empty()) {
-        return;
-      }
-      const Rect textRect = commentTextRect(labels(comment, world, ctx.layout).front().rect, ctx.layout);
-      const Subview clipped = view.child(textRect);
-      clipped.renderer().drawTextWrapped(
-        clipped.toScreen(Rect{0, 0, textRect.w, textRect.h}), comment.text, clipped.composed().scale, ctx.theme.text);
     }
 
   }  // namespace draw

@@ -6,27 +6,25 @@ namespace fluir::editor::draw {
   namespace {
 
     // In grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{8, 5}, .upper = Vec2i{8, 5}};
+    constexpr Vec2i DEFAULT_SIZE{8, 5};
 
   }  // namespace
 
-  TerminalSet anchors(const et::Unary&, const Rect& r, const EditorContext::Layout&) {
+  TerminalSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
     return {edgeAnchors(r.x, r, 1), edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const et::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
+  Color color(const pt::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
 
-  Limits<Vec2i> sizeLimits(const et::Unary&) { return SIZE_LIMITS; }
+  Vec2i defaultSize(const pt::Unary&) { return DEFAULT_SIZE; }
 
-  std::optional<Part> resizePart(const et::Unary&) { return Part::ResizeX; }
+  Limits<Vec2i> sizeLimits(const pt::Unary&) { return SIZE_LIMITS; }
 
-  std::vector<FieldLabel> labels(const et::Unary&, const Rect& world, const EditorContext::Layout&) {
+  std::optional<ResizeAxes> resizePart(const pt::Unary&) { return std::nullopt; }
+
+  std::vector<FieldLabel> labels(const pt::Unary&, const Rect& world, const EditorContext::Layout&) {
     return {{{Field::Kind::Operator}, world}};
-  }
-
-  void draw(const et::Unary& n, const Rect& world, const Subview& view, const EditorContext& ctx) {
-    drawShell(world, color(n, ctx.theme), view, ctx);
-    drawTitle(stringify(n.op), labels(n, world, ctx.layout).front().rect, view, ctx);
   }
 
 }  // namespace fluir::editor::draw

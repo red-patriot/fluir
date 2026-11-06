@@ -4,192 +4,99 @@ find_package(
     REQUIRED
 )
 
-include(FetchContent)
-set(SDL_SHARED
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
+find_package(
+    Qt6 REQUIRED
+    COMPONENTS Widgets
+               Svg
+               SvgWidgets
 )
-set(SDL_STATIC
-    ON
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(SDL_TEST
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(SDL_EXAMPLES
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    SDL3
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-    GIT_TAG release-3.2.24
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(SDL3)
-
-# SDL3's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET SDL3-static)
-    set_target_properties(SDL3-static PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(NFD_BUILD_TESTS
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    nfd
-    GIT_REPOSITORY https://github.com/btzy/nativefiledialog-extended.git
-    GIT_TAG v1.2.1
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(nfd)
-
-# NFD's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET nfd)
-    set_target_properties(nfd PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(SDLTTF_VENDORED
-    ON
-    CACHE BOOL
-          ""
-          FORCE
-)
-foreach (
-    opt
-    SDLTTF_HARFBUZZ
-    SDLTTF_PLUTOSVG
-    SDLTTF_SAMPLES
-    SDLTTF_INSTALL
-)
-    set(${opt}
-        OFF
-        CACHE BOOL
-              ""
-              FORCE
-    )
-endforeach ()
-set(BUILD_SHARED_LIBS
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    SDL3_ttf
-    GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
-    GIT_TAG release-3.2.2
-    GIT_SHALLOW TRUE
-    GIT_SUBMODULES "external/freetype"
-)
-FetchContent_MakeAvailable(SDL3_ttf)
-
-# SDL_ttf's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET SDL3_ttf-static)
-    set_target_properties(SDL3_ttf-static PROPERTIES SYSTEM TRUE)
-endif ()
-
-set(PLUTOSVG_ENABLE_FREETYPE
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-set(PLUTOSVG_BUILD_EXAMPLES
-    OFF
-    CACHE BOOL
-          ""
-          FORCE
-)
-FetchContent_Declare(
-    plutosvg
-    GIT_REPOSITORY https://github.com/sammycage/plutosvg.git
-    GIT_TAG v0.0.7
-    GIT_SHALLOW TRUE
-)
-FetchContent_MakeAvailable(plutosvg)
-
-# plutosvg's headers are third-party: consume them as system includes so our own
-# -Werror -pedantic warnings don't fire on them.
-if (TARGET plutosvg)
-    set_target_properties(plutosvg PROPERTIES SYSTEM TRUE)
-endif ()
 
 include(strict-warnings)
 
 add_library(fluir.libeditor)
+
+set_target_properties(fluir.libeditor PROPERTIES AUTOMOC ON AUTOUIC ON)
 
 target_include_directories(
     fluir.libeditor PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../include"
 )
 
 set(FLUIR_EDITOR_CORE_SOURCES
-    "core/annotate.cpp"
+    "core/choices.cpp"
     "core/collecting_sink.cpp"
-    "core/fields.cpp"
     "core/identifier.cpp"
     "core/intelligence.cpp"
     "core/literal_text.cpp"
-    "core/node_access.cpp"
     "core/loader.cpp"
-    "core/module_editor.cpp"
     "core/parse_tree_writer.cpp"
-    "core/tree_edit.cpp"
-    "core/tree_path.cpp"
-    "core/viewport.cpp"
+    "core/scope_path.cpp"
 )
 
-set(FLUIR_EDITOR_TRANSACTION_SOURCES
-    "transaction/add_comment.cpp"
-    "transaction/add_conduit.cpp"
-    "transaction/add_decl.cpp"
-    "transaction/add_node.cpp"
-    "transaction/add_parameter.cpp"
-    "transaction/add_port.cpp"
-    "transaction/add_return.cpp"
-    "transaction/delete.cpp"
-    "transaction/delete_port.cpp"
-    "transaction/edit_call_argument.cpp"
-    "transaction/edit_call_node.cpp"
-    "transaction/edit_comment.cpp"
-    "transaction/edit_operator.cpp"
-    "transaction/move.cpp"
-    "transaction/move_port.cpp"
-    "transaction/rename.cpp"
-    "transaction/resize.cpp"
-    "transaction/set_constant_value.cpp"
-    "transaction/update_func_param.cpp"
+# Q_OBJECT headers are listed so AUTOMOC finds them outside src/.
+set(FLUIR_EDITOR_APP_SOURCES
+    "app/main_window.cpp"
+    "app/main_window.ui"
+    "app/module_page.cpp"
+    "app/module_page.ui"
+    "app/splash_widget.cpp"
+    "app/style.cpp"
+    "app/splash_widget.ui"
+    "../include/editor/app/main_window.hpp"
+    "../include/editor/app/module_page.hpp"
+    "../include/editor/app/splash_widget.hpp"
 )
 
-set(FLUIR_EDITOR_PAGE_SOURCES
-    "pages/module.cpp"
-    "pages/page.cpp"
-    "pages/splash.cpp"
+set(FLUIR_EDITOR_COMMANDS_SOURCES
+    "commands/add_conduit.cpp" "commands/add_node.cpp"
+    "commands/add_parameter.cpp" "commands/add_port.cpp"
+    "commands/add_return.cpp" "commands/conduit_cut.cpp"
+    "commands/delete_parameter.cpp" "commands/delete_port.cpp"
+    "commands/delete_return.cpp" "commands/delete_conduit.cpp"
+    "commands/delete_node.cpp" "commands/removed_element.cpp"
 )
 
-set(FLUIR_EDITOR_COMPONENT_SOURCES "components/menu.cpp"
-                                   "components/text_field.cpp"
+set(FLUIR_EDITOR_DIAGRAM_SOURCES
+    "diagram/binary.cpp"
+    "diagram/branch_arrow.cpp"
+    "diagram/build.cpp"
+    "diagram/call.cpp"
+    "diagram/edit_target.cpp"
+    "diagram/edits.cpp"
+    "diagram/field_view.cpp"
+    "diagram/comment.cpp"
+    "diagram/conditional.cpp"
+    "diagram/conduit.cpp"
+    "diagram/constant.cpp"
+    "diagram/export.cpp"
+    "diagram/field_text.cpp"
+    "diagram/function.cpp"
+    "diagram/ids.cpp"
+    "diagram/grip.cpp"
+    "diagram/move_grip.cpp"
+    "diagram/node.cpp"
+    "diagram/parameter.cpp"
+    "diagram/port.cpp"
+    "diagram/resize_grip.cpp"
+    "diagram/return.cpp"
+    "diagram/scope.cpp"
+    "diagram/selection_outline.cpp"
+    "diagram/terminal.cpp"
+    "diagram/toggle.cpp"
+    "diagram/unary.cpp"
+)
+
+set(FLUIR_EDITOR_SCENE_SOURCES
+    "scene/completion_popup.cpp"
+    "scene/completion_popup.ui"
+    "scene/graph_view.cpp"
+    "scene/item_style.cpp"
+    "scene/module_scene.cpp"
+    "../include/editor/scene/graph_view.hpp"
+    "../include/editor/scene/module_scene.hpp"
 )
 
 set(FLUIR_EDITOR_VIEW_SOURCES
-    "view/graph_draw.cpp"
     "view/graph_geometry.cpp"
-    "view/graph_layout.cpp"
     "view/draw/binary.cpp"
     "view/draw/call.cpp"
     "view/draw/comment.cpp"
@@ -198,56 +105,44 @@ set(FLUIR_EDITOR_VIEW_SOURCES
     "view/draw/draw_utils.cpp"
     "view/draw/function.cpp"
     "view/draw/unary.cpp"
-    "view/node_view.cpp"
-    "view/toolbar.cpp"
-)
-
-set(FLUIR_EDITOR_TOOL_SOURCES
-    "tools/bool_toggle_tool.cpp"
-    "tools/branch_toggle_tool.cpp"
-    "tools/choice_tool.cpp"
-    "tools/completion_modal.cpp"
-    "tools/completion_tool.cpp"
-    "tools/conditional_header_menu.cpp"
-    "tools/context_menu_tool.cpp"
-    "tools/conduit_tool.cpp"
-    "tools/drag_tool.cpp"
-    "tools/function_header_menu.cpp"
-    "tools/grid_steps.cpp"
-    "tools/menu_popup.cpp"
-    "tools/pan_zoom_tool.cpp"
-    "tools/popup_tool.cpp"
-    "tools/port_drag_tool.cpp"
-    "tools/port_menu.cpp"
-    "tools/rail_menu.cpp"
-    "tools/select_tool.cpp"
-    "tools/text_edit_tool.cpp"
-    "tools/tool.cpp"
 )
 
 target_sources(
     fluir.libeditor
-    PRIVATE ${FLUIR_EDITOR_CORE_SOURCES}
-            ${FLUIR_EDITOR_COMPONENT_SOURCES}
-            ${FLUIR_EDITOR_TRANSACTION_SOURCES}
+    PRIVATE ${FLUIR_EDITOR_COMMANDS_SOURCES}
+            ${FLUIR_EDITOR_CORE_SOURCES}
+            ${FLUIR_EDITOR_DIAGRAM_SOURCES}
             ${FLUIR_EDITOR_VIEW_SOURCES}
-            ${FLUIR_EDITOR_TOOL_SOURCES}
-            ${FLUIR_EDITOR_PAGE_SOURCES}
-            "sdl_renderer.cpp"
-            "input.cpp"
-            "app.cpp"
+            ${FLUIR_EDITOR_APP_SOURCES}
+            ${FLUIR_EDITOR_SCENE_SOURCES}
 )
 
-add_subdirectory(assets/fonts)
-add_subdirectory(assets/images)
+# Keeps these resources linked through the static library without
+# Q_INIT_RESOURCE.
+qt_add_resources(
+    fluir.libeditor
+    "editor_assets"
+    PREFIX
+    "/"
+    BASE
+    "assets"
+    FILES
+    "assets/fonts/DejaVuSansMono.ttf"
+    "assets/images/branchArrow.svg"
+    "assets/images/dragHandle.svg"
+    "assets/images/fluir-logo.svg"
+    "assets/images/false.svg"
+    "assets/images/true.svg"
+    "assets/images/XYResizeHandle.svg"
+    "assets/style/editor.qss"
+)
 
 target_link_libraries(
     fluir.libeditor
     PUBLIC fmt::fmt
-           SDL3::SDL3
-           SDL3_ttf::SDL3_ttf
-           nfd
-           plutosvg
+           Qt6::Widgets
+           Qt6::Svg
+           Qt6::SvgWidgets
            fluir::compiler
            fluir::utility
 )

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="f" id="1" x="10" y="10" z="0" w="100" h="100">
+    <input>
+      <param name="x" id="2" type="F64"/>
+    </input>
+    <output>
+      <return id="9" type="F64"/>
+    </output>
+    <body>
+      <unary id="4" x="30" y="10" z="0" w="7" h="5" operator="-"/>
+      <constant id="5" x="30" y="30" z="0" w="8" h="5">
+        <f64>1.0</f64>
+      </constant>
+      <conduit id="6" input="2">
+        <output target="4" index="0"/>
+      </conduit>
+      <conduit id="7" input="4">
+        <output target="9" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

@@ -1,159 +1,92 @@
 #include "editor/core/intelligence.hpp"
 
 #include <cstddef>
-#include <format>
 #include <ranges>
 #include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
-#include "editor/core/fields.hpp"
-#include "editor/core/tree_path.hpp"
+#include "compiler/models/id.hpp"
+#include "compiler/models/literal_types.hpp"
+#include "editor/core/choices.hpp"
+#include "editor/core/scope_path.hpp"
 
 namespace fluir::editor {
   namespace {
-    // TODO: Dynamically populate these
-    const std::vector<fluir::Operator> UNARY_OPERATORS{
-      Operator::PLUS, Operator::MINUS, Operator::PLUS_PLUS, Operator::MINUS_MINUS, Operator::BANG};
 
-    const std::vector<fluir::Operator> BINARY_OPERATORS{Operator::PLUS,
-                                                        Operator::MINUS,
-                                                        Operator::STAR,
-                                                        Operator::SLASH,
-                                                        Operator::EQUAL_EQUAL,
-                                                        Operator::BANG_EQUAL,
-                                                        Operator::GREATER_EQUAL,
-                                                        Operator::LESS_EQUAL,
-                                                        Operator::GREATER,
-                                                        Operator::LESS,
-                                                        Operator::AND_AND,
-                                                        Operator::BAR_BAR};
+    // A new conditional's condition port: both branches start empty, so inner id 1 is free; y clears the header band.
+    constexpr pt::BlockPort CONDITION{.innerId = 1, .y = 10};
 
-    // TODO: Dynamically populate these
-    const std::vector<std::string_view> BUILTIN_TYPES{
-      "F64", "I8", "I16", "I32", "I64", "U8", "U16", "U32", "U64", "BOOL"};
-
-    // TODO: Dynamically populate these
-    const std::vector<Completion> TOP_LEVEL_COMPLETIONS{{"Function", FunctionDefOption{}},
-                                                        {"Comment", CommentOption{}}};
-
-    // One default-constructed (0 / false) value per Literal alternative, in order.
+    // One default (0 / false) value per Literal alternative, in order.
     template <typename... Ts>
     std::vector<literals_types::Literal> defaultsOf(const std::variant<Ts...>*) {
       return {literals_types::Literal{std::in_place_type<Ts>}...};
     }
 
+    pt::Comment comment() { return {.id = INVALID_ID, .location = {}, .text = ""}; }
+
+    pt::Call callTo(std::string target, const std::vector<std::string>& parameters, bool returns) {
+      pt::Call call{.id = INVALID_ID, .location = {}, .target = std::move(target), ._return = {}, .arguments = {}};
+      for (std::size_t i = 0; i < parameters.size(); ++i) {
+        call.arguments.push_back({.name = parameters[i], .index = static_cast<int>(i)});
+      }
+      if (returns) {
+        call._return = pt::Call::Return{};
+      }
+      return call;
+    }
+
   }  // namespace
 
-  bool Intelligence::load(std::optional<std::filesystem::path>, const et::ParseTree& tree) {
-    // TODO: Load other information about a module, for now just add parse its decls as available
-    module_.functions.clear();
-    for (const auto& [id, decl] : tree.declarations) {
-      if (const auto* func = std::get_if<et::FunctionDecl>(&decl); func) {
-        intelligence::FunctionDecl functionInfo;
-        functionInfo.name = func->name;
-        if (func->output && func->output->ret) {
-          functionInfo.returnTypeName = func->output->ret->typeName;
-        }
-        if (func->input) {
-          functionInfo.parameters.reserve(func->input->parameters.size());
-          for (const auto& param : func->input->parameters) {
-            functionInfo.parameters.push_back({param.name, param.typeName});
-          }
-        }
-        module_.functions.emplace(id, std::move(functionInfo));
-      }
-    }
-
-    return true;
+  std::vector<Completion<pt::Declaration>> Intelligence::topLevelCompletions(const pt::ParseTree&) const {
+    return {
+      {"Function",
+       pt::FunctionDecl{
+         .id = INVALID_ID, .location = {}, .name = "new_function", .body = {}, .input = {}, .output = {}}},
+      {"Comment", comment()},
+    };
   }
 
-  bool Intelligence::unload(std::optional<std::filesystem::path> programPath) {
-    // TODO: handle multiple modules at once
-    module_.functions.clear();
-    return true;
-  }
-
-  std::vector<std::string> Intelligence::choices(const et::ParseTree& tree, const FullID& path, Field field) const {
-    if (!fields::read(tree, path, field)) {
+  std::vector<Completion<pt::Node>> Intelligence::completionsAt(const pt::ParseTree& tree,
+                                                                const fluir::FullID& scope) const {
+    if (blockAt(tree, scope) == nullptr) {
       return {};
     }
-    switch (field.kind) {
-      case Field::Kind::Operator:
-        {
-          const bool unary = std::holds_alternative<et::Unary>(*nodeAt(tree, path));
-          std::vector<std::string> out;
-          for (const fluir::Operator op : unary ? UNARY_OPERATORS : BINARY_OPERATORS) {
-            out.emplace_back(stringify(op));
+    std::vector<Completion<pt::Node>> out;
+    for (const std::string& op : binaryOperators()) {
+      out.push_back({op + " (binary)", pt::Binary{.id = INVALID_ID, .location = {}, .op = *operatorNamed(op)}});
+    }
+    for (const std::string& op : unaryOperators()) {
+      out.push_back({op + " (unary)", pt::Unary{.id = INVALID_ID, .location = {}, .op = *operatorNamed(op)}});
+    }
+    // Builtin type names follow Literal's alternative order.
+    const auto defaults = defaultsOf(static_cast<const literals_types::Literal*>(nullptr));
+    for (std::size_t i = 0; i < defaults.size(); ++i) {
+      out.push_back({builtinTypes().at(i), pt::Constant{.id = INVALID_ID, .location = {}, .value = defaults[i]}});
+    }
+    out.push_back({"Comment", comment()});
+    out.push_back({"if-else",
+                   pt::Conditional{.id = INVALID_ID,
+                                   .location = {},
+                                   .condition = CONDITION,
+                                   .inputs = {},
+                                   .outputs = {},
+                                   .thenScope = xyz::indirect<pt::Block>{},
+                                   .elseScope = xyz::indirect<pt::Block>{}}});
+    out.push_back({"print", callTo("print", {"object"}, false)});
+    for (const pt::Declaration& decl : tree.declarations | std::views::values) {
+      if (const auto* fn = std::get_if<pt::FunctionDecl>(&decl)) {
+        std::vector<std::string> parameters;
+        if (fn->input) {
+          for (const pt::FunctionParameter& param : fn->input->parameters) {
+            parameters.push_back(param.name);
           }
-          return out;
         }
-      case Field::Kind::ParamType:
-      case Field::Kind::ReturnType:
-        return {BUILTIN_TYPES.begin(), BUILTIN_TYPES.end()};
-      default:
-        return {};
+        out.push_back({fn->name + " (fn)", callTo(fn->name, parameters, fn->output && fn->output->ret)});
+      }
     }
-  }
-
-  std::vector<Completion> Intelligence::completions(const et::ParseTree& tree, const FullID& body) const {
-    if (body.empty()) {
-      return TOP_LEVEL_COMPLETIONS;
-    }
-    const auto* block = blockOf(tree, body);
-    return block ? completionsAt(*block) : std::vector<Completion>{};
-  }
-
-  std::vector<Completion> Intelligence::completionsAt(const et::Block&) const {
-    auto options = bodyBuiltins();
-
-    options.reserve(options.size() + module_.functions.size());
-    for (const auto& func : module_.functions | std::ranges::views::values) {
-      options.push_back({.label = std::format("{} (fn)", func.name),
-                         .option = CallFunctionOption{
-                           .target = func.name,
-                           .parameters = func.parameters,
-                           .returnType = func.returnTypeName,
-                         }});
-    }
-
-    return options;
-  }
-
-  const std::vector<Completion>& Intelligence::bodyBuiltins() {
-    // Completion labels are views, so the strings live here.
-    static const std::vector<std::string> OPERATOR_LABELS = [] {
-      std::vector<std::string> labels;
-      for (Operator op : BINARY_OPERATORS) {
-        labels.push_back(std::string{stringify(op)} + " (binary)");
-      }
-      for (Operator op : UNARY_OPERATORS) {
-        labels.push_back(std::string{stringify(op)} + " (unary)");
-      }
-      return labels;
-    }();
-    static const std::vector<Completion> COMPLETIONS = [] {
-      std::vector<Completion> out;
-      std::size_t label = 0;
-      for (Operator op : BINARY_OPERATORS) {
-        out.push_back({OPERATOR_LABELS[label++], OperatorOption{op, OperatorOption::BINARY}});
-      }
-      for (Operator op : UNARY_OPERATORS) {
-        out.push_back({OPERATOR_LABELS[label++], OperatorOption{op, OperatorOption::UNARY}});
-      }
-      // Builtin names follow Literal's alternative order.
-      const auto defaults = defaultsOf(static_cast<const literals_types::Literal*>(nullptr));
-      for (std::size_t i = 0; i < BUILTIN_TYPES.size(); ++i) {
-        out.push_back({std::string{BUILTIN_TYPES[i]}, ConstantOption{defaults.at(i)}});
-      }
-      out.push_back({"Comment", CommentOption{}});
-      out.push_back({"if-else", ConditionalOption{}});
-      out.push_back({"print",
-                     CallFunctionOption{.target = "print",
-                                        .parameters = {intelligence::ParamInfo{.name = "object", .typeName = "ANY"}},
-                                        .returnType = std::nullopt}});
-      return out;
-    }();
-    return COMPLETIONS;
+    return out;
   }
 
 }  // namespace fluir::editor

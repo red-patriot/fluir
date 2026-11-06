@@ -25,6 +25,8 @@ namespace fluir {
     void generate(const ast::LocalRead& read);
     void generate(const ast::Call& call);
     void generate(const ast::Conditional& conditional);
+    void generate(const ast::Bundle& bundle);
+    void generate(const ast::Unbundle& unbundle);
 
    private:
     Context& ctx_;
@@ -54,8 +56,12 @@ namespace fluir {
     size_t addConstant(be::Constant value);
 
     void run();
-    /*Generate bytecode for a subgraph, returns the number of stack slots added or removed by this code */
-    void generate(const ast::DataFlowGraph& subgraph,
+    /** Generates bytecode for a data flow graph*/
+    void generate(const ast::DataFlowGraph& dfg,
+                  const std::vector<WithID<types::TypeID>>& inputs,
+                  const std::vector<WithID<types::TypeID>>& outputs);
+    /*Generate bytecode for a subgraph */
+    void generate(const ast::SubGraph& subgraph,
                   const std::vector<WithID<types::TypeID>>& inputs,
                   const std::vector<WithID<types::TypeID>>& outputs);
     /*Generate bytecode for a dependency and leaves the result on the stack */

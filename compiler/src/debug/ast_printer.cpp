@@ -33,6 +33,13 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::print(const ast::SubGraph& subgraph) {
+    print(subgraph.sinks);
+    if (subgraph.output) {
+      print(*subgraph.output);
+    }
+  }
+
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
@@ -105,9 +112,7 @@ namespace fluir::debug {
     print(write.child());
   }
   void AstPrinter::operator()(const ast::LocalRead& read) {
-    auto target = read.varIndex() == 0 ? fmt::format("{}", read.variable()) :
-                                         fmt::format("{}.{}", read.variable(), read.varIndex());
-    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), target);
+    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), read.variable());
   }
 
   void AstPrinter::operator()(const ast::Call& call) {
@@ -145,6 +150,19 @@ namespace fluir::debug {
       FLUIR_SCOPED_INDENT;
       print(conditional.elseBody());
     }
+  }
+
+  void AstPrinter::operator()(const ast::Bundle& bundle) {
+    out_ << formatIndented("Bundle({}):\n", bundle.id());
+    FLUIR_SCOPED_INDENT;
+    for (const auto& dependency : bundle.children()) {
+      print(dependency);
+    }
+  }
+  void AstPrinter::operator()(const ast::Unbundle& unbundle) {
+    out_ << formatIndented("Unbundle({})[{}]:\n", unbundle.id(), unbundle.index());
+    FLUIR_SCOPED_INDENT;
+    print(unbundle.child());
   }
 
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
@@ -188,6 +206,10 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::Call>());
       case ast::NodeKind::Conditional:
         return (*this)(*node.as<ast::Conditional>());
+      case ast::NodeKind::Bundle:
+        return (*this)(*node.as<ast::Bundle>());
+      case ast::NodeKind::Unbundle:
+        return (*this)(*node.as<ast::Unbundle>());
     }
   }
 

@@ -15,7 +15,18 @@
 #include "compiler/utility/context.hpp"
 
 namespace fluir::ast {
-  enum class NodeKind { Constant, BinaryOperator, UnaryOperator, Cast, LocalWrite, LocalRead, Call, Conditional };
+  enum class NodeKind {
+    Constant,
+    BinaryOperator,
+    UnaryOperator,
+    Cast,
+    LocalWrite,
+    LocalRead,
+    Call,
+    Conditional,
+    Bundle,
+    Unbundle
+  };
 
   class Node {
    public:
@@ -58,42 +69,34 @@ namespace fluir::ast {
   };
 
   using UniqueNode = std::unique_ptr<Node>;
-  using DataFlowGraph = std::vector<UniqueNode>;
+  using DataFlowGraph = std::vector<UniqueNode>;  // TODO: Replace instances of this with SubGraph?
 
   /** A dependency on another node in the graph */
   class Dependency {
    public:
-    explicit Dependency(UniqueNode child, std::optional<unsigned> index = std::nullopt) :
-      child_(std::move(child)), index_(index) { }
+    explicit Dependency(UniqueNode child) : child_(std::move(child)) { }
 
     [[nodiscard]] Node& get() { return *child_; }
     [[nodiscard]] const Node& get() const { return *child_; }
-    [[nodiscard]] bool hasIndex() const noexcept { return index_.has_value(); }
-    [[nodiscard]] unsigned index() const { return index_.value(); }
+    [[nodiscard]] const UniqueNode& child() const { return child_; }
+    [[nodiscard]] UniqueNode& child() { return child_; }
     [[nodiscard]] const FullID& fullId() const { return child_->fullId(); }
     [[nodiscard]] ID id() const { return child_->id(); }
     [[nodiscard]] FlowGraphLocation location() const { return child_->location(); }
     [[nodiscard]] NodeKind kind() const { return child_->kind(); }
-    [[nodiscard]] types::TypeID type() const { return index_ ? type_ : child_->type(); }
+    [[nodiscard]] types::TypeID type() const { return child_->type(); }
     [[nodiscard]] types::TypeID fullType() const { return child_->type(); }
 
-    void setType(types::TypeID t, const Context& ctx) {
-      child_->setType(t);
-      if (!index_) {
-        return;
-      }
-      const auto* descriptor = ctx.symbolTable.getType(t);
-      if (descriptor && descriptor->is<types::Product>()) {
-        type_ = descriptor->as<types::Product>()->at(*index_);
-      } else {
-        type_ = t;
-      }
-    }
+    void setType(types::TypeID t) { child_->setType(t); }
 
    private:
-    UniqueNode child_;                      /**< The dependency node */
-    types::TypeID type_{types::ID_INVALID}; /**< The type at `index_` of `child_`'s output if `index_` is set */
-    std::optional<unsigned> index_;         /**< The index into `child_`'s outputs to read from */
+    UniqueNode child_; /**< The dependency node */
+  };
+
+  /** A scoped subgraph of a data flow graph */
+  struct SubGraph {
+    std::vector<UniqueNode> sinks; /**< Nodes that are not consumed downstream. */
+    UniqueNode output;             /**< Optional output of this subgraph */
   };
 
   struct ScopeInput {
@@ -107,15 +110,9 @@ namespace fluir::ast {
   }
   template <typename NodeType, typename... Args>
   inline Dependency createDependency(Args&&... args) {
-    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...), std::nullopt};
+    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...)};
   }
-  template <typename NodeType, typename... Args>
-  inline Dependency createDependencyWithIndex(unsigned index, Args&&... args) {
-    return Dependency{std::make_unique<NodeType>(std::forward<Args>(args)...), index};
-  }
-  inline Dependency createDependency(std::optional<unsigned> index, UniqueNode node) {
-    return Dependency{std::move(node), index};
-  }
+  inline Dependency createDependency(std::optional<unsigned>, UniqueNode node) { return Dependency{std::move(node)}; }
   template <typename NodeType>
   inline auto clone(const std::unique_ptr<NodeType>& p) {
     return createNode<NodeType>(*p);
@@ -125,7 +122,7 @@ namespace fluir::ast {
   inline Dependency clone(const Dependency& d) {
     const auto* concrete = d.get().as<NodeType>();
     assert(concrete && "clone called on a different node kind");
-    return Dependency{createNode<NodeType>(*concrete), d.hasIndex() ? std::optional{d.index()} : std::nullopt};
+    return Dependency{createNode<NodeType>(*concrete)};
   }
 
   class Constant : public Node {
@@ -247,6 +244,10 @@ namespace fluir::ast {
 
   class Conditional : public Node {
    public:
+    static constexpr int CONDITION_INDEX = 0;
+    static constexpr ID THEN_BODY = 1;
+    static constexpr ID ELSE_BODY = 2;
+
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Conditional; }
 
     Conditional(FullID id,
@@ -254,8 +255,8 @@ namespace fluir::ast {
                 Dependency condition,
                 std::vector<ScopeInput> inputs,
                 std::vector<ID> outputs,
-                DataFlowGraph thenBody,
-                DataFlowGraph elseBody) :
+                SubGraph thenBody,
+                SubGraph elseBody) :
       Node(NodeKind::Conditional, std::move(id), location),
       condition_(std::move(condition)),
       inputs_(std::move(inputs)),
@@ -265,10 +266,10 @@ namespace fluir::ast {
 
     [[nodiscard]] const Dependency& condition() const { return condition_; }
     [[nodiscard]] Dependency& condition() { return condition_; }
-    [[nodiscard]] const DataFlowGraph& thenBody() const { return then_; }
-    [[nodiscard]] DataFlowGraph& thenBody() { return then_; }
-    [[nodiscard]] const DataFlowGraph& elseBody() const { return else_; }
-    [[nodiscard]] DataFlowGraph& elseBody() { return else_; }
+    [[nodiscard]] const SubGraph& thenBody() const { return then_; }
+    [[nodiscard]] SubGraph& thenBody() { return then_; }
+    [[nodiscard]] const SubGraph& elseBody() const { return else_; }
+    [[nodiscard]] SubGraph& elseBody() { return else_; }
     [[nodiscard]] const std::vector<ScopeInput>& inputs() const { return inputs_; }
     [[nodiscard]] std::vector<ScopeInput>& inputs() { return inputs_; }
     [[nodiscard]] const std::vector<ID>& outputs() const { return outputs_; }
@@ -277,8 +278,38 @@ namespace fluir::ast {
     Dependency condition_;
     std::vector<ScopeInput> inputs_;
     std::vector<ID> outputs_;
-    DataFlowGraph then_;
-    DataFlowGraph else_;
+    SubGraph then_;
+    SubGraph else_;
+  };
+
+  class Bundle : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Bundle; }
+
+    Bundle(FullID id, const FlowGraphLocation& location, std::vector<Dependency> children) :
+      Node(NodeKind::Bundle, std::move(id), location), children_(std::move(children)) { }
+
+    [[nodiscard]] const std::vector<Dependency>& children() const { return children_; }
+    [[nodiscard]] std::vector<Dependency>& children() { return children_; }
+
+   private:
+    std::vector<Dependency> children_;
+  };
+
+  class Unbundle : public Node {
+   public:
+    static bool classOf(const Node& node) { return node.kind() == NodeKind::Unbundle; }
+
+    Unbundle(FullID id, const FlowGraphLocation& location, Dependency child, size_t index) :
+      Node(NodeKind::Unbundle, std::move(id), location), child_(std::move(child)), index_(index) { }
+
+    [[nodiscard]] const Dependency& child() const { return child_; }
+    [[nodiscard]] Dependency& child() { return child_; }
+    [[nodiscard]] size_t index() const { return index_; }
+
+   private:
+    Dependency child_;
+    size_t index_;  // TODO: Should this be a string or other identifier?
   };
 
   class LocalWrite : public Node {
@@ -306,20 +337,14 @@ namespace fluir::ast {
     static bool classOf(const Node& node) { return node.kind() == NodeKind::LocalRead; }
 
     LocalRead(ID variable, FullID parentID, const FlowGraphLocation& location) :
-      LocalRead(variable, 0, std::move(parentID), location) { }
-
-    LocalRead(ID variable, int varIndex, FullID parentID, const FlowGraphLocation& location) :
-      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(variable), varIndex_(varIndex) { }
+      Node(NodeKind::LocalRead, std::move(parentID), location), variable_(variable) { }
 
     [[nodiscard]] const FullID& parent() const { return fullId(); }
     /** Returns the ID of the read variable */
     [[nodiscard]] ID variable() const { return variable_; }
-    /** Returns the index of the read variable */
-    [[nodiscard]] int varIndex() const { return varIndex_; }
 
    private:
     ID variable_;
-    int varIndex_;
   };
 
   class Call : public Node {

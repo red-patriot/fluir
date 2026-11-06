@@ -11,17 +11,32 @@ namespace fluir::fe {
   Results<ast::DataFlowGraph> ScopeBuilder::buildAst(Context& ctx,
                                                      const pt::Block& block,
                                                      const std::unordered_set<ID>& inputs,
-                                                     const std::unordered_set<ID>& outputs,
+                                                     const std::vector<ID>& outputs,
                                                      FullID id) {
     ScopeBuilder builder{ctx, block, inputs, outputs, std::move(id)};
     return builder.run();
   }
 
-  ScopeBuilder::ScopeBuilder(Context& ctx,
-                             pt::Block pt,
-                             const std::unordered_set<ID>& inputs,
-                             const std::unordered_set<ID>& outputs,
-                             FullID id) :
+  Results<ast::SubGraph> ScopeBuilder::buildSubGraph(Context& ctx,
+                                                     const pt::Block& block,
+                                                     const std::unordered_set<ID>& inputs,
+                                                     const std::vector<ID>& outputs,
+                                                     FullID id) {
+    ScopeBuilder builder{ctx, block, inputs, outputs, std::move(id)};
+    auto raw = builder.run();
+    if (!raw) {
+      return NoResult;
+    }
+    if (outputs.empty()) {
+      return ast::SubGraph{.sinks = std::move(*raw), .output = nullptr};
+    }
+    auto output = std::move(raw->back());
+    raw->pop_back();
+    return ast::SubGraph{.sinks = std::move(*raw), .output = std::move(output)};
+  }
+
+  ScopeBuilder::ScopeBuilder(
+    Context& ctx, pt::Block pt, const std::unordered_set<ID>& inputs, const std::vector<ID>& outputs, FullID id) :
     ctx_(ctx), pt_(std::move(pt)), currentID_(std::move(id)), inputs_(inputs), outputs_(outputs) { }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Binary& pt) {
@@ -61,13 +76,10 @@ namespace fluir::fe {
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Conditional& pt) {
-    constexpr int CONDITION_INDEX = 0;
-    constexpr ID THEN_BODY = 1;
-    constexpr ID ELSE_BODY = 2;
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
 
-    auto condition = getDependency(pt.id, CONDITION_INDEX);
+    auto condition = getDependency(pt.id, ast::Conditional::CONDITION_INDEX);
     std::unordered_set<ID> inputIds = {pt.condition.innerId};
     std::vector<ast::ScopeInput> inputs;
     for (const auto [idx, ptInput] : pt.inputs | std::ranges::views::enumerate) {
@@ -77,24 +89,23 @@ namespace fluir::fe {
         ptInput.innerId);
       inputIds.insert(ptInput.innerId);
     }
-    std::unordered_set<ID> outputIds;
-    std::ranges::transform(
-      pt.outputs, std::inserter(outputIds, outputIds.begin()), [](const auto& o) { return o.innerId; });
+    std::vector<ID> outputIds;
+    std::ranges::transform(pt.outputs, std::back_inserter(outputIds), [](const auto& o) { return o.innerId; });
 
-    ast::DataFlowGraph thenBody;
+    ast::SubGraph thenBody;
     {
-      currentID_.emplace_back(THEN_BODY);
+      currentID_.emplace_back(ast::Conditional::THEN_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeThen = buildAst(ctx_, *pt.thenScope, inputIds, outputIds, currentID_);
+      auto maybeThen = buildSubGraph(ctx_, *pt.thenScope, inputIds, outputIds, currentID_);
       if (maybeThen) {
         thenBody = std::move(*maybeThen);
       }
     }
-    ast::DataFlowGraph elseBody;
+    ast::SubGraph elseBody;
     {
-      currentID_.emplace_back(ELSE_BODY);
+      currentID_.emplace_back(ast::Conditional::ELSE_BODY);
       FLUIR_SCOPE_EXIT { currentID_.pop_back(); };
-      auto maybeElse = buildAst(ctx_, *pt.elseScope, inputIds, outputIds, currentID_);
+      auto maybeElse = buildSubGraph(ctx_, *pt.elseScope, inputIds, outputIds, currentID_);
       if (maybeElse) {
         elseBody = std::move(*maybeElse);
       }
@@ -102,6 +113,9 @@ namespace fluir::fe {
 
     std::vector<ID> outputs;
     std::ranges::transform(pt.outputs, std::back_inserter(outputs), [](const auto& o) { return o.innerId; });
+    if (outputs.size() > 1) {
+      bundledIds_.insert(pt.id);
+    }
 
     return ast::createNode<ast::Conditional>(currentID_,
                                              pt.location,
@@ -139,14 +153,7 @@ namespace fluir::fe {
     }
 
     // Process outputs
-    for (const auto& output : outputs_) {
-      FullID outputID = currentID_;
-      outputID.push_back(output);
-      auto astNode = getDependency(output, std::nullopt);
-      auto write =
-        ast::createNode<ast::LocalWrite>(std::move(outputID), std::move(astNode), fluir::FlowGraphLocation{});
-      graph_.emplace_back(std::move(write));
-    }
+    auto outputs = processOutputs(outputs_, currentID_, FlowGraphLocation{});
 
     // If there are more pending nodes, process them now
     if (alreadyFound_.size() != body.nodes.size()) {
@@ -170,6 +177,9 @@ namespace fluir::fe {
       currentID_.pop_back();
     }
 
+    if (outputs) {
+      graph_.emplace_back(std::move(*outputs));
+    }
     return std::move(graph_);
   }
 
@@ -206,16 +216,17 @@ namespace fluir::fe {
     if (inputs_.contains(dependencyId)) {
       auto parameterID = currentID_;
       parameterID.back() = dependencyId;
-      return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, parameterID, FlowGraphLocation{});
+      return ast::createDependency<ast::LocalRead>(dependencyId, parameterID, FlowGraphLocation{});
     }
 
     if (promotedIds_.contains(dependencyId)) {
       dependencies_.insert(dependencyId);
-      if (index) {
-        return ast::createDependencyWithIndex<ast::LocalRead>(
-          *index, dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
+      if (bundledIds_.contains(dependencyId)) {
+        auto read = ast::createDependency<ast::LocalRead>(dependencyId, currentID_, FlowGraphLocation{});
+        return ast::createDependency<ast::Unbundle>(
+          currentID_, FlowGraphLocation{}, std::move(read), static_cast<size_t>(dependencyIdx));
       } else {
-        return ast::createDependency<ast::LocalRead>(dependencyId, dependencyIdx, currentID_, FlowGraphLocation{});
+        return ast::createDependency<ast::LocalRead>(dependencyId, currentID_, FlowGraphLocation{});
       }
     }
 
@@ -224,7 +235,34 @@ namespace fluir::fe {
     auto dependency = process(dependencyId, pt);
     // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
-    return ast::Dependency{std::move(dependency), index ? std::optional(dependencyIdx) : std::nullopt};
+    if (bundledIds_.contains(dependencyId)) {
+      dependency = ast::createNode<ast::Unbundle>(
+        currentID_, FlowGraphLocation{}, ast::Dependency{std::move(dependency)}, static_cast<size_t>(dependencyIdx));
+    }
+    return ast::Dependency{std::move(dependency)};
+  }
+
+  std::optional<ast::UniqueNode> ScopeBuilder::processOutputs(const std::vector<ID>& outputIDs,
+                                                              FullID id,
+                                                              FlowGraphLocation location) {
+    if (outputIDs.empty()) {
+      return std::nullopt;
+    }
+    id.pop_back();  // Pop the temporary ID off, to just have the parent ID here
+
+    std::vector<ast::Dependency> outputs;
+    for (const auto& output : outputIDs) {
+      FullID outputID = currentID_;
+      outputID.push_back(output);
+      auto dependency = getDependency(output, std::nullopt);
+      outputs.emplace_back(std::move(dependency));
+    }
+
+    if (outputIDs.size() > 1) {
+      return ast::createNode<ast::Bundle>(std::move(id), location, std::move(outputs));
+    } else {
+      return std::move(outputs.front().child());
+    }
   }
 
   std::unordered_set<fluir::ID> ScopeBuilder::getIdsPromotedToLocal() const {

@@ -483,7 +483,9 @@ namespace fluir {
     auto baseSlot =
       static_cast<uint8_t>(currentScope_->addLocalSlot(dependency.id(), *product));  // TODO: Handle too many?
     // Loop backwards over all the product's elements and push them to the correct offset
-    for (auto slot = baseSlot + product->count() - 1; slot >= baseSlot && slot < baseSlot + product->count(); --slot) {
+    for (uint8_t slot = baseSlot + static_cast<uint8_t>(product->count() - 1);
+         slot >= baseSlot && slot < baseSlot + product->count();
+         --slot) {
       emitBytes(Instruction::SET_VAL, slot);
     }
   }

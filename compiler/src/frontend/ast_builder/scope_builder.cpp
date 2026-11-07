@@ -238,6 +238,14 @@ namespace fluir::fe {
     if (bundledIds_.contains(dependencyId)) {
       dependency = ast::createNode<ast::Unbundle>(
         currentID_, FlowGraphLocation{}, ast::Dependency{std::move(dependency)}, static_cast<size_t>(dependencyIdx));
+    } else {
+      if (dependencyIdx != 0) {
+        ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_MISSING_DEPENDENCY,
+                                          ctx_.currentFile,
+                                          currentID_,
+                                          "Node depends on nonexistent output index {}, only 0 allowed.",
+                                          dependencyIdx);
+      }
     }
     return ast::Dependency{std::move(dependency)};
   }

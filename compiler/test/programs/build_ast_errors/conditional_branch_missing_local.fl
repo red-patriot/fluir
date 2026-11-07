@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="1" w="100" h="80">
+    <body>
+      <conditional id="1" x="24" y="7" z="2" w="36" h="30">
+        <condition inner="1" y="10"/>
+        <input/>
+        <output/>
+        <then>
+          <constant id="2" x="15" y="4" z="3" w="12" h="5">
+            <i32>0</i32>
+          </constant>
+          <conduit id="4" input="9">
+            <output target="2" index="0"/>
+          </conduit>
+        </then>
+        <else>
+          <constant id="5" x="15" y="4" z="3" w="12" h="5">
+            <i32>12</i32>
+          </constant>
+        </else>
+      </conditional>
+      <constant id="2" x="7" y="16" z="2" w="12" h="5">
+        <bool>true</bool>
+      </constant>
+      <conduit id="3" input="2">
+        <output target="1" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

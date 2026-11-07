@@ -21,7 +21,7 @@ namespace fluir {
     Results<types::TypeID> checkType(Context& ctx, ast::Unbundle* unbundle);
 
     Results<types::TypeID> checkType(Context& ctx, ast::SubGraph& graph, const std::vector<ast::ScopeInput>& inputs);
-    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency);
+    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency, const FullID& dependentId);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
 
@@ -184,8 +184,17 @@ namespace fluir {
       return !failed;
     }
 
-    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency) {
+    Results<types::TypeID> checkType(Context& ctx, ast::Dependency& dependency, const FullID& dependentId) {
       if (const auto t = checkType(ctx, &dependency.get()); t.has_value()) {
+        // If a node has an empty output, it cannot be used as an input
+        if (t == types::ID_EMPTY) {
+          // The dependency has no outputs, so we cannot use it as an argument
+          ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                           ctx.currentFile,
+                                           dependentId,
+                                           "Cannot depend on a node with no outputs.");
+          return NoResult;
+        }
         const auto type = *t;
         dependency.setType(type);
         return dependency.type();
@@ -232,7 +241,7 @@ namespace fluir {
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::BinaryOp* binary) {
-      if (!checkType(ctx, binary->lhs()) || !checkType(ctx, binary->rhs())) {
+      if (!checkType(ctx, binary->lhs(), binary->fullId()) || !checkType(ctx, binary->rhs(), binary->fullId())) {
         return NoResult;
       }
 
@@ -261,7 +270,7 @@ namespace fluir {
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::UnaryOp* unary) {
-      if (!checkType(ctx, unary->operand())) {
+      if (!checkType(ctx, unary->operand(), unary->fullId())) {
         return NoResult;
       }
 
@@ -286,11 +295,11 @@ namespace fluir {
 
     Results<types::TypeID> checkType(Context& ctx, ast::Cast* cast) {
       // TODO: Handle user-defined casts here
-      return checkType(ctx, cast->operand());
+      return checkType(ctx, cast->operand(), cast->fullId());
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::LocalWrite* write) {
-      if (!checkType(ctx, write->child())) {
+      if (!checkType(ctx, write->child(), write->fullId())) {
         return NoResult;
       }
       auto type = write->child().type();
@@ -340,7 +349,7 @@ namespace fluir {
       for (size_t i = 0; i < call->arguments().size(); ++i) {
         auto& arg = call->arguments()[i];
         try {
-          if (!checkType(ctx, arg)) {
+          if (!checkType(ctx, arg, call->fullId())) {
             argsFailed = true;
             continue;
           }
@@ -373,17 +382,19 @@ namespace fluir {
       }
       if (funcType->returnType()) {
         call->setType(funcType->returnType().value());
+      } else {
+        call->setType(types::ID_EMPTY);
       }
       return call->type();
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::Conditional* conditional) {
       bool succeeded = true;
-      if (!checkType(ctx, conditional->condition())) {
+      if (!checkType(ctx, conditional->condition(), conditional->fullId())) {
         succeeded = false;
       }
       for (auto& input : conditional->inputs()) {
-        if (!checkType(ctx, input.node)) {
+        if (!checkType(ctx, input.node, conditional->fullId())) {
           succeeded = false;
         }
       }
@@ -424,7 +435,7 @@ namespace fluir {
       bool succeeded = true;
 
       for (auto& child : bundle->children()) {
-        if (!checkType(ctx, child)) {
+        if (!checkType(ctx, child, bundle->fullId())) {
           succeeded = false;
         }
       }
@@ -441,7 +452,7 @@ namespace fluir {
     }
 
     Results<types::TypeID> checkType(Context& ctx, ast::Unbundle* unbundle) {
-      if (!checkType(ctx, unbundle->child())) {
+      if (!checkType(ctx, unbundle->child(), unbundle->fullId())) {
         return NoResult;
       }
 

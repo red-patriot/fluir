@@ -44,6 +44,16 @@ TEST(TestTypeArena, AddProductType) {
   EXPECT_EQ(&ft::I64(), concrete->att(1));
 }
 
+TEST(TestTypeArena, ProductTypesGetCorrectName) {
+  fluir::types::TypeArena uut;
+  std::string expected = "(BOOL,I64)";
+
+  const auto actual = uut.addProduct({&ft::BOOL(), &ft::I64()});
+
+  ASSERT_TRUE(actual->is<fluir::types::Product>());
+  EXPECT_EQ(expected, actual->name());
+}
+
 TEST(TestTypeArena, AddProductsStructurallySame) {
   fluir::types::TypeArena uut;
 

@@ -1,6 +1,7 @@
 #ifndef FLUIR_COMPILER_TYPES_TYPE_HPP
 #define FLUIR_COMPILER_TYPES_TYPE_HPP
 
+#include <span>
 #include <string>
 #include <vector>
 
@@ -83,14 +84,23 @@ namespace fluir::types {
     /** Returns the number of elements in the product type*/
     [[nodiscard]] size_t elements() const { return elements_.size(); }
 
+    std::span<Type const* const> es() const { return e_; }
+    Type const* att(size_t i) const { return e_.at(i); }
+
     /** Create a product type with the given elements. */
     static Product createFromTypes(std::vector<TypeID> elements);
     /** Create the name of a product type with the given elements. */
     static std::string nameFromTypes(const std::vector<TypeID>& elements);
+    /** Create the name of a product type with the given elements. */
+    static std::string nameFromTypes(std::span<Type const* const> elements);
 
     friend bool operator==(const Product&, const Product&) = default;
 
    private:
+    friend class TypeArena;
+    explicit Product(std::vector<Type const*> elements);
+
+    std::vector<Type const*> e_;
     std::vector<TypeID> elements_;
   };
 

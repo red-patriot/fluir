@@ -9,10 +9,34 @@ namespace fluir::types {
     }
   }
 
+  Product const* TypeArena::addProduct(const std::vector<Type const*>& elements) {
+    if (elements.empty()) {
+      return &EMPTY();
+    }
+    if (const auto i = products_.find(std::span{elements}); i != products_.end()) {
+      return i->get();
+    }
+    const auto i = products_.insert(std::unique_ptr<Product>{new Product(elements)});
+    return i.first->get();
+  }
+
   Type const* TypeArena::findTypeNamed(std::string_view name) const {
     if (typeNames_.contains(name)) {
       return typeNames_.at(name);
     }
     return nullptr;
   }
+
+  size_t TypeArena::ElementwiseHash::operator()(std::span<Type const* const> elements) const {
+    size_t hash = elements.size();
+    for (auto const& element : elements) {
+      hash ^= std::hash<Type const*>{}(element);
+    }
+    return hash;
+  }
+
+  bool TypeArena::ElementwiseEq::operator()(std::span<Type const* const> lhs, std::span<Type const* const> rhs) const {
+    return std::ranges::equal(lhs, rhs);
+  }
+
 }  // namespace fluir::types

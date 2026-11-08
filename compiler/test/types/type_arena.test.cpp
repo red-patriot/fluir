@@ -33,16 +33,22 @@ INSTANTIATE_TEST_SUITE_P(,
                                            &ft::EMPTY(),
                                            &ft::MAGIC_ANY_TYPE()));
 
-// TEST(TestTypeArena, AddProductType) {
-//   fluir::types::TypeArena uut;
-//
-//   const auto A = uut.addType(fluir::types::Type{"A"});
-//   const auto B = uut.addType(fluir::types::Type{"B"});
-//   const auto Product = uut.addType(fluir::types::Product("Product", {A, B}));
-//
-//   const auto* actual = uut.getType(Product);
-//   ASSERT_TRUE(actual->is<fluir::types::Product>());
-//   const auto* concrete = actual->as<fluir::types::Product>();
-//   EXPECT_EQ(A, concrete->at(0));
-//   EXPECT_EQ(B, concrete->at(1));
-// }
+TEST(TestTypeArena, AddProductType) {
+  fluir::types::TypeArena uut;
+
+  const auto actual = uut.addProduct({&ft::BOOL(), &ft::I64()});
+
+  ASSERT_TRUE(actual->is<fluir::types::Product>());
+  const auto* concrete = actual->as<fluir::types::Product>();
+  EXPECT_EQ(&ft::BOOL(), concrete->att(0));
+  EXPECT_EQ(&ft::I64(), concrete->att(1));
+}
+
+TEST(TestTypeArena, AddProductsStructurallySame) {
+  fluir::types::TypeArena uut;
+
+  const auto actual1 = uut.addProduct({&ft::BOOL(), &ft::I64()});
+  const auto actual2 = uut.addProduct({&ft::BOOL(), &ft::I64()});
+
+  EXPECT_EQ(actual1, actual2);
+}

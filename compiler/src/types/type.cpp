@@ -61,10 +61,13 @@ namespace fluir::types {
 
   Product::Product(std::string name, std::vector<TypeID> elements) :
     Type(std::move(name), Category::Product), elements_(std::move(elements)) { }
+  Product::Product(std::vector<Type const*> elements) :
+    Type(nameFromTypes(elements), Category::Product), e_(std::move(elements)) { }
 
   std::string Product::nameFromTypes(const std::vector<TypeID>& elements) {
     return fmt::format("({})", fmt::join(elements, ","));
   }
+  std::string Product::nameFromTypes(std::span<Type const* const>) { return "TODO"; }
 
   Product Product::createFromTypes(std::vector<TypeID> elements) {
     auto name = nameFromTypes(elements);

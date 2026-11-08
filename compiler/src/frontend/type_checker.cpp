@@ -392,19 +392,20 @@ namespace fluir {
       bool succeeded = true;
       if (!checkType(ctx, conditional->condition(), conditional->fullId())) {
         succeeded = false;
+      } else {
+        if (conditional->condition().type() != types::ID_BOOL) {
+          ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
+                                           ctx.currentFile,
+                                           conditional->fullId(),
+                                           "Condition requires a BOOL input, found '{}'",
+                                           ctx.symbolTable.getType(conditional->condition().type())->name());
+          succeeded = false;
+        }
       }
       for (auto& input : conditional->inputs()) {
         if (!checkType(ctx, input.node, conditional->fullId())) {
           succeeded = false;
         }
-      }
-      if (conditional->condition().type() != types::ID_BOOL) {
-        ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_INCOMPATIBLE_TYPE,
-                                         ctx.currentFile,
-                                         conditional->fullId(),
-                                         "Condition requires a BOOL input, found '{}'",
-                                         ctx.symbolTable.getType(conditional->condition().type())->name());
-        succeeded = false;
       }
 
       if (!succeeded) {
@@ -414,7 +415,7 @@ namespace fluir {
 
       auto thenType = checkType(ctx, conditional->thenBody(), conditional->inputs());
       auto elseType = checkType(ctx, conditional->elseBody(), conditional->inputs());
-      if (!thenType && !elseType) {
+      if (!thenType || !elseType) {
         return NoResult;
       }
 

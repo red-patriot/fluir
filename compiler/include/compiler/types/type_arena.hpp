@@ -21,6 +21,7 @@ namespace fluir::types {
      */
     Product const* addProduct(const std::vector<Type const*>& elements);
 
+    /** Searches types by name, */
     Type const* findTypeNamed(std::string_view name) const;
 
    private:

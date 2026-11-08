@@ -17,6 +17,7 @@ namespace fluir::types {
       return i->get();
     }
     const auto i = products_.insert(std::unique_ptr<Product>{new Product(elements)});
+    typeNames_.emplace((*i.first)->name(), i.first->get());
     return i.first->get();
   }
 

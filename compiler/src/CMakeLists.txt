@@ -56,6 +56,7 @@ set(FLUIR_COMPILER_TYPES_SOURCES
     "types/operator_definition.cpp"
     "types/symbol_table.cpp"
     "types/type.cpp"
+    "types/type_arena.cpp"
 )
 
 set(FLUIR_COMPILER_UTILITY_SOURCES

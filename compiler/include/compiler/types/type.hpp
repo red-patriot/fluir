@@ -48,6 +48,28 @@ namespace fluir::types {
     Category category_{Category::Scalar}; /**< The primary category of this type */
   };
 
+  class Scalar : public Type {
+   public:
+    friend const Scalar& F64();
+    friend const Scalar& I8();
+    friend const Scalar& I16();
+    friend const Scalar& I32();
+    friend const Scalar& I64();
+    friend const Scalar& U8();
+    friend const Scalar& U16();
+    friend const Scalar& U32();
+    friend const Scalar& U64();
+    friend const Scalar& BOOL();
+    // HACK: this is only used as an input type for builtins that handle typing "magically"
+    // It represents a data sink and can accept any type
+    // IT IS IMPERATIVE THIS NEVER BE ALLOWED TO LEAK INTO USER CODE
+    // TODO: remove this once things are updated to support generics
+    friend const Scalar& MAGIC_ANY_TYPE();
+
+   private:
+    Scalar(std::string name) : Type(std::move(name), Category::Scalar) { }
+  };
+
   /** The description of a product type in the Fluir language */
   class Product : public Type {
    public:
@@ -71,6 +93,19 @@ namespace fluir::types {
    private:
     std::vector<TypeID> elements_;
   };
+
+  const Scalar& F64();
+  const Scalar& I8();
+  const Scalar& I16();
+  const Scalar& I32();
+  const Scalar& I64();
+  const Scalar& U8();
+  const Scalar& U16();
+  const Scalar& U32();
+  const Scalar& U64();
+  const Scalar& BOOL();
+  const Scalar& MAGIC_ANY_TYPE();
+  const Product& EMPTY();
 }  // namespace fluir::types
 
 #endif

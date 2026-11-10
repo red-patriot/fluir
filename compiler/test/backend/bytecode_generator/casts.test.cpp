@@ -48,12 +48,12 @@ TEST_F(TestBytecodeGenerator, GeneratesIntCasts) {
 
   auto writer = generate(program(function(3,
                                           "ints",
-                                          cast(ft::ID_F64, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I64, constant(12.4, {3, 3}), {3, 3}),
-                                          cast(ft::ID_U64, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I8, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I16, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I64, constant(I32{8}, {3, 1}), {3, 2}))));
+                                          cast(&ft::F64(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I64(), constant(12.4, {3, 3}), {3, 3}),
+                                          cast(&ft::U64(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I8(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I16(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I64(), constant(I32{8}, {3, 1}), {3, 2}))));
 
   EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
   ASSERT_EQ(1, writer.chunks.size());
@@ -85,9 +85,9 @@ TEST_F(TestBytecodeGenerator, GeneratesIntToUintCastsWithWidthCasts) {
 
   auto writer = generate(program(function(3,
                                           "ints",
-                                          cast(ft::ID_U32, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_U16, constant(I32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_U8, constant(I32{8}, {3, 1}), {3, 2}))));
+                                          cast(&ft::U32(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::U16(), constant(I32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::U8(), constant(I32{8}, {3, 1}), {3, 2}))));
 
   EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
   ASSERT_EQ(1, writer.chunks.size());
@@ -112,7 +112,7 @@ TEST_F(TestBytecodeGenerator, GeneratesUintCasts) {
                           }};
 
   auto writer = generate(program(function(
-    3, "uints", cast(ft::ID_F64, constant(U32{8}, {3, 1}), {3, 2}), cast(ft::ID_U64, constant(12.4, {3, 3}), {3, 3}))));
+    3, "uints", cast(&ft::F64(), constant(U32{8}, {3, 1}), {3, 2}), cast(&ft::U64(), constant(12.4, {3, 3}), {3, 3}))));
 
   EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
   ASSERT_EQ(1, writer.chunks.size());
@@ -144,9 +144,9 @@ TEST_F(TestBytecodeGenerator, GeneratesUintToIntCastsWithWidthCasts) {
 
   auto writer = generate(program(function(3,
                                           "uints",
-                                          cast(ft::ID_I32, constant(U32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I16, constant(U32{8}, {3, 1}), {3, 2}),
-                                          cast(ft::ID_I8, constant(U32{8}, {3, 1}), {3, 2}))));
+                                          cast(&ft::I32(), constant(U32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I16(), constant(U32{8}, {3, 1}), {3, 2}),
+                                          cast(&ft::I8(), constant(U32{8}, {3, 1}), {3, 2}))));
 
   EXPECT_BC_HEADER_EQ(expectedHeader(), writer.header);
   ASSERT_EQ(1, writer.chunks.size());

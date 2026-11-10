@@ -6,45 +6,11 @@
 
 #include "compiler/types/operator_def.hpp"
 
-TEST(TestSymbolTable, AddGetTypeByID) {
-  fluir::types::Type expected{"SimpleType1"};
-
-  fluir::types::SymbolTable uut;
-
-  const auto id = uut.addType(expected);
-
-  const auto actual = uut.getType(id);
-
-  ASSERT_TRUE(actual);
-  EXPECT_EQ(expected, *actual);
-
-  const auto notFound = uut.getType(fluir::types::TypeID::ID_INVALID);
-  EXPECT_FALSE(notFound);
-}
-
-TEST(TestSymbolTable, AddGetTypeByName) {
-  fluir::types::Type expected{"SimpleType1"};
-
-  fluir::types::SymbolTable uut;
-
-  uut.addType(expected);
-  const auto id = uut.getTypeID(expected.name());
-
-  const auto actual = uut.getType(id);
-
-  ASSERT_TRUE(actual);
-  EXPECT_EQ(expected, *actual);
-
-  auto unknownID = uut.getTypeID("UnknownType");
-  auto notFound = uut.getType(unknownID);
-  EXPECT_FALSE(notFound);
-}
-
 TEST(TestSymbolTable, AddBinaryOperator) {
   fluir::types::SymbolTable uut;
-  const auto lhs = uut.addType(fluir::types::Type{"Lhs"});
-  const auto rhs = uut.addType(fluir::types::Type{"Rhs"});
-  const auto ret = uut.addType(fluir::types::Type{"Ret"});
+  const auto lhs = &fluir::types::BOOL();
+  const auto rhs = &fluir::types::EMPTY();
+  const auto ret = &fluir::types::I8();
 
   fluir::types::OperatorDefinition op{lhs, fluir::Operator::STAR, rhs, ret};
 
@@ -56,8 +22,8 @@ TEST(TestSymbolTable, AddBinaryOperator) {
 
 TEST(TestSymbolTable, AddUnaryOperator) {
   fluir::types::SymbolTable uut;
-  const auto lhs = uut.addType(fluir::types::Type{"Lhs"});
-  const auto ret = uut.addType(fluir::types::Type{"Ret"});
+  const auto lhs = &fluir::types::EMPTY();
+  const auto ret = &fluir::types::BOOL();
 
   fluir::types::OperatorDefinition op{fluir::Operator::STAR, lhs, ret};
 
@@ -69,9 +35,9 @@ TEST(TestSymbolTable, AddUnaryOperator) {
 
 TEST(TestSymbolTable, UnaryAndBinaryDiffer) {
   fluir::types::SymbolTable uut;
-  const auto lhs = uut.addType(fluir::types::Type{"Lhs"});
-  const auto rhs = uut.addType(fluir::types::Type{"Rhs"});
-  const auto ret = uut.addType(fluir::types::Type{"Ret"});
+  const auto lhs = &fluir::types::EMPTY();
+  const auto rhs = &fluir::types::BOOL();
+  const auto ret = &fluir::types::U64();
 
   fluir::types::OperatorDefinition binary{lhs, fluir::Operator::MINUS, rhs, ret};
   fluir::types::OperatorDefinition unary{fluir::Operator::MINUS, ret, lhs};
@@ -85,9 +51,9 @@ TEST(TestSymbolTable, UnaryAndBinaryDiffer) {
 
 TEST(TestSymbolTable, CannotAddDuplicateOperatorOverloads) {
   fluir::types::SymbolTable uut;
-  const auto lhs = uut.addType(fluir::types::Type{"Lhs"});
-  const auto rhs = uut.addType(fluir::types::Type{"Rhs"});
-  const auto ret = uut.addType(fluir::types::Type{"Ret"});
+  const auto lhs = &fluir::types::EMPTY();
+  const auto rhs = &fluir::types::BOOL();
+  const auto ret = &fluir::types::U64();
 
   fluir::types::OperatorDefinition op{lhs, fluir::Operator::PLUS, rhs, ret};
 
@@ -100,10 +66,10 @@ TEST(TestSymbolTable, CannotAddDuplicateOperatorOverloads) {
 
 TEST(TestSymbolTable, ErrorIfAddingOverloadsOnlyDistinguishedByReturnType) {
   fluir::types::SymbolTable uut;
-  auto lhs = uut.addType(fluir::types::Type{"Lhs"});
-  auto rhs = uut.addType(fluir::types::Type{"Rhs"});
-  auto ret1 = uut.addType(fluir::types::Type{"Ret"});
-  auto ret2 = uut.addType(fluir::types::Type{"Ret2"});
+  const auto lhs = &fluir::types::EMPTY();
+  const auto rhs = &fluir::types::BOOL();
+  const auto ret1 = &fluir::types::U64();
+  const auto ret2 = &fluir::types::I64();
 
   EXPECT_TRUE(uut.addOperator(fluir::types::OperatorDefinition{lhs, fluir::Operator::PLUS, rhs, ret1}));
   EXPECT_FALSE(uut.addOperator(fluir::types::OperatorDefinition{lhs, fluir::Operator::PLUS, rhs, ret2}));
@@ -112,9 +78,9 @@ TEST(TestSymbolTable, ErrorIfAddingOverloadsOnlyDistinguishedByReturnType) {
 TEST(TestSymbolTable, StoresConversions) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
-  const auto B = uut.addType(fluir::types::Type{"B"});
-  const auto C = uut.addType(fluir::types::Type{"C"});
+  const auto A = &fluir::types::EMPTY();
+  const auto B = &fluir::types::BOOL();
+  const auto C = &fluir::types::U64();
   uut.addImplicitConversion(A, B);
   uut.addExplicitConversion(A, C);
 
@@ -132,7 +98,7 @@ TEST(TestSymbolTable, StoresConversions) {
 TEST(TestSymbolTable, SelfConversionsAreIgnored) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto A = &fluir::types::EMPTY();
   uut.addImplicitConversion(A, A);
 
   EXPECT_FALSE(uut.canExplicitlyConvert(A, A));
@@ -152,9 +118,9 @@ TEST(TestSymbolTable, CanPushAndPopScopes) {
 TEST(TestSymbolTable, CanAddAndAccessLocalVariables) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
-  const auto B = uut.addType(fluir::types::Type{"B"});
-  const auto C = uut.addType(fluir::types::Type{"C"});
+  const auto A = &fluir::types::EMPTY();
+  const auto B = &fluir::types::BOOL();
+  const auto C = &fluir::types::U64();
 
   uut.pushScope();
   uut.addLocalVariable(1, A);
@@ -176,22 +142,22 @@ TEST(TestSymbolTable, CanAddAndAccessLocalVariables) {
 TEST(TestSymbolTable, ReadingNonexistingVariableReturnsInvalid) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
+  const auto A = &fluir::types::I8();
 
   uut.pushScope();
   uut.addLocalVariable(1, A);
 
   auto actual = uut.getLocalVariableType(3);
 
-  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual);
+  EXPECT_EQ(nullptr, actual);
 }
 
 TEST(TestSymbolTable, PoppingScopeRemovesLocalVariables) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
-  const auto B = uut.addType(fluir::types::Type{"B"});
-  const auto C = uut.addType(fluir::types::Type{"C"});
+  const auto A = &fluir::types::EMPTY();
+  const auto B = &fluir::types::BOOL();
+  const auto C = &fluir::types::U64();
 
   uut.pushScope();
   uut.pushScope();
@@ -208,15 +174,15 @@ TEST(TestSymbolTable, PoppingScopeRemovesLocalVariables) {
   uut.popScope();
 
   EXPECT_EQ(A, actual1);
-  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual2);
+  EXPECT_EQ(nullptr, actual2);
   EXPECT_EQ(C, actual3);
 }
 
 TEST(TestSymbolTable, OnlyCurrentLocalScopeIsSearchedForVariables) {
   fluir::types::SymbolTable uut;
 
-  const auto A = uut.addType(fluir::types::Type{"A"});
-  const auto B = uut.addType(fluir::types::Type{"B"});
+  const auto A = &fluir::types::EMPTY();
+  const auto B = &fluir::types::BOOL();
 
   uut.pushScope();
   uut.addLocalVariable(1, A);
@@ -227,20 +193,6 @@ TEST(TestSymbolTable, OnlyCurrentLocalScopeIsSearchedForVariables) {
   auto actual1 = uut.getLocalVariableType(1);
   auto actual2 = uut.getLocalVariableType(2);
 
-  EXPECT_EQ(fluir::types::TypeID::ID_INVALID, actual1);
+  EXPECT_EQ(nullptr, actual1);
   EXPECT_EQ(B, actual2);
-}
-
-TEST(TestSymbolTable, AddProductType) {
-  fluir::types::SymbolTable uut;
-
-  const auto A = uut.addType(fluir::types::Type{"A"});
-  const auto B = uut.addType(fluir::types::Type{"B"});
-  const auto Product = uut.addType(fluir::types::Product("Product", {A, B}));
-
-  const auto* actual = uut.getType(Product);
-  ASSERT_TRUE(actual->is<fluir::types::Product>());
-  const auto* concrete = actual->as<fluir::types::Product>();
-  EXPECT_EQ(A, concrete->at(0));
-  EXPECT_EQ(B, concrete->at(1));
 }

@@ -1,22 +1,24 @@
 #include <gtest/gtest.h>
 
 #include "compiler/types/symbol_table.hpp"
+#include "compiler/types/type_arena.hpp"
 
 using fluir::Operator;
 using fluir::types::OperatorDefinition;
 using fluir::types::Type;
+namespace ft = fluir::types;
 
 class TestOverloadResolution : public ::testing::Test {
  public:
   void SetUp() override {
-    A = uut.addType(fluir::types::Type{"A"});
-    B = uut.addType(fluir::types::Type{"B"});
-    C = uut.addType(fluir::types::Type{"C"});
-    D = uut.addType(fluir::types::Type{"D"});
-    E = uut.addType(fluir::types::Type{"E"});
-    F = uut.addType(fluir::types::Type{"F"});
-    G = uut.addType(fluir::types::Type{"G"});
-    H = uut.addType(fluir::types::Type{"H"});
+    A = arena.addProduct({&ft::BOOL()});
+    B = arena.addProduct({&ft::I8()});
+    C = arena.addProduct({&ft::I16()});
+    D = arena.addProduct({&ft::I32()});
+    E = arena.addProduct({&ft::I64()});
+    F = arena.addProduct({&ft::U8()});
+    G = arena.addProduct({&ft::U16()});
+    H = arena.addProduct({&ft::U32()});
 
     uut.addOperator(OperatorDefinition{A, Operator::PLUS, A, A});   // A + A => A
     uut.addOperator(OperatorDefinition{A, Operator::MINUS, A, A});  // A - A => A
@@ -45,16 +47,17 @@ class TestOverloadResolution : public ::testing::Test {
     uut.addExplicitConversion(G, F);  // G (e)-> F
   }
 
+  fluir::types::TypeArena arena;
   fluir::types::SymbolTable uut;
 
-  fluir::types::TypeID A{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID B{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID C{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID D{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID E{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID F{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID G{fluir::types::TypeID::ID_INVALID};
-  fluir::types::TypeID H{fluir::types::TypeID::ID_INVALID};
+  Type const* A{nullptr};
+  Type const* B{nullptr};
+  Type const* C{nullptr};
+  Type const* D{nullptr};
+  Type const* E{nullptr};
+  Type const* F{nullptr};
+  Type const* G{nullptr};
+  Type const* H{nullptr};
 };
 
 TEST_F(TestOverloadResolution, ResolvesBinaryNoCast) {

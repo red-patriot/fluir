@@ -4,8 +4,8 @@
 
 namespace fluir::be {
   BytecodeFrame::BytecodeFrame(Context& ctx,
-                               const std::vector<WithID<types::TypeID>>& inputs,
-                               const std::vector<WithID<types::TypeID>>& outputs,
+                               const std::vector<WithID<types::Type const*>>& inputs,
+                               const std::vector<WithID<types::Type const*>>& outputs,
                                code::Bytes& code) :
     ctx_(ctx),
     code_(code),
@@ -41,10 +41,10 @@ namespace fluir::be {
     frame_->currentSlots_ -= localsInScope;
   }
 
-  size_t Scope::addLocalSlot(ID id, const types::Type& type) {
+  size_t Scope::addLocalSlot(ID id, types::Type const* type) {
     if (!slots_.contains(id)) {
       auto baseSlot = frame_->currentSlots_;
-      auto slots = slotsOf(type);
+      auto slots = slotsOf(*type);
       frame_->currentSlots_ += slots;
       slots_.emplace(id, baseSlot);
     }

@@ -22,7 +22,7 @@ namespace fluir::be {
 
     /** Add a new local slot, and return its slot number. If id already exists in a slot, returns its slot without
      * changes. */
-    size_t addLocalSlot(ID id, const types::Type& type);
+    size_t addLocalSlot(ID id, types::Type const* type);
     /** Indicates if the given ID is known in the current scope. */
     bool contains(const ID& id) const;
     /** Gets an existing local slot. Asserts the given ID is already known as a local. */
@@ -41,8 +41,8 @@ namespace fluir::be {
   class BytecodeFrame {
    public:
     BytecodeFrame(Context& ctx,
-                  const std::vector<WithID<types::TypeID>>& inputs,
-                  const std::vector<WithID<types::TypeID>>& outputs,
+                  const std::vector<WithID<types::Type const*>>& inputs,
+                  const std::vector<WithID<types::Type const*>>& outputs,
                   code::Bytes& code);
 
     BytecodeFrame(const BytecodeFrame&) = delete;

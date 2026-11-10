@@ -50,7 +50,6 @@ namespace fluir::types {
   };
 
   class Scalar : public Type {
-   public:
     friend const Scalar& F64();
     friend const Scalar& I8();
     friend const Scalar& I16();
@@ -67,12 +66,35 @@ namespace fluir::types {
     // TODO: remove this once things are updated to support generics
     friend const Scalar& MAGIC_ANY_TYPE();
 
+   public:
+    static Category classOf() { return Category::Scalar; }
+
+    bool isIntegral() const;
+    bool isFloatingPoint() const;
+    bool isSigned() const;
+    bool isUnsigned() const;
+    bool isBool() const;
+    uint8_t bytes() const { return bytes_; }
+
    private:
-    Scalar(std::string name) : Type(std::move(name), Category::Scalar) { }
+    enum Classification {
+      SIGNED,
+      UNSIGNED,
+      FLOAT,
+      BOOL,
+      MAGIC,
+    };
+    Classification classification_;
+    uint8_t bytes_;
+    Scalar(std::string name, Classification c, uint8_t bytes) :
+      Type(std::move(name), Category::Scalar), classification_(c), bytes_(bytes) { }
   };
 
   /** The description of a product type in the Fluir language */
   class Product : public Type {
+    friend class TypeArena;
+    friend const Product& EMPTY();
+
    public:
     static Category classOf() { return Category::Product; }
 
@@ -80,9 +102,9 @@ namespace fluir::types {
 
     [[nodiscard]] TypeID at(size_t index) const { return elements_.at(index); }
     /** Returns the number of elements in this product. */
-    [[nodiscard]] size_t count() const { return elements_.size(); }
+    [[nodiscard]] size_t count() const { return e_.size(); }
     /** Returns the number of elements in the product type*/
-    [[nodiscard]] size_t elements() const { return elements_.size(); }
+    [[nodiscard]] size_t elements() const { return e_.size(); }
 
     std::span<Type const* const> es() const { return e_; }
     Type const* att(size_t i) const { return e_.at(i); }
@@ -97,7 +119,6 @@ namespace fluir::types {
     friend bool operator==(const Product&, const Product&) = default;
 
    private:
-    friend class TypeArena;
     explicit Product(std::vector<Type const*> elements);
 
     std::vector<Type const*> e_;

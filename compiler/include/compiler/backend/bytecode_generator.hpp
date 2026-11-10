@@ -3,6 +3,7 @@
 
 #include <stack>
 
+#include "bytecode/primitives.hpp"
 #include "compiler/backend/code_writer.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
@@ -58,12 +59,12 @@ namespace fluir {
     void run();
     /** Generates bytecode for a data flow graph*/
     void generate(const ast::DataFlowGraph& dfg,
-                  const std::vector<WithID<types::TypeID>>& inputs,
-                  const std::vector<WithID<types::TypeID>>& outputs);
+                  const std::vector<WithID<types::Type const*>>& inputs,
+                  const std::vector<WithID<types::Type const*>>& outputs);
     /*Generate bytecode for a subgraph */
     void generate(const ast::SubGraph& subgraph,
-                  const std::vector<WithID<types::TypeID>>& inputs,
-                  const std::vector<WithID<types::TypeID>>& outputs);
+                  const std::vector<WithID<types::Type const*>>& inputs,
+                  const std::vector<WithID<types::Type const*>>& outputs);
     /*Generate bytecode for a dependency and leaves the result on the stack */
     void generateDependency(const ast::Dependency& dependency);
     /*Generate bytecode for a top-level node, and pops the final result off the stack when done */
@@ -72,13 +73,14 @@ namespace fluir {
     void doGenerate(const ast::Node& node);
 
     /** Adds a local to the current scope, mapped by ID. */
-    uint8_t addLocalSlot(const ID& id, types::TypeID type);
+    uint8_t addLocalSlot(const ID& id, types::Type const* type);
 
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);
     void emitUintOperator(const Operator op, bool unary = false);
     void emitBoolOperator(const Operator op, bool unary = false);
-    void emitWidthCast(types::TypeID sourceType, types::TypeID targetType);
+    void emitWidthCast(types::Scalar const* sourceType, types::Scalar const* targetType);
+    code::NumericWidth widthOf(types::Scalar const* type);
   };
 }  // namespace fluir
 

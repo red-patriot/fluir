@@ -15,48 +15,30 @@
 #include "compiler/types/function_type.hpp"
 #include "compiler/types/operator_def.hpp"
 #include "compiler/types/type.hpp"
-#include "compiler/types/typeid.hpp"
 
 namespace fluir::types {
   /** A hierarchical table of the available symbols at a specific scope */
   class SymbolTable {
-    //? Should all the type operations also follow scoping rules, or should they be global?
    public:
     SymbolTable();
-
-    /** Add a known type to the symbol table, returns a pointer to the type */
-    template <typename Concrete>
-      requires std::derived_from<Concrete, Type>
-    TypeID addType(Concrete t) {
-      auto [it, added] = typeNames_.try_emplace(t.name(), nextTypeID_);
-      if (added) {
-        auto ptr = std::make_unique<Concrete>(std::move(t));
-        types_.insert({nextTypeID_, std::move(ptr)});
-        nextTypeID_ = static_cast<TypeID>(static_cast<std::uint64_t>(nextTypeID_) + 1);
-      }
-      return it->second;
-    }
-    /** Gets a type */
-    TypeID getTypeID(const std::string& name) const;
-    Type const* getType(TypeID id) const;
 
     /** Add an operator to the table */
     OperatorDefinition const* addOperator(OperatorDefinition op);
     /** Get all known overloads of a given operator */
     std::vector<OperatorDefinition const*> getOperatorOverloads(Operator op) const;
     /** Perform operator overload resolution for the operator with the given operands */
-    OperatorDefinition const* selectOverload(TypeID lhs, Operator op, TypeID rhs);
+    OperatorDefinition const* selectOverload(Type const* lhs, Operator op, Type const* rhs);
     /** Perform operator overload resolution for the operator with the given operands */
-    OperatorDefinition const* selectOverload(Operator op, TypeID operand);
+    OperatorDefinition const* selectOverload(Operator op, Type const* operand);
 
     /** Adds an implicit conversion operation  */
-    void addImplicitConversion(TypeID from, TypeID to);
+    void addImplicitConversion(Type const* from, Type const* to);
     /** Adds an explicit conversion operation */
-    void addExplicitConversion(TypeID from, TypeID to);
+    void addExplicitConversion(Type const* from, Type const* to);
     /** Tests if `from` can be implicitly converted to a `to`  */
-    bool canImplicitlyConvert(TypeID from, TypeID to);
+    bool canImplicitlyConvert(Type const* from, Type const* to);
     /** Tests if `from` can be explicitly converted to a `to` */
-    bool canExplicitlyConvert(TypeID from, TypeID to);
+    bool canExplicitlyConvert(Type const* from, Type const* to);
 
     /** Creates a new local scope for locals */
     void pushScope();
@@ -64,19 +46,15 @@ namespace fluir::types {
     void popScope();
 
     /** Adds a local variable with the given ID and its type to the current scope */
-    bool addLocalVariable(ID id, TypeID type);
+    bool addLocalVariable(ID id, Type const* type);
     /** Retrieves the type of the local variable with the given ID */
-    TypeID getLocalVariableType(ID id) const;
+    Type const* getLocalVariableType(ID id) const;
 
     /** Adds a function type to the table indexed by name.
      *  Returns the TypeID assigned to the function, or ID_INVALID if the name is already registered. */
-    TypeID addFunction(std::string name, FunctionType func);
+    FunctionType const* addFunction(std::string name, FunctionType func);
     /** Returns the function signature for the given name, or nullptr if not registered. */
     FunctionType const* getFunctionType(const std::string& name) const;
-    /** Returns the function signature for the given TypeID, or nullptr if not registered. */
-    FunctionType const* getFunctionType(TypeID id) const;
-    /** Returns the TypeID assigned to the named function's signature, or ID_INVALID if not registered */
-    TypeID getFunctionTypeID(const std::string& name) const;
     /** Determines if the given function is a builtin with special rules around type checking
      * TODO: This will be removed/refactored once generics are implemented
      */
@@ -87,23 +65,40 @@ namespace fluir::types {
       std::unordered_set<OperatorDefinition, std::hash<OperatorDefinition>, CompareOperatorDefByParameters>;
 
     struct Scope {
-      std::unordered_map<ID, TypeID> variables{};
+      std::unordered_map<ID, Type const*> variables{};
     };
 
     /** Registers a function signature and returns its TypeID, deduplicating by structure */
-    TypeID registerFunctionType(const FunctionType& func);
+    FunctionType const* registerFunctionType(const FunctionType& func);
 
     TypeID nextTypeID_{static_cast<TypeID>(1)};  // 0 == ID_INVALID; unified counter for all types
 
     std::stack<Scope> localScopes_{};
-    std::unordered_map<TypeID, std::unique_ptr<Type>> types_{};
-    std::unordered_map<std::string, TypeID> typeNames_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};
-    std::unordered_map<TypeID, std::unordered_set<Conversion>> conversions_{};
+    std::unordered_map<Type const*, std::unordered_set<Conversion>> conversions_{};
 
-    std::unordered_map<TypeID, FunctionType> functionTypes_{};
-    std::unordered_map<FunctionType, TypeID> functionTypeIDs_{};
-    std::unordered_map<std::string, TypeID> functionNames_{};
+    struct SignatureHash {
+      using is_transparent = void;
+      size_t operator()(const FunctionType& func) const;
+      size_t operator()(FunctionType const* func) const { return operator()(*func); }
+      size_t operator()(const std::unique_ptr<FunctionType>& func) const { return operator()(func.get()); }
+    };
+    struct SignatureEq {
+      using is_transparent = void;
+      bool operator()(FunctionType const* lhs, FunctionType const* rhs) const;
+      bool operator()(const std::unique_ptr<FunctionType>& lhs, const std::unique_ptr<FunctionType>& rhs) const {
+        return operator()(lhs.get(), rhs.get());
+      }
+      bool operator()(const std::unique_ptr<FunctionType>& lhs, FunctionType const* rhs) const {
+        return operator()(lhs.get(), rhs);
+      }
+      bool operator()(FunctionType const* lhs, const std::unique_ptr<FunctionType>& rhs) const {
+        return operator()(lhs, rhs.get());
+      }
+    };
+
+    std::unordered_set<std::unique_ptr<FunctionType>, SignatureHash, SignatureEq> functionTypes_{};
+    std::unordered_map<std::string, FunctionType const*> functionNames_{};
   };
 }  // namespace fluir::types
 

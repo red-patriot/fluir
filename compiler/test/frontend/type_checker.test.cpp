@@ -17,7 +17,7 @@ TEST(TestDeclarationTypeChecker, HandlesSingleConstant) {
   decl.statements.emplace_back(std::make_unique<fa::Constant>(1., FullID{1, 1}, fluir::FlowGraphLocation{}));
 
   fluir::Context ctx{.symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_F64;
+  const auto expected = &fluir::types::F64();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   ASSERT_TRUE(result.has_value());
@@ -35,7 +35,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingNoCasts) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_F64;
+  const auto expected = &fluir::types::F64();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(sink.containsErrors());
@@ -63,7 +63,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingLHSCast) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_F64;
+  const auto expected = &fluir::types::F64();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(sink.containsErrors());
@@ -92,7 +92,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithoutSharingRHSCast) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_F64;
+  const auto expected = &fluir::types::F64();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(sink.containsErrors());
@@ -120,7 +120,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_F64;
+  const auto* expected = &fluir::types::F64();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(sink.containsErrors());
@@ -138,7 +138,7 @@ TEST(TestDeclarationTypeChecker, HandlesBinaryExpressionWithSharingAndCasts) {
   const auto& lhs = concrete->lhs().get().as<fa::BinaryOp>();
   EXPECT_EQ(expected, lhs->lhs().type());
   EXPECT_EQ(expected, lhs->rhs().type());
-  EXPECT_EQ(expected, lhs->rhs().get().is<fa::Cast>());
+  EXPECT_TRUE(lhs->rhs().get().is<fa::Cast>());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
@@ -150,7 +150,7 @@ TEST(TestDeclarationTypeChecker, HandlesUnaryExpressionWithoutSharingNoCasts) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_U8;
+  const auto expected = &fluir::types::U8();
 
   const auto result = fluir::checkDeclType(ctx, std::move(decl));
   EXPECT_FALSE(sink.containsErrors());
@@ -175,7 +175,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDecl) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_U8;
+  const auto expected = &fluir::types::U8();
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
@@ -201,7 +201,7 @@ TEST(TestDeclarationTypeChecker, HandlesLocalReadWrite) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  const auto expected = fluir::types::ID_I16;
+  const auto expected = &fluir::types::I16();
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
@@ -292,7 +292,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithParameters) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  EXPECT_EQ(fluir::types::ID_F64, decl.statements.at(0)->type());
+  EXPECT_EQ(&fluir::types::F64(), decl.statements.at(0)->type());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
@@ -321,7 +321,7 @@ TEST(TestDeclarationTypeChecker, HandlesFunctionDefsWithReturns) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  EXPECT_EQ(fluir::types::ID_I32, decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
+  EXPECT_EQ(&fluir::types::I32(), decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
@@ -350,13 +350,13 @@ TEST(TestDeclarationTypeChecker, HandlesCastingReturnValues) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  EXPECT_EQ(fluir::types::ID_I64, decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
+  EXPECT_EQ(&fluir::types::I64(), decl.statements.at(0)->as<fa::LocalWrite>()->storedType());
   ASSERT_TRUE(decl.statements.front()->is<fa::LocalWrite>());
   const auto& child = decl.statements.front()->as<fa::LocalWrite>()->child();
   ASSERT_TRUE(child.get().is<fa::Cast>());
   const auto& cast = child.get().as<fa::Cast>();
-  EXPECT_EQ(ft::ID_I32, cast->from());
-  EXPECT_EQ(ft::ID_I64, cast->to());
+  EXPECT_EQ(&ft::I32(), cast->from());
+  EXPECT_EQ(&ft::I64(), cast->to());
 }
 
 TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
@@ -381,12 +381,12 @@ TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
 
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  ft::FunctionType expected{{ft::ID_I32, ft::ID_I16}, ft::ID_I32};
+  ft::FunctionType expected{{&ft::I32(), &ft::I16()}, &ft::I32()};
 
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   ASSERT_FALSE(sink.containsErrors());
 
-  const auto functionType = ctx.symbolTable.getFunctionType(decl.type);
+  const auto functionType = decl.type;
   ASSERT_TRUE(functionType);
   EXPECT_EQ(expected, *functionType);
 }
@@ -394,7 +394,7 @@ TEST(TestDeclarationTypeChecker, FunctionsWithReturnsAndParamsHaveAType) {
 TEST(TestDeclarationTypeChecker, HandlesCallWithMatchingArgTypes) {
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  ctx.symbolTable.addFunction("foo", {{ft::ID_I32}, ft::ID_I32});
+  ctx.symbolTable.addFunction("foo", {{&ft::I32()}, &ft::I32()});
 
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back(fa::Declaration{.id = 1, .name = "main", .statements = {}});
@@ -409,13 +409,13 @@ TEST(TestDeclarationTypeChecker, HandlesCallWithMatchingArgTypes) {
   const auto result = fluir::typeCheck(ctx, std::move(ast));
   EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(ft::ID_I32, result->declarations.front().statements.front()->type());
+  EXPECT_EQ(&ft::I32(), result->declarations.front().statements.front()->type());
 }
 
 TEST(TestDeclarationTypeChecker, HandlesCallWithImplicitCastArg) {
   fluir::test::TestDiagnosticSink sink;
   fluir::Context ctx{.diagnosticSink = sink, .symbolTable = ft::buildSymbolTable()};
-  ctx.symbolTable.addFunction("foo", {{ft::ID_I64}, ft::ID_I64});
+  ctx.symbolTable.addFunction("foo", {{&ft::I64()}, &ft::I64()});
 
   fa::AST ast{.declarations = {}};
   ast.declarations.push_back(fa::Declaration{.id = 1, .name = "main", .statements = {}});
@@ -431,7 +431,7 @@ TEST(TestDeclarationTypeChecker, HandlesCallWithImplicitCastArg) {
   EXPECT_FALSE(sink.containsErrors());
   ASSERT_TRUE(result.has_value());
   const auto& callNode = result->declarations.front().statements.front();
-  EXPECT_EQ(ft::ID_I64, callNode->type());
+  EXPECT_EQ(&ft::I64(), callNode->type());
   ASSERT_TRUE(callNode->as<fa::Call>()->arguments().front().get().is<fa::Cast>());
 }
 

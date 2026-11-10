@@ -16,23 +16,13 @@ namespace {
 TEST(TestDependency, UnindexedReportsChildTypeWithoutSetType) {
   const auto uut = i32Constant();
 
-  EXPECT_EQ(fluir::types::ID_I32, uut.type());
+  EXPECT_EQ(&fluir::types::I32(), uut.type());
 }
 
 TEST(TestDependency, UnindexedFollowsChildTypeChanges) {
   auto uut = i32Constant();
 
-  uut.get().setType(fluir::types::ID_I64);
+  uut.get().setType(&fluir::types::I64());
 
-  EXPECT_EQ(fluir::types::ID_I64, uut.type());
-}
-
-TEST(TestDependency, SetTypeInvalidDoesNotCrash) {
-  fluir::test::TestDiagnosticSink sink;
-  fluir::Context ctx{.diagnosticSink = sink};
-  auto uut = i32Constant();
-
-  uut.setType(fluir::types::ID_INVALID);
-
-  EXPECT_EQ(fluir::types::ID_INVALID, uut.type());
+  EXPECT_EQ(&fluir::types::I64(), uut.type());
 }

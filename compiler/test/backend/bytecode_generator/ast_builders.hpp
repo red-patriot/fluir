@@ -23,7 +23,7 @@ namespace fluir::test {
     return ast::createNode<ast::UnaryOp>(op, ast::Dependency{std::move(operand)}, std::move(id), FlowGraphLocation{});
   }
 
-  inline ast::UniqueNode cast(types::TypeID target, ast::UniqueNode operand, FullID id) {
+  inline ast::UniqueNode cast(types::TypePtr target, ast::UniqueNode operand, FullID id) {
     return ast::createNode<ast::Cast>(target, ast::Dependency{std::move(operand)}, std::move(id), FlowGraphLocation{});
   }
 

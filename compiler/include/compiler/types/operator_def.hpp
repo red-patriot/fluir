@@ -5,27 +5,30 @@
 #include <functional>
 
 #include "compiler/models/operator.hpp"
-#include "compiler/types/typeid.hpp"
+#include "compiler/types/type.hpp"
 
 namespace fluir::types {
   /** Represents the definition of an operator */
   class OperatorDefinition {
    public:
-    OperatorDefinition(TypeID parameter1, ::fluir::Operator op, TypeID parameter2, TypeID returnType);
-    OperatorDefinition(::fluir::Operator op, TypeID parameter1, TypeID returnType);
+    OperatorDefinition(types::TypePtr parameter1,
+                       ::fluir::Operator op,
+                       types::TypePtr parameter2,
+                       types::TypePtr returnType);
+    OperatorDefinition(::fluir::Operator op, types::TypePtr parameter1, types::TypePtr returnType);
 
     ::fluir::Operator getOperator() const { return op_; }
 
-    TypeID getReturn() const { return returnType_; }
-    std::array<TypeID, 2> getParameters() const;
+    TypePtr getReturn() const { return returnType_; }
+    std::array<TypePtr, 2> getParameters() const;
 
     friend bool operator==(const OperatorDefinition&, const OperatorDefinition&) = default;
 
    private:
     ::fluir::Operator op_; /**< The operator being applied */
-    TypeID returnType_;    /**< The type of the return value */
-    TypeID parameter1_;    /**< The type of the first parameter */
-    TypeID parameter2_;    /**< The type of the second parameter */
+    TypePtr returnType_;   /**< The type of the return value */
+    TypePtr parameter1_;   /**< The type of the first parameter */
+    TypePtr parameter2_;   /**< The type of the second parameter */
   };
 
   struct CompareOperatorDefByParameters {

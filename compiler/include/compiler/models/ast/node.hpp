@@ -11,7 +11,7 @@
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
 #include "compiler/types/operator_def.hpp"
-#include "compiler/types/typeid.hpp"
+#include "compiler/types/type.hpp"
 #include "compiler/utility/context.hpp"
 
 namespace fluir::ast {
@@ -51,9 +51,9 @@ namespace fluir::ast {
     [[nodiscard]] ID id() const { return id_.back(); }
     [[nodiscard]] FlowGraphLocation location() const { return location_; }
     [[nodiscard]] NodeKind kind() const { return kind_; }
-    [[nodiscard]] types::TypeID type() const { return type_; }
+    [[nodiscard]] types::TypePtr type() const { return type_; }
 
-    void setType(types::TypeID type) { type_ = type; }
+    void setType(types::TypePtr type) { type_ = type; }
 
    protected:
     Node(const NodeKind kind, FullID id, const FlowGraphLocation& location) :
@@ -65,7 +65,7 @@ namespace fluir::ast {
     NodeKind kind_;
     FullID id_;
     FlowGraphLocation location_;
-    types::TypeID type_ = types::ID_INVALID;
+    types::TypePtr type_ = nullptr;
   };
 
   using UniqueNode = std::unique_ptr<Node>;
@@ -84,10 +84,10 @@ namespace fluir::ast {
     [[nodiscard]] ID id() const { return child_->id(); }
     [[nodiscard]] FlowGraphLocation location() const { return child_->location(); }
     [[nodiscard]] NodeKind kind() const { return child_->kind(); }
-    [[nodiscard]] types::TypeID type() const { return child_->type(); }
-    [[nodiscard]] types::TypeID fullType() const { return child_->type(); }
+    [[nodiscard]] types::TypePtr type() const { return child_->type(); }
+    [[nodiscard]] types::TypePtr fullType() const { return child_->type(); }
 
-    void setType(types::TypeID t) { child_->setType(t); }
+    void setType(types::TypePtr t) { child_->setType(t); }
 
    private:
     UniqueNode child_; /**< The dependency node */
@@ -149,30 +149,30 @@ namespace fluir::ast {
    private:
     literals_types::Literal value_;
 
-    static types::TypeID determineType(literals_types::Literal value) {
+    static types::TypePtr determineType(literals_types::Literal value) {
       switch (value.index()) {
         case 0:
-          return types::ID_F64;
+          return &types::F64();
         case 1:
-          return types::ID_I8;
+          return &types::I8();
         case 2:
-          return types::ID_I16;
+          return &types::I16();
         case 3:
-          return types::ID_I32;
+          return &types::I32();
         case 4:
-          return types::ID_I64;
+          return &types::I64();
         case 5:
-          return types::ID_U8;
+          return &types::U8();
         case 6:
-          return types::ID_U16;
+          return &types::U16();
         case 7:
-          return types::ID_U32;
+          return &types::U32();
         case 8:
-          return types::ID_U64;
+          return &types::U64();
         case 9:
-          return types::ID_BOOL;
+          return &types::BOOL();
         default:
-          return types::ID_INVALID;
+          return nullptr;
       }
     }
   };
@@ -228,13 +228,13 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Cast; }
 
-    Cast(types::TypeID to, Dependency operand, FullID id, const FlowGraphLocation& location) :
+    Cast(types::TypePtr to, Dependency operand, FullID id, const FlowGraphLocation& location) :
       Node(NodeKind::Cast, std::move(id), location), operand_(std::move(operand)) {
       setType(to);
     }
 
-    [[nodiscard]] types::TypeID to() const { return type(); }
-    [[nodiscard]] types::TypeID from() const { return operand_.type(); }
+    [[nodiscard]] types::TypePtr to() const { return type(); }
+    [[nodiscard]] types::TypePtr from() const { return operand_.type(); }
     [[nodiscard]] const Dependency& operand() const { return operand_; }
     [[nodiscard]] Dependency& operand() { return operand_; }
 
@@ -326,7 +326,7 @@ namespace fluir::ast {
     [[nodiscard]] Dependency& child() { return child_; }
     [[nodiscard]] ID variable() const { return id(); }
     /** Returns the stored type in the variable. */
-    [[nodiscard]] types::TypeID storedType() const { return child().type(); }
+    [[nodiscard]] types::TypePtr storedType() const { return child().type(); }
 
    private:
     Dependency child_;

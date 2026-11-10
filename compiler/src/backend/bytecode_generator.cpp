@@ -9,7 +9,6 @@
 #include <fmt/format.h>
 #include <fmt/ranges.h>
 
-#include "compiler/types/traits.hpp"
 #include "compiler/utility/scope_guard.hpp"
 
 using fluir::code::Instruction;
@@ -43,16 +42,17 @@ namespace fluir {
     current_->inCount = static_cast<std::uint8_t>(func.parameters.size());
     current_->outCount = func.returnValue ? 1 : 0;
 
-    std::vector<WithID<types::TypeID>> outputs;
+    std::vector<WithID<types::TypePtr>> outputs;
     if (func.returnValue) {
-      auto returnType = ctx_.symbolTable.getTypeID(func.returnValue->typeName);
+      auto returnType = ctx_.types.findTypeNamed(func.returnValue->typeName);
       outputs.emplace_back(func.returnValue->id, returnType);
     }
-    std::vector<WithID<types::TypeID>> inputs;
-    std::ranges::transform(func.parameters, std::back_inserter(inputs), [this](const auto& p) -> WithID<types::TypeID> {
-      auto paramType = ctx_.symbolTable.getTypeID(p.typeName);
-      return {p.id, paramType};
-    });
+    std::vector<WithID<types::TypePtr>> inputs;
+    std::ranges::transform(
+      func.parameters, std::back_inserter(inputs), [this](const auto& p) -> WithID<types::TypePtr> {
+        auto paramType = ctx_.types.findTypeNamed(p.typeName);
+        return {p.id, paramType};
+      });
 
     {
       auto frame = be::BytecodeFrame(ctx_, inputs, outputs, current_->code);
@@ -83,35 +83,24 @@ namespace fluir {
       generateDependency(node.rhs());
     }
 
-    // TODO: Handle user-defined ops here
     if (node.lhs().type() != node.rhs().type()) {
       diagnostic::emitInternalError("Type mismatch in binary operator");
       return;
     }
 
-    const auto type = node.lhs().type();
-    switch (type) {
-      case types::ID_F64:
-        emitFloatOperator(node.op());
-        break;
-      case types::ID_I8:
-      case types::ID_I16:
-      case types::ID_I32:
-      case types::ID_I64:
-        emitIntOperator(node.op());
-        break;
-      case types::ID_U8:
-      case types::ID_U16:
-      case types::ID_U32:
-      case types::ID_U64:
-        emitUintOperator(node.op());
-        break;
-      case types::ID_BOOL:
-        emitBoolOperator(node.op());
-        break;
-      default:
-        // TODO: Handle this case better
-        diagnostic::emitInternalError("Unknown type encountered");
+    // TODO: Handle user-defined ops
+    const auto* type = node.lhs().type()->as<types::Scalar>();
+    if (type->isFloatingPoint()) {
+      emitFloatOperator(node.op());
+    } else if (type->isSigned()) {
+      emitIntOperator(node.op());
+    } else if (type->isUnsigned()) {
+      emitUintOperator(node.op());
+    } else if (type->isBool()) {
+      emitBoolOperator(node.op());
+    } else {
+      // TODO: Handle this case better
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
@@ -119,54 +108,44 @@ namespace fluir {
     constexpr bool IS_UNARY = true;
     generateDependency(node.operand());
 
-    const auto type = node.operand().type();
-    switch (type) {
-      case types::ID_F64:
-        emitFloatOperator(node.op(), IS_UNARY);
-        break;
-      case types::ID_I64:
-      case types::ID_I32:
-      case types::ID_I16:
-      case types::ID_I8:
-        emitIntOperator(node.op(), IS_UNARY);
-        break;
-      case types::ID_U64:
-      case types::ID_U32:
-      case types::ID_U16:
-      case types::ID_U8:
-        emitUintOperator(node.op(), IS_UNARY);
-        break;
-      case types::ID_BOOL:
-        emitBoolOperator(node.op(), IS_UNARY);
-        break;
-      default:
-        // TODO: Handle this case better
-        diagnostic::emitInternalError("Unknown type encountered");
+    // TODO: Handle user-defined ops
+    const auto type = node.operand().type()->as<types::Scalar>();
+    if (type->isFloatingPoint()) {
+      emitFloatOperator(node.op(), IS_UNARY);
+    } else if (type->isSigned()) {
+      emitIntOperator(node.op(), IS_UNARY);
+    } else if (type->isUnsigned()) {
+      emitUintOperator(node.op(), IS_UNARY);
+    } else if (type->isBool()) {
+      emitBoolOperator(node.op(), IS_UNARY);
+    } else {
+      // TODO: Handle this case better
+      diagnostic::emitInternalError("Unknown type encountered");
     }
   }
 
   void BytecodeGenerator::generate(const ast::Constant& node) {
     auto type = node.type();
     size_t constant;
-    if (type == types::ID_F64) {
+    if (type == &types::F64()) {
       constant = addConstant(node.f64());
-    } else if (type == types::ID_I8) {
+    } else if (type == &types::I8()) {
       constant = addConstant(node.i8());
-    } else if (type == types::ID_I16) {
+    } else if (type == &types::I16()) {
       constant = addConstant(node.i16());
-    } else if (type == types::ID_I32) {
+    } else if (type == &types::I32()) {
       constant = addConstant(node.i32());
-    } else if (type == types::ID_I64) {
+    } else if (type == &types::I64()) {
       constant = addConstant(node.i64());
-    } else if (type == types::ID_U8) {
+    } else if (type == &types::U8()) {
       constant = addConstant(node.u8());
-    } else if (type == types::ID_U16) {
+    } else if (type == &types::U16()) {
       constant = addConstant(node.u16());
-    } else if (type == types::ID_U32) {
+    } else if (type == &types::U32()) {
       constant = addConstant(node.u32());
-    } else if (type == types::ID_U64) {
+    } else if (type == &types::U64()) {
       constant = addConstant(node.u64());
-    } else if (type == types::ID_BOOL) {
+    } else if (type == &types::BOOL()) {
       constant = addConstant(node.boolean());
     } else {
       diagnostic::emitInternalError("Unknown constant type encountered.");
@@ -182,33 +161,33 @@ namespace fluir {
   void BytecodeGenerator::generate(const ast::Cast& cast) {
     generateDependency(cast.operand());
     // TODO: Handle user-defined casts here
-    auto operandType = cast.operand().type();
-    auto targetType = cast.type();
-    if (types::isIntegral(targetType)) {
-      if (types::isSigned(targetType)) {
-        if (types::isIntegral(operandType)) {
-          if (types::isSigned(operandType)) {
+    auto operandType = cast.operand().type()->as<types::Scalar>();
+    auto targetType = cast.type()->as<types::Scalar>();
+    if (targetType->isIntegral()) {
+      if (targetType->isSigned()) {
+        if (operandType->isIntegral()) {
+          if (operandType->isSigned()) {
             emitWidthCast(operandType, targetType);
           } else {
-            emitBytes(Instruction::CAST_UI, types::widthOf(targetType));
+            emitBytes(Instruction::CAST_UI, widthOf(targetType));
           }
         } else {
-          emitBytes(Instruction::CAST_FI, types::widthOf(targetType));
+          emitBytes(Instruction::CAST_FI, widthOf(targetType));
         }
       } else {
-        if (types::isIntegral(operandType)) {
-          if (types::isSigned(operandType)) {
-            emitBytes(Instruction::CAST_IU, types::widthOf(targetType));
+        if (operandType->isIntegral()) {
+          if (operandType->isSigned()) {
+            emitBytes(Instruction::CAST_IU, widthOf(targetType));
           } else {
             emitWidthCast(operandType, targetType);
           }
         } else {
-          emitBytes(Instruction::CAST_FU, types::widthOf(targetType));
+          emitBytes(Instruction::CAST_FU, widthOf(targetType));
         }
       }
     } else {
-      if (types::isIntegral(operandType)) {
-        if (types::isSigned(operandType)) {
+      if (operandType->isIntegral()) {
+        if (operandType->isSigned()) {
           emitByte(Instruction::CAST_IF);
         } else {
           emitByte(Instruction::CAST_UF);
@@ -222,7 +201,7 @@ namespace fluir {
   void BytecodeGenerator::generate(const ast::LocalWrite& write) {
     generateDependency(write.child());
 
-    if (ctx_.symbolTable.getType(write.storedType())->is<types::Product>()) {
+    if (write.storedType()->is<types::Product>()) {
       // Products are already written to slots, so skip it here so we don't double write
       return;
     }
@@ -246,8 +225,9 @@ namespace fluir {
       diagnostic::emitInternalError(fmt::format("'{}' is not a function", call.target()));
     }
 
-    if (targetType->returnType()) {
+    if (targetType->returnType() != &types::EMPTY()) {
       // Reserve space for the return value of the function if it has a return value
+      // TODO: Handle multiple outputs
       emitBytes(Instruction::RESERVE, 1);
     }
 
@@ -282,7 +262,7 @@ namespace fluir {
      *  |      MULTIPOP (inputs)
      *  |--> // REST...
      */
-    std::vector<WithID<types::TypeID>> inputs;
+    std::vector<WithID<types::TypePtr>> inputs;
     inputs.reserve(conditional.inputs().size());
     for (const auto& [dependency, innerId] : conditional.inputs()) {
       generateDependency(dependency);
@@ -290,7 +270,7 @@ namespace fluir {
     }
 
     generateDependency(conditional.condition());
-    inputs.emplace_back(1, types::ID_BOOL);  // Inner ID of the condition
+    inputs.emplace_back(1, &types::BOOL());  // Inner ID of the condition
 
     {
       auto lastScope = currentScope_;
@@ -304,7 +284,7 @@ namespace fluir {
       // Read the condition back to the stack to use it
       emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
 
-      std::vector<WithID<types::TypeID>> outputs;
+      std::vector<WithID<types::TypePtr>> outputs;
       if (conditional.outputs().size() == 0) {
       } else if (conditional.outputs().size() == 1) {
         outputs.emplace_back(conditional.outputs().front(), conditional.type());
@@ -334,7 +314,7 @@ namespace fluir {
     } else {
       generateDependency(unbundle.child());
     }
-    const auto* type = ctx_.symbolTable.getType(unbundle.child().type());
+    const auto* type = unbundle.child().type();
     if (!type->is<types::Product>()) {
       diagnostic::emitInternalError(
         fmt::format("Can only unbundle a product type, attempted to unbundle {}", type->name()));
@@ -424,8 +404,8 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::DataFlowGraph& dfg,
-                                   const std::vector<WithID<types::TypeID>>& inputs,
-                                   const std::vector<WithID<types::TypeID>>& outputs) {
+                                   const std::vector<WithID<types::TypePtr>>& inputs,
+                                   const std::vector<WithID<types::TypePtr>>& outputs) {
     // TODO: Deprecate for SubGraph?
     auto outputCount = outputs.size();
     if (outputCount >= UINT8_MAX) {
@@ -445,8 +425,8 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::SubGraph& subgraph,
-                                   const std::vector<WithID<types::TypeID>>& inputs,
-                                   const std::vector<WithID<types::TypeID>>& outputs) {
+                                   const std::vector<WithID<types::TypePtr>>& inputs,
+                                   const std::vector<WithID<types::TypePtr>>& outputs) {
     auto outputCount = outputs.size();
     if (outputCount >= UINT8_MAX) {
       diagnostic::emitInternalError(
@@ -467,7 +447,7 @@ namespace fluir {
   void BytecodeGenerator::generateDependency(const ast::Dependency& dependency) {
     doGenerate(dependency.get());
 
-    const auto* type = ctx_.symbolTable.getType(dependency.type());
+    const auto* type = dependency.type();
     if (!type->is<types::Product>()) {
       // There is only 1 output, so just leave it on the stack normally
       return;
@@ -478,10 +458,10 @@ namespace fluir {
       return;
     }
 
-    // HACK: If there are multiple outputs, push them as locals.
+    // If there are multiple outputs, push them as locals.
     // TODO: handle multiple outputs more generically?
     auto baseSlot =
-      static_cast<uint8_t>(currentScope_->addLocalSlot(dependency.id(), *product));  // TODO: Handle too many?
+      static_cast<uint8_t>(currentScope_->addLocalSlot(dependency.id(), product));  // TODO: Handle too many?
     // Loop backwards over all the product's elements and push them to the correct offset
     for (uint8_t slot = baseSlot + static_cast<uint8_t>(product->count() - 1);
          slot >= baseSlot && slot < baseSlot + product->count();
@@ -492,8 +472,8 @@ namespace fluir {
 
   void BytecodeGenerator::generateTopLevel(const ast::Node& node) {
     doGenerate(node);
-    const auto* type = ctx_.symbolTable.getType(node.type());
-    if (uint8_t slotCount = type ? be::slotsOf(*type) : 0; slotCount == 0) {
+    const auto* type = node.type();
+    if (auto slotCount = be::slotsOf(*type); slotCount == 0) {
       // No emit for no slots
     } else if (slotCount == 1) {
       emitByte(Instruction::POP);
@@ -528,13 +508,12 @@ namespace fluir {
     diagnostic::emitInternalError("Unknown node kind encountered");
   }
 
-  uint8_t BytecodeGenerator::addLocalSlot(const ID& id, types::TypeID type) {
-    const auto* ptr = ctx_.symbolTable.getType(type);
-    if (!ptr || !currentScope_) {
+  uint8_t BytecodeGenerator::addLocalSlot(const ID& id, types::TypePtr type) {
+    if (!type || !currentScope_) {
       diagnostic::emitInternalError("Encountered unexpected null");
     }
 
-    return static_cast<uint8_t>(currentScope_->addLocalSlot(id, *ptr));
+    return static_cast<uint8_t>(currentScope_->addLocalSlot(id, type));
   }
 
   void BytecodeGenerator::emitFloatOperator(const Operator op, bool unary) {
@@ -582,7 +561,6 @@ namespace fluir {
       case Operator::UNKNOWN:
         // TODO: Handle this better
       default:
-        // TODO-BOOLEAN
         diagnostic::emitInternalError("Unknown operator encountered.");
         break;
     }
@@ -707,10 +685,25 @@ namespace fluir {
     }
   }
 
-  void BytecodeGenerator::emitWidthCast(types::TypeID sourceType, types::TypeID targetType) {
-    if (types::widthOf(sourceType) == types::widthOf(targetType)) {
+  code::NumericWidth BytecodeGenerator::widthOf(types::Scalar const* type) {
+    switch (type->bytes()) {
+      case 1:
+        return code::NumericWidth::WIDTH_8;
+      case 2:
+        return code::NumericWidth::WIDTH_16;
+      case 4:
+        return code::NumericWidth::WIDTH_32;
+      case 8:
+        return code::NumericWidth::WIDTH_64;
+      default:
+        diagnostic::emitInternalError(fmt::format("Unknown width: {} for scalar type", type->bytes(), type->name()));
+    }
+  }
+
+  void BytecodeGenerator::emitWidthCast(types::Scalar const* sourceType, types::Scalar const* targetType) {
+    if (sourceType->bytes() == targetType->bytes()) {
       return;
     }
-    emitBytes(Instruction::CAST_WIDTH, types::widthOf(targetType));
+    emitBytes(Instruction::CAST_WIDTH, widthOf(targetType));
   }
 }  // namespace fluir

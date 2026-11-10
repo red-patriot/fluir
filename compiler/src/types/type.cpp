@@ -8,7 +8,6 @@
 #include "bytecode/primitives.hpp"
 
 namespace fluir::types {
-  Type::Type(std::string name) : name_(std::move(name)) { }
 
   Type::Type(std::string name, Category category) : name_(std::move(name)), category_(category) { }
 
@@ -68,7 +67,7 @@ namespace fluir::types {
   }
 
   Product::Product(std::vector<Type const*> elements) :
-    Type(nameFromTypes(elements), Category::Product), e_(std::move(elements)) { }
+    Type(nameFromTypes(elements), Category::Product), elements_(std::move(elements)) { }
 
   std::string Product::nameFromTypes(std::span<Type const* const> elements) {
     return fmt::format(

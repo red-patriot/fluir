@@ -476,7 +476,7 @@ namespace fluir {
         return NoResult;
       }
 
-      auto unbundledType = productType->att(unbundle->index());
+      auto unbundledType = productType->at(unbundle->index());
       unbundle->setType(unbundledType);
       return unbundledType;
     }

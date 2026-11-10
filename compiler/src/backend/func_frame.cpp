@@ -58,7 +58,7 @@ namespace fluir::be {
 
   uint8_t slotsOf(const types::Type& type) {
     if (type.is<types::Product>()) {
-      return static_cast<uint8_t>(type.as<types::Product>()->elements());
+      return static_cast<uint8_t>(type.as<types::Product>()->count());
     }
     // All scalar types take up 1 slot
     return 1;

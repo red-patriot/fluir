@@ -40,8 +40,8 @@ TEST(TestTypeArena, AddProductType) {
 
   ASSERT_TRUE(actual->is<fluir::types::Product>());
   const auto* concrete = actual->as<fluir::types::Product>();
-  EXPECT_EQ(&ft::BOOL(), concrete->att(0));
-  EXPECT_EQ(&ft::I64(), concrete->att(1));
+  EXPECT_EQ(&ft::BOOL(), concrete->at(0));
+  EXPECT_EQ(&ft::I64(), concrete->at(1));
 }
 
 TEST(TestTypeArena, ProductTypesGetCorrectName) {

@@ -14,9 +14,7 @@ namespace fluir::types {
 
   /** The description of a type in the Fluir language */
   class Type {
-    // TODO: Create a Scalar type that is different from just a raw Type
    public:
-    explicit Type(std::string name);
     virtual ~Type() = default;
 
     /** Access the unqualified name of this type */
@@ -98,12 +96,11 @@ namespace fluir::types {
     static Category classOf() { return Category::Product; }
 
     /** Returns the number of elements in this product. */
-    [[nodiscard]] size_t count() const { return e_.size(); }
-    /** Returns the number of elements in the product type*/
-    [[nodiscard]] size_t elements() const { return e_.size(); }
-
-    std::span<Type const* const> es() const { return e_; }
-    Type const* att(size_t i) const { return e_.at(i); }
+    [[nodiscard]] size_t count() const { return elements_.size(); }
+    /** Returns the elements in this product in order. */
+    std::span<Type const* const> elements() const { return elements_; }
+    /** Returns the element at the given index, nullptr if out of range. */
+    [[nodiscard]] Type const* at(size_t i) const { return i <= elements_.size() ? elements_.at(i) : nullptr; }
 
     /** Create the name of a product type with the given elements. */
     static std::string nameFromTypes(std::span<Type const* const> elements);
@@ -113,7 +110,7 @@ namespace fluir::types {
    private:
     explicit Product(std::vector<Type const*> elements);
 
-    std::vector<Type const*> e_;
+    std::vector<Type const*> elements_;
   };
 
   const Scalar& F64();

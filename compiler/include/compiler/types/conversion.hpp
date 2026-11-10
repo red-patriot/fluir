@@ -7,8 +7,8 @@
 
 namespace fluir::types {
   struct Conversion {
-    Type const* from;
-    Type const* to;
+    TypePtr from;
+    TypePtr to;
     bool isImplicit{false};
 
     friend bool operator==(const Conversion& lhs, const Conversion& rhs) = default;

@@ -46,6 +46,8 @@ namespace fluir::types {
     Category category_{Category::Scalar}; /**< The primary category of this type */
   };
 
+  using TypePtr = Type const*;
+
   class Scalar : public Type {
     friend const Scalar& F64();
     friend const Scalar& I8();
@@ -98,19 +100,19 @@ namespace fluir::types {
     /** Returns the number of elements in this product. */
     [[nodiscard]] size_t count() const { return elements_.size(); }
     /** Returns the elements in this product in order. */
-    std::span<Type const* const> elements() const { return elements_; }
+    std::span<TypePtr const> elements() const { return elements_; }
     /** Returns the element at the given index, nullptr if out of range. */
-    [[nodiscard]] Type const* at(size_t i) const { return i <= elements_.size() ? elements_.at(i) : nullptr; }
+    [[nodiscard]] TypePtr at(size_t i) const { return i <= elements_.size() ? elements_.at(i) : nullptr; }
 
     /** Create the name of a product type with the given elements. */
-    static std::string nameFromTypes(std::span<Type const* const> elements);
+    static std::string nameFromTypes(std::span<TypePtr const> elements);
 
     friend bool operator==(const Product&, const Product&) = default;
 
    private:
-    explicit Product(std::vector<Type const*> elements);
+    explicit Product(std::vector<TypePtr> elements);
 
-    std::vector<Type const*> elements_;
+    std::vector<TypePtr> elements_;
   };
 
   const Scalar& F64();

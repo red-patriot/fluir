@@ -6,6 +6,7 @@
 using fluir::Operator;
 using fluir::types::OperatorDefinition;
 using fluir::types::Type;
+using fluir::types::TypePtr;
 namespace ft = fluir::types;
 
 class TestOverloadResolution : public ::testing::Test {
@@ -50,14 +51,14 @@ class TestOverloadResolution : public ::testing::Test {
   fluir::types::TypeArena arena;
   fluir::types::SymbolTable uut;
 
-  Type const* A{nullptr};
-  Type const* B{nullptr};
-  Type const* C{nullptr};
-  Type const* D{nullptr};
-  Type const* E{nullptr};
-  Type const* F{nullptr};
-  Type const* G{nullptr};
-  Type const* H{nullptr};
+  TypePtr A{nullptr};
+  TypePtr B{nullptr};
+  TypePtr C{nullptr};
+  TypePtr D{nullptr};
+  TypePtr E{nullptr};
+  TypePtr F{nullptr};
+  TypePtr G{nullptr};
+  TypePtr H{nullptr};
 };
 
 TEST_F(TestOverloadResolution, ResolvesBinaryNoCast) {

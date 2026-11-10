@@ -42,14 +42,14 @@ namespace fluir {
     current_->inCount = static_cast<std::uint8_t>(func.parameters.size());
     current_->outCount = func.returnValue ? 1 : 0;
 
-    std::vector<WithID<types::Type const*>> outputs;
+    std::vector<WithID<types::TypePtr>> outputs;
     if (func.returnValue) {
       auto returnType = ctx_.types.findTypeNamed(func.returnValue->typeName);
       outputs.emplace_back(func.returnValue->id, returnType);
     }
-    std::vector<WithID<types::Type const*>> inputs;
+    std::vector<WithID<types::TypePtr>> inputs;
     std::ranges::transform(
-      func.parameters, std::back_inserter(inputs), [this](const auto& p) -> WithID<types::Type const*> {
+      func.parameters, std::back_inserter(inputs), [this](const auto& p) -> WithID<types::TypePtr> {
         auto paramType = ctx_.types.findTypeNamed(p.typeName);
         return {p.id, paramType};
       });
@@ -262,7 +262,7 @@ namespace fluir {
      *  |      MULTIPOP (inputs)
      *  |--> // REST...
      */
-    std::vector<WithID<types::Type const*>> inputs;
+    std::vector<WithID<types::TypePtr>> inputs;
     inputs.reserve(conditional.inputs().size());
     for (const auto& [dependency, innerId] : conditional.inputs()) {
       generateDependency(dependency);
@@ -284,7 +284,7 @@ namespace fluir {
       // Read the condition back to the stack to use it
       emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
 
-      std::vector<WithID<types::Type const*>> outputs;
+      std::vector<WithID<types::TypePtr>> outputs;
       if (conditional.outputs().size() == 0) {
       } else if (conditional.outputs().size() == 1) {
         outputs.emplace_back(conditional.outputs().front(), conditional.type());
@@ -404,8 +404,8 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::DataFlowGraph& dfg,
-                                   const std::vector<WithID<types::Type const*>>& inputs,
-                                   const std::vector<WithID<types::Type const*>>& outputs) {
+                                   const std::vector<WithID<types::TypePtr>>& inputs,
+                                   const std::vector<WithID<types::TypePtr>>& outputs) {
     // TODO: Deprecate for SubGraph?
     auto outputCount = outputs.size();
     if (outputCount >= UINT8_MAX) {
@@ -425,8 +425,8 @@ namespace fluir {
   }
 
   void BytecodeGenerator::generate(const ast::SubGraph& subgraph,
-                                   const std::vector<WithID<types::Type const*>>& inputs,
-                                   const std::vector<WithID<types::Type const*>>& outputs) {
+                                   const std::vector<WithID<types::TypePtr>>& inputs,
+                                   const std::vector<WithID<types::TypePtr>>& outputs) {
     auto outputCount = outputs.size();
     if (outputCount >= UINT8_MAX) {
       diagnostic::emitInternalError(
@@ -508,7 +508,7 @@ namespace fluir {
     diagnostic::emitInternalError("Unknown node kind encountered");
   }
 
-  uint8_t BytecodeGenerator::addLocalSlot(const ID& id, types::Type const* type) {
+  uint8_t BytecodeGenerator::addLocalSlot(const ID& id, types::TypePtr type) {
     if (!type || !currentScope_) {
       diagnostic::emitInternalError("Encountered unexpected null");
     }

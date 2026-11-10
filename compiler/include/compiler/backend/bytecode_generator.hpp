@@ -59,12 +59,12 @@ namespace fluir {
     void run();
     /** Generates bytecode for a data flow graph*/
     void generate(const ast::DataFlowGraph& dfg,
-                  const std::vector<WithID<types::Type const*>>& inputs,
-                  const std::vector<WithID<types::Type const*>>& outputs);
+                  const std::vector<WithID<types::TypePtr>>& inputs,
+                  const std::vector<WithID<types::TypePtr>>& outputs);
     /*Generate bytecode for a subgraph */
     void generate(const ast::SubGraph& subgraph,
-                  const std::vector<WithID<types::Type const*>>& inputs,
-                  const std::vector<WithID<types::Type const*>>& outputs);
+                  const std::vector<WithID<types::TypePtr>>& inputs,
+                  const std::vector<WithID<types::TypePtr>>& outputs);
     /*Generate bytecode for a dependency and leaves the result on the stack */
     void generateDependency(const ast::Dependency& dependency);
     /*Generate bytecode for a top-level node, and pops the final result off the stack when done */
@@ -73,7 +73,7 @@ namespace fluir {
     void doGenerate(const ast::Node& node);
 
     /** Adds a local to the current scope, mapped by ID. */
-    uint8_t addLocalSlot(const ID& id, types::Type const* type);
+    uint8_t addLocalSlot(const ID& id, types::TypePtr type);
 
     void emitFloatOperator(const Operator op, bool unary = false);
     void emitIntOperator(const Operator op, bool unary = false);

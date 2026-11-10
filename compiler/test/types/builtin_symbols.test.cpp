@@ -13,7 +13,7 @@ namespace ft = fluir::types;
 using std::tuple;
 
 class TestBuiltinOperators
-  : public ::testing::TestWithParam<std::tuple<ft::Type const*, fluir::Operator, ft::Type const*, ft::Type const*>> {
+  : public ::testing::TestWithParam<std::tuple<ft::TypePtr, fluir::Operator, ft::TypePtr, ft::TypePtr>> {
  public:
   fluir::types::SymbolTable uut;
 
@@ -114,7 +114,7 @@ INSTANTIATE_TEST_SUITE_P(,
                                            tuple{&ft::U64(), fluir::Operator::PLUS_PLUS, nullptr, &ft::U64()},
                                            tuple{&ft::U64(), fluir::Operator::MINUS_MINUS, nullptr, &ft::U64()}));
 
-class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, ft::Type const*, ft::Type const*>> {
+class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, ft::TypePtr, ft::TypePtr>> {
  public:
   fluir::types::SymbolTable uut;
 

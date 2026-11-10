@@ -21,7 +21,7 @@ namespace fluir::types {
     return result;
   }
 
-  OperatorDefinition const* SymbolTable::selectOverload(Type const* lhs, Operator op, Type const* rhs) {
+  OperatorDefinition const* SymbolTable::selectOverload(TypePtr lhs, Operator op, TypePtr rhs) {
     /* 1. Get all candidates
      * 2. Filter out all where at least one operand doesn't match
      * 3. Filter out all where there is no cast between given LHS and LHS
@@ -62,7 +62,7 @@ namespace fluir::types {
     return candidates.front();
   }
 
-  OperatorDefinition const* SymbolTable::selectOverload(Operator op, Type const* operand) {
+  OperatorDefinition const* SymbolTable::selectOverload(Operator op, TypePtr operand) {
     /* 1. Get all candidates
      * 2. Filter out all binary operators
      * 3. Filter out all where there is no cast between given operand and operand
@@ -95,21 +95,21 @@ namespace fluir::types {
     return candidates.front();
   }
 
-  void SymbolTable::addImplicitConversion(Type const* from, Type const* to) {
+  void SymbolTable::addImplicitConversion(TypePtr from, TypePtr to) {
     if (from == to) {
       return;
     }
     Conversion c{.from = from, .to = to, .isImplicit = true};
     conversions_[from].insert(c);
   }
-  void SymbolTable::addExplicitConversion(Type const* from, Type const* to) {
+  void SymbolTable::addExplicitConversion(TypePtr from, TypePtr to) {
     if (from == to) {
       return;
     }
 
     conversions_[from].insert(Conversion{.from = from, .to = to, .isImplicit = false});
   }
-  bool SymbolTable::canImplicitlyConvert(Type const* from, Type const* to) {
+  bool SymbolTable::canImplicitlyConvert(TypePtr from, TypePtr to) {
     if (!conversions_.contains(from)) {
       return false;
     }
@@ -120,7 +120,7 @@ namespace fluir::types {
              return candidate.isImplicit && candidate.to == to;
            }) != options.end();
   }
-  bool SymbolTable::canExplicitlyConvert(Type const* from, Type const* to) {
+  bool SymbolTable::canExplicitlyConvert(TypePtr from, TypePtr to) {
     if (!conversions_.contains(from)) {
       return false;
     }
@@ -137,7 +137,7 @@ namespace fluir::types {
     }
   }
 
-  bool SymbolTable::addLocalVariable(ID id, Type const* type) {
+  bool SymbolTable::addLocalVariable(ID id, TypePtr type) {
     if (id == INVALID_ID) {
       return false;
     }
@@ -147,7 +147,7 @@ namespace fluir::types {
     return true;
   }
 
-  Type const* SymbolTable::getLocalVariableType(ID id) const {
+  TypePtr SymbolTable::getLocalVariableType(ID id) const {
     auto& localScope = localScopes_.top();
     auto& variables = localScope.variables;
     if (id == INVALID_ID || !variables.contains(id)) {
@@ -157,7 +157,7 @@ namespace fluir::types {
     return variables.at(id);
   }
 
-  FunctionType const* SymbolTable::registerFunctionType(const FunctionType& func) {
+  FunctionTypePtr SymbolTable::registerFunctionType(const FunctionType& func) {
     if (const auto i = functionTypes_.find(&func); i != functionTypes_.end()) {
       return i->get();
     }
@@ -165,13 +165,13 @@ namespace fluir::types {
     return i->get();
   }
 
-  FunctionType const* SymbolTable::addFunction(std::string name, FunctionType func) {
+  FunctionTypePtr SymbolTable::addFunction(std::string name, FunctionType func) {
     const auto funcType = registerFunctionType(func);
     functionNames_.emplace(std::move(name), funcType);
     return funcType;
   }
 
-  FunctionType const* SymbolTable::getFunctionType(const std::string& name) const {
+  FunctionTypePtr SymbolTable::getFunctionType(const std::string& name) const {
     auto it = functionNames_.find(name);
     if (it == functionNames_.end()) {
       return nullptr;
@@ -185,7 +185,7 @@ namespace fluir::types {
     }
     // Criteria are no return and all parameters are MAGIC_ANY
     if (func->returnType() == &EMPTY() &&
-        std::ranges::all_of(func->parameters(), [](types::Type const* p) { return p == &MAGIC_ANY_TYPE(); })) {
+        std::ranges::all_of(func->parameters(), [](types::TypePtr p) { return p == &MAGIC_ANY_TYPE(); })) {
       return true;
     }
 
@@ -194,14 +194,14 @@ namespace fluir::types {
 
   size_t SymbolTable::SignatureHash::operator()(const FunctionType& func) const {
     size_t hash = 0;
-    hash ^= std::hash<types::Type const*>{}(func.returnType());
+    hash ^= std::hash<types::TypePtr>{}(func.returnType());
     for (auto const& param : func.parameters()) {
-      hash ^= std::hash<types::Type const*>{}(param);
+      hash ^= std::hash<types::TypePtr>{}(param);
     }
     return hash;
   }
 
-  bool SymbolTable::SignatureEq::operator()(FunctionType const* lhs, FunctionType const* rhs) const {
+  bool SymbolTable::SignatureEq::operator()(FunctionTypePtr lhs, FunctionTypePtr rhs) const {
     return lhs->returnType() == rhs->returnType() && std::ranges::equal(lhs->parameters(), rhs->parameters());
   }
 }  // namespace fluir::types

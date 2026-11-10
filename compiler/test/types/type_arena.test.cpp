@@ -4,7 +4,7 @@
 
 namespace ft = fluir::types;
 
-class TestTypeArenaBuiltins : public ::testing::TestWithParam<fluir::types::Type const*> {
+class TestTypeArenaBuiltins : public ::testing::TestWithParam<fluir::types::TypePtr> {
  public:
   ft::TypeArena uut;
 };

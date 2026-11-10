@@ -8,7 +8,7 @@ namespace ft = fluir::types;
 
 TEST(TestFunctionType, ParametersAreAccessible) {
   ft::FunctionType func{{&ft::I32(), &ft::F64()}, &ft::I64()};
-  EXPECT_EQ(func.parameters(), (std::vector<fluir::types::Type const*>{&ft::I32(), &ft::F64()}));
+  EXPECT_EQ(func.parameters(), (std::vector<fluir::types::TypePtr>{&ft::I32(), &ft::F64()}));
 }
 
 TEST(TestFunctionType, ReturnTypeIsAccessible) {
@@ -54,7 +54,7 @@ TEST(TestSymbolTable, AddThenGetFunctionByName) {
 
   auto* found = table.getFunctionType("add");
   ASSERT_NE(found, nullptr);
-  EXPECT_EQ(found->parameters(), (std::vector<fluir::types::Type const*>{&ft::I32(), &ft::I32()}));
+  EXPECT_EQ(found->parameters(), (std::vector<fluir::types::TypePtr>{&ft::I32(), &ft::I32()}));
   EXPECT_EQ(found->returnType(), &ft::I32());
 }
 
@@ -71,7 +71,7 @@ TEST(TestSymbolTable, DuplicateAddLeavesOriginalUnchanged) {
 
   auto* found = table.getFunctionType("add");
   ASSERT_TRUE(found);
-  EXPECT_EQ(found->parameters(), (std::vector<fluir::types::Type const*>{&ft::I32()}));
+  EXPECT_EQ(found->parameters(), (std::vector<fluir::types::TypePtr>{&ft::I32()}));
 }
 
 TEST(TestSymbolTable, FunctionWithNoReturn) {
@@ -101,8 +101,8 @@ TEST(TestSymbolTable, MultipleFunctionsStoredIndependently) {
   ASSERT_NE(table.getFunctionType("foo"), nullptr);
   ASSERT_NE(table.getFunctionType("bar"), nullptr);
   EXPECT_EQ(table.getFunctionType("baz"), nullptr);
-  EXPECT_EQ(table.getFunctionType("foo")->parameters(), (std::vector<fluir::types::Type const*>{&ft::I32()}));
-  EXPECT_EQ(table.getFunctionType("bar")->parameters(), (std::vector<fluir::types::Type const*>{&ft::F64()}));
+  EXPECT_EQ(table.getFunctionType("foo")->parameters(), (std::vector<fluir::types::TypePtr>{&ft::I32()}));
+  EXPECT_EQ(table.getFunctionType("bar")->parameters(), (std::vector<fluir::types::TypePtr>{&ft::F64()}));
 }
 
 // --- getFunctionTypeID tests ---

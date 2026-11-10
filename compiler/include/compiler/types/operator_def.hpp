@@ -11,24 +11,24 @@ namespace fluir::types {
   /** Represents the definition of an operator */
   class OperatorDefinition {
    public:
-    OperatorDefinition(types::Type const* parameter1,
+    OperatorDefinition(types::TypePtr parameter1,
                        ::fluir::Operator op,
-                       types::Type const* parameter2,
-                       types::Type const* returnType);
-    OperatorDefinition(::fluir::Operator op, types::Type const* parameter1, types::Type const* returnType);
+                       types::TypePtr parameter2,
+                       types::TypePtr returnType);
+    OperatorDefinition(::fluir::Operator op, types::TypePtr parameter1, types::TypePtr returnType);
 
     ::fluir::Operator getOperator() const { return op_; }
 
-    Type const* getReturn() const { return returnType_; }
-    std::array<Type const*, 2> getParameters() const;
+    TypePtr getReturn() const { return returnType_; }
+    std::array<TypePtr, 2> getParameters() const;
 
     friend bool operator==(const OperatorDefinition&, const OperatorDefinition&) = default;
 
    private:
-    ::fluir::Operator op_;   /**< The operator being applied */
-    Type const* returnType_; /**< The type of the return value */
-    Type const* parameter1_; /**< The type of the first parameter */
-    Type const* parameter2_; /**< The type of the second parameter */
+    ::fluir::Operator op_; /**< The operator being applied */
+    TypePtr returnType_;   /**< The type of the return value */
+    TypePtr parameter1_;   /**< The type of the first parameter */
+    TypePtr parameter2_;   /**< The type of the second parameter */
   };
 
   struct CompareOperatorDefByParameters {

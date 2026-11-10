@@ -51,9 +51,9 @@ namespace fluir::ast {
     [[nodiscard]] ID id() const { return id_.back(); }
     [[nodiscard]] FlowGraphLocation location() const { return location_; }
     [[nodiscard]] NodeKind kind() const { return kind_; }
-    [[nodiscard]] types::Type const* type() const { return type_; }
+    [[nodiscard]] types::TypePtr type() const { return type_; }
 
-    void setType(types::Type const* type) { type_ = type; }
+    void setType(types::TypePtr type) { type_ = type; }
 
    protected:
     Node(const NodeKind kind, FullID id, const FlowGraphLocation& location) :
@@ -65,7 +65,7 @@ namespace fluir::ast {
     NodeKind kind_;
     FullID id_;
     FlowGraphLocation location_;
-    types::Type const* type_ = nullptr;
+    types::TypePtr type_ = nullptr;
   };
 
   using UniqueNode = std::unique_ptr<Node>;
@@ -84,10 +84,10 @@ namespace fluir::ast {
     [[nodiscard]] ID id() const { return child_->id(); }
     [[nodiscard]] FlowGraphLocation location() const { return child_->location(); }
     [[nodiscard]] NodeKind kind() const { return child_->kind(); }
-    [[nodiscard]] types::Type const* type() const { return child_->type(); }
-    [[nodiscard]] types::Type const* fullType() const { return child_->type(); }
+    [[nodiscard]] types::TypePtr type() const { return child_->type(); }
+    [[nodiscard]] types::TypePtr fullType() const { return child_->type(); }
 
-    void setType(types::Type const* t) { child_->setType(t); }
+    void setType(types::TypePtr t) { child_->setType(t); }
 
    private:
     UniqueNode child_; /**< The dependency node */
@@ -149,7 +149,7 @@ namespace fluir::ast {
    private:
     literals_types::Literal value_;
 
-    static types::Type const* determineType(literals_types::Literal value) {
+    static types::TypePtr determineType(literals_types::Literal value) {
       switch (value.index()) {
         case 0:
           return &types::F64();
@@ -228,13 +228,13 @@ namespace fluir::ast {
    public:
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Cast; }
 
-    Cast(types::Type const* to, Dependency operand, FullID id, const FlowGraphLocation& location) :
+    Cast(types::TypePtr to, Dependency operand, FullID id, const FlowGraphLocation& location) :
       Node(NodeKind::Cast, std::move(id), location), operand_(std::move(operand)) {
       setType(to);
     }
 
-    [[nodiscard]] types::Type const* to() const { return type(); }
-    [[nodiscard]] types::Type const* from() const { return operand_.type(); }
+    [[nodiscard]] types::TypePtr to() const { return type(); }
+    [[nodiscard]] types::TypePtr from() const { return operand_.type(); }
     [[nodiscard]] const Dependency& operand() const { return operand_; }
     [[nodiscard]] Dependency& operand() { return operand_; }
 
@@ -326,7 +326,7 @@ namespace fluir::ast {
     [[nodiscard]] Dependency& child() { return child_; }
     [[nodiscard]] ID variable() const { return id(); }
     /** Returns the stored type in the variable. */
-    [[nodiscard]] types::Type const* storedType() const { return child().type(); }
+    [[nodiscard]] types::TypePtr storedType() const { return child().type(); }
 
    private:
     Dependency child_;

@@ -27,7 +27,7 @@ namespace fluir::ast {
     FlowGraphLocation location;
     std::string name;
     DataFlowGraph statements;
-    types::FunctionType const* type = nullptr;
+    types::FunctionTypePtr type = nullptr;
 
     std::vector<Parameter> parameters{};
     std::optional<Return> returnValue{};  // TODO: Support multiple returns

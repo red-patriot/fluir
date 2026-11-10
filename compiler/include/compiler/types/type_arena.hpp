@@ -19,24 +19,24 @@ namespace fluir::types {
      * If an identical product exists, gets the product instead.
      * \return The pointer to the product type.
      */
-    Product const* addProduct(const std::vector<Type const*>& elements);
+    Product const* addProduct(const std::vector<TypePtr>& elements);
 
     /** Searches types by name, */
-    Type const* findTypeNamed(std::string_view name) const;
+    TypePtr findTypeNamed(std::string_view name) const;
 
    private:
     struct ElementwiseHash {
       using is_transparent = void;
-      size_t operator()(std::span<Type const* const> elements) const;
+      size_t operator()(std::span<TypePtr const> elements) const;
       size_t operator()(const std::unique_ptr<Product>& product) const { return operator()(product->elements()); }
     };
     struct ElementwiseEq {
       using is_transparent = void;
-      bool operator()(std::span<Type const* const> lhs, std::span<Type const* const> rhs) const;
-      bool operator()(std::span<Type const* const> lhs, const std::unique_ptr<Product>& rhs) const {
+      bool operator()(std::span<TypePtr const> lhs, std::span<TypePtr const> rhs) const;
+      bool operator()(std::span<TypePtr const> lhs, const std::unique_ptr<Product>& rhs) const {
         return operator()(lhs, rhs->elements());
       }
-      bool operator()(const std::unique_ptr<Product>& lhs, std::span<Type const* const> rhs) const {
+      bool operator()(const std::unique_ptr<Product>& lhs, std::span<TypePtr const> rhs) const {
         return operator()(lhs->elements(), rhs);
       }
       bool operator()(const std::unique_ptr<Product>& lhs, const std::unique_ptr<Product>& rhs) const {
@@ -44,7 +44,7 @@ namespace fluir::types {
       }
     };
 
-    std::unordered_map<std::string_view, Type const*> typeNames_{};
+    std::unordered_map<std::string_view, TypePtr> typeNames_{};
     std::unordered_set<std::unique_ptr<Product>, ElementwiseHash, ElementwiseEq> products_{};
   };
 }  // namespace fluir::types

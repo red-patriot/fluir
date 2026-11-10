@@ -66,10 +66,10 @@ namespace fluir::types {
     return empty;
   }
 
-  Product::Product(std::vector<Type const*> elements) :
+  Product::Product(std::vector<TypePtr> elements) :
     Type(nameFromTypes(elements), Category::Product), elements_(std::move(elements)) { }
 
-  std::string Product::nameFromTypes(std::span<Type const* const> elements) {
+  std::string Product::nameFromTypes(std::span<TypePtr const> elements) {
     return fmt::format(
       "({})", fmt::join(elements | std::ranges::views::transform([](auto const& e) { return e->name(); }), ","));
   }

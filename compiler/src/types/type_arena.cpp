@@ -1,5 +1,7 @@
 #include "compiler/types/type_arena.hpp"
 
+#include <algorithm>
+
 namespace fluir::types {
   TypeArena::TypeArena() {
     std::unordered_set<TypePtr> builtinTypes{

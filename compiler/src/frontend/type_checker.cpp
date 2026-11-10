@@ -130,7 +130,6 @@ namespace fluir {
 
     // Check return is the right type, or insert a cast if necessary
     if (decl.returnValue) {
-      const auto funcType = decl.type;
       for (auto& node : decl.statements) {
         if (node->id() != decl.returnValue->id) {
           continue;

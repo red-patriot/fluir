@@ -71,8 +71,6 @@ namespace fluir::types {
     /** Registers a function signature and returns its TypeID, deduplicating by structure */
     FunctionType const* registerFunctionType(const FunctionType& func);
 
-    TypeID nextTypeID_{static_cast<TypeID>(1)};  // 0 == ID_INVALID; unified counter for all types
-
     std::stack<Scope> localScopes_{};
     std::unordered_map<::fluir::Operator, OverloadSet> operators_{};
     std::unordered_map<Type const*, std::unordered_set<Conversion>> conversions_{};

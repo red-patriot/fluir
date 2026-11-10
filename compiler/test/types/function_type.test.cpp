@@ -3,7 +3,6 @@
 #include <gtest/gtest.h>
 
 #include "compiler/types/symbol_table.hpp"
-#include "compiler/types/typeid.hpp"
 
 namespace ft = fluir::types;
 

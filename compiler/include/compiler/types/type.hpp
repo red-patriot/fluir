@@ -1,11 +1,10 @@
 #ifndef FLUIR_COMPILER_TYPES_TYPE_HPP
 #define FLUIR_COMPILER_TYPES_TYPE_HPP
 
+#include <cstdint>
 #include <span>
 #include <string>
 #include <vector>
-
-#include "compiler/types/typeid.hpp"
 
 namespace fluir::types {
   enum class Category {
@@ -98,9 +97,6 @@ namespace fluir::types {
    public:
     static Category classOf() { return Category::Product; }
 
-    Product(std::string name, std::vector<TypeID> elements);
-
-    [[nodiscard]] TypeID at(size_t index) const { return elements_.at(index); }
     /** Returns the number of elements in this product. */
     [[nodiscard]] size_t count() const { return e_.size(); }
     /** Returns the number of elements in the product type*/
@@ -109,10 +105,6 @@ namespace fluir::types {
     std::span<Type const* const> es() const { return e_; }
     Type const* att(size_t i) const { return e_.at(i); }
 
-    /** Create a product type with the given elements. */
-    static Product createFromTypes(std::vector<TypeID> elements);
-    /** Create the name of a product type with the given elements. */
-    static std::string nameFromTypes(const std::vector<TypeID>& elements);
     /** Create the name of a product type with the given elements. */
     static std::string nameFromTypes(std::span<Type const* const> elements);
 
@@ -122,7 +114,6 @@ namespace fluir::types {
     explicit Product(std::vector<Type const*> elements);
 
     std::vector<Type const*> e_;
-    std::vector<TypeID> elements_;
   };
 
   const Scalar& F64();

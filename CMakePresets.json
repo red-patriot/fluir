@@ -182,7 +182,7 @@
       "hidden": true,
       "inherits": "_test_base",
       "environment": {
-        "LSAN_OPTIONS": "suppressions=${sourceDir}/experimental_editor/lsan.supp"
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/editor/lsan.supp"
       }
     },
     {

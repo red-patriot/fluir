@@ -31,11 +31,11 @@ option(
 
 create_version_files()
 
+add_subdirectory(editor)
 add_subdirectory(bytecode)
 add_subdirectory(utility)
 add_subdirectory(compiler)
 add_subdirectory(vm)
-add_subdirectory(experimental_editor)
 
 if (FLUIR_BUILD_TESTS)
     enable_testing()

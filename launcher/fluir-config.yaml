@@ -3,5 +3,4 @@
 
 compiler_path: /usr/libexec/fluir/fluir.compiler
 vm_path: /usr/libexec/fluir/fluir.vm
-editor_backend_path: /usr/libexec/fluir/fluir-editor-be
-editor_frontend_path: /usr/libexec/fluir/editor-fe/fluir-editor-fe
+editor_path: /usr/libexec/fluir/fluir.editor

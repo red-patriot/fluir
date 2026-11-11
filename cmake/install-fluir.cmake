@@ -17,17 +17,10 @@ function (setup_fluir_install)
         USE_SOURCE_PERMISSIONS
     )
     install(
-        DIRECTORY artifacts/Editor-BE/
+        TARGETS fluir.compiler
+                fluir.vm
+                fluir.editor
         DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir
-        USE_SOURCE_PERMISSIONS
-    )
-    install(
-        DIRECTORY artifacts/Editor-FE/linux-unpacked/
-        DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir/editor-fe
-        USE_SOURCE_PERMISSIONS
-    )
-    install(TARGETS fluir.compiler fluir.vm
-            DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/fluir
     )
     install(FILES launcher/fluir-config.yaml
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/fluir

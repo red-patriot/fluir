@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <memory>
+#include <ranges>
 #include <span>
 #include <utility>
 #include <vector>
@@ -260,11 +261,11 @@ namespace fluir::ast {
                 SubGraph thenBody,
                 SubGraph elseBody) :
       Node(NodeKind::Conditional, std::move(id), location),
-      inputs_([cond = std::move(condition), i = std::move(inputs)] mutable {
+      inputs_([&condition, &inputs] {
         std::vector<ScopeInput> r;
-        r.reserve(i.size() + 1);
-        r.emplace_back(std::move(cond), CONDITION_INNER_ID);
-        std::ranges::move(i, std::back_inserter(r));
+        r.reserve(inputs.size() + 1);
+        r.emplace_back(std::move(condition), CONDITION_INNER_ID);
+        std::ranges::move(inputs, std::back_inserter(r));
         return r;
       }()),
       outputs_(std::move(outputs)),

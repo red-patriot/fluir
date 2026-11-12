@@ -270,7 +270,7 @@ namespace fluir {
     }
 
     generateDependency(conditional.condition());
-    inputs.emplace_back(1, &types::BOOL());  // Inner ID of the condition
+    inputs.emplace_back(conditional.conditionId(), &types::BOOL());  // Inner ID of the condition
 
     {
       auto lastScope = currentScope_;
@@ -282,7 +282,7 @@ namespace fluir {
         emitBytes(Instruction::SET_VAL, slot);
       }
       // Read the condition back to the stack to use it
-      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(1)));
+      emitBytes(Instruction::GET_VAL, static_cast<uint8_t>(currentScope_->getLocalSlot(conditional.conditionId())));
 
       std::vector<WithID<types::TypePtr>> outputs;
       if (conditional.outputs().size() == 0) {

@@ -286,6 +286,8 @@ namespace fluir::ast {
     [[nodiscard]] std::span<ScopeInput> allInputs() { return inputs_; }
     [[nodiscard]] const std::vector<ID>& outputs() const { return outputs_; }
 
+    [[nodiscard]] ID conditionId() const { return CONDITION_INNER_ID; }
+
    private:
     std::vector<ScopeInput> inputs_;
     std::vector<ID> outputs_;

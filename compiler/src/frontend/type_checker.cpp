@@ -20,7 +20,7 @@ namespace fluir {
     Results<types::TypePtr> checkType(Context& ctx, ast::Bundle* bundle);
     Results<types::TypePtr> checkType(Context& ctx, ast::Unbundle* unbundle);
 
-    Results<types::TypePtr> checkType(Context& ctx, ast::SubGraph& graph, const std::vector<ast::ScopeInput>& inputs);
+    Results<types::TypePtr> checkType(Context& ctx, ast::SubGraph& graph, std::span<const ast::ScopeInput> inputs);
     Results<types::TypePtr> checkType(Context& ctx, ast::Dependency& dependency, const FullID& dependentId);
 
     bool registerDeclarations(Context& ctx, const ast::AST& ast);
@@ -408,8 +408,8 @@ namespace fluir {
         return NoResult;
       }
 
-      auto thenType = checkType(ctx, conditional->thenBody(), conditional->inputs());
-      auto elseType = checkType(ctx, conditional->elseBody(), conditional->inputs());
+      auto thenType = checkType(ctx, conditional->thenBody(), conditional->allInputs());
+      auto elseType = checkType(ctx, conditional->elseBody(), conditional->allInputs());
       if (!thenType || !elseType) {
         return NoResult;
       }
@@ -478,7 +478,7 @@ namespace fluir {
       return unbundledType;
     }
 
-    Results<types::TypePtr> checkType(Context& ctx, ast::SubGraph& graph, const std::vector<ast::ScopeInput>& inputs) {
+    Results<types::TypePtr> checkType(Context& ctx, ast::SubGraph& graph, std::span<const ast::ScopeInput> inputs) {
       ctx.symbolTable.pushScope();
       FLUIR_SCOPE_EXIT { ctx.symbolTable.popScope(); };
       // Add all the input types as locals

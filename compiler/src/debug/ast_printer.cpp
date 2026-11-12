@@ -214,7 +214,7 @@ namespace fluir::debug {
 
   void AstPrinter::print(const ast::Dependency& dependency) { print(dependency.get()); }
 
-  void AstPrinter::print(const std::vector<ast::ScopeInput>& inputs) {
+  void AstPrinter::print(std::span<const ast::ScopeInput> inputs) {
     for (const auto& [node, id] : inputs) {
       out_ << formatIndented("({})\n", id);
       FLUIR_SCOPED_INDENT;

@@ -346,8 +346,12 @@ namespace fluir {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
             auto toCast = stackTop();
             popStack();
-            auto casted = static_cast<code::U64>(toCast.asF64());
-            pushStack(utility::narrowU(casted, width));
+            if (toCast.asF64() >= 18'446'744'073'709'551'615.0) {
+              pushStack(utility::narrowU(UINT64_MAX, width));
+            } else {
+              auto casted = static_cast<code::U64>(toCast.asF64());
+              pushStack(utility::narrowU(casted, width));
+            }
           }
           break;
         case CAST_WIDTH:

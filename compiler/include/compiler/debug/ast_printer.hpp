@@ -36,7 +36,7 @@ namespace fluir::debug {
 
     void print(const ast::Node& node);
     void print(const ast::Dependency& dependency);
-    void print(const std::vector<ast::ScopeInput>& inputs);
+    void print(std::span<const ast::ScopeInput> inputs);
   };
 }  // namespace fluir::debug
 

@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <memory>
+#include <ranges>
+#include <span>
 #include <utility>
 #include <vector>
 
@@ -247,6 +249,7 @@ namespace fluir::ast {
     static constexpr int CONDITION_INDEX = 0;
     static constexpr ID THEN_BODY = 1;
     static constexpr ID ELSE_BODY = 2;
+    static constexpr ID CONDITION_INNER_ID = 1;
 
     static bool classOf(const Node& node) { return node.kind() == NodeKind::Conditional; }
 
@@ -258,24 +261,34 @@ namespace fluir::ast {
                 SubGraph thenBody,
                 SubGraph elseBody) :
       Node(NodeKind::Conditional, std::move(id), location),
-      condition_(std::move(condition)),
-      inputs_(std::move(inputs)),
+      inputs_([&condition, &inputs] {
+        std::vector<ScopeInput> r;
+        r.reserve(inputs.size() + 1);
+        r.emplace_back(std::move(condition), CONDITION_INNER_ID);
+        std::ranges::move(inputs, std::back_inserter(r));
+        return r;
+      }()),
       outputs_(std::move(outputs)),
       then_(std::move(thenBody)),
       else_(std::move(elseBody)) { }
 
-    [[nodiscard]] const Dependency& condition() const { return condition_; }
-    [[nodiscard]] Dependency& condition() { return condition_; }
+    [[nodiscard]] const Dependency& condition() const { return inputs_.front().node; }
+    [[nodiscard]] Dependency& condition() { return inputs_.front().node; }
     [[nodiscard]] const SubGraph& thenBody() const { return then_; }
     [[nodiscard]] SubGraph& thenBody() { return then_; }
     [[nodiscard]] const SubGraph& elseBody() const { return else_; }
     [[nodiscard]] SubGraph& elseBody() { return else_; }
-    [[nodiscard]] const std::vector<ScopeInput>& inputs() const { return inputs_; }
-    [[nodiscard]] std::vector<ScopeInput>& inputs() { return inputs_; }
+    [[nodiscard]] std::span<const ScopeInput> inputs() const {
+      return std::span{std::next(inputs_.begin()), inputs_.end()};
+    }
+    [[nodiscard]] std::span<ScopeInput> inputs() { return std::span{std::next(inputs_.begin()), inputs_.end()}; }
+    [[nodiscard]] std::span<const ScopeInput> allInputs() const { return inputs_; }
+    [[nodiscard]] std::span<ScopeInput> allInputs() { return inputs_; }
     [[nodiscard]] const std::vector<ID>& outputs() const { return outputs_; }
 
+    [[nodiscard]] ID conditionId() const { return CONDITION_INNER_ID; }
+
    private:
-    Dependency condition_;
     std::vector<ScopeInput> inputs_;
     std::vector<ID> outputs_;
     SubGraph then_;

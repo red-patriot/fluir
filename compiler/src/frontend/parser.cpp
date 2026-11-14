@@ -172,28 +172,40 @@ namespace fluir {
     return version;
   }
 
-  void Parser::comment(Element* element) {
-    // These are required, so make sure they exist on the element, but we don't care what they are
-    parseId(element);
-    parseLocation(element);
-  }
-
   void Parser::declaration(Element* element) {
-    static const util::Trie<void (*)(Parser* p, Element* e)> declarationParsers{
-      [](Parser* p, Element* e) -> void {
+    using IdDecl = WithID<pt::Declaration>;
+
+    static const util::Trie<IdDecl (*)(Parser* p, Element* e)> declParsers{
+      [](Parser* p, Element* e) -> IdDecl {
         p->panicAt(e, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "Expected a declaration.");
+        std::unreachable();
       },
-      {{"function", [](Parser* p, Element* e) -> void { p->functionDecl(e); }},
-       {"comment", [](Parser* p, Element* e) -> void { p->comment(e); }}}};
+      {{"function", [](Parser* p, Element* e) -> IdDecl { return p->functionDecl(e); }},
+       {"comment", [](Parser* p, Element* e) -> IdDecl {
+          auto [id, comment] = p->comment(e);
+          return IdDecl{id, std::move(comment)};
+        }}}};
 
     std::string_view name = element->Name();
-    FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
-      auto declarationParser = declarationParsers.at(name);
-      declarationParser(this, element);
-    };
+
+    try {
+      auto declarationParser = declParsers.at(name);
+      auto [id, decl] = declarationParser(this, element);
+      panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+      tree_.declarations.emplace(id, decl);
+    } catch (const diagnostic::Panic&) { }
   }
 
-  void Parser::functionDecl(Element* element) {
+  WithID<pt::Comment> Parser::comment(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+
+    std::string_view text = element->GetText() ? element->GetText() : "";
+
+    return {id, pt::Comment{.id = id, .location = location, .text = std::string{text}}};
+  }
+
+  WithID<pt::Declaration> Parser::functionDecl(Element* element) {
     constexpr std::string_view bodyTag = "body";
     constexpr std::string_view inputTag = "input";
     constexpr std::string_view outputTag = "output";
@@ -234,18 +246,17 @@ namespace fluir {
           output && output->ret && output->ret->id == param.id, element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
       }
     }
+    return {id,
+            pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)}};
 
-    panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
-    tree_.declarations.emplace(
-      id, pt::FunctionDecl{id, location, std::string(name), std::move(*body), std::move(input), std::move(output)});
+    // panicIf(tree_.declarations.contains(id), element, diagnostic::Code::ERROR_DUPLICATE_IDS_FOUND);
+    // tree_.declarations.emplace(
   }
 
   pt::FunctionDecl::InputBlock Parser::funcInputs(Element* section) {
     static constexpr std::string_view paramTag = "param";
     std::vector<pt::FunctionDecl::Parameter> parameters;
     std::unordered_set<std::string> paramNames;
-    int idx = 0;
-
     for (auto child = section->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
       FLUIR_SYNCHRONIZE_PANIC(ctx_.diag) {
         panicIf(child->Name() != paramTag,
@@ -257,21 +268,19 @@ namespace fluir {
         auto name = getAttribute(child, "name");
         panicIf(paramNames.contains(std::string(name)), child, diagnostic::Code::ERROR_DUPLICATE_PARAM_NAME);
         paramNames.insert(std::string(name));
-        parameters.push_back(funcParameter(child, idx));
-        idx++;
+        parameters.push_back(funcParameter(child));
       };
     }
 
     return pt::FunctionDecl::InputBlock{std::move(parameters)};
   }
 
-  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element, int index) {
+  pt::FunctionDecl::Parameter Parser::funcParameter(Element* element) {
     auto name = getAttribute(element, "name");
     auto id = parseId(element);
     auto typeName = getAttribute(element, "type");
 
-    return pt::FunctionDecl::Parameter{
-      .id = id, .index = index, .name = std::string(name), .typeName = std::string(typeName)};
+    return pt::FunctionDecl::Parameter{.id = id, .name = std::string(name), .typeName = std::string(typeName)};
   }
 
   pt::FunctionDecl::OutputBlock Parser::funcOutputs(Element* section) {
@@ -330,6 +339,21 @@ namespace fluir {
     return block;
   }
 
+  pt::BlockPorts Parser::parseScopePorts(Element* element) {
+    pt::BlockPorts ret;
+    ret.reserve(element->ChildElementCount());
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      panicIf(child->Name() != "port"sv,
+              child,
+              diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+              "Unexpected element <{}>. Expected <port>",
+              child->Name());
+      auto port = parseBlockPort(child);
+      ret.emplace_back(port);
+    }
+    return ret;
+  }
+
   std::optional<WithID<pt::Node>> Parser::node(Element* element) {
     using OptionalNodeIdPair = std::optional<WithID<pt::Node>>;
     static const util::Trie<OptionalNodeIdPair (*)(Parser* p, Element* e)> nodeParsers{
@@ -341,10 +365,8 @@ namespace fluir {
        {"binary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->binary(e); }},
        {"unary", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->unary(e); }},
        {"call", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->call(e); }},
-       {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair {
-          p->comment(e);
-          return std::nullopt;
-        }}}};
+       {"conditional", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->conditional(e); }},
+       {"comment", [](Parser* p, Element* e) -> OptionalNodeIdPair { return p->comment(e); }}}};
 
     std::string_view type = element->Name();
     auto nodeParser = nodeParsers.at(type);
@@ -433,6 +455,73 @@ namespace fluir {
         .id = id, .location = location, .target = std::string(target), ._return = return_, .arguments = arguments}};
   }
 
+  WithID<pt::Node> Parser::conditional(Element* element) {
+    auto id = parseId(element);
+    auto location = parseLocation(element);
+    std::optional<pt::BlockPort> condition;
+    std::optional<pt::BlockPorts> input;
+    std::optional<pt::BlockPorts> output;
+    std::optional<pt::Block> then;
+    std::optional<pt::Block> else_;
+    for (auto child = element->FirstChildElement(); child != nullptr; child = child->NextSiblingElement()) {
+      // TODO: Ports
+      if (child->Name() == "condition"s) {
+        panicIf(condition.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'condition' found in conditional.");
+        condition = parseBlockPort(child);
+      } else if (child->Name() == "then"s) {
+        panicIf(then.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'then' found in conditional.");
+        then = block(child);
+      } else if (child->Name() == "else"s) {
+        panicIf(else_.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'else' found in conditional.");
+        else_ = block(child);
+      } else if (child->Name() == "input"s) {
+        panicIf(input.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'input' found in conditional.");
+        input = parseScopePorts(child);
+      } else if (child->Name() == "output"s) {
+        panicIf(output.has_value(),
+                child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Duplicate 'output' found in conditional.");
+        output = parseScopePorts(child);
+      } else {
+        panicAt(child,
+                diagnostic::Code::ERROR_UNEXPECTED_ELEMENT,
+                "Expected 'condition', 'input', 'output', 'then', or 'else', found '{}'",
+                child->Name());
+      }
+    }
+
+    panicIf(!condition, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'condition' in conditional node");
+    panicIf(!input, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'input' in conditional node");
+    panicIf(!output, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'output' in conditional node");
+    panicIf(!then, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'then' in conditional node");
+    panicIf(!else_, element, diagnostic::Code::ERROR_MISSING_ELEMENT, "Expected 'else' in conditional node");
+
+    //? Enforce heights match up?
+    return WithID{id,
+                  pt::Conditional{
+                    .id = id,
+                    .location = location,
+                    .condition = *condition,
+                    .inputs = std::move(*input),
+                    .outputs = std::move(*output),
+                    .thenScope = xyz::indirect{std::move(*then)},
+                    .elseScope = xyz::indirect{std::move(*else_)},
+                  }};
+  }
+
   pt::Literal Parser::literal(Element* element) {
     static const util::Trie<pt::Literal (*)(Parser*, Element*)> literalParsers{
       // TODO: Support other literal types
@@ -441,15 +530,18 @@ namespace fluir {
           element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "'<{}>'  is not a valid literal type.", element->Name());
         std::unreachable();
       },
-      {{"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
-       {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
-       {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
-       {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
-       {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
-       {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
-       {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
-       {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
-       {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }}}};
+      {
+        {"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
+        {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
+        {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
+        {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
+        {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
+        {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
+        {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
+        {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
+        {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }},
+        {"bool", [](Parser* p, Element* e) -> pt::Literal { return p->boolean(e); }},
+      }};
 
     std::string_view name = element->Name();
     auto* literalParser = literalParsers.at(name);
@@ -588,6 +680,25 @@ namespace fluir {
     diagnostic::emitInternalError("Control reached an impossible point");
   }
 
+  pt::BOOL Parser::boolean(Element* element) {
+    panicIf(!element->GetText(), element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT);
+    std::string_view text = element->GetText();
+    if (text == "true"sv) {
+      return true;
+    } else if (text == "false"sv) {
+      return false;
+    }
+    panicAt(
+      element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT, "'{}' is not a valid boolean representation", text);
+    std::unreachable();
+  }
+
+  pt::BlockPort Parser::parseBlockPort(Element* element) {
+    auto inner = parseIdReference(element, "inner");
+    auto y = static_cast<int>(getInt(element, "y"));
+    return pt::BlockPort{.innerId = inner, .y = y};
+  }
+
   std::string_view Parser::getAttribute(Element* element, std::string_view attribute) {
     auto value = element->Attribute(attribute.data());
     panicIf(value == nullptr,
@@ -609,6 +720,23 @@ namespace fluir {
     } else {
       return value;
     }
+  }
+
+  int64_t Parser::getInt(Element* element, std::string_view attribute) {
+    auto rawValue = getAttribute(element, attribute);
+    auto result = fe::parseInteger(rawValue);
+    if (result.has_value()) {
+      return *result;
+    }
+    panicIf(result.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
+            element,
+            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+            "Expected an integer value, found '{}'.",
+            rawValue);
+    panicIf(result.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
+            element,
+            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
+    diagnostic::emitInternalError("Control reached an impossible point");
   }
 
   ID Parser::parseId(Element* element) { return parseIdReference(element, "id"); }
@@ -668,23 +796,31 @@ namespace fluir {
   }
 
   Operator Parser::parseOperator(Element* element, std::string_view attribute) {
+    static const std::unordered_map<std::string_view, Operator> OPERATORS{
+      {"+"sv, Operator::PLUS},
+      {"-"sv, Operator::MINUS},
+      {"*"sv, Operator::STAR},
+      {"/"sv, Operator::SLASH},
+      {"++"sv, Operator::PLUS_PLUS},
+      {"--"sv, Operator::MINUS_MINUS},
+      {"=="sv, Operator::EQUAL_EQUAL},
+      {"!="sv, Operator::BANG_EQUAL},
+      {">"sv, Operator::GREATER},
+      {"<"sv, Operator::LESS},
+      {">="sv, Operator::GREATER_EQUAL},
+      {"<="sv, Operator::LESS_EQUAL},
+      {"!"sv, Operator::BANG},
+      {"&&"sv, Operator::AND_AND},
+      {"||"sv, Operator::BAR_BAR},
+    };
+
+    panicIf(!element->Attribute(attribute.data()), element, diagnostic::Code::ERROR_MISSING_ATTRIBUTE);
     std::string_view opText = element->Attribute(attribute.data());
     // TODO: This could be made faster...
-    if (opText == "+") {
-      return Operator::PLUS;
-    } else if (opText == "-") {
-      return Operator::MINUS;
-    } else if (opText == "*") {
-      return Operator::STAR;
-    } else if (opText == "/") {
-      return Operator::SLASH;
-    } else if (opText == "++") {
-      return Operator::PLUS_PLUS;
-    } else if (opText == "--") {
-      return Operator::MINUS_MINUS;
-    } else {
-      panicAt(element, diagnostic::Code::ERROR_UNRECOGNIZED_OPERATOR);
-      std::unreachable();
+    if (OPERATORS.contains(opText)) {
+      return OPERATORS.at(opText);
     }
+    panicAt(element, diagnostic::Code::ERROR_UNRECOGNIZED_OPERATOR);
+    std::unreachable();
   }
 }  // namespace fluir

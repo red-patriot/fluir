@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="1" w="100" h="80">
+    <body>
+      <conditional id="1" x="24" y="7" z="2" w="36" h="30">
+        <condition inner="1" y="10"/>
+        <input>
+          <port inner="2" y="10"/>
+        </input>
+        <output>
+          <port inner="4" y="10"/>
+        </output>
+        <then>
+          <unary id="3" x="0" y="0" z="3" w="12" h="5" operator="!"/>
+          <conduit id="123" input="2"><output target="3" index="0"/></conduit>
+          <conduit id="124" input="3"><output target="4" index="0"/></conduit>
+        </then>
+        <else>
+          <constant id="5" x="0" y="0" z="3" w="12" h="5"><bool>true</bool></constant>
+          <conduit id="125" input="5"><output target="4" index="0"/></conduit>
+        </else>
+      </conditional>
+      <constant id="2" x="0" y="0" z="3" w="12" h="5"><bool>true</bool></constant>
+      <conduit id="3" input="2"><output target="1" index="0"/></conduit>
+      <constant id="6" x="0" y="0" z="3" w="12" h="5"><i32>1</i32></constant>
+      <conduit id="7" input="6"><output target="1" index="1"/></conduit>
+      <call target="print" id="8" x="0" y="0" z="3" w="12" h="5"><arg name="object"/></call>
+      <conduit id="9" input="1"><output target="8" index="0"/></conduit>
+    </body>
+  </function>
+</fluir>

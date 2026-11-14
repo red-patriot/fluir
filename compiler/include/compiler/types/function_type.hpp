@@ -6,25 +6,28 @@
 #include <optional>
 #include <vector>
 
-#include "compiler/types/typeid.hpp"
+#include "compiler/types/type.hpp"
 
 namespace fluir::types {
 
-  /** Represents the type signature of a function: its parameter types and optional return type */
+  /** Represents the type signature of a function */
   class FunctionType {
+    // TODO: Fold this into the existing type system
    public:
-    FunctionType(std::vector<TypeID> parameters, std::optional<TypeID> returnType) :
+    FunctionType(std::vector<TypePtr> parameters, TypePtr returnType) :
       parameters_(std::move(parameters)), returnType_(returnType) { }
 
-    [[nodiscard]] const std::vector<TypeID>& parameters() const { return parameters_; }
-    [[nodiscard]] std::optional<TypeID> returnType() const { return returnType_; }
+    [[nodiscard]] const std::vector<TypePtr>& parameters() const { return parameters_; }
+    [[nodiscard]] TypePtr returnType() const { return returnType_; }
 
     friend bool operator==(const FunctionType&, const FunctionType&) = default;
 
    private:
-    std::vector<TypeID> parameters_;
-    std::optional<TypeID> returnType_;
+    std::vector<TypePtr> parameters_;
+    TypePtr returnType_;
   };
+
+  using FunctionTypePtr = FunctionType const*;
 
 }  // namespace fluir::types
 

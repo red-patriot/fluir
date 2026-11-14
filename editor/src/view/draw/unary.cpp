@@ -1,0 +1,30 @@
+#include "editor/view/draw/unary.hpp"
+
+#include "compiler/models/operator.hpp"
+
+namespace fluir::editor::draw {
+  namespace {
+
+    // In grid units. A node's height follows its content, so it is unbounded below.
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{8, 5}, .upper = Vec2i{8, 5}};
+    constexpr Vec2i DEFAULT_SIZE{8, 5};
+
+  }  // namespace
+
+  TerminalSet anchors(const pt::Unary&, const Rect& r, const EditorContext::Layout&) {
+    return {edgeAnchors(r.x, r, 1), edgeAnchors(r.x + r.w, r, 1)};
+  }
+
+  Color color(const pt::Unary&, const EditorContext::Theme& theme) { return theme.operatorNode; }
+
+  Vec2i defaultSize(const pt::Unary&) { return DEFAULT_SIZE; }
+
+  Limits<Vec2i> sizeLimits(const pt::Unary&) { return SIZE_LIMITS; }
+
+  std::optional<ResizeAxes> resizePart(const pt::Unary&) { return std::nullopt; }
+
+  std::vector<FieldLabel> labels(const pt::Unary&, const Rect& world, const EditorContext::Layout&) {
+    return {{{Field::Kind::Operator}, world}};
+  }
+
+}  // namespace fluir::editor::draw

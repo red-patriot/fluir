@@ -6,6 +6,8 @@
 
 #include "fmt/format.h"
 
+using namespace std::string_view_literals;
+
 namespace fluir {
   namespace {
 #define STRINGIFY(i) #i
@@ -24,6 +26,7 @@ namespace fluir {
       std::string operator()(uint16_t u) const { return fmt::format("VU16 x{:X}", u); }
       std::string operator()(uint32_t u) const { return fmt::format("VU32 x{:X}", u); }
       std::string operator()(uint64_t u) const { return fmt::format("VU64 x{:X}", u); }
+      std::string operator()(bool b) const { return fmt::format("V{}", b ? "TRUE"sv : "FALSE"sv); }
       std::string operator()(const std::string& s) const { return fmt::format("VSTR s{:0>8X}{}", s.size(), s); }
     };
   }  // namespace
@@ -73,6 +76,9 @@ namespace fluir {
           emitInstructionWithArg(*i, *(i + 1));
           ++i;
           break;
+        case code::Instruction::QUAD_PUSH:
+        case code::Instruction::JUMP_BY:
+        case code::Instruction::JUMP_IF_FALSE:
         case code::Instruction::CALL:
         case code::Instruction::DYN_CALL:
           emitInstruction(*i++);

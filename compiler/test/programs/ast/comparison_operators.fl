@@ -1,0 +1,98 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <constant id="1" x="10" y="18" z="1" w="12" h="5">
+        <i32>1</i32>
+      </constant>
+      <constant id="2" x="10" y="28" z="1" w="12" h="5">
+        <i32>2</i32>
+      </constant>
+      <binary id="3" x="36" y="10" z="1" w="8" h="5" operator="=="/>
+      <call target="print" id="4" x="62" y="8" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <binary id="5" x="36" y="18" z="1" w="8" h="5" operator="!="/>
+      <binary id="6" x="36" y="26" z="1" w="8" h="5" operator="&gt;"/>
+      <binary id="7" x="36" y="34" z="1" w="8" h="5" operator="&lt;"/>
+      <binary id="8" x="36" y="42" z="1" w="8" h="5" operator="&gt;="/>
+      <binary id="9" x="36" y="50" z="1" w="8" h="5" operator="&lt;="/>
+      <call target="print" id="18" x="62" y="32" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <call target="print" id="19" x="62" y="20" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <call target="print" id="20" x="62" y="44" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <call target="print" id="21" x="62" y="56" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <call target="print" id="22" x="62" y="68" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <conduit id="10" input="1">
+        <output target="3" index="0"/>
+      </conduit>
+      <conduit id="11" input="1">
+        <output target="5" index="0"/>
+      </conduit>
+      <conduit id="12" input="2">
+        <output target="3" index="1"/>
+      </conduit>
+      <conduit id="13" input="2">
+        <output target="5" index="1"/>
+      </conduit>
+      <conduit id="14" input="2">
+        <output target="6" index="1"/>
+      </conduit>
+      <conduit id="15" input="2">
+        <output target="7" index="1"/>
+      </conduit>
+      <conduit id="16" input="2">
+        <output target="8" index="1"/>
+      </conduit>
+      <conduit id="17" input="2">
+        <output target="9" index="1"/>
+      </conduit>
+      <conduit id="23" input="1">
+        <output target="6" index="0"/>
+      </conduit>
+      <conduit id="24" input="1">
+        <output target="7" index="0"/>
+      </conduit>
+      <conduit id="25" input="1">
+        <output target="8" index="0"/>
+      </conduit>
+      <conduit id="26" input="1">
+        <output target="9" index="0"/>
+      </conduit>
+      <conduit id="27" input="3">
+        <output target="4" index="0"/>
+      </conduit>
+      <conduit id="28" input="5">
+        <output target="19" index="0"/>
+      </conduit>
+      <conduit id="29" input="6">
+        <output target="18" index="0"/>
+      </conduit>
+      <conduit id="30" input="7">
+        <output target="20" index="0"/>
+      </conduit>
+      <conduit id="31" input="8">
+        <output target="21" index="0"/>
+      </conduit>
+      <conduit id="32" input="9">
+        <output target="22" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

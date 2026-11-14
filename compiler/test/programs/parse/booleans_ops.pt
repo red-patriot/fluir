@@ -1,0 +1,65 @@
+1:
+    FunctionDecl(main)
+    at(x0, y0, z0, w100, h100)
+    body
+        1:
+            Constant
+            at(x6, y10, z1, w8, h5)
+            BOOL true
+        2:
+            Constant
+            at(x6, y39, z1, w8, h5)
+            BOOL false
+        3:
+            Binary
+            at(x36, y21, z1, w8, h5)
+            ||
+            lhs0
+            rhs0
+        4:
+            Binary
+            at(x36, y34, z1, w8, h5)
+            &&
+            lhs0
+            rhs0
+        13:
+            Unary
+            at(x36, y48, z1, w8, h5)
+            !
+            lhs0
+        15:
+            Call(print)
+            at(x53, y43, z1, w14, h10)
+            in:
+                0: object
+    conduits
+        5:
+            Conduit
+            in1.0
+            children
+                out3.0
+        6:
+            Conduit
+            in2.0
+            children
+                out3.1
+        7:
+            Conduit
+            in1.0
+            children
+                out4.0
+        8:
+            Conduit
+            in2.0
+            children
+                out4.1
+        14:
+            Conduit
+            in2.0
+            children
+                out13.0
+        16:
+            Conduit
+            in13.0
+            children
+                out15.0

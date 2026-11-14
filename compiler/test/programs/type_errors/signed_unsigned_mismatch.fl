@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="i64_plus_u8" id="1" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="+"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_minus_u8" id="2" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="-"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_star_u8" id="3" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="*"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_slash_u8" id="4" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="/"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_less_u8" id="5" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_greater_u8" id="6" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_less_equal_u8" id="7" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i64_greater_equal_u8" id="8" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i64>0</i64></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><u8>0</u8></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+</fluir>

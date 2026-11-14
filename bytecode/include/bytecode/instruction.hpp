@@ -13,6 +13,10 @@ namespace fluir::code {
   code(MULTIPOP)                         \
   code(GET_VAL)                          \
   code(SET_VAL)                          \
+  code(EQ)                               \
+  code(JUMP_BY)                          \
+  code(JUMP_IF_FALSE)                    \
+  /* FLOAT OPS */                        \
   code(F64_ADD)                          \
   code(F64_SUB)                          \
   code(F64_MUL)                          \
@@ -20,7 +24,9 @@ namespace fluir::code {
   code(F64_INC)                          \
   code(F64_DEC)                          \
   code(F64_NEG)                          \
-  code(F64_AFF)                          \
+  code(F64_LT)                           \
+  code(F64_LE)                           \
+  /* INT OPS */                          \
   code(I64_ADD)                          \
   code(I64_SUB)                          \
   code(I64_MUL)                          \
@@ -28,14 +34,18 @@ namespace fluir::code {
   code(I64_INC)                          \
   code(I64_DEC)                          \
   code(I64_NEG)                          \
-  code(I64_AFF)                          \
+  code(I64_LT)                           \
+  code(I64_LE)                           \
+  /* UINT OPS */                         \
   code(U64_ADD)                          \
   code(U64_SUB)                          \
   code(U64_MUL)                          \
   code(U64_DIV)                          \
   code(U64_INC)                          \
   code(U64_DEC)                          \
-  code(U64_AFF)                          \
+  code(U64_LT)                           \
+  code(U64_LE)                           \
+  /* CAST OPS */                         \
   code(CAST_IU)                          \
   code(CAST_UI)                          \
   code(CAST_IF)                          \
@@ -43,6 +53,11 @@ namespace fluir::code {
   code(CAST_FI)                          \
   code(CAST_FU)                          \
   code(CAST_WIDTH)                       \
+  /* BOOL OPS */                         \
+  code(NOT)                              \
+  code(AND)                              \
+  code(OR)                               \
+  /* CALL OPS */                         \
   code(CALL)                             \
   code(DYN_CALL)                         \
   code(RETURN)                           \

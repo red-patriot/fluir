@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="i32_plus_bool" id="1" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="+"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_minus_bool" id="2" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="-"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_star_bool" id="3" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="*"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_slash_bool" id="4" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="/"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_less_bool" id="5" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_greater_bool" id="6" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;"/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_less_equal_bool" id="7" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&lt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+  <function name="i32_greater_equal_bool" id="8" x="0" y="0" z="0" w="50" h="35">
+    <body>
+      <constant id="1" x="6" y="13" z="1" w="8" h="5"><i32>0</i32></constant>
+      <constant id="2" x="6" y="21" z="1" w="8" h="5"><bool>true</bool></constant>
+      <binary id="3" x="25" y="17" z="1" w="6" h="5" operator="&gt;="/>
+      <conduit id="4" input="1"><output target="3" index="0"/></conduit>
+      <conduit id="5" input="2"><output target="3" index="1"/></conduit>
+    </body>
+  </function>
+</fluir>

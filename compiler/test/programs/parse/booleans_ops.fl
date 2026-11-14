@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="0" w="100" h="100">
+    <body>
+      <constant id="1" x="6" y="10" z="1" w="8" h="5">
+        <bool>true</bool>
+      </constant>
+      <constant id="2" x="6" y="39" z="1" w="8" h="5">
+        <bool>false</bool>
+      </constant>
+      <binary id="3" x="36" y="21" z="1" w="8" h="5" operator="||"/>
+      <binary id="4" x="36" y="34" z="1" w="8" h="5" operator="&amp;&amp;"/>
+      <unary id="13" x="36" y="48" z="1" w="8" h="5" operator="!"/>
+      <call target="print" id="15" x="53" y="43" z="1" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <conduit id="5" input="1">
+        <output target="3" index="0"/>
+      </conduit>
+      <conduit id="6" input="2">
+        <output target="3" index="1"/>
+      </conduit>
+      <conduit id="7" input="1">
+        <output target="4" index="0"/>
+      </conduit>
+      <conduit id="8" input="2">
+        <output target="4" index="1"/>
+      </conduit>
+      <conduit id="14" input="2">
+        <output target="13" index="0"/>
+      </conduit>
+      <conduit id="16" input="13">
+        <output target="15" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

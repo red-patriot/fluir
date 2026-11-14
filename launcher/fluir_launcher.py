@@ -82,44 +82,6 @@ class FluirLauncher:
             print(f"Error running {full_path}: {e}")
             return 1
 
-    def run_editor(self, args: list[str]) -> int:
-        """Run both editor components."""
-        backend_path = self.get_executable_path(
-            self.config["editor_backend_path"]
-        )
-        frontend_path = self.get_executable_path(
-            self.config["editor_frontend_path"]
-        )
-
-        # Check both executables exist
-        if not self.check_executable_exists(backend_path):
-            print(f"Error: Editor backend not found: {backend_path}")
-            return 1
-        if not self.check_executable_exists(frontend_path):
-            print(f"Error: Editor frontend not found: {frontend_path}")
-            return 1
-
-        try:
-            # Start backend process
-            backend_proc = subprocess.Popen([backend_path] + args)
-
-            # Start frontend process
-            frontend_proc = subprocess.Popen([frontend_path] + args)
-
-            # Wait for both processes to complete
-            frontend_result = frontend_proc.wait()
-            print("Stopping BE!")
-            backend_proc.terminate()
-            backend_result = backend_proc.wait()
-            print("BE stopped!")
-
-            # Return non-zero if either process failed
-            return backend_result or frontend_result
-
-        except Exception as e:
-            print(f"Error running editor: {e}")
-            return 1
-
     def show_help(self) -> None:
         """Show launcher help information."""
         print(HELP_TEXT)
@@ -143,7 +105,7 @@ class FluirLauncher:
         elif command == "run":
             return self.run_command(self.config["vm_path"], remaining_args)
         elif command == "edit":
-            return self.run_editor(remaining_args)
+            return self.run_command(self.config["editor_path"], remaining_args)
         else:
             print(f"Error: Unknown command '{command}'")
             print("Use 'fluir help' to see available commands.")

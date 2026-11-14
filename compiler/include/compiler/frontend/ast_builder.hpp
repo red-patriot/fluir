@@ -13,6 +13,7 @@ namespace fluir {
     static Results<ast::AST> buildFrom(Context& ctx, const pt::ParseTree& tree);
 
     Results<ast::Declaration> operator()(const fluir::pt::FunctionDecl& func);
+    Results<ast::Declaration> operator()(const fluir::pt::Comment&) { return NoResult; }
 
    private:
     Context& ctx_;

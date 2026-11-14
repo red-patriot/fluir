@@ -13,6 +13,7 @@ namespace fluir::debug {
 
     void print(const ast::AST& ast);
     void print(const ast::DataFlowGraph& graph);
+    void print(const ast::SubGraph& subgraph);
 
     void operator()(const ast::FunctionDecl& func);
     void operator()(const ast::BinaryOp& binary);
@@ -22,6 +23,9 @@ namespace fluir::debug {
     void operator()(const ast::LocalWrite& write);
     void operator()(const ast::LocalRead& read);
     void operator()(const ast::Call& call);
+    void operator()(const ast::Conditional& conditional);
+    void operator()(const ast::Bundle& bundle);
+    void operator()(const ast::Unbundle& unbundle);
 
    private:
     std::ostream& out_;
@@ -31,6 +35,8 @@ namespace fluir::debug {
     void doInOrderPrint(const ast::DataFlowGraph& graph);
 
     void print(const ast::Node& node);
+    void print(const ast::Dependency& dependency);
+    void print(std::span<const ast::ScopeInput> inputs);
   };
 }  // namespace fluir::debug
 

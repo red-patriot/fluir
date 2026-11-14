@@ -17,6 +17,7 @@ namespace fluir::be {
                                 std::uint16_t,
                                 std::uint32_t,
                                 std::uint64_t,
+                                bool,
                                 std::string>;
 
   /** An array of constants that forms a constants section */

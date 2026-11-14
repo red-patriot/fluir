@@ -2,4 +2,12 @@
     FunctionDecl(main)
     at(x10, y10, z3, w100, h100)
     body
+        1:
+            Comment
+            at(x10, y10, z4, w25, h25)
+            {{Hello there! This is a simple comment!}}
     conduits
+2:
+    Comment
+    at(x150, y10, z4, w25, h25)
+    {{Comments are also allowed at the top level}}

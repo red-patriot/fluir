@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="1" w="100" h="80">
+    <body>
+      <constant id="2" x="7" y="16" z="2" w="12" h="5">
+        <bool>true</bool>
+      </constant>
+      <call target="print" id="1" x="24" y="7" z="2" w="36" h="30">
+        <arg name="object"/>
+      </call>
+      <call target="print" id="4" x="68" y="11" z="2" w="14" h="10">
+        <arg name="object"/>
+      </call>
+      <conduit id="3" input="2">
+        <output target="1" index="0"/>
+      </conduit>
+      <conduit id="5" input="1">
+        <output target="4" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

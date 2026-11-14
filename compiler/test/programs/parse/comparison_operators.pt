@@ -1,0 +1,169 @@
+1:
+    FunctionDecl(main)
+    at(x0, y0, z0, w100, h100)
+    body
+        1:
+            Constant
+            at(x10, y18, z1, w12, h5)
+            I32 1
+        2:
+            Constant
+            at(x10, y28, z1, w12, h5)
+            I32 2
+        3:
+            Binary
+            at(x36, y10, z1, w8, h5)
+            ==
+            lhs0
+            rhs0
+        4:
+            Call(print)
+            at(x62, y8, z1, w14, h10)
+            in:
+                0: object
+        5:
+            Binary
+            at(x36, y18, z1, w8, h5)
+            !=
+            lhs0
+            rhs0
+        6:
+            Binary
+            at(x36, y26, z1, w8, h5)
+            >
+            lhs0
+            rhs0
+        7:
+            Binary
+            at(x36, y34, z1, w8, h5)
+            <
+            lhs0
+            rhs0
+        8:
+            Binary
+            at(x36, y42, z1, w8, h5)
+            >=
+            lhs0
+            rhs0
+        9:
+            Binary
+            at(x36, y50, z1, w8, h5)
+            <=
+            lhs0
+            rhs0
+        18:
+            Call(print)
+            at(x62, y32, z1, w14, h10)
+            in:
+                0: object
+        19:
+            Call(print)
+            at(x62, y20, z1, w14, h10)
+            in:
+                0: object
+        20:
+            Call(print)
+            at(x62, y44, z1, w14, h10)
+            in:
+                0: object
+        21:
+            Call(print)
+            at(x62, y56, z1, w14, h10)
+            in:
+                0: object
+        22:
+            Call(print)
+            at(x62, y68, z1, w14, h10)
+            in:
+                0: object
+    conduits
+        10:
+            Conduit
+            in1.0
+            children
+                out3.0
+        11:
+            Conduit
+            in1.0
+            children
+                out5.0
+        12:
+            Conduit
+            in2.0
+            children
+                out3.1
+        13:
+            Conduit
+            in2.0
+            children
+                out5.1
+        14:
+            Conduit
+            in2.0
+            children
+                out6.1
+        15:
+            Conduit
+            in2.0
+            children
+                out7.1
+        16:
+            Conduit
+            in2.0
+            children
+                out8.1
+        17:
+            Conduit
+            in2.0
+            children
+                out9.1
+        23:
+            Conduit
+            in1.0
+            children
+                out6.0
+        24:
+            Conduit
+            in1.0
+            children
+                out7.0
+        25:
+            Conduit
+            in1.0
+            children
+                out8.0
+        26:
+            Conduit
+            in1.0
+            children
+                out9.0
+        27:
+            Conduit
+            in3.0
+            children
+                out4.0
+        28:
+            Conduit
+            in5.0
+            children
+                out19.0
+        29:
+            Conduit
+            in6.0
+            children
+                out18.0
+        30:
+            Conduit
+            in7.0
+            children
+                out20.0
+        31:
+            Conduit
+            in8.0
+            children
+                out21.0
+        32:
+            Conduit
+            in9.0
+            children
+                out22.0

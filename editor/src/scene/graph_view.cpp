@@ -90,7 +90,7 @@ namespace fluir::editor {
   }
 
   void GraphView::keyPressEvent(QKeyEvent* event) {
-    if (event->key() == Qt::Key_F && event->modifiers() == Qt::NoModifier) {
+    if (event->key() == Qt::Key_F && event->modifiers() == Qt::ControlModifier) {
       fit();
       event->accept();
       return;

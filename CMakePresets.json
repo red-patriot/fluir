@@ -50,6 +50,17 @@
       }
     },
     {
+      "name": "gcc-editor",
+      "displayName": "GCC Editor Build (no sanitizers)",
+      "inherits": [
+        "_root-config"
+      ],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "cmake/gnu-toolchain.cmake"
+      }
+    },
+    {
       "name": "llvm-debug",
       "displayName": "Clang Debug Build",
       "inherits": [
@@ -119,6 +130,13 @@
       ]
     },
     {
+      "name": "gcc-editor",
+      "configurePreset": "gcc-editor",
+      "inherits": [
+        "_root-build"
+      ]
+    },
+    {
       "name": "llvm-debug",
       "configurePreset": "llvm-debug",
       "inherits": [
@@ -160,8 +178,16 @@
       }
     },
     {
-      "name": "gcc-debug",
+      "name": "_maxsan-test",
+      "hidden": true,
       "inherits": "_test_base",
+      "environment": {
+        "LSAN_OPTIONS": "suppressions=${sourceDir}/editor/lsan.supp"
+      }
+    },
+    {
+      "name": "gcc-debug",
+      "inherits": "_maxsan-test",
       "configurePreset": "gcc-debug"
     },
     {
@@ -170,8 +196,13 @@
       "configurePreset": "gcc-release"
     },
     {
-      "name": "llvm-debug",
+      "name": "gcc-editor",
       "inherits": "_test_base",
+      "configurePreset": "gcc-editor"
+    },
+    {
+      "name": "llvm-debug",
+      "inherits": "_maxsan-test",
       "configurePreset": "llvm-debug"
     },
     {

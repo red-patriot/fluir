@@ -5,6 +5,7 @@
 
 #include "bytecode/version.hpp"
 #include "compiler/types/symbol_table.hpp"
+#include "compiler/types/type_arena.hpp"
 #include "compiler/utility/diagnostic/ostream_sink.hpp"
 #include "compiler/utility/diagnostics.hpp"
 #include "compiler/utility/results.hpp"
@@ -14,6 +15,7 @@ namespace fluir {
   struct Context {
     diagnostic::Sink& diagnosticSink{diagnostic::getCoutSink()}; /**< The sink to emit diagnostics to */
     types::SymbolTable symbolTable;                              /**< The symbol table of the compilation */
+    types::TypeArena types;                                      /**< Owns all the types*/
     std::filesystem::path currentFile;                           /**< The current file being processed */
     std::filesystem::path outputFilename;                        /**< The output filename to write to */
     Version version{0, 0, 0};                                    /**< The current version of the compiler */

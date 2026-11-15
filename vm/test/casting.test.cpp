@@ -862,7 +862,7 @@ INSTANTIATE_TEST_SUITE_P(
                     tuple{9223372036854775808_u64,
                           fc::ByteCode{.constants = {9223372036854775808.0_f64},
                                        .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_FU, WIDTH_64}}}}},
-                    tuple{0_u64,  /// This case wraps around to 0 because of FP epsilon funsies
+                    tuple{fluir::code::Value{UINT64_MAX},
                           fc::ByteCode{.constants = {18446744073709551615.0_f64},
                                        .chunks = {fc::Chunk{.name = "main", .code = {PUSH, 0, CAST_FU, WIDTH_64}}}}}));
 

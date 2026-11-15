@@ -202,7 +202,9 @@ namespace fluir {
                                       {"VU16", TokenType::TYPE_U16},
                                       {"VU32", TokenType::TYPE_U32},
                                       {"VU64", TokenType::TYPE_U64},
-                                      {"VSTR", TokenType::TYPE_STR}}};
+                                      {"VSTR", TokenType::TYPE_STR},
+                                      {"VTRUE", TokenType::TYPE_TRUE},
+                                      {"VFALSE", TokenType::TYPE_FALSE}}};
 
     std::string_view word{start_, current_};
     TokenType tokenType;
@@ -274,6 +276,10 @@ namespace fluir {
         return decodeIntConstant(code::PrimitiveType::U64);
       case TokenType::TYPE_STR:
         return decodeStrConstant();
+      case TokenType::TYPE_TRUE:
+        return code::Value{true};
+      case TokenType::TYPE_FALSE:
+        return code::Value{false};
       default:
         throw std::runtime_error{"Expected a type keyword."};
     }

@@ -12,61 +12,30 @@
 namespace ft = fluir::types;
 using std::tuple;
 
-class TestBuiltinTypes : public ::testing::TestWithParam<fluir::types::Type> {
- public:
-  fluir::types::SymbolTable uut;
-
-  void SetUp() override { fluir::types::instantiateBuiltinTypes(uut); }
-};
-
-TEST_P(TestBuiltinTypes, Test) {
-  auto& expected = GetParam();
-
-  auto actual = uut.getType(uut.getTypeID(expected.name()));
-
-  ASSERT_TRUE(actual);
-  EXPECT_EQ(expected, *actual);
-}
-
-INSTANTIATE_TEST_SUITE_P(,
-                         TestBuiltinTypes,
-                         ::testing::Values(ft::Type{"F64"},
-                                           ft::Type{"I8"},
-                                           ft::Type{"I16"},
-                                           ft::Type{"I32"},
-                                           ft::Type{"I64"},
-                                           ft::Type{"U8"},
-                                           ft::Type{"U16"},
-                                           ft::Type{"U32"},
-                                           ft::Type{"U64"}));
-
 class TestBuiltinOperators
-  : public ::testing::TestWithParam<std::tuple<std::string, fluir::Operator, std::string, std::string>> {
+  : public ::testing::TestWithParam<std::tuple<ft::TypePtr, fluir::Operator, ft::TypePtr, ft::TypePtr>> {
  public:
   fluir::types::SymbolTable uut;
 
-  void SetUp() override {
-    fluir::types::instantiateBuiltinTypes(uut);
-    fluir::types::instantiateBuiltinOperators(uut);
-  }
+  void SetUp() override { fluir::types::instantiateBuiltinOperators(uut); }
 };
 
 TEST_P(TestBuiltinOperators, Test) {
   auto& [lhs, op, rhs, ret] = GetParam();
 
   auto expected = [&]() {
-    if (rhs.empty()) {
-      return fluir::types::OperatorDefinition{op, uut.getTypeID(lhs), uut.getTypeID(ret)};
+    if (!rhs) {
+      return fluir::types::OperatorDefinition{op, lhs, ret};
     } else {
-      return fluir::types::OperatorDefinition{uut.getTypeID(lhs), op, uut.getTypeID(rhs), uut.getTypeID(ret)};
+      return fluir::types::OperatorDefinition{lhs, op, rhs, ret};
     }
   }();
 
   auto actual = [&]() {
-    if (rhs.empty()) {
-      return uut.selectOverload(op, uut.getTypeID(lhs));
+    if (!rhs) {
+      return uut.selectOverload(op, lhs);
     } else {
-      return uut.selectOverload(uut.getTypeID(lhs), op, uut.getTypeID(rhs));
+      return uut.selectOverload(lhs, op, rhs);
     }
   }();
 
@@ -76,90 +45,84 @@ TEST_P(TestBuiltinOperators, Test) {
 
 INSTANTIATE_TEST_SUITE_P(,
                          TestBuiltinOperators,
-                         ::testing::Values(tuple{"F64", fluir::Operator::PLUS, "F64", "F64"},
-                                           tuple{"F64", fluir::Operator::MINUS, "F64", "F64"},
-                                           tuple{"F64", fluir::Operator::STAR, "F64", "F64"},
-                                           tuple{"F64", fluir::Operator::SLASH, "F64", "F64"},
-                                           tuple{"F64", fluir::Operator::PLUS, "", "F64"},
-                                           tuple{"F64", fluir::Operator::MINUS, "", "F64"},
-                                           tuple{"F64", fluir::Operator::PLUS_PLUS, "", "F64"},
-                                           tuple{"F64", fluir::Operator::MINUS_MINUS, "", "F64"},
-                                           tuple{"I8", fluir::Operator::PLUS, "I8", "I8"},
-                                           tuple{"I8", fluir::Operator::MINUS, "I8", "I8"},
-                                           tuple{"I8", fluir::Operator::STAR, "I8", "I8"},
-                                           tuple{"I8", fluir::Operator::SLASH, "I8", "I8"},
-                                           tuple{"I8", fluir::Operator::PLUS, "", "I8"},
-                                           tuple{"I8", fluir::Operator::MINUS, "", "I8"},
-                                           tuple{"I8", fluir::Operator::PLUS_PLUS, "", "I8"},
-                                           tuple{"I8", fluir::Operator::MINUS_MINUS, "", "I8"},
-                                           tuple{"I16", fluir::Operator::PLUS, "I16", "I16"},
-                                           tuple{"I16", fluir::Operator::MINUS, "I16", "I16"},
-                                           tuple{"I16", fluir::Operator::STAR, "I16", "I16"},
-                                           tuple{"I16", fluir::Operator::SLASH, "I16", "I16"},
-                                           tuple{"I16", fluir::Operator::PLUS, "", "I16"},
-                                           tuple{"I16", fluir::Operator::MINUS, "", "I16"},
-                                           tuple{"I16", fluir::Operator::PLUS_PLUS, "", "I16"},
-                                           tuple{"I16", fluir::Operator::MINUS_MINUS, "", "I16"},
-                                           tuple{"I32", fluir::Operator::PLUS, "I32", "I32"},
-                                           tuple{"I32", fluir::Operator::MINUS, "I32", "I32"},
-                                           tuple{"I32", fluir::Operator::STAR, "I32", "I32"},
-                                           tuple{"I32", fluir::Operator::SLASH, "I32", "I32"},
-                                           tuple{"I32", fluir::Operator::PLUS, "", "I32"},
-                                           tuple{"I32", fluir::Operator::MINUS, "", "I32"},
-                                           tuple{"I32", fluir::Operator::PLUS_PLUS, "", "I32"},
-                                           tuple{"I32", fluir::Operator::MINUS_MINUS, "", "I32"},
-                                           tuple{"I64", fluir::Operator::PLUS, "I64", "I64"},
-                                           tuple{"I64", fluir::Operator::MINUS, "I64", "I64"},
-                                           tuple{"I64", fluir::Operator::STAR, "I64", "I64"},
-                                           tuple{"I64", fluir::Operator::SLASH, "I64", "I64"},
-                                           tuple{"I64", fluir::Operator::PLUS, "", "I64"},
-                                           tuple{"I64", fluir::Operator::MINUS, "", "I64"},
-                                           tuple{"I64", fluir::Operator::PLUS_PLUS, "", "I64"},
-                                           tuple{"I64", fluir::Operator::MINUS_MINUS, "", "I64"},
-                                           tuple{"U8", fluir::Operator::PLUS, "U8", "U8"},
-                                           tuple{"U8", fluir::Operator::MINUS, "U8", "U8"},
-                                           tuple{"U8", fluir::Operator::STAR, "U8", "U8"},
-                                           tuple{"U8", fluir::Operator::SLASH, "U8", "U8"},
-                                           tuple{"U8", fluir::Operator::PLUS, "", "U8"},
-                                           tuple{"U8", fluir::Operator::PLUS_PLUS, "", "U8"},
-                                           tuple{"U8", fluir::Operator::MINUS_MINUS, "", "U8"},
-                                           tuple{"U16", fluir::Operator::PLUS, "U16", "U16"},
-                                           tuple{"U16", fluir::Operator::MINUS, "U16", "U16"},
-                                           tuple{"U16", fluir::Operator::STAR, "U16", "U16"},
-                                           tuple{"U16", fluir::Operator::SLASH, "U16", "U16"},
-                                           tuple{"U16", fluir::Operator::PLUS, "", "U16"},
-                                           tuple{"U16", fluir::Operator::PLUS_PLUS, "", "U16"},
-                                           tuple{"U16", fluir::Operator::MINUS_MINUS, "", "U16"},
-                                           tuple{"U32", fluir::Operator::PLUS, "U32", "U32"},
-                                           tuple{"U32", fluir::Operator::MINUS, "U32", "U32"},
-                                           tuple{"U32", fluir::Operator::STAR, "U32", "U32"},
-                                           tuple{"U32", fluir::Operator::SLASH, "U32", "U32"},
-                                           tuple{"U32", fluir::Operator::PLUS, "", "U32"},
-                                           tuple{"U32", fluir::Operator::PLUS_PLUS, "", "U32"},
-                                           tuple{"U32", fluir::Operator::MINUS_MINUS, "", "U32"},
-                                           tuple{"U64", fluir::Operator::PLUS, "U64", "U64"},
-                                           tuple{"U64", fluir::Operator::MINUS, "U64", "U64"},
-                                           tuple{"U64", fluir::Operator::STAR, "U64", "U64"},
-                                           tuple{"U64", fluir::Operator::SLASH, "U64", "U64"},
-                                           tuple{"U64", fluir::Operator::PLUS, "", "U64"},
-                                           tuple{"U64", fluir::Operator::PLUS_PLUS, "", "U64"},
-                                           tuple{"U64", fluir::Operator::MINUS_MINUS, "", "U64"}));
+                         ::testing::Values(tuple{&ft::F64(), fluir::Operator::PLUS, &ft::F64(), &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::MINUS, &ft::F64(), &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::STAR, &ft::F64(), &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::SLASH, &ft::F64(), &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::PLUS, nullptr, &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::MINUS, nullptr, &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::PLUS_PLUS, nullptr, &ft::F64()},
+                                           tuple{&ft::F64(), fluir::Operator::MINUS_MINUS, nullptr, &ft::F64()},
+                                           tuple{&ft::I8(), fluir::Operator::PLUS, &ft::I8(), &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::MINUS, &ft::I8(), &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::STAR, &ft::I8(), &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::SLASH, &ft::I8(), &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::PLUS, nullptr, &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::MINUS, nullptr, &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::PLUS_PLUS, nullptr, &ft::I8()},
+                                           tuple{&ft::I8(), fluir::Operator::MINUS_MINUS, nullptr, &ft::I8()},
+                                           tuple{&ft::I16(), fluir::Operator::PLUS, &ft::I16(), &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::MINUS, &ft::I16(), &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::STAR, &ft::I16(), &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::SLASH, &ft::I16(), &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::PLUS, nullptr, &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::MINUS, nullptr, &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::PLUS_PLUS, nullptr, &ft::I16()},
+                                           tuple{&ft::I16(), fluir::Operator::MINUS_MINUS, nullptr, &ft::I16()},
+                                           tuple{&ft::I32(), fluir::Operator::PLUS, &ft::I32(), &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::MINUS, &ft::I32(), &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::STAR, &ft::I32(), &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::SLASH, &ft::I32(), &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::PLUS, nullptr, &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::MINUS, nullptr, &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::PLUS_PLUS, nullptr, &ft::I32()},
+                                           tuple{&ft::I32(), fluir::Operator::MINUS_MINUS, nullptr, &ft::I32()},
+                                           tuple{&ft::I64(), fluir::Operator::PLUS, &ft::I64(), &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::MINUS, &ft::I64(), &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::STAR, &ft::I64(), &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::SLASH, &ft::I64(), &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::PLUS, nullptr, &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::MINUS, nullptr, &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::PLUS_PLUS, nullptr, &ft::I64()},
+                                           tuple{&ft::I64(), fluir::Operator::MINUS_MINUS, nullptr, &ft::I64()},
+                                           tuple{&ft::U8(), fluir::Operator::PLUS, &ft::U8(), &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::MINUS, &ft::U8(), &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::STAR, &ft::U8(), &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::SLASH, &ft::U8(), &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::PLUS, nullptr, &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::PLUS_PLUS, nullptr, &ft::U8()},
+                                           tuple{&ft::U8(), fluir::Operator::MINUS_MINUS, nullptr, &ft::U8()},
+                                           tuple{&ft::U16(), fluir::Operator::PLUS, &ft::U16(), &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::MINUS, &ft::U16(), &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::STAR, &ft::U16(), &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::SLASH, &ft::U16(), &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::PLUS, nullptr, &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::PLUS_PLUS, nullptr, &ft::U16()},
+                                           tuple{&ft::U16(), fluir::Operator::MINUS_MINUS, nullptr, &ft::U16()},
+                                           tuple{&ft::U32(), fluir::Operator::PLUS, &ft::U32(), &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::MINUS, &ft::U32(), &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::STAR, &ft::U32(), &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::SLASH, &ft::U32(), &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::PLUS, nullptr, &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::PLUS_PLUS, nullptr, &ft::U32()},
+                                           tuple{&ft::U32(), fluir::Operator::MINUS_MINUS, nullptr, &ft::U32()},
+                                           tuple{&ft::U64(), fluir::Operator::PLUS, &ft::U64(), &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::MINUS, &ft::U64(), &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::STAR, &ft::U64(), &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::SLASH, &ft::U64(), &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::PLUS, nullptr, &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::PLUS_PLUS, nullptr, &ft::U64()},
+                                           tuple{&ft::U64(), fluir::Operator::MINUS_MINUS, nullptr, &ft::U64()}));
 
-class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, std::string, std::string>> {
+class TestBuiltinCasts : public ::testing::TestWithParam<std::tuple<bool, ft::TypePtr, ft::TypePtr>> {
  public:
   fluir::types::SymbolTable uut;
 
-  void SetUp() override {
-    fluir::types::instantiateBuiltinTypes(uut);
-    fluir::types::instantiateBuiltinCasts(uut);
-  }
+  void SetUp() override { fluir::types::instantiateBuiltinCasts(uut); }
 };
 
 TEST_P(TestBuiltinCasts, Test) {
-  auto& [isImplicit, sourceName, targetName] = GetParam();
-
-  auto source = uut.getTypeID(sourceName);
-  auto target = uut.getTypeID(targetName);
+  auto& [isImplicit, source, target] = GetParam();
 
   if (isImplicit) {
     EXPECT_TRUE(uut.canExplicitlyConvert(source, target));
@@ -172,23 +135,23 @@ TEST_P(TestBuiltinCasts, Test) {
 
 INSTANTIATE_TEST_SUITE_P(,
                          TestBuiltinCasts,
-                         ::testing::Values(tuple{true, "I8", "I16"},
-                                           tuple{true, "I8", "I32"},
-                                           tuple{true, "I8", "I64"},
-                                           tuple{true, "I8", "F64"},
-                                           tuple{true, "I16", "I32"},
-                                           tuple{true, "I16", "I64"},
-                                           tuple{true, "I16", "F64"},
-                                           tuple{true, "I32", "I64"},
-                                           tuple{true, "I32", "F64"},
-                                           tuple{true, "I64", "F64"},
-                                           tuple{true, "U8", "U16"},
-                                           tuple{true, "U8", "U32"},
-                                           tuple{true, "U8", "U64"},
-                                           tuple{true, "U8", "F64"},
-                                           tuple{true, "U16", "U32"},
-                                           tuple{true, "U16", "U64"},
-                                           tuple{true, "U16", "F64"},
-                                           tuple{true, "U32", "U64"},
-                                           tuple{true, "U32", "F64"},
-                                           tuple{true, "U64", "F64"}));
+                         ::testing::Values(tuple{true, &ft::I8(), &ft::I16()},
+                                           tuple{true, &ft::I8(), &ft::I32()},
+                                           tuple{true, &ft::I8(), &ft::I64()},
+                                           tuple{true, &ft::I8(), &ft::F64()},
+                                           tuple{true, &ft::I16(), &ft::I32()},
+                                           tuple{true, &ft::I16(), &ft::I64()},
+                                           tuple{true, &ft::I16(), &ft::F64()},
+                                           tuple{true, &ft::I32(), &ft::I64()},
+                                           tuple{true, &ft::I32(), &ft::F64()},
+                                           tuple{true, &ft::I64(), &ft::F64()},
+                                           tuple{true, &ft::U8(), &ft::U16()},
+                                           tuple{true, &ft::U8(), &ft::U32()},
+                                           tuple{true, &ft::U8(), &ft::U64()},
+                                           tuple{true, &ft::U8(), &ft::F64()},
+                                           tuple{true, &ft::U16(), &ft::U32()},
+                                           tuple{true, &ft::U16(), &ft::U64()},
+                                           tuple{true, &ft::U16(), &ft::F64()},
+                                           tuple{true, &ft::U32(), &ft::U64()},
+                                           tuple{true, &ft::U32(), &ft::F64()},
+                                           tuple{true, &ft::U64(), &ft::F64()}));

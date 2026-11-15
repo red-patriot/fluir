@@ -45,11 +45,9 @@
     input
         2:
             Param(in1)
-            index 0
             type i32
         3:
             Param(in2)
-            index 1
             type i32
     output
         4:

@@ -1,0 +1,20 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="10" y="10" z="3" w="100" h="100">
+    <body>
+      <constant id="1" x="2" y="20" z="1" w="5" h="5">
+        <bool>false</bool>
+      </constant>
+      <constant id="2" x="12" y="21" z="1" w="5" h="5">
+        <bool>true</bool>
+      </constant>
+    </body>
+  </function>
+</fluir>

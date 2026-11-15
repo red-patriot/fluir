@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 namespace fluir::debug {
   AstPrinter::AstPrinter(std::ostream& out, bool inOrder) : out_(out), inOrder_(inOrder) { }
@@ -32,6 +33,13 @@ namespace fluir::debug {
     }
   }
 
+  void AstPrinter::print(const ast::SubGraph& subgraph) {
+    print(subgraph.sinks);
+    if (subgraph.output) {
+      print(*subgraph.output);
+    }
+  }
+
   void AstPrinter::operator()(const ast::FunctionDecl& func) {
     out_ << formatIndented("Function({}): '{}'\n", func.id, func.name);
     FLUIR_SCOPED_INDENT;
@@ -52,15 +60,15 @@ namespace fluir::debug {
     out_ << formatIndented("BinaryOp({}): {}\n", binary.id(), stringify(binary.op()));
 
     FLUIR_SCOPED_INDENT;
-    print(*binary.lhs());
-    print(*binary.rhs());
+    print(binary.lhs());
+    print(binary.rhs());
   }
 
   void AstPrinter::operator()(const ast::UnaryOp& unary) {
     out_ << formatIndented("UnaryOp({}): {}\n", unary.id(), stringify(unary.op()));
 
     FLUIR_SCOPED_INDENT;
-    print(*unary.operand());
+    print(unary.operand());
   }
 
   void AstPrinter::operator()(const ast::Constant& constant) {
@@ -85,24 +93,25 @@ namespace fluir::debug {
         out_ << formatIndented("ConstantU32({}): {}\n", constant.id(), val);
       } else if constexpr (std::is_same_v<T, U64>) {
         out_ << formatIndented("ConstantU64({}): {}\n", constant.id(), val);
+      } else if constexpr (std::is_same_v<T, BOOL>) {
+        out_ << formatIndented("ConstantBool({}): {}\n", constant.id(), val);
       }
     };
     std::visit(printer, constant.value());
   }
 
   void AstPrinter::operator()(const ast::Cast& cast) {
-    out_ << formatIndented(
-      "Cast({}): {} -> {}\n", cast.id(), std::to_underlying(cast.from()), std::to_underlying(cast.to()));
+    out_ << formatIndented("Cast({}): {} -> {}\n", cast.id(), cast.from()->name(), cast.to()->name());
     FLUIR_SCOPED_INDENT;
-    print(*cast.operand());
+    print(cast.operand());
   }
   void AstPrinter::operator()(const ast::LocalWrite& write) {
     out_ << formatIndented("LocalWrite({})\n", write.id());
     FLUIR_SCOPED_INDENT;
-    print(*write.child());
+    print(write.child());
   }
   void AstPrinter::operator()(const ast::LocalRead& read) {
-    out_ << formatIndented("LocalRead({}): {}\n", read.id(), read.variable());
+    out_ << formatIndented(fmt::runtime("LocalRead({}): {}\n"), read.id(), read.variable());
   }
 
   void AstPrinter::operator()(const ast::Call& call) {
@@ -112,8 +121,47 @@ namespace fluir::debug {
       // TODO: Fix the weird 1-based indexing of function args
       out_ << formatIndented("Arg({}):\n", idx + 1);
       FLUIR_SCOPED_INDENT;
-      print(*argument);
+      print(argument);
     }
+  }
+
+  void AstPrinter::operator()(const ast::Conditional& conditional) {
+    out_ << formatIndented("Conditional({}):\n", conditional.id());
+    FLUIR_SCOPED_INDENT;
+    {
+      out_ << formatIndented("Condition\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.condition());
+    }
+    {
+      out_ << formatIndented("Input\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.inputs());
+    }
+    out_ << formatIndented("Output{}\n", fmt::join(conditional.outputs(), ","));
+    {
+      out_ << formatIndented("Then\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.thenBody());
+    }
+    {
+      out_ << formatIndented("Else\n");
+      FLUIR_SCOPED_INDENT;
+      print(conditional.elseBody());
+    }
+  }
+
+  void AstPrinter::operator()(const ast::Bundle& bundle) {
+    out_ << formatIndented("Bundle({}):\n", bundle.id());
+    FLUIR_SCOPED_INDENT;
+    for (const auto& dependency : bundle.children()) {
+      print(dependency);
+    }
+  }
+  void AstPrinter::operator()(const ast::Unbundle& unbundle) {
+    out_ << formatIndented("Unbundle({})[{}]:\n", unbundle.id(), unbundle.index());
+    FLUIR_SCOPED_INDENT;
+    print(unbundle.child());
   }
 
   void AstPrinter::doOutOfOrderPrint(const ast::DataFlowGraph& graph) {
@@ -155,6 +203,22 @@ namespace fluir::debug {
         return (*this)(*node.as<ast::LocalRead>());
       case ast::NodeKind::Call:
         return (*this)(*node.as<ast::Call>());
+      case ast::NodeKind::Conditional:
+        return (*this)(*node.as<ast::Conditional>());
+      case ast::NodeKind::Bundle:
+        return (*this)(*node.as<ast::Bundle>());
+      case ast::NodeKind::Unbundle:
+        return (*this)(*node.as<ast::Unbundle>());
+    }
+  }
+
+  void AstPrinter::print(const ast::Dependency& dependency) { print(dependency.get()); }
+
+  void AstPrinter::print(std::span<const ast::ScopeInput> inputs) {
+    for (const auto& [node, id] : inputs) {
+      out_ << formatIndented("({})\n", id);
+      FLUIR_SCOPED_INDENT;
+      print(node);
     }
   }
 

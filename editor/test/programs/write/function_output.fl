@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>1</minor>
+      <patch>3</patch>
+    </version>
+  </header>
+  <function name="getVal" id="1" x="10" y="10" z="3" w="100" h="100">
+    <output>
+      <return id="4" type="F64"/>
+    </output>
+    <body/>
+  </function>
+</fluir>

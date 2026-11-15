@@ -1,0 +1,35 @@
+Function(1): 'main'
+  LocalWrite(1)
+    ConstantI32(1): 1
+  LocalWrite(2)
+    ConstantI32(2): 2
+  Call(4): 'print'
+    Arg(1):
+      BinaryOp(3): ==
+        LocalRead(3): 1
+        LocalRead(3): 2
+  Call(18): 'print'
+    Arg(1):
+      BinaryOp(6): >
+        LocalRead(6): 1
+        LocalRead(6): 2
+  Call(19): 'print'
+    Arg(1):
+      BinaryOp(5): !=
+        LocalRead(5): 1
+        LocalRead(5): 2
+  Call(20): 'print'
+    Arg(1):
+      BinaryOp(7): <
+        LocalRead(7): 1
+        LocalRead(7): 2
+  Call(21): 'print'
+    Arg(1):
+      BinaryOp(8): >=
+        LocalRead(8): 1
+        LocalRead(8): 2
+  Call(22): 'print'
+    Arg(1):
+      BinaryOp(9): <=
+        LocalRead(9): 1
+        LocalRead(9): 2

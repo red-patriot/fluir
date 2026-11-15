@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="main" id="1" x="0" y="0" z="1" w="100" h="80">
+    <body>
+      <conditional id="1" x="24" y="7" z="2" w="36" h="30">
+        <condition inner="1" y="10"/>
+        <input/>
+        <output>
+          <port inner="4" y="10"/>
+          <port inner="7" y="23"/>
+        </output>
+        <then>
+          <constant id="2" x="0" y="0" z="3" w="12" h="5"><i32>1</i32></constant>
+          <conduit id="113" input="2"><output target="4" index="0"/></conduit>
+          <constant id="8" x="0" y="0" z="3" w="12" h="5"><f64>1.5</f64></constant>
+          <conduit id="114" input="8"><output target="7" index="0"/></conduit>
+        </then>
+        <else>
+          <constant id="5" x="0" y="0" z="3" w="12" h="5"><i32>2</i32></constant>
+          <conduit id="115" input="5"><output target="4" index="0"/></conduit>
+          <constant id="9" x="0" y="0" z="3" w="12" h="5"><i32>2</i32></constant>
+          <conduit id="116" input="9"><output target="7" index="0"/></conduit>
+        </else>
+      </conditional>
+      <constant id="2" x="0" y="0" z="3" w="12" h="5"><bool>true</bool></constant>
+      <conduit id="3" input="2"><output target="1" index="0"/></conduit>
+      <call target="print" id="4" x="0" y="0" z="3" w="12" h="5"><arg name="object"/></call>
+      <conduit id="5" input="1"><output target="4" index="0"/></conduit>
+      <call target="print" id="6" x="0" y="0" z="3" w="12" h="5"><arg name="object"/></call>
+      <conduit id="7" input="1" index="1"><output target="6" index="0"/></conduit>
+    </body>
+  </function>
+</fluir>

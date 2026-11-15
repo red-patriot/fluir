@@ -108,7 +108,7 @@ TEST(TestVMFunctionCalls, HandlesNativeCall) {
 
   fluir::code::ByteCode code{.header = {.entryOffset = 0},
                              .constants = {fc::Value{fluir::createStaticString("test_target")}},
-                             .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, DYN_CALL, 0, 0, 0, 0, RETURN}}}};
+                             .chunks = {fc::Chunk{.name = "main", .code = {RESERVE, 1, DYN_CALL, 0, 0, 0, 0, EXIT}}}};
 
   fluir::VirtualMachine uut{{{"test_target"sv, testFunc}}};
 

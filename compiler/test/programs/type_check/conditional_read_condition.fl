@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<fluir>
+  <header>
+    <version>
+      <major>0</major>
+      <minor>0</minor>
+      <patch>0</patch>
+    </version>
+  </header>
+  <function name="tester" id="1" x="-51" y="-39" z="0" w="73" h="47">
+    <body>
+      <conditional id="1" x="21" y="3" z="1" w="38" h="26">
+        <condition inner="1" y="7"/>
+        <input/>
+        <output/>
+        <then>
+          <call target="print" id="2" x="14" y="5" z="2" w="14" h="10">
+            <arg name="object"/>
+          </call>
+          <conduit id="3" input="1">
+            <output target="2" index="0"/>
+          </conduit>
+        </then>
+        <else>
+          <call target="print" id="4" x="14" y="3" z="2" w="14" h="10">
+            <arg name="object"/>
+          </call>
+          <conduit id="5" input="1">
+            <output target="4" index="0"/>
+          </conduit>
+        </else>
+      </conditional>
+      <constant id="2" x="6" y="9" z="1" w="8" h="5">
+        <bool>false</bool>
+      </constant>
+      <conduit id="3" input="2">
+        <output target="1" index="0"/>
+      </conduit>
+    </body>
+  </function>
+</fluir>

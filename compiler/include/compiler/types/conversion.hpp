@@ -3,12 +3,12 @@
 
 #include <functional>
 
-#include "compiler/types/typeid.hpp"
+#include "compiler/types/type.hpp"
 
 namespace fluir::types {
   struct Conversion {
-    TypeID from;
-    TypeID to;
+    TypePtr from;
+    TypePtr to;
     bool isImplicit{false};
 
     friend bool operator==(const Conversion& lhs, const Conversion& rhs) = default;

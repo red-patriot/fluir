@@ -151,7 +151,30 @@ namespace fluir {
         case SET_VAL:
           {
             const auto index = FLUIR_READ_BYTE();
-            currentFrame_->basePtr[index] = stackTop();
+            currentFrame_->basePtr[index] = stackPopTop();
+            break;
+          }
+        case EQ:
+          {
+            auto rhs = stackPopTop();
+            auto lhs = stackPopTop();
+            bool eq = lhs == rhs;
+            pushStack(code::Value{eq});
+          }
+          break;
+        case JUMP_BY:
+          {
+            auto offset = readQuadWord();
+            ip_ += offset;
+            break;
+          }
+        case JUMP_IF_FALSE:
+          {
+            auto offset = readQuadWord();
+            auto condition = stackPopTop();
+            if (!condition.asBool()) {
+              ip_ += offset;
+            }
             break;
           }
         case F64_ADD:
@@ -175,6 +198,22 @@ namespace fluir {
         case F64_DEC:
           floatUnary<utility::decrement<code::F64>>();
           break;
+        case F64_LT:
+          {
+            auto rhs = stackPopTop().asF64();
+            auto lhs = stackPopTop().asF64();
+            bool lt = lhs < rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
+        case F64_LE:
+          {
+            auto rhs = stackPopTop().asF64();
+            auto lhs = stackPopTop().asF64();
+            bool lt = lhs <= rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
         case I64_ADD:
           intBinary<std::plus<code::I64>>();
           break;
@@ -196,6 +235,24 @@ namespace fluir {
         case I64_NEG:
           intUnary<std::negate<code::I64>>();
           break;
+        case I64_LT:
+          {
+            code::PrimitiveType junk;
+            auto rhs = utility::widenI(stackPopTop(), junk);
+            auto lhs = utility::widenI(stackPopTop(), junk);
+            bool lt = lhs < rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
+        case I64_LE:
+          {
+            code::PrimitiveType junk;
+            auto rhs = utility::widenI(stackPopTop(), junk);
+            auto lhs = utility::widenI(stackPopTop(), junk);
+            bool lt = lhs <= rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
         case U64_ADD:
           uintBinary<std::plus<code::U64>>();
           break;
@@ -214,10 +271,24 @@ namespace fluir {
         case U64_DEC:
           uintUnary<utility::decrement<code::U64>>();
           break;
-        case F64_AFF:
-        case I64_AFF:
-        case U64_AFF:
-          break;  // This is a No-Op
+        case U64_LT:
+          {
+            code::PrimitiveType junk;
+            auto rhs = utility::widenU(stackPopTop(), junk);
+            auto lhs = utility::widenU(stackPopTop(), junk);
+            bool lt = lhs < rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
+        case U64_LE:
+          {
+            code::PrimitiveType junk;
+            auto rhs = utility::widenU(stackPopTop(), junk);
+            auto lhs = utility::widenU(stackPopTop(), junk);
+            bool lt = lhs <= rhs;
+            pushStack(code::Value{lt});
+          }
+          break;
         case CAST_IU:
           {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
@@ -275,8 +346,12 @@ namespace fluir {
             auto width = static_cast<code::NumericWidth>(FLUIR_READ_BYTE());
             auto toCast = stackTop();
             popStack();
-            auto casted = static_cast<code::U64>(toCast.asF64());
-            pushStack(utility::narrowU(casted, width));
+            if (toCast.asF64() >= 18'446'744'073'709'551'615.0) {
+              pushStack(utility::narrowU(UINT64_MAX, width));
+            } else {
+              auto casted = static_cast<code::U64>(toCast.asF64());
+              pushStack(utility::narrowU(casted, width));
+            }
           }
           break;
         case CAST_WIDTH:
@@ -324,6 +399,28 @@ namespace fluir {
             }
             break;
           }
+        case NOT:
+          {
+            auto operand = stackPopTop().asBool();
+            pushStack(code::Value{!operand});
+          }
+          break;
+        case AND:
+          // TODO: Remove this when branching is implemented
+          {
+            auto rhs = stackPopTop().asBool();
+            auto lhs = stackPopTop().asBool();
+            pushStack(code::Value{lhs && rhs});
+          }
+          break;
+        case OR:
+          // TODO: Remove this when branching is implemented
+          {
+            auto rhs = stackPopTop().asBool();
+            auto lhs = stackPopTop().asBool();
+            pushStack(code::Value{lhs || rhs});
+          }
+          break;
         case CALL:
           {
             auto calleeIndex = readQuadWord();
@@ -383,6 +480,7 @@ namespace fluir {
   }
 
   code::Value& VirtualMachine::stackTop() { return *(currentFrame_->stackEnd - 1); }
+  code::Value VirtualMachine::stackPopTop() { return std::move(*(--currentFrame_->stackEnd)); }
   void VirtualMachine::popStack() { --currentFrame_->stackEnd; }
   void VirtualMachine::pushStack(code::Value value) {
     (*currentFrame_->stackEnd) = std::move(value);

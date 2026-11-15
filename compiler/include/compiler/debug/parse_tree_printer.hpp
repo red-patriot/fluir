@@ -23,8 +23,11 @@ namespace fluir::debug {
     void operator()(const pt::Unary& unary);
     void operator()(const pt::Constant& constant);
     void operator()(const pt::Call& call);
+    void operator()(const pt::Conditional& conditional);
 
     void operator()(const pt::Conduit& conduit);
+
+    void operator()(const pt::Comment& comment);
 
     void operator()(const pt::F64& f64);
     void operator()(const pt::I8& i8);
@@ -35,11 +38,13 @@ namespace fluir::debug {
     void operator()(const pt::U16& u16);
     void operator()(const pt::U32& u32);
     void operator()(const pt::U64& u64);
+    void operator()(const pt::BOOL& b);
 
    private:
     std::ostream& out_;
 
     std::string doPrint(const FlowGraphLocation& loc);
+    void printBlock(const pt::Block& block);
   };
 }  // namespace fluir::debug
 

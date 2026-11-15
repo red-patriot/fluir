@@ -42,7 +42,7 @@ TEST_P(TestTypeError, Test) {
   EXPECT_EQ(errors, actual);
 }
 
-INSTANTIATE_TEST_SUITE_P(TestASTError,
+INSTANTIATE_TEST_SUITE_P(TestTypeError,
                          TestTypeError,
                          ::testing::ValuesIn(fluir::test::getTestPrograms("type_errors")),
                          fluir::test::filePathName);

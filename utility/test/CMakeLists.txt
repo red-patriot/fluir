@@ -10,3 +10,6 @@ target_link_libraries(
             GTest::gtest_main
             GTest::gtest
 )
+
+include(GoogleTest)
+gtest_discover_tests(fluir.utility.test)

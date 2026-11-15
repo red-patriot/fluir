@@ -38,30 +38,13 @@ namespace fluir::debug {
       (*this)(*func.output);
     }
 
-    {
-      out_ << formatIndented("body\n");
-      auto orderedNodes = keyOrder(func.body.nodes);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& node : orderedNodes) {
-        std::visit(*this, func.body.nodes.at(node));
-      }
-    }
-
-    {
-      out_ << formatIndented("conduits\n");
-      auto orderedConduits = keyOrder(func.body.conduits);
-      FLUIR_SCOPED_INDENT;
-      for (const auto& conduit : orderedConduits) {
-        (*this)(func.body.conduits.at(conduit));
-      }
-    }
+    printBlock(func.body);
   }
 
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Parameter& param) {
     out_ << formatIndented("{}:\n", param.id);
     FLUIR_SCOPED_INDENT;
-    out_ << formatIndented("Param({})\n", param.name) << formatIndented("index {}\n", param.index)
-         << formatIndented("type {}\n", param.typeName);
+    out_ << formatIndented("Param({})\n", param.name) << formatIndented("type {}\n", param.typeName);
   }
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
     out_ << formatIndented("{}:\n", ret.id);
@@ -122,6 +105,35 @@ namespace fluir::debug {
     }
   }
 
+  void ParseTreePrinter::operator()(const pt::Conditional& conditional) {
+    out_ << formatIndented("{}:\n", conditional.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Conditional\n") << doPrint(conditional.location);
+    const auto& condition = conditional.condition;
+    out_ << formatIndented("Condition {} at({})\n", condition.innerId, condition.y);
+    {
+      out_ << formatIndented("input\n");
+      FLUIR_SCOPED_INDENT;
+      for (const auto& port : conditional.inputs) {
+        out_ << formatIndented("{} at({})\n", port.innerId, port.y);
+      }
+    }
+    {
+      out_ << formatIndented("output\n");
+      FLUIR_SCOPED_INDENT;
+      for (const auto& port : conditional.outputs) {
+        out_ << formatIndented("{} at({})\n", port.innerId, port.y);
+      }
+    }
+    const auto& then = conditional.thenScope;
+    out_ << formatIndented("Then\n");
+    printBlock(*then);
+
+    const auto& else_ = conditional.elseScope;
+    out_ << formatIndented("Else\n");
+    printBlock(*else_);
+  }
+
   void ParseTreePrinter::operator()(const pt::Conduit& conduit) {
     out_ << formatIndented("{}:\n", conduit.id);
     FLUIR_SCOPED_INDENT;
@@ -135,6 +147,13 @@ namespace fluir::debug {
     }
   }
 
+  void ParseTreePrinter::operator()(const pt::Comment& comment) {
+    out_ << formatIndented("{}:\n", comment.id);
+    FLUIR_SCOPED_INDENT;
+    out_ << formatIndented("Comment\n") << doPrint(comment.location);
+    out_ << formatIndented("{{{{") << comment.text << "}}\n";
+  }
+
   void ParseTreePrinter::operator()(const pt::F64& f64) { out_ << formatIndented("F64 {}\n", f64); }
   void ParseTreePrinter::operator()(const pt::I8& i8) { out_ << formatIndented("I8 {}\n", i8); }
   void ParseTreePrinter::operator()(const pt::I16& i16) { out_ << formatIndented("I16 {}\n", i16); }
@@ -144,8 +163,30 @@ namespace fluir::debug {
   void ParseTreePrinter::operator()(const pt::U16& u16) { out_ << formatIndented("U16 {}\n", u16); }
   void ParseTreePrinter::operator()(const pt::U32& u32) { out_ << formatIndented("U32 {}\n", u32); }
   void ParseTreePrinter::operator()(const pt::U64& u64) { out_ << formatIndented("U64 {}\n", u64); }
+  void ParseTreePrinter::operator()(const pt::BOOL& b) { out_ << formatIndented("BOOL {}\n", b); }
 
   std::string ParseTreePrinter::doPrint(const FlowGraphLocation& loc) {
     return formatIndented("at(x{}, y{}, z{}, w{}, h{})\n", loc.x, loc.y, loc.z, loc.width, loc.height);
   }
+
+  void ParseTreePrinter::printBlock(const pt::Block& block) {
+    {
+      out_ << formatIndented("body\n");
+      auto orderedNodes = keyOrder(block.nodes);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& node : orderedNodes) {
+        std::visit(*this, block.nodes.at(node));
+      }
+    }
+
+    {
+      out_ << formatIndented("conduits\n");
+      auto orderedConduits = keyOrder(block.conduits);
+      FLUIR_SCOPED_INDENT;
+      for (const auto& conduit : orderedConduits) {
+        (*this)(block.conduits.at(conduit));
+      }
+    }
+  }
+
 }  // namespace fluir::debug

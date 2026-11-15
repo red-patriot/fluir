@@ -1,0 +1,45 @@
+1:
+    FunctionDecl(main)
+    at(x0, y0, z0, w1000, h1000)
+    body
+        1:
+            Constant
+            at(x6, y10, z1, w8, h5)
+            BOOL true
+        2:
+            Conditional
+            at(x10, y3, z1, w500, h500)
+            Condition 1 at(10)
+            input
+                12 at(10)
+                2 at(20)
+            output
+                4 at(10)
+            Then
+            body
+                3:
+                    Binary
+                    at(x35, y3, z2, w5, h5)
+                    /
+                    lhs0
+                    rhs0
+            conduits
+                7:
+                    Conduit
+                    in4.0
+                    children
+                        out3.0
+                8:
+                    Conduit
+                    in2.0
+                    children
+                        out3.1
+                9:
+                    Conduit
+                    in3.0
+                    children
+                        out5.0
+            Else
+            body
+            conduits
+    conduits

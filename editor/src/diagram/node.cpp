@@ -1,5 +1,6 @@
 #include "editor/diagram/node.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <QGraphicsScene>
@@ -19,6 +20,7 @@
 #include "editor/diagram/selection_outline.hpp"
 #include "editor/diagram/toggle.hpp"
 #include "editor/scene/module_scene.hpp"
+#include "editor/view/draw/draw_utils.hpp"
 
 namespace fluir::editor::diagram {
 
@@ -115,7 +117,7 @@ namespace fluir::editor::diagram {
       } else {
         part = new FieldText(*this, std::move(keyed), label.look, ctx_, parent);
       }
-      part->place(label.rect);
+      part->place(trimOverlaps(label.rect, parent));
     }
   }
 
@@ -123,10 +125,20 @@ namespace fluir::editor::diagram {
     for (const FieldLabel& label : labels) {
       for (FieldPart* part : fieldParts()) {
         if (part->field() == label.field) {
-          part->place(label.rect);
+          part->place(trimOverlaps(label.rect, *dynamic_cast<QGraphicsItem*>(part)->parentItem()));
         }
       }
     }
+  }
+
+  Rect FluirNode::trimOverlaps(const Rect& rect, const QGraphicsItem& parent) const {
+    const Rect node = moveGrip(frame(), ctx_.layout.unitPx);
+    const QRectF mapped = parent.mapRectFromItem(this, QRectF(node.x, node.y, node.w, node.h));
+    const Rect grip{mapped.x(), mapped.y(), mapped.width(), mapped.height()};
+    if (!intersect(rect, grip)) {
+      return rect;
+    }
+    return {rect.x, rect.y, std::max(0.0, grip.x - rect.x), rect.h};
   }
 
   std::vector<FieldPart*> FluirNode::fieldParts() const {

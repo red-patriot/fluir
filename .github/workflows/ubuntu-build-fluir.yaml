@@ -4,12 +4,12 @@ on:
   push:
     branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "rc/*" ]
   workflow_dispatch:
 
 jobs:
   build-launcher:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
           retention-days: 7
 
   build-language:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [ build-launcher ]
     steps:
       - name: Checkout Repo

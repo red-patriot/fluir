@@ -1,0 +1,21 @@
+* Release Tests
+  - [X] installer works
+  - [X] Module from scratch
+    - [X] edit
+    - [X] compile
+    - [X] run
+  - [X] Define function
+    - [X] 1 param 0 return
+    - [X] 0 param 1 return
+    - [X] 2 param 0 return
+    - [X] 2 param 1 return
+    - [X] recursive
+  - [X] call builtin func
+  - [X] use if-else
+* Bugs found + fixed
+  - [X] CI pipeline builds on wrong ubuntu version
+  - [X] installer missing Qt dependencies
+  - [X] Typing 'f' in fn name resizes instead of typing
+  - [X] Constant values clip over drag handle
+  - [ ] _DEFERRED_ - Param tags too small
+    - Minor visual issue, no functionality affected

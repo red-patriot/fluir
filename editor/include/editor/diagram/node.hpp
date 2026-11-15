@@ -85,6 +85,8 @@ namespace fluir::editor::diagram {
     virtual void write(Field field, std::string_view text);
 
     void place();
+    /** `rect`, in `parent`'s coordinates nonoverlapping with other elements. */
+    Rect trimOverlaps(const Rect& rect, const QGraphicsItem& parent) const;
     std::vector<FieldPart*> fieldParts() const;
 
     MoveGrip* moveGrip_ = nullptr;

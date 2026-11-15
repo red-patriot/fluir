@@ -112,14 +112,24 @@ TEST(GraphView, ALeftDragDoesNotPan) {
   EXPECT_EQ(h.view.mapToScene(h.center()), before);
 }
 
-TEST(GraphView, FFitsTheWholeSceneInView) {
+TEST(GraphView, CtrlFFitsTheWholeSceneInView) {
   Harness h;
   h.drag(Qt::MiddleButton, h.center(), h.center() + QPoint{300, 250});
   ASSERT_FALSE(QRectF(h.viewport()->rect()).contains(h.onScreen()));
 
-  QTest::keyClick(&h.view, Qt::Key_F);
+  QTest::keyClick(&h.view, Qt::Key_F, Qt::ControlModifier);
 
   EXPECT_TRUE(QRectF(h.viewport()->rect()).adjusted(-1, -1, 1, 1).contains(h.onScreen()));
+}
+
+TEST(GraphView, PlainFLeavesTheViewAlone) {
+  Harness h;
+  h.drag(Qt::MiddleButton, h.center(), h.center() + QPoint{300, 250});
+  const QRectF before = h.onScreen();
+
+  QTest::keyClick(&h.view, Qt::Key_F);
+
+  EXPECT_EQ(h.onScreen(), before);
 }
 
 TEST(GraphView, FitStaysInsideTheZoomRange) {

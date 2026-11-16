@@ -55,7 +55,9 @@ namespace fluir::fe {
   ast::UniqueNode ScopeBuilder::operator()(const pt::Constant& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
+    return nullptr;
+    // TODO
+    // return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Call& pt) {

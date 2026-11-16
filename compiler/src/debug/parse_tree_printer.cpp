@@ -14,6 +14,32 @@ namespace fluir::debug {
       std::ranges::sort(keys);
       return keys;
     }
+
+    std::string_view toString(pt::Constant::Type t) {
+      switch (t) {
+        case pt::Constant::Type::F64:
+          return "F64";
+        case pt::Constant::Type::I8:
+          return "I8";
+        case pt::Constant::Type::I16:
+          return "I16";
+        case pt::Constant::Type::I32:
+          return "I32";
+        case pt::Constant::Type::I64:
+          return "I64";
+        case pt::Constant::Type::U8:
+          return "U8";
+        case pt::Constant::Type::U16:
+          return "U16";
+        case pt::Constant::Type::U32:
+          return "U32";
+        case pt::Constant::Type::U64:
+          return "U64";
+        case pt::Constant::Type::BOOL:
+          return "BOOL";
+      }
+      return "<UNKNOWN TYPE>";
+    }
   }  // namespace
 
   ParseTreePrinter::ParseTreePrinter(std::ostream& out) : out_(out) { }
@@ -84,7 +110,7 @@ namespace fluir::debug {
     out_ << formatIndented("{}:\n", constant.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Constant\n") << doPrint(constant.location);
-    std::visit(*this, constant.value);
+    out_ << formatIndented("{} {}\n", toString(constant.typeTag), constant.value);
   }
 
   void ParseTreePrinter::operator()(const pt::Call& call) {
@@ -153,17 +179,6 @@ namespace fluir::debug {
     out_ << formatIndented("Comment\n") << doPrint(comment.location);
     out_ << formatIndented("{{{{") << comment.text << "}}\n";
   }
-
-  void ParseTreePrinter::operator()(const pt::F64& f64) { out_ << formatIndented("F64 {}\n", f64); }
-  void ParseTreePrinter::operator()(const pt::I8& i8) { out_ << formatIndented("I8 {}\n", i8); }
-  void ParseTreePrinter::operator()(const pt::I16& i16) { out_ << formatIndented("I16 {}\n", i16); }
-  void ParseTreePrinter::operator()(const pt::I32& i32) { out_ << formatIndented("I32 {}\n", i32); }
-  void ParseTreePrinter::operator()(const pt::I64& i64) { out_ << formatIndented("I64 {}\n", i64); }
-  void ParseTreePrinter::operator()(const pt::U8& u8) { out_ << formatIndented("U8 {}\n", u8); }
-  void ParseTreePrinter::operator()(const pt::U16& u16) { out_ << formatIndented("U16 {}\n", u16); }
-  void ParseTreePrinter::operator()(const pt::U32& u32) { out_ << formatIndented("U32 {}\n", u32); }
-  void ParseTreePrinter::operator()(const pt::U64& u64) { out_ << formatIndented("U64 {}\n", u64); }
-  void ParseTreePrinter::operator()(const pt::BOOL& b) { out_ << formatIndented("BOOL {}\n", b); }
 
   std::string ParseTreePrinter::doPrint(const FlowGraphLocation& loc) {
     return formatIndented("at(x{}, y{}, z{}, w{}, h{})\n", loc.x, loc.y, loc.z, loc.width, loc.height);

@@ -397,9 +397,9 @@ namespace fluir {
   WithID<pt::Node> Parser::constant(Element* element) {
     auto id = parseId(element);
     auto location = parseLocation(element);
-    auto value = literal(element->FirstChildElement());
+    auto [value, type] = literal(element->FirstChildElement());
 
-    return {id, pt::Constant{id, location, value}};
+    return {id, pt::Constant{id, location, std::move(value), type}};
   }
 
   WithID<pt::Node> Parser::binary(Element* element) {
@@ -522,175 +522,73 @@ namespace fluir {
                   }};
   }
 
-  pt::Literal Parser::literal(Element* element) {
-    static const util::Trie<pt::Literal (*)(Parser*, Element*)> literalParsers{
+  Parser::Literal Parser::literal(Element* element) {
+    static const util::Trie<Literal (*)(Parser*, Element*)> literalParsers{
       // TODO: Support other literal types
-      [](Parser* self, Element* element) -> pt::Literal {
+      [](Parser* self, Element* element) -> Literal {
         self->panicAt(
           element, diagnostic::Code::ERROR_UNEXPECTED_ELEMENT, "'<{}>'  is not a valid literal type.", element->Name());
         std::unreachable();
       },
       {
-        {"f64", [](Parser* p, Element* e) -> pt::Literal { return p->f64(e); }},
-        {"i8", [](Parser* p, Element* e) -> pt::Literal { return p->i8(e); }},
-        {"i16", [](Parser* p, Element* e) -> pt::Literal { return p->i16(e); }},
-        {"i32", [](Parser* p, Element* e) -> pt::Literal { return p->i32(e); }},
-        {"i64", [](Parser* p, Element* e) -> pt::Literal { return p->i64(e); }},
-        {"u8", [](Parser* p, Element* e) -> pt::Literal { return p->u8(e); }},
-        {"u16", [](Parser* p, Element* e) -> pt::Literal { return p->u16(e); }},
-        {"u32", [](Parser* p, Element* e) -> pt::Literal { return p->u32(e); }},
-        {"u64", [](Parser* p, Element* e) -> pt::Literal { return p->u64(e); }},
-        {"bool", [](Parser* p, Element* e) -> pt::Literal { return p->boolean(e); }},
+        {"f64", [](Parser* p, Element* e) -> Literal { return p->f64(e); }},
+        {"i8", [](Parser* p, Element* e) -> Literal { return p->i8(e); }},
+        {"i16", [](Parser* p, Element* e) -> Literal { return p->i16(e); }},
+        {"i32", [](Parser* p, Element* e) -> Literal { return p->i32(e); }},
+        {"i64", [](Parser* p, Element* e) -> Literal { return p->i64(e); }},
+        {"u8", [](Parser* p, Element* e) -> Literal { return p->u8(e); }},
+        {"u16", [](Parser* p, Element* e) -> Literal { return p->u16(e); }},
+        {"u32", [](Parser* p, Element* e) -> Literal { return p->u32(e); }},
+        {"u64", [](Parser* p, Element* e) -> Literal { return p->u64(e); }},
+        {"bool", [](Parser* p, Element* e) -> Literal { return p->boolean(e); }},
       }};
 
     std::string_view name = element->Name();
     auto* literalParser = literalParsers.at(name);
     return literalParser(this, element);
   }
-  pt::F64 Parser::f64(Element* element) {
-    double value = 0.0;
-    auto error = element->QueryDoubleText(&value);
-    panicIf(error != tinyxml2::XML_SUCCESS,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected a numeric value in element '<f64>', found '{}'.",
-            element->GetText());
-    return value;
+  Parser::Literal Parser::f64(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::F64};
   }
 
-  pt::I8 Parser::i8(Element* element) {
-    auto value = fe::parseNumber<pt::I8>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::i8(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::I8};
   }
-  pt::I16 Parser::i16(Element* element) {
-    auto value = fe::parseNumber<pt::I16>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an integer value in element, found {}",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::i16(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::I16};
   }
-  pt::I32 Parser::i32(Element* element) {
-    auto value = fe::parseNumber<pt::I32>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an integer value in element, found'{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::i32(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::I32};
   }
-  pt::I64 Parser::i64(Element* element) {
-    auto value = fe::parseNumber<pt::I64>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::i64(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::I64};
   }
 
-  pt::U8 Parser::u8(Element* element) {
-    auto value = fe::parseNumber<pt::U8>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an unsigned integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::u8(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::U8};
   }
-  pt::U16 Parser::u16(Element* element) {
-    auto value = fe::parseNumber<pt::U16>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an unsigned integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::u16(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::U16};
   }
-  pt::U32 Parser::u32(Element* element) {
-    auto value = fe::parseNumber<pt::U32>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an unsigned integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::u32(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::U32};
   }
-  pt::U64 Parser::u64(Element* element) {
-    auto value = fe::parseNumber<pt::U64>(element->GetText());
-    if (value.has_value()) {
-      return *value;
-    }
-    panicIf(value.error() == fe::NumberParseError::CANNOT_PARSE_NUMBER,
-            element,
-            diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
-            "Expected an unsigned integer value in element, found '{}'.",
-            element->GetText());
-    panicIf(value.error() == fe::NumberParseError::RESULT_OUT_OF_BOUNDS,
-            element,
-            diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE);
-    diagnostic::emitInternalError("Control reached an impossible point");
+  Parser::Literal Parser::u64(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::U64};
   }
 
-  pt::BOOL Parser::boolean(Element* element) {
-    panicIf(!element->GetText(), element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT);
-    std::string_view text = element->GetText();
-    if (text == "true"sv) {
-      return true;
-    } else if (text == "false"sv) {
-      return false;
-    }
-    panicAt(
-      element, diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT, "'{}' is not a valid boolean representation", text);
-    std::unreachable();
+  Parser::Literal Parser::boolean(Element* element) {
+    std::string value{element->GetText()};
+    return {value, pt::Constant::BOOL};
   }
 
   pt::BlockPort Parser::parseBlockPort(Element* element) {

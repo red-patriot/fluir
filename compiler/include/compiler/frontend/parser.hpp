@@ -57,17 +57,18 @@ namespace fluir {
     WithID<pt::Conduit> conduit(Element* element);
     pt::Conduit::Output conduitOutput(Element* element);
 
-    pt::Literal literal(Element* element);
-    pt::F64 f64(Element* element);
-    pt::I8 i8(Element* element);
-    pt::I16 i16(Element* element);
-    pt::I32 i32(Element* element);
-    pt::I64 i64(Element* element);
-    pt::U8 u8(Element* element);
-    pt::U16 u16(Element* element);
-    pt::U32 u32(Element* element);
-    pt::U64 u64(Element* element);
-    pt::BOOL boolean(Element* element);
+    using Literal = std::pair<std::string, pt::Constant::Type>;
+    Literal literal(Element* element);
+    Literal f64(Element* element);
+    Literal i8(Element* element);
+    Literal i16(Element* element);
+    Literal i32(Element* element);
+    Literal i64(Element* element);
+    Literal u8(Element* element);
+    Literal u16(Element* element);
+    Literal u32(Element* element);
+    Literal u64(Element* element);
+    Literal boolean(Element* element);
 
     pt::BlockPort parseBlockPort(Element* element);
 

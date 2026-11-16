@@ -1,8 +1,6 @@
 #ifndef FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 #define FLUIR_COMPILER_FRONTEND_PARSE_TREE_PARSE_TREE_HPP
 
-#include <cstdint>
-#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -13,14 +11,10 @@
 
 #include "bytecode/version.hpp"
 #include "compiler/models/id.hpp"
-#include "compiler/models/literal_types.hpp"
 #include "compiler/models/location.hpp"
 #include "compiler/models/operator.hpp"
-#include "compiler/utility/macros.hpp"
 
 namespace fluir::pt {
-  using namespace literals_types;
-
   struct Comment {
     ID id;
     FlowGraphLocation location;
@@ -30,9 +24,23 @@ namespace fluir::pt {
   };
 
   struct Constant {
+    /** The type a literal constant can have */
+    enum Type {
+      F64,
+      I8,
+      I16,
+      I32,
+      I64,
+      U8,
+      U16,
+      U32,
+      U64,
+      BOOL,
+    };
     ID id;
     FlowGraphLocation location;
-    Literal value;
+    std::string value;
+    Type typeTag;
 
     friend bool operator==(const Constant&, const Constant&) = default;
   };

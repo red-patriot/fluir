@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <variant>
 
+#include "compiler/frontend/text_parse.hpp"
 #include "compiler/utility/scope_guard.hpp"
 
 namespace fluir::fe {
@@ -53,11 +54,62 @@ namespace fluir::fe {
   };
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Constant& pt) {
+    using namespace literals_types;
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
+    switch (pt.typeTag) {
+        // TODO: Handle error
+      case pt::Constant::F64:
+        {
+          auto val = std::stod(pt.value);
+          return std::make_unique<ast::Constant>(val, currentID_, pt.location);
+        }
+      case pt::Constant::I8:
+        {
+          auto val = parseNumber<I8>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::I16:
+        {
+          auto val = parseNumber<I16>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::I32:
+        {
+          auto val = parseNumber<I32>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::I64:
+        {
+          auto val = parseNumber<I64>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::U8:
+        {
+          auto val = parseNumber<U8>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::U16:
+        {
+          auto val = parseNumber<U16>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::U32:
+        {
+          auto val = parseNumber<U32>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::U64:
+        {
+          auto val = parseNumber<U64>(pt.value);
+          return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
+        }
+      case pt::Constant::BOOL:
+        {
+          return std::make_unique<ast::Constant>(pt.value == "true", currentID_, pt.location);
+        }
+    }
     return nullptr;
-    // TODO
-    // return std::make_unique<ast::Constant>(pt.value, currentID_, pt.location);
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Call& pt) {

@@ -89,6 +89,8 @@ namespace fluir::ast {
     [[nodiscard]] types::TypePtr type() const { return child_->type(); }
     [[nodiscard]] types::TypePtr fullType() const { return child_->type(); }
 
+    explicit operator bool() const { return static_cast<bool>(child_); }
+
     void setType(types::TypePtr t) { child_->setType(t); }
 
    private:

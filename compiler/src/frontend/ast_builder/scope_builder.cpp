@@ -43,15 +43,52 @@ namespace fluir::fe {
   ast::UniqueNode ScopeBuilder::operator()(const pt::Binary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    return std::make_unique<ast::BinaryOp>(
-      pt.op, getDependency(pt.id, 0), getDependency(pt.id, 1), currentID_, pt.location);
+    auto lhs = getDependency(pt.id, 0);
+    auto rhs = getDependency(pt.id, 1);
+    if (!lhs || !rhs) {
+      return nullptr;
+    }
+    return std::make_unique<ast::BinaryOp>(pt.op, std::move(lhs), std::move(rhs), currentID_, pt.location);
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Unary& pt) {
     inProgressNodes_.emplace_back(pt.id);
     FLUIR_SCOPE_EXIT { inProgressNodes_.pop_back(); };
-    return std::make_unique<ast::UnaryOp>(pt.op, getDependency(pt.id, 0), currentID_, pt.location);
+    auto operand = getDependency(pt.id, 0);
+    if (!operand) {
+      return nullptr;
+    }
+    return std::make_unique<ast::UnaryOp>(pt.op, std::move(operand), currentID_, pt.location);
   };
+
+  template <typename T>
+  bool ScopeBuilder::handleNumericParseError(const std::expected<T, NumberParseError>& result, const pt::Constant& pt) {
+    if (result.has_value()) {
+      return true;
+    }
+    switch (result.error()) {
+      case NumberParseError::SUCCESS:
+        return true;
+      case NumberParseError::CANNOT_PARSE_NUMBER:
+        ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+                                          ctx_.currentFile,
+                                          currentID_,
+                                          "Expected a number while parsing <{}>, got '{}'",
+                                          toString(pt.typeTag),
+                                          pt.value);
+        break;
+      case NumberParseError::RESULT_OUT_OF_BOUNDS:
+        ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_NUMBER_OUT_OF_RANGE,
+                                          ctx_.currentFile,
+                                          currentID_,
+                                          "Number '{}' is out of range for type {}",
+                                          pt.value,
+                                          toString(pt.typeTag));
+        break;
+    }
+    return false;
+    diagnostic::emitInternalError("Impossible case encountered");
+  }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Constant& pt) {
     using namespace literals_types;
@@ -61,51 +98,71 @@ namespace fluir::fe {
         // TODO: Handle error
       case pt::Constant::F64:
         {
-          auto val = std::stod(pt.value);
-          return std::make_unique<ast::Constant>(val, currentID_, pt.location);
+          auto result = parseDouble(pt.value);
+          handleNumericParseError(result, pt);
+          return std::make_unique<ast::Constant>(result.value(), currentID_, pt.location);
         }
       case pt::Constant::I8:
         {
           auto val = parseNumber<I8>(pt.value);
+          handleNumericParseError(val, pt);
+
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::I16:
         {
           auto val = parseNumber<I16>(pt.value);
+          handleNumericParseError(val, pt);
+
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::I32:
         {
           auto val = parseNumber<I32>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::I64:
         {
           auto val = parseNumber<I64>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::U8:
         {
           auto val = parseNumber<U8>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::U16:
         {
           auto val = parseNumber<U16>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::U32:
         {
           auto val = parseNumber<U32>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::U64:
         {
           auto val = parseNumber<U64>(pt.value);
+          handleNumericParseError(val, pt);
           return std::make_unique<ast::Constant>(val.value(), currentID_, pt.location);
         }
       case pt::Constant::BOOL:
         {
+          if (pt.value != "true" && pt.value != "false") {
+            ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CANNOT_PARSE_ELEMENT_TEXT,
+                                              ctx_.currentFile,
+                                              currentID_,
+                                              "Expected 'true' or 'false' while parsing <{}>, got '{}'",
+                                              toString(pt.typeTag),
+                                              pt.value);
+            return nullptr;
+          }
           return std::make_unique<ast::Constant>(pt.value == "true", currentID_, pt.location);
         }
     }
@@ -125,6 +182,9 @@ namespace fluir::fe {
       auto argument = getDependency(pt.id, index);
       astArgs.emplace_back(std::move(argument));
     }
+    if (std::ranges::any_of(astArgs, [](const auto& arg) { return !arg; })) {
+      return nullptr;
+    }
 
     return ast::createNode<ast::Call>(pt.target, std::move(astArgs), currentID_, pt.location);
   }
@@ -143,6 +203,10 @@ namespace fluir::fe {
         ptInput.innerId);
       inputIds.insert(ptInput.innerId);
     }
+    if (std::ranges::any_of(inputs, [](const auto& in) { return !in.node; })) {
+      return nullptr;
+    }
+
     std::vector<ID> outputIds;
     std::ranges::transform(pt.outputs, std::back_inserter(outputIds), [](const auto& o) { return o.innerId; });
 
@@ -188,10 +252,12 @@ namespace fluir::fe {
     promotedIds_ = getIdsPromotedToLocal();
     currentID_.push_back(INVALID_ID);  // Make a space for the next level of IDs
     dag::Arcs<ID> dependencies;
+    bool failed = false;
     for (const auto& local : promotedIds_) {
       currentID_.back() = local;
       auto astNode = process(local, body.nodes.at(local));
       if (!astNode) {
+        failed = true;
         continue;
       }
       alreadyFound_.insert(local);
@@ -201,6 +267,10 @@ namespace fluir::fe {
       dependencies_ = {};
       graph_.emplace_back(std::move(write));
     }
+    if (failed) {
+      return Results<ast::DataFlowGraph>{};
+    }
+
     // Topological sort of graph_ so locals are written/read in the right order
     if (!dag::topologicalSort(graph_, dependencies, [](const ast::UniqueNode& node) -> ID { return node->id(); })) {
       ctx_.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_CIRCULAR_DEPENDENCY, ctx_.currentFile, {});
@@ -223,12 +293,16 @@ namespace fluir::fe {
         const auto& ptNode = body.nodes.at(id);
         auto astNode = process(id, ptNode);
         if (!astNode) {
+          failed = true;
           continue;
         }
         graph_.emplace_back(std::move(astNode));
       }
 
       currentID_.pop_back();
+      if (failed) {
+        return Results<ast::DataFlowGraph>{};
+      }
     }
 
     if (outputs) {
@@ -238,12 +312,17 @@ namespace fluir::fe {
   }
 
   ast::UniqueNode ScopeBuilder::process(ID id, pt::Node pt) {
-    // Remember the ID of the previous node and restore it after processing
-    const ID prevID = currentID_.back();
-    currentID_.back() = id;
-    FLUIR_SCOPE_EXIT { currentID_.back() = prevID; };
-    auto astNode = std::visit(*this, pt);
-    return astNode;
+    try {
+      // Remember the ID of the previous node and restore it after processing
+      const ID prevID = currentID_.back();
+      currentID_.back() = id;
+      FLUIR_SCOPE_EXIT { currentID_.back() = prevID; };
+      auto astNode = std::visit(*this, pt);
+      return astNode;
+    } catch (const diagnostic::Panic&) {
+      // Allow returning multiple errors
+      return nullptr;
+    }
   }
 
   ast::Dependency ScopeBuilder::getDependency(ID dependentId, std::optional<unsigned> index) {
@@ -287,6 +366,9 @@ namespace fluir::fe {
     auto& pt = pt_.nodes.at(dependencyId);
     // TODO: Handle missing ID
     auto dependency = process(dependencyId, pt);
+    if (!dependency) {
+      return ast::Dependency{nullptr};
+    }
     // TODO: Handle nonzero index
     alreadyFound_.insert(dependencyId);
     if (bundledIds_.contains(dependencyId)) {

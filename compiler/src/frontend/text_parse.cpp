@@ -1,5 +1,7 @@
 #include "compiler/frontend/text_parse.hpp"
 
+#include <cstdlib>
+
 namespace fluir::fe {
   using enum NumberParseError;
 
@@ -72,5 +74,16 @@ namespace fluir::fe {
     }
 
     return result;
+  }
+
+  // TODO: make this better
+  std::expected<double, NumberParseError> parseDouble(std::string_view text) {
+    char* end{nullptr};
+    auto textEnd = text.data() + text.size();  // We need a ptr, not iterator
+    auto value = std::strtod(text.data(), &end);
+    if (end != textEnd) {
+      return std::unexpected(CANNOT_PARSE_NUMBER);
+    }
+    return value;
   }
 }  // namespace fluir::fe

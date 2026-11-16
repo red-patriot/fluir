@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 class TestASTError : public ::testing::TestWithParam<fs::path> {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx_{.diagnosticSink = sink_};
+  fluir::Context ctx_{.diagnosticSink = sink_, .ignoreVersionChecks = true};
 
   std::optional<fluir::ast::AbstractSyntaxTree> buildGraph(const fs::path& programFile) {
     if (auto parsed = fluir::parseFile(ctx_, programFile); parsed) {

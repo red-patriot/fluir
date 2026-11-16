@@ -587,7 +587,8 @@ namespace fluir {
   }
 
   Parser::Literal Parser::boolean(Element* element) {
-    std::string value{element->GetText()};
+    // GetText returns NULL when empty, so provide an empty string in this case since they are semantically equivalent
+    std::string value{element->GetText() ? element->GetText() : ""};
     return {value, pt::Constant::BOOL};
   }
 

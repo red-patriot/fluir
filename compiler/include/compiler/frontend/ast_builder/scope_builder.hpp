@@ -4,6 +4,7 @@
 #include <unordered_set>
 
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
+#include "compiler/frontend/text_parse.hpp"
 #include "compiler/models/ast.hpp"
 #include "compiler/utility/context.hpp"
 #include "compiler/utility/topological_sort.hpp"
@@ -66,6 +67,9 @@ namespace fluir::fe {
     std::unordered_set<ID> getIdsPromotedToLocal() const;
     /** Returns the IDs of all nodes that have no dependents. */
     std::unordered_set<ID> getSinkIds() const;
+
+    template <typename T>
+    bool handleNumericParseError(const std::expected<T, NumberParseError>& result, const pt::Constant& pt);
   };
 }  // namespace fluir::fe
 

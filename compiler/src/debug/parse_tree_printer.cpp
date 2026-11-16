@@ -14,32 +14,6 @@ namespace fluir::debug {
       std::ranges::sort(keys);
       return keys;
     }
-
-    std::string_view toString(pt::Constant::Type t) {
-      switch (t) {
-        case pt::Constant::Type::F64:
-          return "F64";
-        case pt::Constant::Type::I8:
-          return "I8";
-        case pt::Constant::Type::I16:
-          return "I16";
-        case pt::Constant::Type::I32:
-          return "I32";
-        case pt::Constant::Type::I64:
-          return "I64";
-        case pt::Constant::Type::U8:
-          return "U8";
-        case pt::Constant::Type::U16:
-          return "U16";
-        case pt::Constant::Type::U32:
-          return "U32";
-        case pt::Constant::Type::U64:
-          return "U64";
-        case pt::Constant::Type::BOOL:
-          return "BOOL";
-      }
-      return "<UNKNOWN TYPE>";
-    }
   }  // namespace
 
   ParseTreePrinter::ParseTreePrinter(std::ostream& out) : out_(out) { }

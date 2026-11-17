@@ -11,6 +11,14 @@ find_package(
                SvgWidgets
 )
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(
+    RE2
+    REQUIRED
+    IMPORTED_TARGET
+    re2
+)
+
 include(strict-warnings)
 
 add_library(fluir.libeditor)
@@ -145,6 +153,7 @@ target_link_libraries(
            Qt6::SvgWidgets
            fluir::compiler
            fluir::utility
+           PkgConfig::RE2
 )
 
 add_executable(fluir.editor "main.cpp")

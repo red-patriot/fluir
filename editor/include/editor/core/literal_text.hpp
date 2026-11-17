@@ -18,6 +18,8 @@ namespace fluir::editor {
   /** True for the 8 integral alternatives and F64. Bool is click to toggle. */
   bool isEditableLiteral(const pt::Constant& value);
 
+  /** Return true if the text is valid for the given literal type. */
+  bool isValid(pt::Constant::Type type, std::string_view text);
 }  // namespace fluir::editor
 
 #endif

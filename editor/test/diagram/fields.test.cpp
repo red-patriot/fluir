@@ -138,25 +138,22 @@ TEST(Fields, ACallTargetAndItsArgumentsAreIdentifiers) {
   EXPECT_EQ(h.tree(), expected);
 }
 
-// TODO: Reenable this
+TEST(Fields, AnIntegerLiteralFitsItsType) {
+  Interaction h("read/int_constants.fl");
+  auto& constant = h.find<diagram::Constant>(1);
+  const Field literal{Field::Kind::Literal};
+  pt::ParseTree expected = h.tree();
+  nodeOf<pt::Constant>(expected, 1, 1).value = "42";
+  nodeOf<pt::Constant>(expected, 1, 1).typeTag = pt::Constant::I8;
 
-// TEST(Fields, AnIntegerLiteralFitsItsType) {
-//   Interaction h("read/int_constants.fl");
-//   auto& constant = h.find<diagram::Constant>(1);
-//   const Field literal{Field::Kind::Literal};
-//   pt::ParseTree expected = h.tree();
-//   nodeOf<pt::Constant>(expected, 1, 1).value = "42";
-//   nodeOf<pt::Constant>(expected, 1, 1).typeTag = pt::Constant::I8;
-//
-//   EXPECT_EQ(constant.text(literal), "-5");
-//   EXPECT_FALSE(constant.setText(literal, "300")) << "past I8";
-//   EXPECT_FALSE(constant.setText(literal, "4.2"));
-//   EXPECT_FALSE(constant.setText(literal, "abc"));
-//   ASSERT_TRUE(constant.setText(literal, "42"));
-//
-//   EXPECT_EQ(h.tree(), expected);
-//   EXPECT_EQ(Interaction::fieldOf<diagram::FieldText>(constant, literal).toPlainText(), "42");
-// }
+  EXPECT_EQ(constant.text(literal), "-5");
+  EXPECT_FALSE(constant.setText(literal, "4.2"));
+  EXPECT_FALSE(constant.setText(literal, "abc"));
+  ASSERT_TRUE(constant.setText(literal, "42"));
+
+  EXPECT_EQ(h.tree(), expected);
+  EXPECT_EQ(Interaction::fieldOf<diagram::FieldText>(constant, literal).toPlainText(), "42");
+}
 
 TEST(Fields, AFloatLiteralParses) {
   Interaction h("read/simple_binary_expr.fl");
@@ -166,31 +163,29 @@ TEST(Fields, AFloatLiteralParses) {
   nodeOf<pt::Constant>(expected, 1, 2).value = "2.5";
   nodeOf<pt::Constant>(expected, 1, 2).typeTag = pt::Constant::F64;
 
-  // TODO: Reenable this?
-  // EXPECT_FALSE(constant.setText(literal, "2.5.1"));
+  EXPECT_FALSE(constant.setText(literal, "2.5.1"));
   ASSERT_TRUE(constant.setText(literal, "2.5"));
 
   EXPECT_EQ(h.tree(), expected);
 }
 
-// TODO: Reenable these tests
+TEST(Fields, ABoolIsTrueOrFalse) {
+  Interaction h("read/read_boolean.fl");
+  auto& constant = h.find<diagram::Constant>(1);
+  const Field value{Field::Kind::Bool};
+  pt::ParseTree expected = h.tree();
+  nodeOf<pt::Constant>(expected, 1, 1).value = "true";
+  nodeOf<pt::Constant>(expected, 1, 1).typeTag = pt::Constant::BOOL;
 
-// TEST(Fields, ABoolIsTrueOrFalse) {
-//   Interaction h("read/read_boolean.fl");
-//   auto& constant = h.find<diagram::Constant>(1);
-//   const Field value{Field::Kind::Bool};
-//   pt::ParseTree expected = h.tree();
-//   nodeOf<pt::Constant>(expected, 1, 1).value = "true";
-//   nodeOf<pt::Constant>(expected, 1, 1).typeTag = pt::Constant::BOOL;
-//
-//   EXPECT_EQ(constant.text(value), "false");
-//   EXPECT_FALSE(constant.setText(value, "maybe"));
-//   ASSERT_TRUE(constant.setText(value, "true"));
-//
-//   EXPECT_EQ(h.tree(), expected);
-//   EXPECT_TRUE(Interaction::fieldOf<diagram::Toggle>(constant, value).value());
-// }
-//
+  EXPECT_EQ(constant.text(value), "false");
+  EXPECT_FALSE(constant.setText(value, "maybe"));
+  ASSERT_TRUE(constant.setText(value, "true"));
+
+  EXPECT_EQ(h.tree(), expected);
+  EXPECT_TRUE(Interaction::fieldOf<diagram::Toggle>(constant, value).value());
+}
+// TODO: Reenable these tests?
+
 // TEST(Fields, ABinaryTakesOnlyBinaryOperators) {
 //   Interaction h("read/simple_binary_expr.fl");
 //   auto& binary = h.find<diagram::Binary>(1);

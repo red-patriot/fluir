@@ -81,31 +81,29 @@ TEST(FieldText, LeavingCommitsAValidDraft) {
   EXPECT_EQ(h.stack().count(), 1);
 }
 
-// TODO: Reenable this test?
+TEST(FieldText, LeavingDiscardsAnInvalidDraft) {
+  Harness h;
 
-// TEST(FieldText, LeavingDiscardsAnInvalidDraft) {
-//   Harness h;
-//
-//   h.typeInto(h.field(), "abc");
-//   h.clickAway();
-//
-//   EXPECT_EQ(h.constant().text(kLiteral), "-5");
-//   EXPECT_EQ(h.field().toPlainText(), "-5");
-//   EXPECT_EQ(h.stack().count(), 0);
-// }
+  h.typeInto(h.field(), "abc");
+  h.clickAway();
 
-// TEST(FieldText, AnInvalidDraftShowsWhileTypedAndEnterKeepsItOpen) {
-//   Harness h;
-//
-//   h.typeInto(h.field(), "4");
-//   EXPECT_TRUE(h.field().isValid());
-//   QTest::keyClicks(&h.view(), "x");
-//   EXPECT_FALSE(h.field().isValid());
-//   h.key(Qt::Key_Return);
-//
-//   EXPECT_TRUE(h.field().hasFocus());
-//   EXPECT_EQ(h.stack().count(), 0);
-// }
+  EXPECT_EQ(h.constant().text(kLiteral), "-5");
+  EXPECT_EQ(h.field().toPlainText(), "-5");
+  EXPECT_EQ(h.stack().count(), 0);
+}
+
+TEST(FieldText, AnInvalidDraftShowsWhileTypedAndEnterKeepsItOpen) {
+  Harness h;
+
+  h.typeInto(h.field(), "4");
+  EXPECT_TRUE(h.field().isValid());
+  QTest::keyClicks(&h.view(), "x");
+  EXPECT_FALSE(h.field().isValid());
+  h.key(Qt::Key_Return);
+
+  EXPECT_TRUE(h.field().hasFocus());
+  EXPECT_EQ(h.stack().count(), 0);
+}
 
 TEST(FieldText, CommittingTheUnchangedValuePushesNothing) {
   Harness h;

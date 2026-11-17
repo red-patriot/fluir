@@ -48,7 +48,10 @@ namespace fluir::editor::diagram {
     if (data_.typeTag == pt::Constant::BOOL) {
       return field.kind == Field::Kind::Bool && (text == "true" || text == "false");
     }
-    return field.kind == Field::Kind::Literal;  // TODO: Handle string that isn't the right format
+    if (field.kind != Field::Kind::Literal) {
+      return false;
+    }
+    return isValid(data_.typeTag, text);  // TODO: Handle string that isn't the right format
   }
 
   void Constant::write(Field field, std::string_view text) {

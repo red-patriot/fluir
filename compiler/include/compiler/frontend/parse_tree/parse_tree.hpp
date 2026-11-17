@@ -43,32 +43,33 @@ namespace fluir::pt {
     Type typeTag;
 
     friend bool operator==(const Constant&, const Constant&) = default;
-    friend std::string_view toString(Type t) {
-      switch (t) {
-        case Type::F64:
-          return "F64";
-        case Type::I8:
-          return "I8";
-        case Type::I16:
-          return "I16";
-        case Type::I32:
-          return "I32";
-        case Type::I64:
-          return "I64";
-        case Type::U8:
-          return "U8";
-        case Type::U16:
-          return "U16";
-        case Type::U32:
-          return "U32";
-        case Type::U64:
-          return "U64";
-        case Type::BOOL:
-          return "BOOL";
-      }
-      return "<UNKNOWN TYPE>";
-    }
   };
+
+  inline std::string_view toString(Constant::Type t) {
+    switch (t) {
+      case Constant::F64:
+        return "F64";
+      case Constant::I8:
+        return "I8";
+      case Constant::I16:
+        return "I16";
+      case Constant::I32:
+        return "I32";
+      case Constant::I64:
+        return "I64";
+      case Constant::U8:
+        return "U8";
+      case Constant::U16:
+        return "U16";
+      case Constant::U32:
+        return "U32";
+      case Constant::U64:
+        return "U64";
+      case Constant::BOOL:
+        return "BOOL";
+    }
+    return "<UNKNOWN TYPE>";
+  }
 
   struct Binary {
     ID id;

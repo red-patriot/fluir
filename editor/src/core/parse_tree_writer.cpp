@@ -35,25 +35,6 @@ namespace fluir::editor {
       std::sort(ids.begin(), ids.end());
       return ids;
     }
-
-    // Round-trip formatting, not display formatting: F64 keeps `{:f}` so the
-    // written text reparses as the same value (`renderLiteral` is for labels).
-    std::string literalText(const pt::Literal& v) {
-      return std::visit(
-        [](auto x) -> std::string {
-          using T = std::decay_t<decltype(x)>;
-          if constexpr (std::is_same_v<T, bool>)
-            return x ? "true" : "false";
-          else if constexpr (std::is_same_v<T, double>)
-            return fmt::format("{:f}", x);
-          else if constexpr (std::is_unsigned_v<T>)
-            return fmt::format("{}", static_cast<unsigned long long>(x));
-          else
-            return fmt::format("{}", static_cast<long long>(x));
-        },
-        v);
-    }
-
   }  // namespace
 
   void write(std::ostream& out, const pt::ParseTree& tree) { ParseTreeWriter(out).write(tree); }
@@ -157,11 +138,17 @@ namespace fluir::editor {
                value);
   }
 
-  void ParseTreeWriter::constant(Element* parent, const pt::Constant& value) {
+  void ParseTreeWriter::constant(Element* parent, const pt::Constant& constant) {
     Element* el = parent->InsertNewChildElement("constant");
-    setId(el, value.id);
-    setLocation(el, value.location);
-    literal(el, value.value);
+    setId(el, constant.id);
+    setLocation(el, constant.location);
+
+    std::string name{literalTypeName(constant)};
+    // Names saved in the file are lowercase, so transform them here to conform to that
+    // TODO: unify this to be uppercase everywhere
+    std::ranges::transform(name, name.begin(), [](char c) { return std::tolower(c); });
+    auto* child = el->InsertNewChildElement(name.c_str());
+    child->SetText(constant.value.c_str());
   }
 
   void ParseTreeWriter::binary(Element* parent, const pt::Binary& value) {
@@ -238,11 +225,6 @@ namespace fluir::editor {
     Element* el = parent->InsertNewChildElement("output");
     el->SetAttribute("target", std::to_string(value.target).c_str());
     setInt(el, "index", value.index);
-  }
-
-  void ParseTreeWriter::literal(Element* parent, const pt::Literal& value) {
-    Element* el = parent->InsertNewChildElement(std::string(literalTypeName(value)).c_str());
-    el->SetText(literalText(value).c_str());
   }
 
   void ParseTreeWriter::setId(Element* element, ID id) { setIdReference(element, id, "id"sv); }

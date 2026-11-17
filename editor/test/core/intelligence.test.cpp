@@ -8,6 +8,7 @@
 #include <variant>
 #include <vector>
 
+#include <fmt/format.h>
 #include <gtest/gtest.h>
 
 #include "editor/core/choices.hpp"
@@ -122,12 +123,27 @@ TEST(Intelligence, ABodyOffersEveryOperator) {
 }
 
 TEST(Intelligence, ABodyOffersAConstantOfEachLiteralType) {
-  std::set<std::size_t> types;
-  for (const pt::Constant& constant : prototypesOf<pt::Constant>(bodyOf())) {
-    EXPECT_TRUE(types.insert(constant.value.index()).second) << "type " << constant.value.index();
-  }
+  std::set<std::pair<pt::Constant::Type, std::string>> expectedTypes{
+    {pt::Constant::F64, "0.0"},
+    {pt::Constant::I8, "0"},
+    {pt::Constant::I16, "0"},
+    {pt::Constant::I32, "0"},
+    {pt::Constant::I64, "0"},
+    {pt::Constant::U8, "0"},
+    {pt::Constant::U16, "0"},
+    {pt::Constant::U32, "0"},
+    {pt::Constant::U64, "0"},
+    {pt::Constant::BOOL, "true"},
+    {pt::Constant::BOOL, "false"},
+  };
+  const auto actuals = prototypesOf<pt::Constant>(bodyOf());
 
-  EXPECT_EQ(types.size(), std::variant_size_v<fluir::literals_types::Literal>);
+  for (const auto& [expectedType, expectedValue] : expectedTypes) {
+    EXPECT_NE(actuals.end(),
+              std::ranges::find_if(
+                actuals, [&](const pt::Constant& a) { return a.typeTag == expectedType && a.value == expectedValue; }))
+      << fmt::format("missing {} {}", pt::toString(expectedType), expectedValue);
+  }
 }
 
 TEST(Intelligence, ABodyOffersACommentAndAnEmptyConditional) {

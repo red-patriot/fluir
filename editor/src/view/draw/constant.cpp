@@ -9,7 +9,6 @@
 
 namespace fluir::editor::draw {
   namespace {
-    using namespace ::fluir::literals_types;
 
     // In grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
@@ -19,19 +18,31 @@ namespace fluir::editor::draw {
     // Gap between the bool square and the node's edges, in world px.
     constexpr double TOGGLE_PAD = 4.0;
 
-    struct LiteralColor {
-      const EditorContext::Theme& theme;
-      Color operator()(const F64&) const { return theme.floatNode; }
-      Color operator()(const I8&) const { return theme.sIntNode; }
-      Color operator()(const I16&) const { return theme.sIntNode; }
-      Color operator()(const I32&) const { return theme.sIntNode; }
-      Color operator()(const I64&) const { return theme.sIntNode; }
-      Color operator()(const U8&) const { return theme.uIntNode; }
-      Color operator()(const U16&) const { return theme.uIntNode; }
-      Color operator()(const U32&) const { return theme.uIntNode; }
-      Color operator()(const U64&) const { return theme.uIntNode; }
-      Color operator()(const BOOL&) const { return theme.boolNode; }
-    };
+    Color literalColor(const pt::Constant& c, const EditorContext::Theme& theme) {
+      switch (c.typeTag) {
+        case pt::Constant::F64:
+          return theme.floatNode;
+        case pt::Constant::I8:
+          return theme.sIntNode;
+        case pt::Constant::I16:
+          return theme.sIntNode;
+        case pt::Constant::I32:
+          return theme.sIntNode;
+        case pt::Constant::I64:
+          return theme.sIntNode;
+        case pt::Constant::U8:
+          return theme.uIntNode;
+        case pt::Constant::U16:
+          return theme.uIntNode;
+        case pt::Constant::U32:
+          return theme.uIntNode;
+        case pt::Constant::U64:
+          return theme.uIntNode;
+        case pt::Constant::BOOL:
+          return theme.boolNode;
+      }
+      std::unreachable();
+    }
 
   }  // namespace
 
@@ -42,31 +53,28 @@ namespace fluir::editor::draw {
   }
 
   std::vector<FieldLabel> labels(const pt::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
-    if (std::holds_alternative<BOOL>(n.value)) {
+    if (n.typeTag == pt::Constant::BOOL) {
       return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
     }
-    std::string name{literalTypeName(n.value)};
-    std::ranges::transform(name, name.begin(), [](auto c) { return std::toupper(c); });
+    std::string name{literalTypeName(n)};
     return {{{Field::Kind::Literal}, splitLabel(world, name, layout).text}};
   }
 
   Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }
 
   Vec2i defaultSize(const pt::Constant& c) {
-    return std::holds_alternative<BOOL>(c.value) ? BOOL_DEFAULT_SIZE : DEFAULT_SIZE;
+    return c.typeTag == pt::Constant::BOOL ? BOOL_DEFAULT_SIZE : DEFAULT_SIZE;
   }
 
   // A bool draws a fixed-size toggle square, so there is nothing to widen.
   std::optional<ResizeAxes> resizePart(const pt::Constant& c) {
-    return std::holds_alternative<BOOL>(c.value) ? std::nullopt : std::optional{ResizeAxes::X};
+    return c.typeTag == pt::Constant::BOOL ? std::nullopt : std::optional{ResizeAxes::X};
   }
 
   TerminalSet anchors(const pt::Constant&, const Rect& r, const EditorContext::Layout&) {
     return {{}, edgeAnchors(r.x + r.w, r, 1)};
   }
 
-  Color color(const pt::Constant& c, const EditorContext::Theme& theme) {
-    return std::visit(LiteralColor{theme}, c.value);
-  }
+  Color color(const pt::Constant& c, const EditorContext::Theme& theme) { return literalColor(c, theme); }
 
 }  // namespace fluir::editor::draw

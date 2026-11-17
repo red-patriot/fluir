@@ -40,6 +40,16 @@ namespace {
     EXPECT_EQ(literalTypeName((Constant{.value = "true", .typeTag = Constant::BOOL})), "BOOL");
   }
 
+  TEST(LiteralText, RendersNamedConstants) {
+    EXPECT_EQ(renderLiteral((Constant{.value = "pi", .typeTag = Constant::F64})), "\u03C0");        // π
+    EXPECT_EQ(renderLiteral((Constant{.value = "e", .typeTag = Constant::F64})), "\u212F");         // ℯ
+    EXPECT_EQ(renderLiteral((Constant{.value = "ln(2)", .typeTag = Constant::F64})), "\u33D12");    // ㏑2
+    EXPECT_EQ(renderLiteral((Constant{.value = "ln(10)", .typeTag = Constant::F64})), "\u33D110");  // ㏑10
+    EXPECT_EQ(renderLiteral((Constant{.value = "sqrt(2)", .typeTag = Constant::F64})), "\u221A2");  // √2
+    EXPECT_EQ(renderLiteral((Constant{.value = "sqrt(3)", .typeTag = Constant::F64})), "\u221A3");  // √3
+    EXPECT_EQ(renderLiteral((Constant{.value = "inf", .typeTag = Constant::F64})), "\u221E");       // ∞
+  }
+
   // TODO: Reenable or delete these tests
 
   // TEST(LiteralText, ParsesTextBackIntoTheSameAlternative) {

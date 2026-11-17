@@ -1,8 +1,18 @@
 #include "editor/core/literal_text.hpp"
 
+#include <unordered_set>
+
 #include <re2/re2.h>
 
 namespace fluir::editor {
+  namespace {
+    bool isNamedConstant(std::string_view text) {
+      static const std::unordered_set<std::string_view> NAMES{
+        "pi", "e", "ln(2)", "ln(10)", "sqrt(2)", "sqrt(3)", "inf"};
+      return NAMES.contains(text);
+    }
+  }  // namespace
+
   std::string renderLiteral(const pt::Constant& value) { return value.value; }
 
   std::string_view literalTypeName(const pt::Constant& value) { return ::fluir::pt::toString(value.typeTag); }
@@ -17,7 +27,7 @@ namespace fluir::editor {
       case pt::Constant::BOOL:
         return text == "true" || text == "false";
       case pt::Constant::F64:
-        return RE2::FullMatch(text, floatRe);
+        return RE2::FullMatch(text, floatRe) || isNamedConstant(text);
       case pt::Constant::I8:
       case pt::Constant::I16:
       case pt::Constant::I32:

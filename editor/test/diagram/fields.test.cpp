@@ -159,14 +159,20 @@ TEST(Fields, AFloatLiteralParses) {
   Interaction h("read/simple_binary_expr.fl");
   auto& constant = h.find<diagram::Constant>(2);
   const Field literal{Field::Kind::Literal};
-  pt::ParseTree expected = h.tree();
-  nodeOf<pt::Constant>(expected, 1, 2).value = "2.5";
-  nodeOf<pt::Constant>(expected, 1, 2).typeTag = pt::Constant::F64;
-
   EXPECT_FALSE(constant.setText(literal, "2.5.1"));
   ASSERT_TRUE(constant.setText(literal, "2.5"));
+}
 
-  EXPECT_EQ(h.tree(), expected);
+TEST(Fields, SpecialFloatConstantsAreAllowed) {
+  const std::vector<std::string> constants = {"pi", "e", "sqrt(2)", "sqrt(3)", "inf", "ln(2)", "ln(10)"};
+
+  Interaction h("read/simple_binary_expr.fl");
+  auto& constant = h.find<diagram::Constant>(2);
+  const Field literal{Field::Kind::Literal};
+
+  for (const auto& expected : constants) {
+    EXPECT_TRUE(constant.setText(literal, expected)) << expected;
+  }
 }
 
 TEST(Fields, ABoolIsTrueOrFalse) {

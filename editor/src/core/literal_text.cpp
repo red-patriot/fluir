@@ -8,7 +8,7 @@
 namespace fluir::editor {
   namespace {
     const std::unordered_map<std::string_view, std::string_view> CONSTANTS{{"pi", "\u03C0"},
-                                                                           {"e", "\u212F"},
+                                                                           {"e", "\U0001D486"},
                                                                            {"ln(2)", "\u33D12"},
                                                                            {"ln(10)", "\u33D110"},
                                                                            {"sqrt(2)", "\u221A2"},

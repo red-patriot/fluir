@@ -42,7 +42,7 @@ namespace {
 
   TEST(LiteralText, RendersNamedConstants) {
     EXPECT_EQ(renderLiteral((Constant{.value = "pi", .typeTag = Constant::F64})), "\u03C0");        // π
-    EXPECT_EQ(renderLiteral((Constant{.value = "e", .typeTag = Constant::F64})), "\u212F");         // ℯ
+    EXPECT_EQ(renderLiteral((Constant{.value = "e", .typeTag = Constant::F64})), "\U0001D486");     // 𝒆
     EXPECT_EQ(renderLiteral((Constant{.value = "ln(2)", .typeTag = Constant::F64})), "\u33D12");    // ㏑2
     EXPECT_EQ(renderLiteral((Constant{.value = "ln(10)", .typeTag = Constant::F64})), "\u33D110");  // ㏑10
     EXPECT_EQ(renderLiteral((Constant{.value = "sqrt(2)", .typeTag = Constant::F64})), "\u221A2");  // √2

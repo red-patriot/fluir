@@ -14,9 +14,7 @@
 
 namespace fluir::editor::diagram {
 
-  /** A typed field. Unfocused it shows the node's display text; a press opens it on the editable text, all selected,
-   *  and selects its node; Enter commits a valid draft as one command, Escape drops it,
-   *  and leaving commits it if valid. Shift+Enter breaks a line in comment text and commits elsewhere. */
+  /** A typed field which can be edited and (optionally) display a prettier display text. */
   class FieldText : public QGraphicsTextItem, public FieldPart {
    public:
     FieldText(FluirNode& node, FieldKey key, FieldLook look, const EditorContext& ctx, QGraphicsItem& parent);

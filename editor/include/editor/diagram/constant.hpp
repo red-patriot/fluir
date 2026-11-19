@@ -18,6 +18,7 @@ namespace fluir::editor::diagram {
     const FlowGraphLocation& location() const override { return data_.location; }
     Limits<Vec2i> sizeLimits() const override;
     std::string text(Field field) const override;
+    std::string displayText(Field field) const override;
     bool accepts(Field field, std::string_view text) const override;
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;

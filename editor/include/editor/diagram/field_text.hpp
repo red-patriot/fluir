@@ -14,7 +14,8 @@
 
 namespace fluir::editor::diagram {
 
-  /** A typed field. A press opens it and selects its node; Enter commits a valid draft as one command, Escape drops it,
+  /** A typed field. Unfocused it shows the node's display text; a press opens it on the editable text, all selected,
+   *  and selects its node; Enter commits a valid draft as one command, Escape drops it,
    *  and leaving commits it if valid. Shift+Enter breaks a line in comment text and commits elsewhere. */
   class FieldText : public QGraphicsTextItem, public FieldPart {
    public:
@@ -32,7 +33,9 @@ namespace fluir::editor::diagram {
 
    protected:
     void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) override;
     void keyPressEvent(QKeyEvent* event) override;
+    void focusInEvent(QFocusEvent* event) override;
     void focusOutEvent(QFocusEvent* event) override;
     void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override { event->ignore(); }
 
@@ -40,10 +43,12 @@ namespace fluir::editor::diagram {
     bool multiline() const { return field().kind == Field::Kind::Text; }
     /** Pushes the draft if it is valid and changed; shows the node's value again otherwise. */
     void commit();
+    void selectAll();
 
     const EditorContext& ctx_;
     std::unique_ptr<EditTarget> target_;
     bool valid_ = true;
+    bool justFocused_ = false;  // a press that gave focus must not drop the select-all
     QSizeF size_;
   };
 

@@ -13,6 +13,8 @@ namespace fluir::editor::diagram {
 
   std::string FieldTarget::current() const { return node_.text(key_()); }
 
+  std::string FieldTarget::display() const { return node_.displayText(key_()); }
+
   bool FieldTarget::validate(std::string_view text) const { return node_.accepts(key_(), text); }
 
   std::vector<std::string> FieldTarget::options() const { return node_.choices(key_()); }

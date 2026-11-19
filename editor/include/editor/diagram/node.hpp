@@ -40,6 +40,8 @@ namespace fluir::editor::diagram {
     /** Moves and sizes this node, carrying its parts along. */
     void setLocation(const FlowGraphLocation& location);
 
+    /** The pretty value to display for `field`. */
+    virtual std::string displayText(Field field) const;
     /** `field`'s value as text; empty for a field this node lacks. */
     virtual std::string text(Field field) const;
     /** Whether `setText` would take `text` for `field`. */

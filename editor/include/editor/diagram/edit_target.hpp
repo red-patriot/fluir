@@ -16,8 +16,10 @@ namespace fluir::editor::diagram {
    public:
     virtual ~EditTarget() = default;
 
-    /** The current value as text. */
+    /** The current value as editable text. */
     virtual std::string current() const = 0;
+    /** The current value as shown when not being edited. */
+    virtual std::string display() const { return current(); }
     /** Check if the given text is valid for the target of an edit */
     virtual bool validate(std::string_view text) const = 0;
     /** The values a pick offers. */
@@ -32,6 +34,7 @@ namespace fluir::editor::diagram {
     FieldTarget(FluirNode& node, FieldKey key);
 
     std::string current() const override;
+    std::string display() const override;
     bool validate(std::string_view text) const override;
     std::vector<std::string> options() const override;
     void commit(std::string_view text) override;

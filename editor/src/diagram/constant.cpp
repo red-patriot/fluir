@@ -41,7 +41,14 @@ namespace fluir::editor::diagram {
     if (data_.typeTag == pt::Constant::BOOL) {
       return field.kind == Field::Kind::Bool ? data_.value : "";
     }
-    return field.kind == Field::Kind::Literal ? renderLiteral(data_) : "";
+    return field.kind == Field::Kind::Literal ? data_.value : "";
+  }
+
+  std::string Constant::displayText(Field field) const {
+    if (data_.typeTag != pt::Constant::BOOL && field.kind == Field::Kind::Literal) {
+      return renderLiteral(data_);
+    }
+    return text(field);
   }
 
   bool Constant::accepts(Field field, std::string_view text) const {

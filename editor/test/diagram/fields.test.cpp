@@ -7,6 +7,7 @@
 #include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/models/operator.hpp"
 #include "editor/core/field.hpp"
+#include "editor/core/literal_text.hpp"
 #include "editor/diagram/binary.hpp"
 #include "editor/diagram/call.hpp"
 #include "editor/diagram/comment.hpp"
@@ -173,6 +174,19 @@ TEST(Fields, SpecialFloatConstantsAreAllowed) {
   for (const auto& expected : constants) {
     EXPECT_TRUE(constant.setText(literal, expected)) << expected;
   }
+}
+
+TEST(Fields, ASpecialConstantHasRawTextAndADisplaySymbol) {
+  Interaction h("read/simple_binary_expr.fl");
+  auto& constant = h.find<diagram::Constant>(2);
+  const Field literal{Field::Kind::Literal};
+
+  ASSERT_TRUE(constant.setText(literal, "inf"));
+
+  EXPECT_EQ(constant.text(literal), "inf");
+  EXPECT_EQ(constant.displayText(literal),
+            fluir::editor::renderLiteral({.value = "inf", .typeTag = pt::Constant::F64}));
+  EXPECT_NE(constant.displayText(literal), "inf");
 }
 
 TEST(Fields, ABoolIsTrueOrFalse) {

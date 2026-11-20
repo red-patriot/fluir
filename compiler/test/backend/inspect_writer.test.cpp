@@ -27,9 +27,9 @@ TEST(TestInspectWriter, WriteProgramheader) {
 
 TEST(TestInspectWriter, WritesConstantsSection) {
   std::string expected = R"(CONSTANTS x3
-  VF64 100.000000000000
-  VF64 3.500000000000
-  VF64 4.400000000000
+  VF64 100.000000000000000
+  VF64 3.500000000000000
+  VF64 4.400000000000000
 )";
 
   fluir::be::ConstantsArray constants{100.0, 3.5, 4.4};

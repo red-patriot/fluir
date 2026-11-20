@@ -17,7 +17,7 @@ namespace fluir {
 #undef STRINGIFY
 
     struct ConstantWriter {
-      std::string operator()(double d) const { return fmt::format("VF64 {:.12f}", d); }
+      std::string operator()(double d) const { return fmt::format("VF64 {:.15f}", d); }
       std::string operator()(int8_t i) const { return fmt::format("VI8  x{:X}", i); }
       std::string operator()(int16_t i) const { return fmt::format("VI16 x{:X}", i); }
       std::string operator()(int32_t i) const { return fmt::format("VI32 x{:X}", i); }

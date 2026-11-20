@@ -1,0 +1,10 @@
+Function(1): 'main'
+  Call(4): 'print'
+    Arg(1):
+      BinaryOp(1): +
+        BinaryOp(2): +
+          ConstantF64(8): 3.141592653589793
+          ConstantF64(10): 2.302585092994046
+        BinaryOp(3): -
+          ConstantF64(9): 2.718281828459045
+          ConstantF64(11): 1.414213562373095

@@ -76,7 +76,7 @@ namespace fluir::debug {
     // TODO: Use type information instead of hardcoding this here
     auto printer = [this, &constant]<typename T>(const T& val) {
       if constexpr (std::is_same_v<T, F64>) {
-        out_ << formatIndented("ConstantF64({}): {:.4f}\n", constant.id(), val);
+        out_ << formatIndented("ConstantF64({}): {:.15f}\n", constant.id(), val);
       } else if constexpr (std::is_same_v<T, I8>) {
         out_ << formatIndented("ConstantI8({}): {}\n", constant.id(), val);
       } else if constexpr (std::is_same_v<T, I16>) {

@@ -6,7 +6,7 @@ Function(1): 'main'
       (2)
         ConstantI32(4): 0
       (3)
-        ConstantF64(6): 0.0000
+        ConstantF64(6): 0.000000000000000
     Output
     Then
       Call(4): 'print'

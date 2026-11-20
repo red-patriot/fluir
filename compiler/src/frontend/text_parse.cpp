@@ -1,6 +1,10 @@
 #include "compiler/frontend/text_parse.hpp"
 
+#include <charconv>
 #include <cstdlib>
+#include <limits>
+#include <numbers>
+#include <unordered_map>
 
 namespace fluir::fe {
   using enum NumberParseError;
@@ -78,6 +82,19 @@ namespace fluir::fe {
 
   // TODO: make this better
   std::expected<double, NumberParseError> parseDouble(std::string_view text) {
+    static const std::unordered_map<std::string_view, double> NAMED_CONSTANTS{
+      {"pi", std::numbers::pi},
+      {"e", std::numbers::e},
+      {"ln(2)", std::numbers::ln2},
+      {"ln(10)", std::numbers::ln10},
+      {"sqrt(2)", std::numbers::sqrt2},
+      {"sqrt(3)", std::numbers::sqrt3},
+      {"inf", std::numeric_limits<double>::infinity()},
+    };
+    if (NAMED_CONSTANTS.contains(text)) {
+      return NAMED_CONSTANTS.at(text);
+    }
+
     char* end{nullptr};
     auto textEnd = text.data() + text.size();  // We need a ptr, not iterator
     auto value = std::strtod(text.data(), &end);

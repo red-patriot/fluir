@@ -95,12 +95,11 @@ namespace fluir::fe {
       return NAMED_CONSTANTS.at(text);
     }
 
-    char* end{nullptr};
-    auto textEnd = text.data() + text.size();  // We need a ptr, not iterator
-    auto value = std::strtod(text.data(), &end);
-    if (end != textEnd) {
+    double d = 0;
+    auto result = std::from_chars(text.data(), text.data() + text.size(), d);
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
       return std::unexpected(CANNOT_PARSE_NUMBER);
     }
-    return value;
+    return d;
   }
 }  // namespace fluir::fe

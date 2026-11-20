@@ -11,13 +11,22 @@ find_package(
                SvgWidgets
 )
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(
-    RE2
-    REQUIRED
-    IMPORTED_TARGET
-    re2
-)
+if (WIN32)
+    find_package(RE2 REQUIRED)
+else ()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(
+        RE2
+        REQUIRED
+        IMPORTED_TARGET
+        re2
+    )
+    add_library(
+        re2::re2
+        ALIAS
+        PkgConfig::RE2
+    )
+endif ()
 
 include(strict-warnings)
 
@@ -153,7 +162,7 @@ target_link_libraries(
            Qt6::SvgWidgets
            fluir::compiler
            fluir::utility
-           PkgConfig::RE2
+           re2::re2
 )
 
 add_executable(fluir.editor "main.cpp")

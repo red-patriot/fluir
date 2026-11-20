@@ -87,7 +87,6 @@ namespace fluir::fe {
         break;
     }
     return false;
-    diagnostic::emitInternalError("Impossible case encountered");
   }
 
   ast::UniqueNode ScopeBuilder::operator()(const pt::Constant& pt) {

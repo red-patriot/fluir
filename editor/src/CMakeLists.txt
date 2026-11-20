@@ -4,6 +4,7 @@ find_package(
     REQUIRED
 )
 
+set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 find_package(
     Qt6 REQUIRED
     COMPONENTS Widgets

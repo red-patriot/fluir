@@ -32,117 +32,111 @@ namespace {
     void undo() override { }
   };
 
-  struct Harness {
-    fluir::editor::EditorContext ctx;
-    MainWindow window{ctx};
-
-    QAction* action(const char* name) {
-      auto* found = window.findChild<QAction*>(name);
-      EXPECT_NE(found, nullptr) << name;
-      return found;
-    }
-
-    ModulePage* page() { return window.findChild<ModulePage*>(); }
-  };
-
 }  // namespace
+class TestMainWindow : public ::testing::Test {
+ public:
+  fluir::editor::EditorContext ctx;
+  MainWindow window{ctx};
 
-TEST(MainWindow, StartsOnTheSplashWithNoPage) {
-  Harness h;
+  QAction* action(const char* name) {
+    auto* found = window.findChild<QAction*>(name);
+    EXPECT_NE(found, nullptr) << name;
+    return found;
+  }
 
-  EXPECT_EQ(h.page(), nullptr);
-}
+  ModulePage* page() { return window.findChild<ModulePage*>(); }
+};
 
-TEST(MainWindow, TheSplashHasNoModuleActions) {
-  Harness h;
+TEST_F(TestMainWindow, StartsOnTheSplashWithNoPage) { EXPECT_EQ(page(), nullptr); }
 
+TEST_F(TestMainWindow, TheSplashHasNoModuleActions) {
   for (const char* name : {"save", "saveAs", "undo", "redo", "exit"}) {
-    EXPECT_EQ(h.window.findChild<QAction*>(name), nullptr) << name;
+    EXPECT_EQ(window.findChild<QAction*>(name), nullptr) << name;
   }
 }
 
-TEST(MainWindow, TheSplashNewButtonOpensAnUnsavedModule) {
-  Harness h;
+TEST_F(TestMainWindow, TheSplashNewButtonOpensAnUnsavedModule) {
+  QTest::mouseClick(window.findChild<QPushButton*>("new"), Qt::LeftButton);
 
-  QTest::mouseClick(h.window.findChild<QPushButton*>("new"), Qt::LeftButton);
-
-  ASSERT_NE(h.page(), nullptr);
-  EXPECT_FALSE(h.page()->program().has_value());
-  EXPECT_TRUE(h.page()->isVisibleTo(&h.window));
-  EXPECT_TRUE(h.window.windowTitle().contains("<new file>"));
+  ASSERT_NE(page(), nullptr);
+  EXPECT_FALSE(page()->program().has_value());
+  EXPECT_TRUE(page()->isVisibleTo(&window));
+  EXPECT_TRUE(window.windowTitle().contains("<new file>"));
 }
 
-TEST(MainWindow, ThePageStaysAChildInsideTheStack) {
-  Harness h;
+TEST_F(TestMainWindow, ThePageStaysAChildInsideTheStack) {
+  QTest::mouseClick(window.findChild<QPushButton*>("new"), Qt::LeftButton);
 
-  QTest::mouseClick(h.window.findChild<QPushButton*>("new"), Qt::LeftButton);
-
-  ASSERT_NE(h.page(), nullptr);
-  EXPECT_FALSE(h.page()->isWindow());
-  EXPECT_EQ(h.window.findChild<QStackedWidget*>()->currentWidget(), h.page());
+  ASSERT_NE(page(), nullptr);
+  EXPECT_FALSE(page()->isWindow());
+  EXPECT_EQ(window.findChild<QStackedWidget*>()->currentWidget(), page());
 }
 
-TEST(MainWindow, OpenModuleShowsTheProgram) {
-  Harness h;
+TEST_F(TestMainWindow, OpenModuleShowsTheProgram) {
+  ASSERT_TRUE(window.openModule(kIntConstants));
 
-  ASSERT_TRUE(h.window.openModule(kIntConstants));
-
-  ASSERT_NE(h.page(), nullptr);
-  EXPECT_EQ(h.page()->program(), kIntConstants);
-  EXPECT_TRUE(h.window.windowTitle().contains("int_constants.fl"));
-  EXPECT_TRUE(h.page()->isVisibleTo(&h.window));
+  ASSERT_NE(page(), nullptr);
+  EXPECT_EQ(page()->program(), kIntConstants);
+  EXPECT_TRUE(window.windowTitle().contains("int_constants.fl"));
+  EXPECT_TRUE(page()->isVisibleTo(&window));
 }
 
-TEST(MainWindow, AFileThatFailsToLoadStaysOnTheSplash) {
-  Harness h;
+TEST_F(TestMainWindow, AFileThatFailsToLoadStaysOnTheSplash) {
+  EXPECT_FALSE(window.openModule(fs::path(TEST_FOLDER) / "load_fails/conduits.fl"));
 
-  EXPECT_FALSE(h.window.openModule(fs::path(TEST_FOLDER) / "load_fails/conduits.fl"));
-
-  EXPECT_EQ(h.page(), nullptr);
+  EXPECT_EQ(page(), nullptr);
 }
 
-TEST(MainWindow, AFileThatFailsToBuildStaysOnTheSplash) {
-  Harness h;
+TEST_F(TestMainWindow, AFileThatFailsToBuildStaysOnTheSplash) {
+  EXPECT_FALSE(window.openModule(fs::path(TEST_FOLDER) / "build_fails/dangling_sink.fl"));
 
-  EXPECT_FALSE(h.window.openModule(fs::path(TEST_FOLDER) / "build_fails/dangling_sink.fl"));
-
-  EXPECT_EQ(h.page(), nullptr);
+  EXPECT_EQ(page(), nullptr);
 }
 
-TEST(MainWindow, ANewPageStartsWithNoHistoryToUndo) {
-  Harness h;
-  ASSERT_TRUE(h.window.openModule(kIntConstants));
-  h.page()->undoStack().push(new NoopCommand);
+TEST_F(TestMainWindow, ANewPageStartsWithNoHistoryToUndo) {
+  ASSERT_TRUE(window.openModule(kIntConstants));
+  page()->undoStack().push(new NoopCommand);
 
-  ASSERT_TRUE(h.window.openModule(kIntConstants));
+  ASSERT_TRUE(window.openModule(kIntConstants));
   QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
-  ASSERT_NE(h.page(), nullptr);
-  EXPECT_FALSE(h.page()->undoStack().canUndo());
+  ASSERT_NE(page(), nullptr);
+  EXPECT_FALSE(page()->undoStack().canUndo());
 }
 
-TEST(MainWindow, TheTitleFollowsSaveAs) {
-  Harness h;
-  QTest::mouseClick(h.window.findChild<QPushButton*>("new"), Qt::LeftButton);
-  ASSERT_NE(h.page(), nullptr);
+TEST_F(TestMainWindow, TheTitleFollowsSaveAs) {
+  QTest::mouseClick(window.findChild<QPushButton*>("new"), Qt::LeftButton);
+  ASSERT_NE(page(), nullptr);
   const fs::path out = fs::temp_directory_path() / "fluir_window_test_save_as.fl";
 
-  ASSERT_TRUE(h.page()->saveAs(out));
+  ASSERT_TRUE(page()->saveAs(out));
 
-  EXPECT_TRUE(h.window.windowTitle().contains("fluir_window_test_save_as.fl"));
+  EXPECT_TRUE(window.windowTitle().contains("fluir_window_test_save_as.fl"));
 }
 
-TEST(MainWindow, ExitReturnsToTheSplash) {
-  Harness h;
-  ASSERT_TRUE(h.window.openModule(kIntConstants));
+TEST_F(TestMainWindow, ExitReturnsToTheSplash) {
+  ASSERT_TRUE(window.openModule(kIntConstants));
 
-  const QPointer<ModulePage> page = h.page();
-  ASSERT_NE(page, nullptr);
+  const QPointer<ModulePage> p = page();
+  ASSERT_NE(p, nullptr);
 
-  h.action("exit")->trigger();
+  action("exit")->trigger();
   QCoreApplication::sendPostedEvents(nullptr, QEvent::DeferredDelete);
 
-  EXPECT_EQ(page, nullptr);
-  EXPECT_EQ(h.page(), nullptr);
-  EXPECT_EQ(h.window.windowTitle(), "Fluir");
+  EXPECT_EQ(p, nullptr);
+  EXPECT_EQ(page(), nullptr);
+  EXPECT_EQ(window.windowTitle(), "Fluir");
+}
+
+TEST(TestMainWindowProgramPage, CanOpenModulePageDirectly) {
+  // No fixture because we need to construct a different window directly
+  fluir::editor::EditorContext ctx;
+  auto window = MainWindow{ctx, kIntConstants};
+
+  auto* page = window.findChild<ModulePage*>();
+
+  ASSERT_NE(page, nullptr);
+  EXPECT_EQ(page->program(), kIntConstants);
+  EXPECT_TRUE(window.windowTitle().contains("int_constants.fl"));
+  EXPECT_TRUE(page->isVisibleTo(&window));
 }

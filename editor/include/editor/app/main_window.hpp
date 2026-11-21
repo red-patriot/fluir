@@ -22,6 +22,7 @@ namespace fluir::editor {
 
    public:
     explicit MainWindow(const EditorContext& ctx, QWidget* parent = nullptr);
+    explicit MainWindow(const EditorContext& ctx, std::filesystem::path program, QWidget* parent = nullptr);
     ~MainWindow() override;
 
     /** Opens the module at `program`.

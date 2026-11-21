@@ -30,14 +30,16 @@ namespace fluir::editor {
     bool openModule(const std::filesystem::path& program);
 
    private:
+    const EditorContext& ctx_;
+    std::unique_ptr<Ui::mainWindow> ui_;
+    ModulePage* page_ = nullptr;
+
     void openPage(std::optional<std::filesystem::path> program, const pt::ParseTree& tree);
     void closePage();
     void openDialog();
     void retitle();
 
-    const EditorContext& ctx_;
-    std::unique_ptr<Ui::mainWindow> ui_;
-    ModulePage* page_ = nullptr;
+    void setupSplashConnections();
   };
 
 }  // namespace fluir::editor

@@ -1,10 +1,10 @@
 Function(1): 'foo'
   LocalWrite(2)
-    ConstantF64(2): 1.2345
+    ConstantF64(2): 1.234500000000000
   BinaryOp(3): /
     LocalRead(3): 2
-    ConstantF64(1): 6.7890
+    ConstantF64(1): 6.789000000000000
   BinaryOp(5): *
-    ConstantF64(4): 7.6543
+    ConstantF64(4): 7.654300000000000
     UnaryOp(6): +
       LocalRead(6): 2

@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 class TestASTError : public ::testing::TestWithParam<fs::path> {
  public:
   fluir::test::TestDiagnosticSink sink_;
-  fluir::Context ctx_{.diagnosticSink = sink_};
+  fluir::Context ctx_{.diagnosticSink = sink_, .ignoreVersionChecks = true};
 
   std::optional<fluir::ast::AbstractSyntaxTree> buildGraph(const fs::path& programFile) {
     if (auto parsed = fluir::parseFile(ctx_, programFile); parsed) {
@@ -33,8 +33,17 @@ TEST_P(TestASTError, Test) {
 
   auto results = buildGraph(programFile);
 
-  std::vector<fd::Code> actual(sink_.emitted().size());
-  std::ranges::transform(sink_.emitted(), actual.begin(), [&](const auto& e) { return e.code; });
+  std::unordered_multimap<fd::Code, fluir::FullID> actual;
+  std::ranges::transform(sink_.emitted(),
+                         std::inserter(actual, actual.begin()),
+                         [&](const auto& data) -> std::pair<const fd::Code, fluir::FullID> {
+                           const auto& [code, location] = data;
+                           if (const auto* id = std::get_if<fluir::FullID>(&location); id) {
+                             return {code, *id};
+                           }
+                           ADD_FAILURE();
+                           return {code, fluir::FullID{}};
+                         });
 
   EXPECT_FALSE(results.has_value());
   EXPECT_EQ(errors, actual);

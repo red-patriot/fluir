@@ -18,6 +18,7 @@ namespace fluir::fe {
   std::expected<T, NumberParseError> parseNumber(std::string_view text);
   std::expected<int64_t, NumberParseError> parseInteger(std::string_view text);
   std::expected<uint64_t, NumberParseError> parseUnsigned(std::string_view text);
+  std::expected<double, NumberParseError> parseDouble(std::string_view text);
   template <std::integral Out, std::integral In>
   std::expected<Out, NumberParseError> checkBounds(const In& number);
 

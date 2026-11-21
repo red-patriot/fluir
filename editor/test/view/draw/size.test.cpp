@@ -24,8 +24,8 @@ namespace {
 
   const EditorContext kCtx;
 
-  const pt::Constant kI32{.id = 1, .location = {}, .value = fluir::literals_types::I32{0}};
-  const pt::Constant kBool{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
+  const pt::Constant kI32{.id = 1, .location = {}, .value = "0", .typeTag = pt::Constant::I32};
+  const pt::Constant kBool{.id = 1, .location = {}, .value = "true", .typeTag = pt::Constant::BOOL};
   const pt::Comment kComment{.id = 1, .location = {}, .text = ""};
   const draw::Ports kConditional{};
 

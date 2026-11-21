@@ -29,17 +29,6 @@ namespace fluir::debug {
 
     void operator()(const pt::Comment& comment);
 
-    void operator()(const pt::F64& f64);
-    void operator()(const pt::I8& i8);
-    void operator()(const pt::I16& i16);
-    void operator()(const pt::I32& i32);
-    void operator()(const pt::I64& i64);
-    void operator()(const pt::U8& u8);
-    void operator()(const pt::U16& u16);
-    void operator()(const pt::U32& u32);
-    void operator()(const pt::U64& u64);
-    void operator()(const pt::BOOL& b);
-
    private:
     std::ostream& out_;
 

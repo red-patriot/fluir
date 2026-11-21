@@ -1,75 +1,55 @@
 #include "editor/core/literal_text.hpp"
 
-#include <array>
-#include <charconv>
-#include <cmath>
-#include <concepts>
-#include <cstdint>
-#include <type_traits>
-#include <variant>
+#include <unordered_map>
+#include <unordered_set>
 
-#include <fmt/format.h>
-
-#include "compiler/frontend/text_parse.hpp"
+#include <re2/re2.h>
 
 namespace fluir::editor {
-  using namespace ::fluir::literals_types;
+  namespace {
+    const std::unordered_map<std::string_view, std::string_view> CONSTANTS{{"pi", "\u03C0"},
+                                                                           {"e", "\U0001D486"},
+                                                                           {"ln(2)", "\u33D12"},
+                                                                           {"ln(10)", "\u33D110"},
+                                                                           {"sqrt(2)", "\u221A2"},
+                                                                           {"sqrt(3)", "\u221A3"},
+                                                                           {"inf", "\u221E"}};
 
-  // I8 / U8 widen to int
-  // so they print as numbers, BOOL prints true/false, and every other
-  // arithmetic type goes straight through fmt.
-  std::string renderLiteral(const pt::Literal& value) {
-    return std::visit(
-      [](auto v) -> std::string {
-        using T = std::decay_t<decltype(v)>;
-        if constexpr (std::is_same_v<T, bool>) {
-          return v ? "true" : "false";
-        } else if constexpr (std::is_same_v<T, std::int8_t> || std::is_same_v<T, std::uint8_t>) {
-          return fmt::format("{}", static_cast<int>(v));
-        } else {
-          return fmt::format("{}", v);
-        }
-      },
-      value);
+    bool isNamedConstant(std::string_view text) { return CONSTANTS.contains(text); }
+    std::string getConstantSymbol(std::string_view text) { return std::string{CONSTANTS.at(text)}; }
+  }  // namespace
+
+  std::string renderLiteral(const pt::Constant& value) {
+    if (value.typeTag != pt::Constant::F64 || !isNamedConstant(value.value)) {
+      return value.value;
+    }
+    return getConstantSymbol(value.value);
   }
 
-  std::string_view literalTypeName(const pt::Literal& value) {
-    // Indexed in `pt::Literal` alternative order.
-    static constexpr std::array<std::string_view, std::variant_size_v<pt::Literal>> kNames{
-      "f64", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "bool"};
-    return kNames[value.index()];
-  }
+  std::string_view literalTypeName(const pt::Constant& value) { return ::fluir::pt::toString(value.typeTag); }
 
-  bool isEditableLiteral(const pt::Literal& value) {
-    return std::visit(
-      [](auto v) {
-        using T = std::decay_t<decltype(v)>;
-        return (std::integral<T> && !std::is_same_v<T, fluir::literals_types::BOOL>) ||
-               std::is_same_v<T, fluir::literals_types::F64>;
-      },
-      value);
-  }
+  bool isEditableLiteral(const pt::Constant& value) { return value.typeTag != pt::Constant::BOOL; }
 
-  std::optional<pt::Literal> tryParseLiteral(const pt::Literal& like, std::string_view text) {
-    return std::visit(
-      [text](auto v) -> std::optional<pt::Literal> {
-        using T = std::decay_t<decltype(v)>;
-        if constexpr (std::integral<T> && !std::is_same_v<T, bool>) {
-          const auto parsed = fe::parseNumber<T>(text);
-          return parsed ? std::optional<pt::Literal>(pt::Literal(std::in_place_type<T>, *parsed)) : std::nullopt;
-        } else if constexpr (std::is_same_v<T, double>) {
-          // Whole text must parse; inf/nan/overflow are rejected like integer range errors.
-          double d{};
-          const auto [end, ec] = std::from_chars(text.data(), text.data() + text.size(), d);
-          if (ec != std::errc{} || end != text.data() + text.size() || !std::isfinite(d)) {
-            return std::nullopt;
-          }
-          return pt::Literal(std::in_place_type<T>, d);
-        } else {
-          return std::nullopt;
-        }
-      },
-      like);
+  bool isValid(pt::Constant::Type type, std::string_view text) {
+    static const RE2 intRe{R"(-?\d+)"};
+    static const RE2 uintRe{R"(\d+)"};
+    static const RE2 floatRe{R"(-?\d+(\.\d*)?)"};
+    switch (type) {
+      case pt::Constant::BOOL:
+        return text == "true" || text == "false";
+      case pt::Constant::F64:
+        return RE2::FullMatch(text, floatRe) || isNamedConstant(text);
+      case pt::Constant::I8:
+      case pt::Constant::I16:
+      case pt::Constant::I32:
+      case pt::Constant::I64:
+        return RE2::FullMatch(text, intRe);
+      case pt::Constant::U8:
+      case pt::Constant::U16:
+      case pt::Constant::U32:
+      case pt::Constant::U64:
+        return RE2::FullMatch(text, uintRe);
+    }
+    return false;
   }
-
 }  // namespace fluir::editor

@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
-          vcpkg install tinyxml2 fmt gtest --triplet x64-windows
+          vcpkg install tinyxml2 fmt re2 gtest --triplet x64-windows
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
       - name: Setup Developer Command Prompt and Build

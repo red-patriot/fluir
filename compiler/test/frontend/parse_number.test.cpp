@@ -4,31 +4,31 @@
 
 #include <gtest/gtest.h>
 
-#include "compiler/frontend/parse_tree/parse_tree.hpp"
 #include "compiler/frontend/text_parse.hpp"
+#include "compiler/models/literal_types.hpp"
 
 using fluir::fe::NumberParseError;
-using fluir::pt::I16;
-using fluir::pt::I32;
-using fluir::pt::I64;
-using fluir::pt::I8;
-using fluir::pt::U16;
-using fluir::pt::U32;
-using fluir::pt::U64;
-using fluir::pt::U8;
+using fluir::literals_types::I16;
+using fluir::literals_types::I32;
+using fluir::literals_types::I64;
+using fluir::literals_types::I8;
+using fluir::literals_types::U16;
+using fluir::literals_types::U32;
+using fluir::literals_types::U64;
+using fluir::literals_types::U8;
 using enum fluir::fe::NumberParseError;
 using std::tuple;
 
 template <typename T>
 class TestParse : public ::testing::TestWithParam<tuple<T, std::string>> { };
 
-#define INTEGER_PARSE_TEST(T)                                 \
-  using TestParse##T = TestParse<T>;                          \
-  TEST_P(TestParse##T, Test) {                                \
-    auto& [expected, text] = GetParam();                      \
-    auto actual = fluir::fe::parseNumber<fluir::pt::T>(text); \
-    ASSERT_TRUE(actual.has_value());                          \
-    EXPECT_EQ(expected, actual.value());                      \
+#define INTEGER_PARSE_TEST(T)                      \
+  using TestParse##T = TestParse<T>;               \
+  TEST_P(TestParse##T, Test) {                     \
+    auto& [expected, text] = GetParam();           \
+    auto actual = fluir::fe::parseNumber<T>(text); \
+    ASSERT_TRUE(actual.has_value());               \
+    EXPECT_EQ(expected, actual.value());           \
   }
 
 INTEGER_PARSE_TEST(I8)

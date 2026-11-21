@@ -18,12 +18,6 @@ namespace fluir::editor {
     // A new conditional's condition port: both branches start empty, so inner id 1 is free; y clears the header band.
     constexpr pt::BlockPort CONDITION{.innerId = 1, .y = 10};
 
-    // One default (0 / false) value per Literal alternative, in order.
-    template <typename... Ts>
-    std::vector<literals_types::Literal> defaultsOf(const std::variant<Ts...>*) {
-      return {literals_types::Literal{std::in_place_type<Ts>}...};
-    }
-
     pt::Comment comment() { return {.id = INVALID_ID, .location = {}, .text = ""}; }
 
     pt::Call callTo(std::string target, const std::vector<std::string>& parameters, bool returns) {
@@ -60,11 +54,8 @@ namespace fluir::editor {
     for (const std::string& op : unaryOperators()) {
       out.push_back({op + " (unary)", pt::Unary{.id = INVALID_ID, .location = {}, .op = *operatorNamed(op)}});
     }
-    // Builtin type names follow Literal's alternative order.
-    const auto defaults = defaultsOf(static_cast<const literals_types::Literal*>(nullptr));
-    for (std::size_t i = 0; i < defaults.size(); ++i) {
-      out.push_back({builtinTypes().at(i), pt::Constant{.id = INVALID_ID, .location = {}, .value = defaults[i]}});
-    }
+    const auto& defaults = defaultScalars();
+    std::ranges::copy(defaults, std::back_inserter(out));
     out.push_back({"Comment", comment()});
     out.push_back({"if-else",
                    pt::Conditional{.id = INVALID_ID,
@@ -87,6 +78,38 @@ namespace fluir::editor {
       }
     }
     return out;
+  }
+
+  const std::vector<Completion<pt::Node>>& Intelligence::defaultScalars() {
+    using NodeComp = Completion<pt::Node>;
+    static const std::vector defaults{
+      NodeComp{
+        .label = "F64",
+        .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0.0", .typeTag = pt::Constant::F64}},
+      NodeComp{.label = "I8",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::I8}},
+      NodeComp{.label = "I16",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::I16}},
+      NodeComp{.label = "I32",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::I32}},
+      NodeComp{.label = "I64",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::I64}},
+      NodeComp{.label = "U8",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::U8}},
+      NodeComp{.label = "U16",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::U16}},
+      NodeComp{.label = "U32",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::U32}},
+      NodeComp{.label = "U64",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "0", .typeTag = pt::Constant::U64}},
+      NodeComp{
+        .label = "false",
+        .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "false", .typeTag = pt::Constant::BOOL}},
+      NodeComp{
+        .label = "true",
+        .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "true", .typeTag = pt::Constant::BOOL}}};
+
+    return defaults;
   }
 
 }  // namespace fluir::editor

@@ -42,7 +42,7 @@ namespace fluir::editor {
     void block(Element* parent, const pt::Block& value);
     void blockContents(Element* element, const pt::Block& value);
     void node(Element* parent, const pt::Node& value);
-    void constant(Element* parent, const pt::Constant& value);
+    void constant(Element* parent, const pt::Constant& constant);
     void binary(Element* parent, const pt::Binary& value);
     void unary(Element* parent, const pt::Unary& value);
     void call(Element* parent, const pt::Call& value);
@@ -53,8 +53,6 @@ namespace fluir::editor {
 
     void conduit(Element* parent, const pt::Conduit& value);
     void conduitOutput(Element* parent, const pt::Conduit::Output& value);
-
-    void literal(Element* parent, const pt::Literal& value);
 
     void setId(Element* element, ID id);
     void setIdReference(Element* element, ID id, std::string_view attribute);

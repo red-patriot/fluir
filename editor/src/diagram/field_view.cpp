@@ -21,7 +21,7 @@ namespace fluir::editor::diagram {
   }
 
   void FieldView::refresh() {
-    text_ = QString::fromStdString(target_->current());
+    text_ = QString::fromStdString(target_->display());
     update();
   }
 

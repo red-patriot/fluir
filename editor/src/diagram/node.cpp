@@ -56,6 +56,11 @@ namespace fluir::editor::diagram {
     popUp(std::move(menu), event->screenPos());
   }
 
+  std::string FluirNode::displayText(Field field) const {
+    // By default, the display is the same as the raw text
+    return text(field);
+  }
+
   std::string FluirNode::text(Field) const { return {}; }
 
   bool FluirNode::accepts(Field, std::string_view) const { return false; }

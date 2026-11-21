@@ -23,6 +23,10 @@ namespace fluir::editor {
 
     /** What may be added in `scope` in `tree`. */
     std::vector<Completion<pt::Node>> completionsAt(const pt::ParseTree& tree, const fluir::FullID& scope) const;
+
+   private:
+    /** Provides the default literals for scalar nodes. */
+    static const std::vector<Completion<pt::Node>>& defaultScalars();
   };
 
 }  // namespace fluir::editor

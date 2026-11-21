@@ -33,7 +33,7 @@
                 z="2"
                 w="5"
                 h="5">
-                <f64>I AM A STRING</f64>
+                <NOT_VALID_TYPE>JUNK GARBAGE DATA</NOT_VALID_TYPE>
             </constant>
             <constant
                 id="3"

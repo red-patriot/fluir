@@ -24,12 +24,12 @@ namespace fluir::editor::diagram {
     setFont(style::font(look));
     refresh();
     connect(document(), &QTextDocument::contentsChanged, this, [this] {
-      valid_ = target_->validate(toPlainText().toStdString());
+      valid_ = !hasFocus() || target_->validate(toPlainText().toStdString());
       update();
     });
   }
 
-  void FieldText::refresh() { setPlainText(QString::fromStdString(target_->current())); }
+  void FieldText::refresh() { setPlainText(QString::fromStdString(target_->display())); }
 
   void FieldText::place(const Rect& rect) {
     prepareGeometryChange();
@@ -58,6 +58,19 @@ namespace fluir::editor::diagram {
   void FieldText::mousePressEvent(QGraphicsSceneMouseEvent* event) {
     node().selectAlone();
     QGraphicsTextItem::mousePressEvent(event);
+    if (justFocused_) {
+      selectAll();  // the press moved the cursor after focus-in selected everything
+    }
+  }
+
+  void FieldText::mouseReleaseEvent(QGraphicsSceneMouseEvent* event) {
+    if (justFocused_) {
+      // The release of the press that opened the field would collapse the selection.
+      justFocused_ = false;
+      event->accept();
+      return;
+    }
+    QGraphicsTextItem::mouseReleaseEvent(event);
   }
 
   void FieldText::keyPressEvent(QKeyEvent* event) {
@@ -75,12 +88,27 @@ namespace fluir::editor::diagram {
     }
   }
 
+  void FieldText::focusInEvent(QFocusEvent* event) {
+    setPlainText(QString::fromStdString(target_->current()));
+    QGraphicsTextItem::focusInEvent(event);
+    selectAll();
+    justFocused_ = true;
+  }
+
+  void FieldText::selectAll() {
+    QTextCursor cursor = textCursor();
+    cursor.select(QTextCursor::Document);
+    setTextCursor(cursor);
+  }
+
   void FieldText::focusOutEvent(QFocusEvent* event) {
     commit();
     QTextCursor cursor = textCursor();
     cursor.clearSelection();
     setTextCursor(cursor);
+    justFocused_ = false;
     QGraphicsTextItem::focusOutEvent(event);
+    refresh();
   }
 
   void FieldText::commit() {

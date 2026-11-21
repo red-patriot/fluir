@@ -50,7 +50,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install libtinyxml2-dev libfmt-dev libgtest-dev \
-          qt6-base-dev qt6-svg-dev qt6-qpa-plugins
+          qt6-base-dev qt6-svg-dev qt6-qpa-plugins libre2-dev
       - name: Configure GCC
         run: cmake --preset gcc-release
       - name: Build GCC

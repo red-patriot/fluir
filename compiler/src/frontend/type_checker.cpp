@@ -157,15 +157,23 @@ namespace fluir {
 
   namespace {
     bool registerDeclarations(Context& ctx, const ast::AST& ast) {
+      std::unordered_map<std::string, ID> functionNames;
       bool failed = false;
       for (auto& declaration : ast.declarations) {
         try {
-          if (ctx.symbolTable.getFunctionType(declaration.name)) {
-            ctx.diagnosticSink.emitAtElement(diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME,
-                                             ctx.currentFile,
-                                             FullID{declaration.id},
-                                             "Function '{}' is already defined.",
-                                             declaration.name);
+          if (functionNames.contains(declaration.name)) {
+            ctx.diagnosticSink.emitAtElementNoThrow(diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME,
+                                                    ctx.currentFile,
+                                                    FullID{declaration.id},
+                                                    "Function '{}' is already defined.",
+                                                    declaration.name);
+            ctx.diagnosticSink.emitAtElementNoThrow(diagnostic::Code::ERROR_DUPLICATE_FUNCTION_NAME,
+                                                    ctx.currentFile,
+                                                    FullID{functionNames.at(declaration.name)},
+                                                    "Function '{}' is already defined.",
+                                                    declaration.name);
+            failed = true;
+            continue;
           }
           std::vector<types::TypePtr> paramTypes;
           for (const auto& param : declaration.parameters) {
@@ -176,6 +184,7 @@ namespace fluir {
             returnType = ctx.types.findTypeNamed(declaration.returnValue->typeName);
           }
           ctx.symbolTable.addFunction(declaration.name, {paramTypes, returnType});
+          functionNames[declaration.name] = declaration.id;
         } catch (const diagnostic::Panic&) {
           failed = true;
         }

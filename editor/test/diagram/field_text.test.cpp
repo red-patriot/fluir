@@ -2,10 +2,12 @@
 
 #include <QPointF>
 #include <QTest>
+#include <QTextCursor>
 
 #include <gtest/gtest.h>
 
 #include "editor/core/field.hpp"
+#include "editor/core/literal_text.hpp"
 #include "editor/diagram/call.hpp"
 #include "editor/diagram/comment.hpp"
 #include "editor/diagram/constant.hpp"
@@ -208,4 +210,98 @@ TEST(FieldText, ALongCommentStaysInsideItsNode) {
   }
 
   EXPECT_TRUE(comment.boundingRect().contains(visibleIn(comment, field)));
+}
+
+namespace {
+
+  struct InfHarness : Interaction {
+    InfHarness() : Interaction("read/simple_binary_expr.fl") {
+      // Widened so the literal has room to be hit: the default width leaves it none beside the type tag.
+      auto location = constant().location();
+      location.width = 12;
+      constant().setLocation(location);
+      EXPECT_TRUE(constant().setText(kLiteral, "inf"));
+      before = tree();
+    }
+
+    diagram::Constant& constant() { return find<diagram::Constant>(2); }
+    diagram::FieldText& field() { return fieldOf<diagram::FieldText>(constant(), kLiteral); }
+    /** The center of the placed (clipped) rect: the text's own bounds can reach past the constant. */
+    QPoint aimField() { return aimAt(field().mapToScene(field().shape().boundingRect().center())); }
+    void clickAway() { click(aimAt(find<diagram::Function>(1).sceneBoundingRect().topLeft() - QPointF(20, 20))); }
+    static QString symbol() {
+      return QString::fromStdString(
+        fluir::editor::renderLiteral({.value = "inf", .typeTag = fluir::pt::Constant::F64}));
+    }
+
+    fluir::pt::ParseTree before;
+  };
+
+}  // namespace
+
+TEST(FieldTextDisplay, UnfocusedShowsTheSymbolAndIsValid) {
+  InfHarness h;
+
+  EXPECT_EQ(h.field().toPlainText(), InfHarness::symbol());
+  EXPECT_TRUE(h.field().isValid());
+}
+
+TEST(FieldTextDisplay, ClickingOpensTheRawTextAllSelected) {
+  InfHarness h;
+
+  h.click(h.aimField());
+
+  EXPECT_TRUE(h.field().hasFocus());
+  EXPECT_EQ(h.field().toPlainText(), "inf");
+  EXPECT_FALSE(h.field().textCursor().selectedText().isEmpty());
+  EXPECT_EQ(h.field().textCursor().selectedText(), h.field().toPlainText());
+  EXPECT_TRUE(h.field().isValid());
+}
+
+TEST(FieldTextDisplay, LeavingWithoutChangesShowsTheSymbolAgain) {
+  InfHarness h;
+
+  h.click(h.aimField());
+  h.clickAway();
+
+  EXPECT_EQ(h.field().toPlainText(), InfHarness::symbol());
+  EXPECT_EQ(h.stack().count(), 0);
+}
+
+TEST(FieldTextDisplay, UndoingAnEditAwayFromTheSymbolRestoresIt) {
+  InfHarness h;
+
+  h.click(h.aimField());
+  QTest::keyClick(&h.view(), Qt::Key_A, Qt::ControlModifier);
+  QTest::keyClicks(&h.view(), "1.5");
+  h.key(Qt::Key_Return);
+  EXPECT_EQ(h.field().toPlainText(), "1.5");
+  ASSERT_EQ(h.stack().count(), 1);
+
+  h.stack().undo();
+  EXPECT_EQ(h.tree(), h.before);
+  EXPECT_EQ(h.field().toPlainText(), InfHarness::symbol());
+
+  h.stack().redo();
+  EXPECT_EQ(h.field().toPlainText(), "1.5");
+}
+
+TEST(FieldTextDisplay, EscapeShowsTheSymbolAgain) {
+  InfHarness h;
+
+  h.click(h.aimField());
+  QTest::keyClick(&h.view(), Qt::Key_A, Qt::ControlModifier);
+  QTest::keyClicks(&h.view(), "1.5");
+  h.key(Qt::Key_Escape);
+
+  EXPECT_EQ(h.field().toPlainText(), InfHarness::symbol());
+  EXPECT_EQ(h.stack().count(), 0);
+}
+
+TEST(FieldText, APressSelectsAllOfAnOrdinaryField) {
+  Harness h;
+
+  h.click(h.aim(h.field()));
+
+  EXPECT_EQ(h.field().textCursor().selectedText(), "-5");
 }

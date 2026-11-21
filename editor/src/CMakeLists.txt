@@ -4,12 +4,30 @@ find_package(
     REQUIRED
 )
 
+set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
 find_package(
     Qt6 REQUIRED
     COMPONENTS Widgets
                Svg
                SvgWidgets
 )
+
+if (WIN32)
+    find_package(RE2 REQUIRED)
+else ()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(
+        RE2
+        REQUIRED
+        IMPORTED_TARGET
+        re2
+    )
+    add_library(
+        re2::re2
+        ALIAS
+        PkgConfig::RE2
+    )
+endif ()
 
 include(strict-warnings)
 
@@ -145,6 +163,7 @@ target_link_libraries(
            Qt6::SvgWidgets
            fluir::compiler
            fluir::utility
+           re2::re2
 )
 
 add_executable(fluir.editor "main.cpp")

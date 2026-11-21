@@ -8,11 +8,11 @@ Function(1): 'main'
       Then
         Bundle(1):
           ConstantI32(2): 0
-          ConstantF64(8): 0.0000
+          ConstantF64(8): 0.000000000000000
       Else
         Bundle(2):
           ConstantI32(3): 12
-          ConstantF64(10): -1.0000
+          ConstantF64(10): -1.000000000000000
   Call(4): 'print'
     Arg(1):
       Unbundle(4)[0]:

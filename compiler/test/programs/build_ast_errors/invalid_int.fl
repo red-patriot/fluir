@@ -15,9 +15,6 @@
             <constant id="2" x="10" y="18" z="1" w="12" h="5">
                 <i16>432a</i16>
             </constant>
-            <constant id="3" x="10" y="24" z="1" w="12" h="5">
-                <bad>-32</bad>
-            </constant>
             <constant id="4" x="10" y="30" z="1" w="12" h="5">
                 <i16>-65536</i16>
             </constant>

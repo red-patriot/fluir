@@ -31,33 +31,39 @@ namespace fluir::editor::diagram {
 
   void Constant::paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*) {
     style::shell(*painter, boundingRect(), draw::color(data_, ctx_.theme), ctx_);
-    if (!std::holds_alternative<fluir::literals_types::BOOL>(data_.value)) {
-      std::string name{literalTypeName(data_.value)};
-      std::ranges::transform(name, name.begin(), [](auto c) { return std::toupper(c); });
+    if (data_.typeTag != pt::Constant::BOOL) {
+      std::string name{literalTypeName(data_)};
       style::tag(*painter, boundingRect(), name, ctx_);
     }
   }
 
   std::string Constant::text(Field field) const {
-    if (const auto* value = std::get_if<fluir::literals_types::BOOL>(&data_.value)) {
-      return field.kind == Field::Kind::Bool ? (*value ? "true" : "false") : "";
+    if (data_.typeTag == pt::Constant::BOOL) {
+      return field.kind == Field::Kind::Bool ? data_.value : "";
     }
-    return field.kind == Field::Kind::Literal ? renderLiteral(data_.value) : "";
+    return field.kind == Field::Kind::Literal ? data_.value : "";
+  }
+
+  std::string Constant::displayText(Field field) const {
+    if (data_.typeTag != pt::Constant::BOOL && field.kind == Field::Kind::Literal) {
+      return renderLiteral(data_);
+    }
+    return text(field);
   }
 
   bool Constant::accepts(Field field, std::string_view text) const {
-    if (std::holds_alternative<fluir::literals_types::BOOL>(data_.value)) {
+    if (data_.typeTag == pt::Constant::BOOL) {
       return field.kind == Field::Kind::Bool && (text == "true" || text == "false");
     }
-    return field.kind == Field::Kind::Literal && tryParseLiteral(data_.value, text).has_value();
+    if (field.kind != Field::Kind::Literal) {
+      return false;
+    }
+    return isValid(data_.typeTag, text);  // TODO: Handle string that isn't the right format
   }
 
   void Constant::write(Field field, std::string_view text) {
-    if (field.kind == Field::Kind::Bool) {
-      data_.value = fluir::literals_types::BOOL{text == "true"};
-    } else {
-      data_.value = *tryParseLiteral(data_.value, text);
-    }
+    // TODO: Handle string that isn't the right format for its type
+    data_.value = text;
   }
 
 }  // namespace fluir::editor::diagram

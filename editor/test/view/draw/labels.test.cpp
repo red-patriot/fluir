@@ -100,7 +100,7 @@ TEST(Labels, CallRowsDoNotOverlap) {
 }
 
 TEST(Labels, ConstantLabelsItsLiteral) {
-  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::I32{7}};
+  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = "7", .typeTag = fluir::pt::Constant::I32};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Literal}});
@@ -108,7 +108,7 @@ TEST(Labels, ConstantLabelsItsLiteral) {
 }
 
 TEST(Labels, BoolConstantLabelsItsToggle) {
-  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = fluir::literals_types::BOOL{true}};
+  const fluir::pt::Constant constant{.id = 1, .location = {}, .value = "true", .typeTag = fluir::pt::Constant::BOOL};
   const auto labels = fluir::editor::draw::labels(constant, kRect, kCtx.layout);
 
   EXPECT_EQ(fieldsOf(labels), std::vector<Field>{{Kind::Bool}});

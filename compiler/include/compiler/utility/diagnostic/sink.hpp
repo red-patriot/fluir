@@ -48,6 +48,14 @@ namespace fluir::diagnostic {
         startPanic();
       }
     }
+    template <typename... FmtArgs>
+    void emitAtElementNoThrow(Code code,
+                              const std::filesystem::path& file,
+                              const FullID& id,
+                              fmt::format_string<FmtArgs...> extraMsg = "",
+                              FmtArgs&&... args) {
+      report(code, file, id, fmt::format(extraMsg, std::forward<FmtArgs>(args)...));
+    }
 
    protected:
     /** Where an error can be emitted: a line number or element ID */

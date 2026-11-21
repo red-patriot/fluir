@@ -1,6 +1,7 @@
 #ifndef FLUIR_COMPILER_TEST_FILE_UTILITY_HPP
 #define FLUIR_COMPILER_TEST_FILE_UTILITY_HPP
 
+#include <charconv>
 #include <filesystem>
 #include <fstream>
 #include <unordered_map>

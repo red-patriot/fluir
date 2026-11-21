@@ -35,9 +35,17 @@ TEST_P(TestTypeError, Test) {
   const auto errors = fluir::test::getErrors(errorsFile);
 
   auto results = generateAndTypeCheck(programFile);
-  std::vector<fd::Code> actual(sink_.emitted().size());
-  std::ranges::transform(sink_.emitted(), actual.begin(), [](const auto& e) { return e.code; });
-
+  std::unordered_multimap<fd::Code, fluir::FullID> actual;
+  std::ranges::transform(sink_.emitted(),
+                         std::inserter(actual, actual.begin()),
+                         [&](const auto& data) -> std::pair<const fd::Code, fluir::FullID> {
+                           const auto& [code, location] = data;
+                           if (const auto* id = std::get_if<fluir::FullID>(&location); id) {
+                             return {code, *id};
+                           }
+                           ADD_FAILURE();
+                           return {code, fluir::FullID{}};
+                         });
   EXPECT_FALSE(results.has_value());
   EXPECT_EQ(errors, actual);
 }

@@ -3,6 +3,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <unordered_map>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -17,21 +18,74 @@ namespace fluir::test {
     return ss.str();
   }
 
-  inline std::vector<diagnostic::Code> getErrors(const std::filesystem::path& file) {
+  inline std::unordered_multimap<diagnostic::Code, fluir::FullID> getErrors(const std::filesystem::path& file) {
+    // TODO: Add mapping to expected elements
     static const std::unordered_map<std::string, diagnostic::Code> translation{
 #define FLUIR_TEST_MAKE_ERRORS_MAP(code) {#code, diagnostic::Code::code},
       FLUIR_DIAGNOSTIC_CODE(FLUIR_TEST_MAKE_ERRORS_MAP)
 #undef FLUIR_TEST_MAKE_ERRORS_MAP
     };
 
-    std::vector<diagnostic::Code> errors;
+    std::unordered_multimap<diagnostic::Code, fluir::FullID> errors;
     std::ifstream fin(file);
+
     for (std::string line; std::getline(fin, line);) {
-      if (translation.contains(line)) {
-        errors.push_back(translation.at(line));
-      } else {
-        errors.push_back(diagnostic::Code::GENERIC_ERROR);
+      auto codeName = line.substr(0, line.find(' '));
+      auto code = diagnostic::Code::GENERIC_ERROR;
+      if (translation.contains(codeName)) {
+        code = translation.at(codeName);
       }
+      FullID fullId;
+      auto i = codeName.size() + 1;
+      if (i >= line.size()) {
+        errors.emplace(code, std::move(fullId));
+        continue;  // These errors don't give an ID right now (probably in error?)
+      }
+      for (std::string idStr = line.substr(i, line.find(' ', i)); !idStr.empty();) {
+        ID id{INVALID_ID};
+        auto result = std::from_chars(idStr.data(), idStr.data() + idStr.size(), id);
+        fullId.emplace_back(id);
+        auto numLen = result.ptr - idStr.data();
+        auto spaceAfter = idStr.find(' ', numLen);
+        if (spaceAfter < idStr.size()) {
+          auto next = idStr.substr(spaceAfter + 1);
+          idStr = next;
+        } else {
+          // Nothing else to parse
+          break;
+        }
+      }
+      errors.emplace(code, std::move(fullId));
+    }
+    return errors;
+  }
+
+  inline std::unordered_multimap<diagnostic::Code, int> getLineErrors(const std::filesystem::path& file) {
+    // TODO: Add mapping to expected elements
+    static const std::unordered_map<std::string, diagnostic::Code> translation{
+#define FLUIR_TEST_MAKE_ERRORS_MAP(code) {#code, diagnostic::Code::code},
+      FLUIR_DIAGNOSTIC_CODE(FLUIR_TEST_MAKE_ERRORS_MAP)
+#undef FLUIR_TEST_MAKE_ERRORS_MAP
+    };
+
+    std::unordered_multimap<diagnostic::Code, int> errors;
+    std::ifstream fin(file);
+
+    for (std::string line; std::getline(fin, line);) {
+      auto codeName = line.substr(0, line.find(' '));
+      auto code = diagnostic::Code::GENERIC_ERROR;
+      if (translation.contains(codeName)) {
+        code = translation.at(codeName);
+      }
+      int lineNo{};
+      auto i = codeName.size() + 1;
+      if (i >= line.size()) {
+        errors.emplace(code, std::move(lineNo));
+        continue;
+      }
+      std::string lineStr = line.substr(i, line.find(' ', i));
+      std::from_chars(lineStr.data(), lineStr.data() + lineStr.size(), lineNo);
+      errors.emplace(code, lineNo);
     }
     return errors;
   }

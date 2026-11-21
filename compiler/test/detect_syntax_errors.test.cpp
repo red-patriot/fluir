@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <unordered_map>
 
 #include <gtest/gtest.h>
 
@@ -21,15 +22,22 @@ class TestDetectSyntaxError : public ::testing::TestWithParam<fs::path> {
 TEST_P(TestDetectSyntaxError, Test) {
   const auto programFile = GetParam();
   const auto errorsFile = fs::path{programFile}.replace_extension(".errors");
-  const auto errors = fluir::test::getErrors(errorsFile);
+  const auto errors = fluir::test::getLineErrors(errorsFile);
 
   fluir::Parser uut{ctx};
 
   auto results = uut.parseFile(programFile);
 
-  std::vector<fd::Code> actual(sink_.emitted().size());
-
-  std::ranges::transform(sink_.emitted(), actual.begin(), [](const auto& e) { return e.code; });
+  std::unordered_multimap<fd::Code, int> actual;
+  std::ranges::transform(
+    sink_.emitted(), std::inserter(actual, actual.begin()), [&](const auto& data) -> std::pair<const fd::Code, int> {
+      const auto& [code, location] = data;
+      if (const auto* line = std::get_if<int>(&location); line) {
+        return {code, *line};
+      }
+      ADD_FAILURE();
+      return {code, {}};
+    });
 
   EXPECT_FALSE(results.has_value());
   EXPECT_EQ(errors, actual);

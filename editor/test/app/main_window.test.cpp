@@ -127,16 +127,3 @@ TEST_F(TestMainWindow, ExitReturnsToTheSplash) {
   EXPECT_EQ(page(), nullptr);
   EXPECT_EQ(window.windowTitle(), "Fluir");
 }
-
-TEST(TestMainWindowProgramPage, CanOpenModulePageDirectly) {
-  // No fixture because we need to construct a different window directly
-  fluir::editor::EditorContext ctx;
-  auto window = MainWindow{ctx, kIntConstants};
-
-  auto* page = window.findChild<ModulePage*>();
-
-  ASSERT_NE(page, nullptr);
-  EXPECT_EQ(page->program(), kIntConstants);
-  EXPECT_TRUE(window.windowTitle().contains("int_constants.fl"));
-  EXPECT_TRUE(page->isVisibleTo(&window));
-}

@@ -5,6 +5,7 @@ add_executable(fluir.editor.test)
 
 set(FLUIR_EDITOR_APP_TEST_SOURCES
     app/main_window.test.cpp
+    app/main_window_module.test.cpp
     app/module_page.test.cpp
     app/splash_widget.test.cpp
     app/style.test.cpp

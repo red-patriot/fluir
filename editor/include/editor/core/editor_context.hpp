@@ -46,17 +46,17 @@ namespace fluir::editor {
       Color conduit{150, 180, 220, 255};
       Color error{224, 68, 68, 255};
       Color text{225, 225, 235, 255};
-      Color funcDeclHeader{237, 170, 30, 255};
-      Color conditionalNodeHeader{1, 140, 105, 255};
+      Color funcDeclHeader{0xD4, 0xAC, 0x0A, 255};
+      Color conditionalNodeHeader{0x1A, 0xBC, 0x9C, 255};
       Color operatorNode{75, 107, 210, 255};
-      Color uIntNode{242, 44, 189, 255};
-      Color sIntNode{225, 31, 251, 255};
-      Color floatNode{139, 31, 255, 255};
-      Color boolNode{25, 180, 200, 255};
-      Color port{130, 135, 145, 255};
-      Color callNode{31, 117, 255, 255};
+      Color uIntNode{0x29, 0x80, 0xB9, 255};
+      Color sIntNode{0x1F, 0x61, 0x8D, 255};
+      Color floatNode{0x6C, 0x34, 0x83, 255};
+      Color boolNode{0x1A, 0xBC, 0x9C, 255};
+      Color port{95, 95, 95, 255};
+      Color callNode{0xD4, 0xAC, 0x0A, 255};
       Color headerBackground{44, 49, 60, 255};
-      Color commentNode{95, 95, 95, 255};
+      Color commentNode{0x62, 0x62, 0x62, 255};
     };
 
     struct Window {

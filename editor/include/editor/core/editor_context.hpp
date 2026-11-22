@@ -53,6 +53,7 @@ namespace fluir::editor {
       Color sIntNode{0x1F, 0x61, 0x8D, 255};
       Color floatNode{0x6C, 0x34, 0x83, 255};
       Color boolNode{0x1A, 0xBC, 0x9C, 255};
+      Color strNode{0x2E, 0xCC, 0x71};
       Color port{95, 95, 95, 255};
       Color callNode{0xD4, 0xAC, 0x0A, 255};
       Color headerBackground{44, 49, 60, 255};

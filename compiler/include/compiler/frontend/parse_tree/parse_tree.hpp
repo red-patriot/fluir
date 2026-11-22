@@ -25,18 +25,8 @@ namespace fluir::pt {
 
   struct Constant {
     /** The type a literal constant can have */
-    enum Type {
-      F64,
-      I8,
-      I16,
-      I32,
-      I64,
-      U8,
-      U16,
-      U32,
-      U64,
-      BOOL,
-    };
+    enum Type { F64, I8, I16, I32, I64, U8, U16, U32, U64, BOOL, STR };
+
     ID id;
     FlowGraphLocation location;
     std::string value;
@@ -67,6 +57,8 @@ namespace fluir::pt {
         return "U64";
       case Constant::BOOL:
         return "BOOL";
+      case Constant::STR:
+        return "STR";
     }
     return "<UNKNOWN TYPE>";
   }
@@ -111,7 +103,7 @@ namespace fluir::pt {
 
     std::string target;
     std::optional<CallReturn> _return;  // For now, function calls have only one return max
-                                        // TODO: Support multiple return values
+    // TODO: Support multiple return values
     Arguments arguments;
 
     friend bool operator==(const Call&, const Call&) = default;
@@ -148,6 +140,7 @@ namespace fluir::pt {
       int index = 0;
       friend bool operator==(const Output&, const Output&) = default;
     };
+
     // TODO: Support segment types
 
     ID id = INVALID_ID;
@@ -234,7 +227,6 @@ namespace fluir::pt {
   };
 
   inline const Block EMPTY_BLOCK = {};
-
 }  // namespace fluir::pt
 
 #endif

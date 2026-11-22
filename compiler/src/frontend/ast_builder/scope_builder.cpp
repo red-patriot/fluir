@@ -164,6 +164,8 @@ namespace fluir::fe {
           }
           return std::make_unique<ast::Constant>(pt.value == "true", currentID_, pt.location);
         }
+      case pt::Constant::STR:
+        assert(false);
     }
     return nullptr;
   }

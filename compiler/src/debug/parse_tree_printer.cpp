@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <vector>
+
 namespace fluir::debug {
   namespace {
     template <typename ValueT>
@@ -46,6 +47,7 @@ namespace fluir::debug {
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Param({})\n", param.name) << formatIndented("type {}\n", param.typeName);
   }
+
   void ParseTreePrinter::operator()(const pt::FunctionDecl::Return& ret) {
     out_ << formatIndented("{}:\n", ret.id);
     FLUIR_SCOPED_INDENT;
@@ -74,17 +76,19 @@ namespace fluir::debug {
     out_ << formatIndented("Binary\n") << doPrint(binary.location) << formatIndented("{}\n", stringify(binary.op))
          << formatIndented("lhs{}\n", binary.lhs) << formatIndented("rhs{}\n", binary.rhs);
   }
+
   void ParseTreePrinter::operator()(const pt::Unary& unary) {
     out_ << formatIndented("{}:\n", unary.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Unary\n") << doPrint(unary.location) << formatIndented("{}\n", stringify(unary.op))
          << formatIndented("lhs{}\n", unary.lhs);
   }
+
   void ParseTreePrinter::operator()(const pt::Constant& constant) {
     out_ << formatIndented("{}:\n", constant.id);
     FLUIR_SCOPED_INDENT;
     out_ << formatIndented("Constant\n") << doPrint(constant.location);
-    out_ << formatIndented("{} {}\n", toString(constant.typeTag), constant.value);
+    out_ << formatIndented("{}\n", constant);
   }
 
   void ParseTreePrinter::operator()(const pt::Call& call) {
@@ -177,5 +181,4 @@ namespace fluir::debug {
       }
     }
   }
-
 }  // namespace fluir::debug

@@ -541,6 +541,7 @@ namespace fluir {
         {"u32", [](Parser* p, Element* e) -> Literal { return p->u32(e); }},
         {"u64", [](Parser* p, Element* e) -> Literal { return p->u64(e); }},
         {"bool", [](Parser* p, Element* e) -> Literal { return p->boolean(e); }},
+        {"str", [](Parser* p, Element* e) -> Literal { return p->str(e); }},
       }};
 
     std::string_view name = element->Name();
@@ -590,6 +591,11 @@ namespace fluir {
     // GetText returns NULL when empty, so provide an empty string in this case since they are semantically equivalent
     std::string value{element->GetText() ? element->GetText() : ""};
     return {value, pt::Constant::BOOL};
+  }
+
+  Parser::Literal Parser::str(Element* element) {
+    std::string value{element->GetText() ? element->GetText() : ""};
+    return {value, pt::Constant::STR};
   }
 
   pt::BlockPort Parser::parseBlockPort(Element* element) {

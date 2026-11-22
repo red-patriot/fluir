@@ -69,6 +69,7 @@ namespace fluir {
     Literal u32(Element* element);
     Literal u64(Element* element);
     Literal boolean(Element* element);
+    Literal str(Element* element);
 
     pt::BlockPort parseBlockPort(Element* element);
 

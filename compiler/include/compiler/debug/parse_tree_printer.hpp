@@ -37,4 +37,23 @@ namespace fluir::debug {
   };
 }  // namespace fluir::debug
 
+template <>
+struct fmt::formatter<fluir::pt::Constant> {
+  template <class ParseContext>
+  constexpr ParseContext::iterator parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
+
+  template <class FmtContext>
+  FmtContext::iterator format(fluir::pt::Constant c, FmtContext& ctx) const {
+    fmt::format_to(ctx.out(), "{} ", fluir::pt::toString(c.typeTag));
+    switch (c.typeTag) {
+      default:
+        return fmt::format_to(ctx.out(), "{}", c.value);
+      case fluir::pt::Constant::Type::STR:
+        return fmt::format_to(ctx.out(), "\"{}\"", c.value);
+    }
+  }
+};
+
 #endif  // FLUIR_COMPILER_DEBUG_PARSE_TREE_PRINTER_HPP

@@ -18,7 +18,6 @@
 // Intelligence offers tree prototypes: what may go at the top level, and what may go inside a body of a given tree.
 
 namespace {
-
   namespace pt = fluir::pt;
   using fluir::editor::Completion;
 
@@ -89,7 +88,6 @@ namespace {
     ADD_FAILURE() << "no call to " << target;
     return {};
   }
-
 }  // namespace
 
 TEST(Intelligence, TheTopLevelOffersAnEmptyFunctionAndAComment) {
@@ -135,6 +133,7 @@ TEST(Intelligence, ABodyOffersAConstantOfEachLiteralType) {
     {pt::Constant::U64, "0"},
     {pt::Constant::BOOL, "true"},
     {pt::Constant::BOOL, "false"},
+    {pt::Constant::STR, ""},
   };
   const auto actuals = prototypesOf<pt::Constant>(bodyOf());
 

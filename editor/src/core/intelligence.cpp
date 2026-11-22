@@ -14,7 +14,6 @@
 
 namespace fluir::editor {
   namespace {
-
     // A new conditional's condition port: both branches start empty, so inner id 1 is free; y clears the header band.
     constexpr pt::BlockPort CONDITION{.innerId = 1, .y = 10};
 
@@ -30,7 +29,6 @@ namespace fluir::editor {
       }
       return call;
     }
-
   }  // namespace
 
   std::vector<Completion<pt::Declaration>> Intelligence::topLevelCompletions(const pt::ParseTree&) const {
@@ -107,9 +105,10 @@ namespace fluir::editor {
         .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "false", .typeTag = pt::Constant::BOOL}},
       NodeComp{
         .label = "true",
-        .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "true", .typeTag = pt::Constant::BOOL}}};
+        .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "true", .typeTag = pt::Constant::BOOL}},
+      NodeComp{.label = "str",
+               .prototype = pt::Constant{.id = INVALID_ID, .location = {}, .value = "", .typeTag = pt::Constant::STR}}};
 
     return defaults;
   }
-
 }  // namespace fluir::editor

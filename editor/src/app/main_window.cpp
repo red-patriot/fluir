@@ -32,7 +32,7 @@ namespace fluir::editor {
     MainWindow(ctx, parent) {
     if (!openModule(program)) {
       // TODO: Handle this better?
-      throw std::runtime_error(fmt::format("Failed to open the program {}", program.c_str()));
+      throw std::runtime_error(fmt::format("Failed to open the program {}", std::string_view{program.c_str()}));
     }
   }
 

@@ -1,3 +1,4 @@
+#include <iostream>
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QFontDatabase>
@@ -28,8 +29,13 @@ int main(int argc, char* argv[]) {
   argParser.addPositionalArgument("file", "The file to open", "[path]");
   argParser.process(app);
 
-  const fluir::editor::EditorContext ctx;
-  auto window = openWindow(ctx, argParser);
-  window.show();
-  return QApplication::exec();
+  try {
+    const fluir::editor::EditorContext ctx;
+    auto window = openWindow(ctx, argParser);
+    window.show();
+    return QApplication::exec();
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  }
 }

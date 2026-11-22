@@ -27,7 +27,6 @@ int main(int argc, char* argv[]) {
   QCommandLineParser argParser;
   argParser.addPositionalArgument("file", "The file to open", "[path]");
   argParser.process(app);
-  auto args = argParser.positionalArguments();
 
   const fluir::editor::EditorContext ctx;
   auto window = openWindow(ctx, argParser);

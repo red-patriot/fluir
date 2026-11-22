@@ -12,6 +12,10 @@
   padding: 4px 16px;
 }
 
+#splash QPushButton#quit {
+  background-color: rgb(128, 0, 0);
+}
+
 #modulePage QToolBar {
   background-color: rgb(24, 26, 31);
   color: rgb(225, 225, 235);

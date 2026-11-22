@@ -12,6 +12,7 @@
 namespace {
 
   using fluir::editor::isEditableLiteral;
+  using fluir::editor::isValid;
   using fluir::editor::literalTypeName;
   using fluir::editor::renderLiteral;
   using fluir::pt::Constant;
@@ -50,36 +51,40 @@ namespace {
     EXPECT_EQ(renderLiteral((Constant{.value = "inf", .typeTag = Constant::F64})), "\u221E");       // ∞
   }
 
-  // TODO: Reenable or delete these tests
+  TEST(LiteralText, RejectsI32TextThatIsNotANumber) {
+    const Constant like{.value = "0", .typeTag = Constant::I32};
+    EXPECT_FALSE(isValid(like.typeTag, "abc"));
+  }
 
-  // TEST(LiteralText, ParsesTextBackIntoTheSameAlternative) {
-  //   const Constant like{.value="0", .typeTag=Constant::I16};
-  //   const std::optional<Literal> parsed = tryParseLiteral(like, "42");
-  //   ASSERT_TRUE(parsed.has_value());
-  //   EXPECT_EQ(parsed->index(), like.index());
-  //   EXPECT_EQ(std::get<I16>(*parsed), 42);
-  // }
-  //
-  // TEST(LiteralText, RejectsTextThatIsNotANumber) {
-  //   const Constant like{.value="0", .typeTag=Constant::I32};
-  //   EXPECT_EQ(tryParseLiteral(like, "abc"), std::nullopt);
-  // }
-  //
-  // TEST(LiteralText, RejectsAValueOutsideTheAlternativesRange) {
-  //   const Literal likeI8{std::in_place_type<I8>, I8{0}};
-  //   EXPECT_EQ(tryParseLiteral(likeI8, "300"), std::nullopt);
-  //
-  //   const Literal likeU8{std::in_place_type<U8>, U8{0}};
-  //   EXPECT_EQ(tryParseLiteral(likeU8, "-1"), std::nullopt);
-  // }
-  //
-  // TEST(LiteralText, RejectsAnEmptyDraft) {
-  //   const Constant like{.value="0", .typeTag=Constant::I32};
-  //   EXPECT_EQ(tryParseLiteral(like, ""), std::nullopt);
-  // }
+  TEST(LiteralText, RejectsUnsignedTextWithNegative) {
+    const Constant likeU8{.value = "0", .typeTag = Constant::U8};
+    EXPECT_FALSE(isValid(likeU8.typeTag, "-300"));
+  }
 
-  TEST(LiteralText, DoubleConstantsAreEditable) {
+  TEST(LiteralText, RejectsAnEmptyNumber) {
+    const Constant likeI32{.value = "0", .typeTag = Constant::I32};
+    EXPECT_FALSE(isValid(likeI32.typeTag, ""));
+    const Constant likeU32{.value = "0", .typeTag = Constant::U32};
+    EXPECT_FALSE(isValid(likeI32.typeTag, ""));
+    const Constant likeF64{.value = "0", .typeTag = Constant::F64};
+    EXPECT_FALSE(isValid(likeI32.typeTag, ""));
+  }
+
+  TEST(LiteralText, AllowsAllStrText) {
+    const Constant like{.value = "asdf", .typeTag = Constant::STR};
+    EXPECT_TRUE(isValid(like.typeTag, "abc"));
+    EXPECT_TRUE(isValid(like.typeTag, ""));
+    EXPECT_TRUE(isValid(like.typeTag, "asdf\nasdf\r\n"));
+    EXPECT_TRUE(isValid(like.typeTag, "\0"));
+  }
+
+  TEST(LiteralText, F64ConstantsAreEditable) {
     const Constant like{.value = "1.5", .typeTag = Constant::F64};
+    EXPECT_TRUE(isEditableLiteral(like));
+  }
+
+  TEST(LiteralText, StrConstantsAreEditable) {
+    const Constant like{.value = "Hello World!", .typeTag = Constant::STR};
     EXPECT_TRUE(isEditableLiteral(like));
   }
 

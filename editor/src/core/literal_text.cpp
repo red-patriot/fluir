@@ -49,6 +49,8 @@ namespace fluir::editor {
       case pt::Constant::U32:
       case pt::Constant::U64:
         return RE2::FullMatch(text, uintRe);
+      case pt::Constant::STR:
+        return true;  // All strings are valid text
     }
     return false;
   }

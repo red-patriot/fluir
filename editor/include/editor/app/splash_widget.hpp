@@ -21,6 +21,7 @@ namespace fluir::editor {
    signals:
     void newRequested();
     void openRequested();
+    void quitRequested();
 
    protected:
     void resizeEvent(QResizeEvent* event) override;

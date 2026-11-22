@@ -24,6 +24,7 @@ namespace fluir::editor {
     QMainWindow(parent), ctx_(ctx), ui_(std::make_unique<Ui::mainWindow>()) {
     ui_->setupUi(this);
     resize(ctx.window.width, ctx.window.height);
+    setupSplashConnections();
     retitle();
   }
 
@@ -95,5 +96,6 @@ namespace fluir::editor {
   void MainWindow::setupSplashConnections() {
     connect(ui_->splash, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
     connect(ui_->splash, &SplashWidget::openRequested, this, &MainWindow::openDialog);
+    connect(ui_->splash, &SplashWidget::quitRequested, this, &MainWindow::close);
   }
 }  // namespace fluir::editor

@@ -24,11 +24,16 @@ namespace fluir::editor {
     QMainWindow(parent), ctx_(ctx), ui_(std::make_unique<Ui::mainWindow>()) {
     ui_->setupUi(this);
     resize(ctx.window.width, ctx.window.height);
-
-    connect(ui_->splash, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
-    connect(ui_->splash, &SplashWidget::openRequested, this, &MainWindow::openDialog);
-
+    setupSplashConnections();
     retitle();
+  }
+
+  MainWindow::MainWindow(const EditorContext& ctx, std::filesystem::path program, QWidget* parent) :
+    MainWindow(ctx, parent) {
+    if (!openModule(program)) {
+      // TODO: Handle this better?
+      throw std::runtime_error(fmt::format("Failed to open the program {}", program.string()));
+    }
   }
 
   MainWindow::~MainWindow() = default;
@@ -85,4 +90,9 @@ namespace fluir::editor {
     setWindowTitle(title);
   }
 
+  void MainWindow::setupSplashConnections() {
+    connect(ui_->splash, &SplashWidget::newRequested, this, [this] { openPage(std::nullopt, newModule()); });
+    connect(ui_->splash, &SplashWidget::openRequested, this, &MainWindow::openDialog);
+    connect(ui_->splash, &SplashWidget::quitRequested, this, &MainWindow::close);
+  }
 }  // namespace fluir::editor

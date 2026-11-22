@@ -29,9 +29,18 @@ TEST(SplashWidget, NewAsksForANewModule) {
 
 TEST(SplashWidget, OpenAsksToOpenAModule) {
   SplashWidget uut;
-  QSignalSpy requested(&uut, &SplashWidget::openRequested);
+  QSignalSpy requested{&uut, &SplashWidget::openRequested};
 
   QTest::mouseClick(button(uut, "open"), Qt::LeftButton);
+
+  EXPECT_EQ(requested.count(), 1);
+}
+
+TEST(SplashWidget, QuitAsksToQuit) {
+  SplashWidget uut;
+  QSignalSpy requested{&uut, &SplashWidget::quitRequested};
+
+  QTest::mouseClick(button(uut, "quit"), Qt::LeftButton);
 
   EXPECT_EQ(requested.count(), 1);
 }

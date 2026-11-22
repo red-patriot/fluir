@@ -17,6 +17,7 @@ namespace fluir::editor {
     ui_->newButton->setObjectName("new");  // `new` is a keyword, so uic cannot name the member.
     connect(ui_->newButton, &QPushButton::clicked, this, &SplashWidget::newRequested);
     connect(ui_->open, &QPushButton::clicked, this, &SplashWidget::openRequested);
+    connect(ui_->quit, &QPushButton::clicked, this, &SplashWidget::quitRequested);
   }
 
   SplashWidget::~SplashWidget() = default;

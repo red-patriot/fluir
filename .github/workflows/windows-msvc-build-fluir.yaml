@@ -10,14 +10,27 @@ on:
 jobs:
   build-release:
     runs-on: windows-2022
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-cache,readwrite
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+      - name: Create vcpkg cache dir
+        run: New-Item -ItemType Directory -Force -Path vcpkg-cache
+        shell: pwsh
+      - name: Cache vcpkg binaries
+        uses: actions/cache@v4
+        with:
+          path: vcpkg-cache
+          key: vcpkg-${{ runner.os }}-${{ hashFiles('.github/workflows/windows-msvc-build-fluir.yaml') }}
+          restore-keys: vcpkg-${{ runner.os }}-
       - name: Install Dependencies
         run: |
           vcpkg install tinyxml2 fmt re2 gtest --triplet x64-windows
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
+        with:
+          cache: true
       - name: Setup Developer Command Prompt and Build
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"

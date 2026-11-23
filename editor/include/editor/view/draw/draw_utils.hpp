@@ -45,6 +45,12 @@ namespace fluir::editor {
   /** The XY resize grip in `frame`'s bottom-right corner, in the same space. */
   Rect resizeCorner(const Rect& frame, double unit);
 
+  /** The rect of text where all fields are a single row. */
+  Rect singleRowText(Rect box, std::string_view tag, const EditorContext::Layout& layout);
+
+  /** The rect of text where it is below a header row. */
+  Rect textBelowHeader(Rect box, const EditorContext::Layout& layout);
+
   SplitLabel splitLabel(Rect box, std::string_view tag, const EditorContext::Layout& layout);
 
   /** `intrinsic`'s aspect scaled to fit inside `target`, centred. Degenerate input returns an empty rect at

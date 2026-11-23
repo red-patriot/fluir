@@ -10,10 +10,11 @@
 namespace fluir::editor::draw {
   namespace {
     // In grid units. A node's height follows its content, so it is unbounded below.
-    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{4, 0}, .upper = Vec2i{1000, 1000}};
-    constexpr Vec2i NUMBER_DEFAULT_SIZE{12, 5};
+    constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{9, 5}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> STR_SIZE_LIMITS{.lower = Vec2i{9, 10}, .upper = Vec2i{1000, 1000}};
+    constexpr Vec2i NUMBER_DEFAULT_SIZE{15, 5};
     constexpr Vec2i BOOL_DEFAULT_SIZE{8, 5};
-    constexpr Vec2i STR_DEFAULT_SIZE{15, 15};
+    constexpr Vec2i STR_DEFAULT_SIZE{15, 10};
 
     // Gap between the bool square and the node's edges, in world px.
     constexpr double TOGGLE_PAD = 4.0;
@@ -49,13 +50,16 @@ namespace fluir::editor::draw {
 
   std::vector<FieldLabel> labels(const pt::Constant& n, const Rect& world, const EditorContext::Layout& layout) {
     if (n.typeTag == pt::Constant::BOOL) {
-      return {{{Field::Kind::Bool}, boolToggleRect(world, layout)}};
+      return {FieldLabel{.field = {.kind = Field::Kind::Bool}, .rect = boolToggleRect(world, layout)}};
     }
     std::string name{literalTypeName(n)};
-    return {{{Field::Kind::Literal}, splitLabel(world, name, layout).text}};
+    auto rect = n.typeTag == pt::Constant::STR ? textBelowHeader(world, layout) : splitLabel(world, name, layout).text;
+    return {FieldLabel{.field = {.kind = Field::Kind::Literal}, .rect = rect}};
   }
 
-  Limits<Vec2i> sizeLimits(const pt::Constant&) { return SIZE_LIMITS; }
+  Limits<Vec2i> sizeLimits(const pt::Constant& c) {
+    return c.typeTag == pt::Constant::STR ? STR_SIZE_LIMITS : SIZE_LIMITS;
+  }
 
   Vec2i defaultSize(const pt::Constant& c) {
     switch (c.typeTag) {

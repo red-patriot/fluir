@@ -36,7 +36,7 @@ namespace fluir::editor {
     std::optional<ResizeAxes> resizePart(const pt::Comment&) { return ResizeAxes::XY; }
 
     std::vector<FieldLabel> labels(const pt::Comment&, const Rect& world, const EditorContext::Layout& layout) {
-      return {{{Field::Kind::Text}, commentBodyRect(world, layout)}};
+      return {FieldLabel{.field = {.kind = Field::Kind::Text}, .rect = commentBodyRect(world, layout)}};
     }
 
   }  // namespace draw

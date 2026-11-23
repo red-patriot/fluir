@@ -38,6 +38,16 @@ namespace fluir::editor {
     return {frame.x + frame.w - size, frame.y + frame.h - size, size, size};
   }
 
+  Rect singleRowText(Rect box, std::string_view tag, const EditorContext::Layout& layout) {
+    return splitLabel(box, tag, layout).text;
+  }
+
+  /** The rect of text where it is below a header row. */
+  Rect textBelowHeader(Rect box, const EditorContext::Layout& layout) {
+    const double headerH = layout.headerH();
+    return {box.x, box.y + headerH, box.w, std::max(0.0, box.h - headerH)};
+  }
+
   Rect fitInto(Rect target, Vec2 intrinsic) {
     if (intrinsic.x <= 0.0 || intrinsic.y <= 0.0 || target.w <= 0.0 || target.h <= 0.0) {
       return {target.center().x, target.center().y, 0.0, 0.0};

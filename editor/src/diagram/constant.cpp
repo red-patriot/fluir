@@ -13,7 +13,6 @@
 #include "editor/view/draw/constant.hpp"
 
 namespace fluir::editor::diagram {
-
   Constant::Constant(pt::Constant data, const EditorContext& ctx, QGraphicsItem* parent) :
     FluirNode(ctx, parent),
     data_(std::move(data)),
@@ -33,7 +32,12 @@ namespace fluir::editor::diagram {
     style::shell(*painter, boundingRect(), draw::color(data_, ctx_.theme), ctx_);
     if (data_.typeTag != pt::Constant::BOOL) {
       std::string name{literalTypeName(data_)};
-      style::tag(*painter, boundingRect(), name, ctx_);
+      // TODO: Don't hardcode the label position here
+      auto boundRect = boundingRect();
+      if (data_.typeTag == pt::Constant::STR) {
+        boundRect.setHeight(ctx_.layout.headerH());
+      }
+      style::tag(*painter, boundRect, name, ctx_);
     }
   }
 
@@ -65,5 +69,4 @@ namespace fluir::editor::diagram {
     // TODO: Handle string that isn't the right format for its type
     data_.value = text;
   }
-
 }  // namespace fluir::editor::diagram

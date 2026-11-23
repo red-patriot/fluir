@@ -55,7 +55,9 @@ set(FLUIR_EDITOR_CORE_TEST_SOURCES
 )
 
 set(FLUIR_EDITOR_VIEW_TEST_SOURCES
+    view/draw/comment.test.cpp
     view/draw/conditional.test.cpp
+    view/draw/constant.test.cpp
     view/draw/draw_utils.test.cpp
     view/draw/labels.test.cpp
     view/draw/size.test.cpp

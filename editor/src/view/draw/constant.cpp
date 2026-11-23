@@ -11,6 +11,7 @@ namespace fluir::editor::draw {
   namespace {
     // In grid units. A node's height follows its content, so it is unbounded below.
     constexpr Limits<Vec2i> SIZE_LIMITS{.lower = Vec2i{9, 5}, .upper = Vec2i{1000, 1000}};
+    constexpr Limits<Vec2i> BOOL_SIZE_LIMITS{.lower = Vec2i{8, 5}, .upper = Vec2i{8, 5}};
     constexpr Limits<Vec2i> STR_SIZE_LIMITS{.lower = Vec2i{9, 10}, .upper = Vec2i{1000, 1000}};
     constexpr Vec2i NUMBER_DEFAULT_SIZE{15, 5};
     constexpr Vec2i BOOL_DEFAULT_SIZE{8, 5};
@@ -58,7 +59,14 @@ namespace fluir::editor::draw {
   }
 
   Limits<Vec2i> sizeLimits(const pt::Constant& c) {
-    return c.typeTag == pt::Constant::STR ? STR_SIZE_LIMITS : SIZE_LIMITS;
+    switch (c.typeTag) {
+      case pt::Constant::BOOL:
+        return BOOL_SIZE_LIMITS;
+      case pt::Constant::STR:
+        return STR_SIZE_LIMITS;
+      default:
+        return SIZE_LIMITS;
+    }
   }
 
   Vec2i defaultSize(const pt::Constant& c) {
